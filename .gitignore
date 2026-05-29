@@ -1,0 +1,85 @@
+# ==========================================
+# Unity .gitignore
+# 저장소 루트: E:\GameProjects\ProjectOP\
+# 유니티 프로젝트: Overforge\
+# ==========================================
+
+# ------------------------------------------
+# [Overforge] Unity 자동 생성 폴더 (커밋 불필요)
+# ------------------------------------------
+Overforge/[Ll]ibrary/
+Overforge/[Tt]emp/
+Overforge/[Oo]bj/
+Overforge/[Bb]uild/
+Overforge/[Bb]uilds/
+Overforge/[Ll]ogs/
+Overforge/[Uu]ser[Ss]ettings/
+Overforge/[Mm]emory[Cc]aptures/
+
+# ------------------------------------------
+# [ProjectOF] IDE 자동 생성 파일
+# ------------------------------------------
+Overforge/.vs/
+Overforge/.vscode/
+Overforge/.idea/
+Overforge/*.csproj
+Overforge/*.sln
+Overforge/*.suo
+Overforge/*.user
+Overforge/*.userprefs
+Overforge/*.pidb
+Overforge/*.booproj
+Overforge/*.svd
+Overforge/*.pdb
+Overforge/*.mdb
+Overforge/*.opendb
+Overforge/*.VC.db
+Overforge/*.cache
+Overforge/*.ilk
+
+# ------------------------------------------
+# [Overforge] 빌드 결과물
+# ------------------------------------------
+Overforge/*.apk
+Overforge/*.aab
+Overforge/*.ipa
+Overforge/*.exe
+# Plugins 폴더 내 dll은 추적
+!Overforge/Assets/Plugins/**/*.dll
+
+# ------------------------------------------
+# [Overforge] 기타 Unity
+# ------------------------------------------
+Overforge/Assets/AssetStoreTools*
+Overforge/crashlytics-build.properties
+Overforge/exportOptions.plist
+Overforge/sysinfo.txt
+
+# Addressables 빌드 캐시
+Overforge/Assets/AddressableAssetsData/*/*.bin*
+Overforge/Assets/StreamingAssets/aa.meta
+Overforge/Assets/StreamingAssets/aa/
+
+# Packages 캐시 (Packages/manifest.json 은 추적)
+Overforge/Packages/*/
+
+# ------------------------------------------
+# OS 부산물 (전체 경로 공통)
+# ------------------------------------------
+# Excel 임시 잠금 파일
+~$*.xlsx
+~$*.xls
+.DS_Store
+**/.DS_Store
+Thumbs.db
+**/Thumbs.db
+Desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# ------------------------------------------
+# .vsconfig 는 팀 공유를 위해 추적 유지
+# (제외하고 싶으면 아래 주석 해제)
+# ------------------------------------------
+# Overforge/.vsconfig
+.claude/settings.local.json
