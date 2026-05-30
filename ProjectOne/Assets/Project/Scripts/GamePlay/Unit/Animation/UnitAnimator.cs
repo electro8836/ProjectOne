@@ -22,6 +22,17 @@ namespace ProjectOne.Unit
 		[SerializeField]
 		private float _maxMotionMul = 5f;
 
+		// worldY → sortingOrder 변환 정밀도. sortingOrder는 int16(±32767)이므로
+		// (맵 Y폭 × _precision ≤ 32767) 와 (구분할 최소 Y간격 × _precision ≥ 1) 사이에서 잡는다.
+		[SerializeField]
+		private float _precision = 100f;
+
+		// 루트가 발밑이 아닐 때 정렬 기준점(발밑)을 맞추는 보정값
+		[SerializeField]
+		private float _yOffset = 0f;
+
+		private int _lastSortOrder = int.MinValue;
+
 		private float _lastAttackSpeedMul = 1f;
 
 		private float _lastMoveSpeedMul = 1f;
@@ -46,6 +57,18 @@ namespace ProjectOne.Unit
 		{
 			_animator = this.GetComponentInChildren<Animator>();
 			_spriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
+		}
+
+		// 발밑(피벗 하단) Y좌표를 정수 sortingOrder로 변환해 유닛 간 앞뒤 정렬을 결정한다.
+		private void LateUpdate()
+		{
+			float sortY = transform.position.y + _yOffset;
+			int order = -Mathf.RoundToInt(sortY * _precision); // Y가 클수록(위) 뒤로 → 음수
+			if (_lastSortOrder != order)
+			{
+				_lastSortOrder = order;
+				_spriteRenderer.sortingOrder = order;
+			}
 		}
 
 		public void SetMoving(bool isMoving)
