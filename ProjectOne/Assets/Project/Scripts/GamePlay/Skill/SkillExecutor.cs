@@ -115,7 +115,10 @@ namespace ProjectOne.Skill
 			// scanned 는 TargetResolver 내부 _scratch 직참조 →
 			// 아래 ApplyIfSet 들 사이에 다른 TargetResolver.ScanByType 호출이 끼면 안 됨.
 			List<UnitBase> scanned = TargetResolver.ScanByType(row.ScanType, row.ScanParam1, row.ScanParam2, caster);
-			bool hasTarget = scanned.Count > 0;
+			// OnHit 트리거 판정 — 스캔 영역에 "적"이 1명 이상일 때만 적중으로 본다.
+			// (캐스터 자신·아군은 모든 ScanType 후보에 포함되므로 faction 으로 걸러야 함)
+			// 효과 적용 루프 앞에서 미리 산출 — 루프 내 FilterByApplyTarget 호출이 _filtered 를 덮어쓰므로.
+			bool hasEnemyTarget = TargetResolver.FilterByApplyTarget(scanned, SkillApplyTarget.Enemy, caster).Count > 0;
 
 			ApplyIfSet(row.StartEffect,  caster, id, scanned);
 			ApplyIfSet(row.Effect_0,     caster, id, scanned);
@@ -127,7 +130,7 @@ namespace ProjectOne.Skill
 
 			// OnHit 트리거: IsOnHitTrigger 공격이 1명 이상 적중하면 OnHit 스킬 확률 발동 (공격당 1회)
 			// 위 apply 루프가 동기적으로 끝난 뒤 호출 → 재귀 ScanByType 이 _scratch 를 덮어써도 안전
-			if (row.IsOnHitTrigger == true && hasTarget == true && caster.SkillContainer != null)
+			if (row.IsOnHitTrigger == true && hasEnemyTarget == true && caster.SkillContainer != null)
 			{
 				caster.SkillContainer.TriggerOnHitSkills();
 			}

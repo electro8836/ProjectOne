@@ -13,8 +13,8 @@ namespace EDT {
             public SkillCastingTypes CastingType { get; set; } = SkillCastingTypes.None;
             public int CastingParam { get; set; } = 0;
             public SkillScanType ScanType { get; set; } = SkillScanType.None;
-            public int ScanParam1 { get; set; } = 0;
-            public int ScanParam2 { get; set; } = 0;
+            public float ScanParam1 { get; set; } = 0f;
+            public float ScanParam2 { get; set; } = 0f;
             public string MotionName { get; set; } = string.Empty;
             public float MotionEffectTime { get; set; } = 0f;
             public bool IsOnHitTrigger { get; set; } = false;
@@ -53,8 +53,8 @@ namespace EDT {
                 row.CastingType = (SkillCastingTypes)reader.ReadInt32();
                 row.CastingParam = reader.ReadInt32();
                 row.ScanType = (SkillScanType)reader.ReadInt32();
-                row.ScanParam1 = reader.ReadInt32();
-                row.ScanParam2 = reader.ReadInt32();
+                row.ScanParam1 = reader.ReadSingle();
+                row.ScanParam2 = reader.ReadSingle();
                 row.MotionName = reader.ReadString();
                 row.MotionEffectTime = reader.ReadSingle();
                 row.IsOnHitTrigger = reader.ReadBoolean();

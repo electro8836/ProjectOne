@@ -11,43 +11,35 @@ using ProjectOne.Buff;
 
 namespace ProjectOne.Unit
 {
-	// ID 만으로 완성된 유닛(GameObject + 모든 컴포지션 + Aspect 적용)을 스폰
-	// - CreateAsync: 타입 디스패치 통합 진입점
-	// - CreateHeroAsync / CreateMonsterAsync: 구체 타입 반환이 필요할 때 사용
-	// - Singleton<T> 컨벤션 (EventManager / ResourceManager 와 동일)
 	public sealed class UnitFactory : Singleton<UnitFactory>
 	{
-		const string SourceBase = "Base";
-		const float DefaultMass = 1f;
+		private const string SourceBase = "Base";
 
-		// 1부터 시작 (0 = 미할당). 인스턴스마다 1회 후증가. 메인 스레드 단일 호출 가정 → lock 불필요.
-		static int _nextInstanceId = 1;
+		private const float DefaultMass = 1f;
 
-		// 외부 디버그/로그용 — 현재 카운터 상태
-		public static int PeekNextInstanceId
-		{
-			get { return _nextInstanceId; }
-		}
+		private static int _nextInstanceId = 1;
+
+		public static int PeekNextInstanceId => _nextInstanceId;
 
 		private UnitFactory()
 		{
 		}
 
-		public async UniTask<UnitBase> CreateAsync(UnitType type, int id, Vector3 pos, Faction faction = Faction.None, CancellationToken ct = default)
+		public async UniTask<UnitBase> CreateAsync(UnitType type, int id, Vector3 pos, Faction faction = Faction.None, CancellationToken ct = default(CancellationToken))
 		{
 			switch (type)
 			{
-				case UnitType.Hero:
-					return await CreateHeroAsync(id, pos, faction == Faction.None ? Faction.Player : faction, ct);
-				case UnitType.Monster:
-					return await CreateMonsterAsync(id, pos, faction == Faction.None ? Faction.Enemy : faction, ct);
-				default:
-					Debug.LogError($"[UnitFactory] 지원하지 않는 UnitType: {type}");
-					return null;
+			case UnitType.Hero:
+				return await CreateHeroAsync(id, pos, (faction == Faction.None) ? Faction.Player : faction, ct);
+			case UnitType.Monster:
+				return await CreateMonsterAsync(id, pos, (faction == Faction.None) ? Faction.Enemy : faction, ct);
+			default:
+				Debug.LogError($"[UnitFactory] 지원하지 않는 UnitType: {type}");
+				return null;
 			}
 		}
 
-		public async UniTask<Hero> CreateHeroAsync(int characterId, Vector3 pos, Faction faction = Faction.Player, CancellationToken ct = default)
+		public async UniTask<Hero> CreateHeroAsync(int characterId, Vector3 pos, Faction faction = Faction.Player, CancellationToken ct = default(CancellationToken))
 		{
 			Table_Character.Row row = Table_Character.Get(characterId);
 			if (row == null)
@@ -55,151 +47,129 @@ namespace ProjectOne.Unit
 				Debug.LogError($"[UnitFactory] Table_Character.Get({characterId}) == null");
 				return null;
 			}
-
 			string skinAddress = string.Empty;
 			if (row.SkinID > 0)
 			{
-				Table_SkinInfo.Row skin = Table_SkinInfo.Get(row.SkinID);
-				if (skin != null)
+				Table_SkinInfo.Row row2 = Table_SkinInfo.Get(row.SkinID);
+				if (row2 != null)
 				{
-					skinAddress = skin.Path;
+					skinAddress = row2.Path;
 				}
 			}
-
-			Hero hero = await SpawnAndComposeAsync<Hero>(UnitType.Hero, row.Path, row.Name, characterId, row.BaseStatID, row.SkillSetID, skinAddress, row.Radius, pos, faction, ct);
+			Hero hero = await SpawnAndComposeAsync<Hero>(UnitType.Hero, row.Path, row.Name, characterId, row.BaseStatID, row.SkillSetID, skinAddress, pos, faction, ct);
 			if (hero == null)
 			{
 				return null;
 			}
-
-			// Hero 전용 후처리 — 강화/업적/콜렉션/장비/스킬/버프 Aspect
-			HeroAspectRegistry.Instance.ApplyAll(hero);
+			Singleton<HeroAspectRegistry>.Instance.ApplyAll(hero);
 			hero.RefreshAnimationStats();
-
-			EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), characterId));
+			Singleton<EventManager>.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), characterId));
 			return hero;
 		}
 
-		public async UniTask<Monster> CreateMonsterAsync(int monsterId, Vector3 pos, Faction faction = Faction.Enemy, CancellationToken ct = default)
+		public async UniTask<Monster> CreateMonsterAsync(int monsterId, Vector3 pos, Faction faction = Faction.Enemy, CancellationToken ct = default(CancellationToken))
 		{
-			Table_Monster.Row row = Table_Monster.Get(monsterId);
-			if (row == null)
-			{
-				Debug.LogError($"[UnitFactory] Table_Monster.Get({monsterId}) == null");
-				return null;
-			}
-
-			Monster monster = await SpawnAndComposeAsync<Monster>(UnitType.Monster, row.Path, row.Name, monsterId, row.BaseStatID, row.SkillSetID, row.Skin, row.Radius, pos, faction, ct);
-			if (monster == null)
+			MonsterPool monsterPool = await MonoSingleton<MonsterPoolHub>.Instance.GetOrCreatePoolAsync(monsterId, ct);
+			if (monsterPool == null)
 			{
 				return null;
 			}
-
+			Monster monster = monsterPool.Spawn(pos);
 			monster.RefreshAnimationStats();
-			EventManager.Instance.Publish(new UnitSpawnedEvent(monster, UnitType.Monster, monster.GetID(), monsterId));
+			Singleton<EventManager>.Instance.Publish(new UnitSpawnedEvent(monster, UnitType.Monster, monster.GetID(), monsterId));
 			return monster;
 		}
 
-		// 공통 생성/주입 흐름 — Hero/Monster 동일
-		async UniTask<T> SpawnAndComposeAsync<T>(UnitType unitType, string prefabAddress, string displayName, int id, int baseStatId, int skillSetId, string skinAddress, float radius, Vector3 pos, Faction faction, CancellationToken ct)
-			where T : UnitBase
+		public void ReleaseMonster(Monster monster)
 		{
-			if (string.IsNullOrEmpty(prefabAddress) == true)
+			if (!(monster == null))
+			{
+				MonsterPool pool = MonoSingleton<MonsterPoolHub>.Instance.GetPool(monster.GetTableID());
+				if (pool != null)
+				{
+					pool.Despawn(monster);
+				}
+			}
+		}
+
+		private async UniTask<T> SpawnAndComposeAsync<T>(UnitType unitType, string prefabAddress, string displayName, int id, int baseStatId, int skillSetId, string skinAddress, Vector3 pos, Faction faction, CancellationToken ct) where T : UnitBase
+		{
+			if (string.IsNullOrEmpty(prefabAddress))
 			{
 				Debug.LogError($"[UnitFactory] 프리팹 Address 비어있음 (id={id})");
 				return null;
 			}
-
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(prefabAddress, ct);
-			if (prefab == null)
+			GameObject val = await MonoSingleton<ResourceManager>.Instance.AcquireAsync<GameObject>(prefabAddress, ct);
+			if (val == null)
 			{
-				Debug.LogError($"[UnitFactory] 프리팹 로드 실패: {prefabAddress}");
+				Debug.LogError(("[UnitFactory] 프리팹 로드 실패: " + prefabAddress));
 				return null;
 			}
-
-			// UnitContainer 의 Type별 sub-Transform 아래로 스폰
-			Transform parent = UnitContainer.Instance.GetRoot(unitType);
-			GameObject go = Object.Instantiate(prefab, pos, Quaternion.identity, parent);
-			go.name = $"{displayName}_{id}";
-
-			T unit = go.GetComponent<T>();
+			Transform root = MonoSingleton<UnitContainer>.Instance.GetRoot(unitType);
+			GameObject val2 = Object.Instantiate<GameObject>(val, pos, Quaternion.identity, root);
+			val2.name = $"{displayName}_{id}";
+			T unit = val2.GetComponent<T>();
 			if (unit == null)
 			{
-				Debug.LogError($"[UnitFactory] 프리팹에 {typeof(T).Name} 컴포넌트 없음: {prefabAddress}");
-				Object.Destroy(go);
+				Debug.LogError(("[UnitFactory] 프리팹에 " + typeof(T).Name + " 컴포넌트 없음: " + prefabAddress));
+				Object.Destroy(val2);
 				return null;
 			}
-
-			// 0. ID 주입 — 유일 인스턴스 ID + 테이블 ID
-			unit.InjectIDs(_nextInstanceId++, id);
-
-			// 1. 스탯 — Table_BaseStat 주입
-			StatContainer stats = StatContainerFactory.FromBaseStatID(baseStatId);
-			unit.InjectStats(stats);
-
-			// 2. Vitals — stats 의 MaxHP 기준 초기화
-			Vitals vitals = new Vitals(stats);
-			vitals.InitHp();
-			vitals.InitBreakGage();
-			unit.InjectVitals(vitals);
-
-			// 3. BuffContainer — 비어있는 상태로 시작
-			//    (SkillContainer 등록보다 먼저: Passive 스킬이 등록 즉시 ActivateBuff 효과를 쓸 수 있어야 함)
-			BuffContainer bc = new BuffContainer(unit);
-			unit.InjectBuffContainer(bc);
-
-			// 4. SkillContainer — SkillSet 의 Skill_1~4 를 "Base" 출처로 등록
-			SkillContainer sc = new SkillContainer(unit);
-			RegisterBaseSkills(sc, skillSetId);
-			unit.InjectSkillContainer(sc);
-
-			// 5. Mover — radius/mass (mass 는 테이블에 없으므로 기본 1f)
-			UnitMover mover = unit.GetComponent<UnitMover>();
-			if (mover != null)
-			{
-				mover.Initialize(radius, DefaultMass);
-			}
-
-			// 6. Skin — AnimatorOverrideController 교체 (주소 비어있으면 스킵)
-			if (string.IsNullOrEmpty(skinAddress) == false)
+			ComposeUnit(unit, id, baseStatId, skillSetId, faction);
+			if (!string.IsNullOrEmpty(skinAddress))
 			{
 				await ApplySkinAsync(unit, skinAddress, ct);
 			}
-
-			// 7. Faction
-			unit.SetFaction(faction);
-
 			return unit;
 		}
 
-		static void RegisterBaseSkills(SkillContainer sc, int skillSetId)
+		public void ComposeUnit(UnitBase unit, int tableId, int baseStatId, int skillSetId, Faction faction)
 		{
-			if (skillSetId <= 0)
+			unit.SetIDs(_nextInstanceId++, tableId);
+			StatContainer stats = StatContainerFactory.FromBaseStatID(baseStatId);
+			unit.SetStats(stats);
+			Vitals vitals = new Vitals(stats);
+			vitals.InitHp();
+			vitals.InitBreakGage();
+			unit.SetVitals(vitals);
+			BuffContainer buffContainer = new BuffContainer(unit);
+			unit.SetBuffContainer(buffContainer);
+			SkillContainer skillContainer = new SkillContainer(unit);
+			RegisterBaseSkills(skillContainer, skillSetId);
+			unit.SetSkillContainer(skillContainer);
+			UnitMover component = unit.GetComponent<UnitMover>();
+			if (component != null)
 			{
-				return;
+				component.Initialize(unit.Radius, 1f);
 			}
-			Table_SkillSet.Row row = Table_SkillSet.Get(skillSetId);
-			if (row == null)
-			{
-				return;
-			}
-			sc.Register(row.Skill_1, SourceBase);
-			sc.Register(row.Skill_2, SourceBase);
-			sc.Register(row.Skill_3, SourceBase);
-			sc.Register(row.Skill_4, SourceBase);
+			unit.SetFaction(faction);
 		}
 
-		static async UniTask ApplySkinAsync(UnitBase unit, string skinAddress, CancellationToken ct)
+		private static void RegisterBaseSkills(SkillContainer sc, int skillSetId)
 		{
-			RuntimeAnimatorController controller = await ResourceManager.Instance.AcquireAsync<RuntimeAnimatorController>(skinAddress, ct);
-			if (controller == null)
+			if (skillSetId > 0)
 			{
-				return;
+				Table_SkillSet.Row row = Table_SkillSet.Get(skillSetId);
+				if (row != null)
+				{
+					sc.Register(row.Skill_1, "Base");
+					sc.Register(row.Skill_2, "Base");
+					sc.Register(row.Skill_3, "Base");
+					sc.Register(row.Skill_4, "Base");
+				}
 			}
-			UnitAnimator animator = unit.GetComponent<UnitAnimator>();
-			if (animator != null)
+		}
+
+		private static async UniTask ApplySkinAsync(UnitBase unit, string skinAddress, CancellationToken ct)
+		{
+			RuntimeAnimatorController val = await MonoSingleton<ResourceManager>.Instance.AcquireAsync<RuntimeAnimatorController>(skinAddress, ct);
+			if (!(val == null))
 			{
-				animator.SetController(controller);
+				UnitAnimator component = unit.GetComponent<UnitAnimator>();
+				if (component != null)
+				{
+					component.SetController(val);
+				}
 			}
 		}
 	}

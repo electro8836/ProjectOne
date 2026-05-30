@@ -14,7 +14,6 @@ namespace EDT {
             public string Desc { get; set; } = string.Empty;
             public string Path { get; set; } = string.Empty;
             public int SkinID { get; set; } = 0;
-            public float Radius { get; set; } = 0f;
             public int BaseStatID { get; set; } = 0;
             public int SkillSetID { get; set; } = 0;
         }
@@ -46,7 +45,6 @@ namespace EDT {
                 row.Desc = reader.ReadString();
                 row.Path = reader.ReadString();
                 row.SkinID = reader.ReadInt32();
-                row.Radius = reader.ReadSingle();
                 row.BaseStatID = reader.ReadInt32();
                 row.SkillSetID = reader.ReadInt32();
                 _all.Add( row.ID, row );

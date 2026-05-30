@@ -1,68 +1,68 @@
+using System.Collections.Generic;
 using UnityEngine;
+using ProjectOne.Unit;
 
 namespace ProjectOne.Utils
 {
-	// 2D 탑다운 기하 판정 헬퍼 — 광역 탐지(스킬, AI 시야, 트리거 등)에서 공용
 	public static class Scanner
 	{
-		// 원형 판정 — point 가 origin 중심 반지름 radius 원 안에 있는가
-		public static bool InCircle(Vector2 origin, float radius, Vector2 point)
+		public static bool InCircle(Vector2 origin, float radius, Vector2 point, float targetRadius = 0f)
 		{
-			Vector2 rel = point - origin;
-			return rel.sqrMagnitude <= radius * radius;
+			Vector2 val = point - origin;
+			float num = radius + targetRadius;
+			return val.sqrMagnitude <= num * num;
 		}
 
-		// 부채꼴 판정 — facing 방향 기준 fullAngleDeg 전체각(좌우 절반씩) 부채꼴 안에 있는가
-		public static bool InSector(Vector2 origin, Vector2 facing, float radius, float fullAngleDeg, Vector2 point)
+		public static bool InSector(Vector2 origin, Vector2 facing, float radius, float fullAngleDeg, Vector2 point, float targetRadius = 0f)
 		{
-			Vector2 rel = point - origin;
-			if (rel.sqrMagnitude > radius * radius)
+			Vector2 val = point - origin;
+			float num = radius + targetRadius;
+			if (val.sqrMagnitude > num * num)
 			{
 				return false;
 			}
-			if (rel.sqrMagnitude < 1e-6f)
+			if (val.sqrMagnitude < 1E-06f)
 			{
 				return true;
 			}
-			float half = fullAngleDeg * 0.5f;
-			float angle = Vector2.Angle(facing, rel);
-			return angle <= half;
+			float num2 = fullAngleDeg * 0.5f;
+			return Vector2.Angle(facing, val) <= num2;
 		}
 
-		// 직사각형 판정 — facing 방향 기준 origin 에서 시작해 length 만큼 뻗는 width 너비 사각형
-		public static bool InLine(Vector2 origin, Vector2 facing, float length, float width, Vector2 point)
+		public static bool InLine(Vector2 origin, Vector2 facing, float length, float width, Vector2 point, float targetRadius = 0f)
 		{
-			Vector2 forward = facing;
-			if (forward.sqrMagnitude < 1e-6f)
+			Vector2 val = facing;
+			if (val.sqrMagnitude < 1E-06f)
 			{
-				forward = Vector2.right;
+				val = Vector2.right;
 			}
 			else
 			{
-				forward.Normalize();
+				val.Normalize();
 			}
-			Vector2 right = new Vector2(forward.y, -forward.x);
-
-			Vector2 rel = point - origin;
-			float localX = Vector2.Dot(rel, forward);
-			float localY = Vector2.Dot(rel, right);
-
-			if (localX < 0f || localX > length)
+			Vector2 val2 = new Vector2(val.y, 0f - val.x);
+			Vector2 val3 = point - origin;
+			float num = Vector2.Dot(val3, val);
+			float num2 = Vector2.Dot(val3, val2);
+			if (num < 0f || num > length + targetRadius)
 			{
 				return false;
 			}
-			float halfW = width * 0.5f;
-			return Mathf.Abs(localY) <= halfW;
+			float num3 = width * 0.5f + targetRadius;
+			return Mathf.Abs(num2) <= num3;
 		}
 
-		// 도넛 판정 — 외경 outerRadius, 내경 innerRadius 사이 링 안에 있는가
-		public static bool InDonut(Vector2 origin, float outerRadius, float innerRadius, Vector2 point)
+		public static bool InDonut(Vector2 origin, float outerRadius, float innerRadius, Vector2 point, float targetRadius = 0f)
 		{
-			Vector2 rel = point - origin;
-			float distSqr = rel.sqrMagnitude;
-			float outerSqr = outerRadius * outerRadius;
-			float innerSqr = innerRadius * innerRadius;
-			return distSqr <= outerSqr && distSqr >= innerSqr;
+			Vector2 val = point - origin;
+			float sqrMagnitude = val.sqrMagnitude;
+			float num = outerRadius + targetRadius;
+			float num2 = Mathf.Max(0f, innerRadius - targetRadius);
+			if (sqrMagnitude <= num * num)
+			{
+				return sqrMagnitude >= num2 * num2;
+			}
+			return false;
 		}
 	}
 }

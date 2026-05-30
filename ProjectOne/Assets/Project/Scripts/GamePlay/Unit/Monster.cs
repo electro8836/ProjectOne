@@ -1,10 +1,11 @@
 using UnityEngine;
 using ProjectOne.Combat;
+using ProjectOne.Utils;
 
 namespace ProjectOne.Unit
 {
 	[RequireComponent(typeof(UnitMover), typeof(UnitAnimator))]
-	public class Monster : UnitBase, IDamageable
+	public class Monster : UnitBase, IDamageable, IPoolable
 	{
 		public override UnitType GetUnitType()
 		{
@@ -13,8 +14,7 @@ namespace ProjectOne.Unit
 
 		public void TakeDamage(in DamageInfo info)
 		{
-			HandleHit(info);
-
+			HandleHit(in info);
 			if (_vitals != null)
 			{
 				_vitals.ModifyHp(-info.Damage);
@@ -23,6 +23,19 @@ namespace ProjectOne.Unit
 					Die();
 				}
 			}
+		}
+
+		public void OnActivate()
+		{
+		}
+
+		public void OnDeactivate()
+		{
+		}
+
+		void IDamageable.TakeDamage(in DamageInfo info)
+		{
+			TakeDamage(in info);
 		}
 	}
 }

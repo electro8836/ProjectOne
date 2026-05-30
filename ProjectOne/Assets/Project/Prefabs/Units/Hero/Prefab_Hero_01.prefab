@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 7883339386935137231}
   - component: {fileID: 920376506934708283}
   - component: {fileID: 6600000000000000001}
+  - component: {fileID: 7347616147922570692}
   m_Layer: 0
   m_Name: Prefab_Hero_01
   m_TagString: Untagged
@@ -80,18 +81,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.Hero
   _faction: 1
---- !u!114 &6600000000000000001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5132461805126978381}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4aa23e54d2d944778f662a7012dc6399, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
 --- !u!50 &7883339386935137231
 Rigidbody2D:
   serializedVersion: 5
@@ -153,8 +142,33 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 0.3
+  m_Offset: {x: 0, y: 0.25}
+  m_Radius: 0.25
+--- !u!114 &6600000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5132461805126978381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4aa23e54d2d944778f662a7012dc6399, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &7347616147922570692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5132461805126978381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2d7829c5e03b7164dad4b18d33c5f6b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.Input.KeyboardInputProvider
+  _inputAsset: {fileID: -944628639613478452, guid: 347c592f0a72266459f089c59da35b66, type: 3}
 --- !u!1 &5536735203872501704
 GameObject:
   m_ObjectHideFlags: 0
@@ -237,16 +251,16 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 1203870698, guid: 98fa593358cb71d49afc0bf6e8c3646c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 1.44, y: 0.96}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 0
-  m_SpriteSortPoint: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 1
 --- !u!95 &5499474270862478483
 Animator:
   serializedVersion: 7
@@ -257,7 +271,7 @@ Animator:
   m_GameObject: {fileID: 5536735203872501704}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 22100000, guid: 58a79873a6bba8644a84fa04b072a2a2, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

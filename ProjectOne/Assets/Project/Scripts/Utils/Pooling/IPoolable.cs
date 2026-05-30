@@ -1,8 +1,8 @@
 namespace ProjectOne.Utils
 {
-  public interface IPoolable
-  {
-    void OnActivate();
-    void OnDeactivate();
-  }
+	public interface IPoolable
+	{
+		void OnActivate();
+		void OnDeactivate();
+	}
 }

@@ -5,36 +5,36 @@ using ProjectOne.Utils;
 
 namespace ProjectOne.Event
 {
-  public class EventManager : Singleton<EventManager>
-  {
-    private readonly Dictionary<Type, object> channels = new Dictionary<Type, object>();
+	public class EventManager : Singleton<EventManager>
+	{
+		private readonly Dictionary<Type, object> channels = new Dictionary<Type, object>();
 
-    public void Subscribe<T>(Action<T> handler)
-    {
-      GetChannel<T>().Subscribe(handler);
-    }
+		public void Subscribe<T>(Action<T> handler)
+		{
+			GetChannel<T>().Subscribe(handler);
+		}
 
-    public void Publish<T>(T eventData)
-    {
-      GetChannel<T>().Publish(eventData);
-    }
+		public void Publish<T>(T eventData)
+		{
+			GetChannel<T>().Publish(eventData);
+		}
 
-    public void Unsubscribe<T>(Action<T> handler)
-    {
-      GetChannel<T>().Unsubscribe(handler);
-    }
+		public void Unsubscribe<T>(Action<T> handler)
+		{
+			GetChannel<T>().Unsubscribe(handler);
+		}
 
-    private IEventChannel<T> GetChannel<T>()
-    {
-        var type = typeof(T);
+		private IEventChannel<T> GetChannel<T>()
+		{
+				var type = typeof(T);
 
-        if (!channels.TryGetValue(type, out var channel))
-        {
-            channel = new EventChannel<T>();
-            channels[type] = channel;
-        }
+				if (!channels.TryGetValue(type, out var channel))
+				{
+						channel = new EventChannel<T>();
+						channels[type] = channel;
+				}
 
-        return (IEventChannel<T>)channel;
-    }
-  }
+				return (IEventChannel<T>)channel;
+		}
+	}
 }
