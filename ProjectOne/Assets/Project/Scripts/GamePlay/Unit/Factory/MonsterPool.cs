@@ -23,7 +23,7 @@ namespace ProjectOne.Unit
 
 		protected override Monster CreateItem()
 		{
-			Transform root = MonoSingleton<UnitContainer>.Instance.GetRoot(UnitType.Monster);
+			Transform root = UnitContainer.Instance.GetRoot(UnitType.Monster);
 			GameObject val = Object.Instantiate<GameObject>(_prefab, root);
 			Monster component = val.GetComponent<Monster>();
 			if (component == null)
@@ -34,7 +34,7 @@ namespace ProjectOne.Unit
 			Table_Monster.Row row = Table_Monster.Get(_monsterId);
 			int baseStatId = row?.BaseStatID ?? 0;
 			int skillSetId = row?.SkillSetID ?? 0;
-			Singleton<UnitFactory>.Instance.ComposeUnit(component, _monsterId, baseStatId, skillSetId, Faction.Enemy);
+			UnitFactory.Instance.ComposeUnit(component, _monsterId, baseStatId, skillSetId, Faction.Enemy);
 			val.name = string.Format("{0}_{1}", (row != null) ? row.Name : "Monster", component.GetID());
 			return component;
 		}

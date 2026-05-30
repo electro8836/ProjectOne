@@ -39,7 +39,7 @@ namespace ProjectOne.Unit
 					inflight.TrySetResult(null);
 					return null;
 				}
-				GameObject val = await MonoSingleton<ResourceManager>.Instance.AcquireAsync<GameObject>(row.Path, ct);
+				GameObject val = await ResourceManager.Instance.AcquireAsync<GameObject>(row.Path, ct);
 				if (val == null)
 				{
 					Debug.LogError(("[MonsterPoolHub] 프리팹 로드 실패: " + row.Path));

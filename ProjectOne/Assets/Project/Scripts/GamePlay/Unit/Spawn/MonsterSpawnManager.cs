@@ -36,12 +36,12 @@ namespace ProjectOne.Unit
 		protected override void Awake()
 		{
 			base.Awake();
-			Singleton<EventManager>.Instance.Subscribe<UnitDiedEvent>(OnUnitDied);
+			EventManager.Instance.Subscribe<UnitDiedEvent>(OnUnitDied);
 		}
 
 		protected override void OnDestroy()
 		{
-			Singleton<EventManager>.Instance.Unsubscribe<UnitDiedEvent>(OnUnitDied);
+			EventManager.Instance.Unsubscribe<UnitDiedEvent>(OnUnitDied);
 			base.OnDestroy();
 		}
 
@@ -110,7 +110,7 @@ namespace ProjectOne.Unit
 			data.aliveCount++;
 			Vector3 pos = data.RandomPosition();
 			CancellationToken cancellationTokenOnDestroy = this.GetCancellationTokenOnDestroy();
-			Monster monster = await Singleton<UnitFactory>.Instance.CreateMonsterAsync(data.monsterId, pos, Faction.Enemy, cancellationTokenOnDestroy);
+			Monster monster = await UnitFactory.Instance.CreateMonsterAsync(data.monsterId, pos, Faction.Enemy, cancellationTokenOnDestroy);
 			if (monster == null)
 			{
 				data.aliveCount--;
@@ -134,7 +134,7 @@ namespace ProjectOne.Unit
 		{
 			CancellationToken cancellationTokenOnDestroy = this.GetCancellationTokenOnDestroy();
 			await UniTask.Delay(TimeSpan.FromSeconds(_returnDelay), ignoreTimeScale: false, PlayerLoopTiming.Update, cancellationTokenOnDestroy);
-			Singleton<UnitFactory>.Instance.ReleaseMonster(entry.monster);
+			UnitFactory.Instance.ReleaseMonster(entry.monster);
 			if (entry.owner != null)
 			{
 				entry.owner.aliveCount--;

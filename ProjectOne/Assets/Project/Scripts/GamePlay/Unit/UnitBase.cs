@@ -107,12 +107,12 @@ namespace ProjectOne.Unit
 
 		protected virtual void OnEnable()
 		{
-			MonoSingleton<UnitContainer>.Instance.Register(this);
+			UnitContainer.Instance.Register(this);
 		}
 
 		protected virtual void OnDisable()
 		{
-			MonoSingleton<UnitContainer>.Instance.Unregister(this);
+			UnitContainer.Instance.Unregister(this);
 		}
 
 		public void SetStats(StatContainer stats)
@@ -185,7 +185,7 @@ namespace ProjectOne.Unit
 		{
 			if (!IsDead)
 			{
-				Singleton<EventManager>.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID));
+				EventManager.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID));
 				if (_animator != null)
 				{
 					_animator.PlayHit();
@@ -210,7 +210,7 @@ namespace ProjectOne.Unit
 				{
 					_mover.SetMoveEnabled(enabled: false);
 				}
-				Singleton<EventManager>.Instance.Publish(new UnitDiedEvent(_id, _tableId, GetUnitType()));
+				EventManager.Instance.Publish(new UnitDiedEvent(_id, _tableId, GetUnitType()));
 			}
 		}
 

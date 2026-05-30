@@ -53,12 +53,12 @@ namespace ProjectOne.Dev
 
 		private void OnEnable()
 		{
-			Singleton<EventManager>.Instance.Subscribe<SkillCastEvent>(onSkillCast);
+			EventManager.Instance.Subscribe<SkillCastEvent>(onSkillCast);
 		}
 
 		private void OnDisable()
 		{
-			Singleton<EventManager>.Instance.Unsubscribe<SkillCastEvent>(onSkillCast);
+			EventManager.Instance.Unsubscribe<SkillCastEvent>(onSkillCast);
 		}
 
 		private void onSkillCast(SkillCastEvent e)

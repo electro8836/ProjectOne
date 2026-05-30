@@ -33,7 +33,7 @@ namespace ProjectOne.Skill
 			{
 				Vector2 hitCenter = caster.HitCenter;
 				Vector2 facing = GetFacing(caster);
-				IReadOnlyList<UnitBase> all = MonoSingleton<UnitContainer>.Instance.All;
+				IReadOnlyList<UnitBase> all = UnitContainer.Instance.All;
 				if (scanType == SkillScanType.Target)
 				{
 					UnitBase unitBase = null;

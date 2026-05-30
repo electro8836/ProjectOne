@@ -61,22 +61,22 @@ namespace ProjectOne.Unit
 			{
 				return null;
 			}
-			Singleton<HeroAspectRegistry>.Instance.ApplyAll(hero);
+			HeroAspectRegistry.Instance.ApplyAll(hero);
 			hero.RefreshAnimationStats();
-			Singleton<EventManager>.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), characterId));
+			EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), characterId));
 			return hero;
 		}
 
 		public async UniTask<Monster> CreateMonsterAsync(int monsterId, Vector3 pos, Faction faction = Faction.Enemy, CancellationToken ct = default(CancellationToken))
 		{
-			MonsterPool monsterPool = await MonoSingleton<MonsterPoolHub>.Instance.GetOrCreatePoolAsync(monsterId, ct);
+			MonsterPool monsterPool = await MonsterPoolHub.Instance.GetOrCreatePoolAsync(monsterId, ct);
 			if (monsterPool == null)
 			{
 				return null;
 			}
 			Monster monster = monsterPool.Spawn(pos);
 			monster.RefreshAnimationStats();
-			Singleton<EventManager>.Instance.Publish(new UnitSpawnedEvent(monster, UnitType.Monster, monster.GetID(), monsterId));
+			EventManager.Instance.Publish(new UnitSpawnedEvent(monster, UnitType.Monster, monster.GetID(), monsterId));
 			return monster;
 		}
 
@@ -84,7 +84,7 @@ namespace ProjectOne.Unit
 		{
 			if (!(monster == null))
 			{
-				MonsterPool pool = MonoSingleton<MonsterPoolHub>.Instance.GetPool(monster.GetTableID());
+				MonsterPool pool = MonsterPoolHub.Instance.GetPool(monster.GetTableID());
 				if (pool != null)
 				{
 					pool.Despawn(monster);
@@ -99,13 +99,13 @@ namespace ProjectOne.Unit
 				Debug.LogError($"[UnitFactory] 프리팹 Address 비어있음 (id={id})");
 				return null;
 			}
-			GameObject val = await MonoSingleton<ResourceManager>.Instance.AcquireAsync<GameObject>(prefabAddress, ct);
+			GameObject val = await ResourceManager.Instance.AcquireAsync<GameObject>(prefabAddress, ct);
 			if (val == null)
 			{
 				Debug.LogError(("[UnitFactory] 프리팹 로드 실패: " + prefabAddress));
 				return null;
 			}
-			Transform root = MonoSingleton<UnitContainer>.Instance.GetRoot(unitType);
+			Transform root = UnitContainer.Instance.GetRoot(unitType);
 			GameObject val2 = Object.Instantiate<GameObject>(val, pos, Quaternion.identity, root);
 			val2.name = $"{displayName}_{id}";
 			T unit = val2.GetComponent<T>();
@@ -162,7 +162,7 @@ namespace ProjectOne.Unit
 
 		private static async UniTask ApplySkinAsync(UnitBase unit, string skinAddress, CancellationToken ct)
 		{
-			RuntimeAnimatorController val = await MonoSingleton<ResourceManager>.Instance.AcquireAsync<RuntimeAnimatorController>(skinAddress, ct);
+			RuntimeAnimatorController val = await ResourceManager.Instance.AcquireAsync<RuntimeAnimatorController>(skinAddress, ct);
 			if (!(val == null))
 			{
 				UnitAnimator component = unit.GetComponent<UnitAnimator>();
