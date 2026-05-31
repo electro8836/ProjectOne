@@ -20,6 +20,9 @@ namespace ProjectOne.Utils
 		// 주소별 비활성 인스턴스 풀
 		private readonly Dictionary<string, Stack<VFXItem>> _pools = new Dictionary<string, Stack<VFXItem>>();
 
+		// 활성 one-shot — 매 프레임 중앙 틱(Update)에서 종료 감지 후 풀로 회수
+		private readonly List<VFXItem> _activeOneShots = new List<VFXItem>(64);
+
 		// OnDestroy 시 Acquire 한 주소를 반환하기 위해 첫 로드 때 캐시 (Instance 게터 재생성 회피)
 		private ResourceManager _resourceManager;
 
@@ -36,6 +39,14 @@ namespace ProjectOne.Utils
 				return;
 			}
 
+			// 캐시 적중이면 동기 스폰 (비동기 우회), 최초 로드 필요할 때만 async
+			VFXItem item = tryGetItemSync(address);
+			if (item != null)
+			{
+				activateOneShot(item, anchor, Vector3.zero, false);
+				return;
+			}
+
 			playOneShotAsync(address, anchor, Vector3.zero, false).Forget();
 		}
 
@@ -44,6 +55,13 @@ namespace ProjectOne.Utils
 		{
 			if (string.IsNullOrEmpty(address))
 			{
+				return;
+			}
+
+			VFXItem item = tryGetItemSync(address);
+			if (item != null)
+			{
+				activateOneShot(item, null, worldPosition, true);
 				return;
 			}
 
@@ -60,8 +78,44 @@ namespace ProjectOne.Utils
 				return handle;
 			}
 
+			VFXItem item = tryGetItemSync(address);
+			if (item != null)
+			{
+				activateLooping(handle, item);
+				return handle;
+			}
+
 			attachAsync(handle).Forget();
 			return handle;
+		}
+
+		// ── 중앙 틱 (one-shot 종료 감지·회수) ─────────────────────────
+
+		private void Update()
+		{
+			// 뒤에서부터 swap-remove — 종료/파괴된 one-shot 을 풀로 회수
+			for (int i = _activeOneShots.Count - 1; i >= 0; i--)
+			{
+				VFXItem item = _activeOneShots[i];
+				if (item == null)
+				{
+					removeActiveAt(i);
+					continue;
+				}
+
+				if (item.IsFinished() == true)
+				{
+					removeActiveAt(i);
+					ReturnToPool(item);
+				}
+			}
+		}
+
+		private void removeActiveAt(int index)
+		{
+			int last = _activeOneShots.Count - 1;
+			_activeOneShots[index] = _activeOneShots[last];
+			_activeOneShots.RemoveAt(last);
 		}
 
 		public void Release(VFXHandle handle)
@@ -114,16 +168,11 @@ namespace ProjectOne.Utils
 			pool.Push(item);
 		}
 
-		// ── 비동기 스폰 ───────────────────────────────────────────────
+		// ── 스폰 활성화 (동기·비동기 공유) ────────────────────────────
 
-		private async UniTask playOneShotAsync(string address, Transform anchor, Vector3 worldPosition, bool useWorld)
+		// one-shot 활성: 위치 지정 → 활성 → 재생 → 활성 리스트 등록
+		private void activateOneShot(VFXItem item, Transform anchor, Vector3 worldPosition, bool useWorld)
 		{
-			VFXItem item = await getItemAsync(address);
-			if (item == null || _isQuitting == true)
-			{
-				return;
-			}
-
 			if (useWorld == true)
 			{
 				// 월드 고정 소환 — 부모는 매니저 그대로, 좌표만 지정 (대상 추종 안 함)
@@ -131,13 +180,6 @@ namespace ProjectOne.Utils
 			}
 			else
 			{
-				// 비동기 로드 사이에 anchor 가 파괴됐을 수 있음
-				if (anchor == null)
-				{
-					ReturnToPool(item);
-					return;
-				}
-
 				item.transform.SetParent(anchor, false);
 				item.transform.localPosition = Vector3.zero;
 			}
@@ -145,16 +187,12 @@ namespace ProjectOne.Utils
 			item.gameObject.SetActive(true);
 			item.OnActivate();
 			item.PlayOneShot();
+			_activeOneShots.Add(item);
 		}
 
-		private async UniTask attachAsync(VFXHandle handle)
+		// 루프성 활성: 핸들에 연결 → parent 부착 → 재생 (회수는 Release 로만)
+		private void activateLooping(VFXHandle handle, VFXItem item)
 		{
-			VFXItem item = await getItemAsync(handle.Address);
-			if (item == null || _isQuitting == true)
-			{
-				return;
-			}
-
 			// 로드 대기 중 Release 됐거나 부모가 파괴됨 → 즉시 반환
 			if (handle.Released == true || handle.Parent == null)
 			{
@@ -168,6 +206,55 @@ namespace ProjectOne.Utils
 			item.gameObject.SetActive(true);
 			item.OnActivate();
 			item.PlayLooping();
+		}
+
+		// ── 비동기 스폰 (최초 로드 필요 시에만) ───────────────────────
+
+		private async UniTask playOneShotAsync(string address, Transform anchor, Vector3 worldPosition, bool useWorld)
+		{
+			VFXItem item = await getItemAsync(address);
+			if (item == null || _isQuitting == true)
+			{
+				return;
+			}
+
+			// 비동기 로드 사이에 anchor 가 파괴됐을 수 있음
+			if (useWorld == false && anchor == null)
+			{
+				ReturnToPool(item);
+				return;
+			}
+
+			activateOneShot(item, anchor, worldPosition, useWorld);
+		}
+
+		private async UniTask attachAsync(VFXHandle handle)
+		{
+			VFXItem item = await getItemAsync(handle.Address);
+			if (item == null || _isQuitting == true)
+			{
+				return;
+			}
+
+			activateLooping(handle, item);
+		}
+
+		// 풀에 여유가 있거나 프리팹이 이미 로드돼 있으면 동기로 인스턴스 반환, 미로드면 null
+		private VFXItem tryGetItemSync(string address)
+		{
+			Stack<VFXItem> pool;
+			if (_pools.TryGetValue(address, out pool) == true && pool.Count > 0)
+			{
+				return pool.Pop();
+			}
+
+			GameObject prefab;
+			if (_prefabs.TryGetValue(address, out prefab) == true)
+			{
+				return createItem(address, prefab);
+			}
+
+			return null;
 		}
 
 		// 풀에서 꺼내거나, 비어 있으면 프리팹 로드 후 새로 생성
@@ -235,7 +322,7 @@ namespace ProjectOne.Utils
 				item = go.AddComponent<VFXItem>();
 			}
 
-			item.Initialize(this, address);
+			item.Initialize(address);
 			go.SetActive(false);
 			return item;
 		}
@@ -258,6 +345,7 @@ namespace ProjectOne.Utils
 
 			_prefabs.Clear();
 			_pools.Clear();
+			_activeOneShots.Clear();
 			base.OnDestroy();
 		}
 	}

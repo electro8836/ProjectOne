@@ -3,22 +3,19 @@ using UnityEngine;
 namespace ProjectOne.Utils
 {
 	// VFXManager 가 풀링하는 VFX 인스턴스.
-	// - one-shot : PlayOneShot 후 파티클이 모두 끝나면 스스로 매니저에 반환 (Update 폴링, 코루틴 미사용)
+	// - one-shot : PlayOneShot 후 파티클 종료를 VFXManager 중앙 틱이 감지해 풀로 반환 (per-object Update 없음)
 	// - 루프성   : PlayLooping 후 매니저가 Release 할 때까지 유지
 	[DisallowMultipleComponent]
 	public sealed class VFXItem : MonoBehaviour, IPoolable
 	{
-		private VFXManager _manager;
 		private string _address;
 		private ParticleSystem _ps;   // 대표 파티클 (생존 판정·재생·정지 모두 withChildren 으로 처리)
-		private bool _autoReturn;     // one-shot 이면 true — Update 에서 종료 감지 후 반환
 
 		public string Address => _address;
 
 		// VFXManager 가 인스턴스 생성 직후 1회 호출
-		public void Initialize(VFXManager manager, string address)
+		public void Initialize(string address)
 		{
-			_manager = manager;
 			_address = address;
 			if (_ps == null)
 			{
@@ -31,36 +28,22 @@ namespace ProjectOne.Utils
 			}
 		}
 
-		// 1회성 재생 — 파티클 종료 시 자동 반환
+		// 1회성 재생 — 종료 감지/반환은 VFXManager 중앙 틱이 IsFinished 로 처리
 		public void PlayOneShot()
 		{
 			playParticles();
-			_autoReturn = true;
 		}
 
 		// 루프성 재생 — 자동 반환 없음 (매니저 Release 까지 유지)
 		public void PlayLooping()
 		{
 			playParticles();
-			_autoReturn = false;
 		}
 
-		private void Update()
+		// 파티클이 모두 끝났는지 — VFXManager 중앙 틱이 매 프레임 검사
+		public bool IsFinished()
 		{
-			if (_autoReturn == false)
-			{
-				return;
-			}
-
-			// 코루틴 대신 파티클 생존 상태를 직접 폴링해 종료를 감지한다.
-			if (_ps == null || _ps.IsAlive(true) == false)
-			{
-				_autoReturn = false;
-				if (_manager != null)
-				{
-					_manager.ReturnToPool(this);
-				}
-			}
+			return _ps == null || _ps.IsAlive(true) == false;
 		}
 
 		public void OnActivate()
@@ -70,7 +53,6 @@ namespace ProjectOne.Utils
 
 		public void OnDeactivate()
 		{
-			_autoReturn = false;
 			if (_ps != null)
 			{
 				_ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
