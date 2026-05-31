@@ -52,14 +52,14 @@ namespace ProjectOne.Skill
 
 			List<UnitBase> targets = TargetResolver.FilterByApplyTarget(scanned, row.ApplyTarget, caster);
 
-			// 효과가 적용되는 각 대상 유닛 위치에서 효과 VFX 1회 출력
+			// 효과가 적용되는 각 대상 유닛의 공격자 방향 외곽에 효과 VFX 1회 월드 소환
 			if (string.IsNullOrEmpty(row.EffectVFX) == false)
 			{
 				for (int i = 0; i < targets.Count; i++)
 				{
 					if (targets[i] != null)
 					{
-						VFXManager.Instance.PlayOneShot(row.EffectVFX, targets[i].transform);
+						playEffectVFX(row.EffectVFX, targets[i], damageSource);
 					}
 				}
 			}
@@ -88,6 +88,35 @@ namespace ProjectOne.Skill
 				default:
 					break;
 			}
+		}
+
+		// 공격자→적 방향으로, 거리(밀착 정도)에 따라 적 중심~반지름 사이 지점에 피격 VFX 를 월드 소환
+		static void playEffectVFX(string address, UnitBase target, UnitBase attacker)
+		{
+			Vector2 center = target.HitCenter;
+			float z = target.transform.position.z;
+
+			// 공격자 없음/자기 자신(버프 self) → 방향 없음 → 중심
+			if (attacker == null || attacker == target)
+			{
+				VFXManager.Instance.PlayOneShot(address, new Vector3(center.x, center.y, z));
+				return;
+			}
+
+			Vector2 toAttacker = (Vector2)attacker.HitCenter - center;
+			float dist = toAttacker.magnitude;
+			if (dist <= Mathf.Epsilon)
+			{
+				VFXManager.Instance.PlayOneShot(address, new Vector3(center.x, center.y, z));
+				return;
+			}
+
+			// 공격자 반지름을 뺀 접촉 지점을 [중심(0) ~ 적 반지름] 으로 클램프
+			// - 원거리: dist-attackerR 큼 → 적 반지름(외곽)
+			// - 밀착:   dist-attackerR 작음 → 중심 쪽
+			float offset = Mathf.Clamp(dist - attacker.Radius, 0f, target.Radius);
+			Vector2 pos = center + (toAttacker / dist) * offset;
+			VFXManager.Instance.PlayOneShot(address, new Vector3(pos.x, pos.y, z));
 		}
 
 		static void ApplyDamage(Table_SkillEffect.Row row, List<UnitBase> targets, UnitBase source, SkillInfo skillId)

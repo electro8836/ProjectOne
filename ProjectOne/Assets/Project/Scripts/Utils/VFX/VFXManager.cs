@@ -28,7 +28,7 @@ namespace ProjectOne.Utils
 
 		// ── 공개 API ──────────────────────────────────────────────────
 
-		// one-shot : anchor 에 붙여 1회 재생, 파티클 수명 후 자동 반환 (SkillVFX/EffectVFX)
+		// one-shot : anchor 에 붙여(따라다님) 1회 재생, 파티클 수명 후 자동 반환 (SkillVFX 용)
 		public void PlayOneShot(string address, Transform anchor)
 		{
 			if (string.IsNullOrEmpty(address) || anchor == null)
@@ -36,7 +36,18 @@ namespace ProjectOne.Utils
 				return;
 			}
 
-			playOneShotAsync(address, anchor).Forget();
+			playOneShotAsync(address, anchor, Vector3.zero, false).Forget();
+		}
+
+		// one-shot : 월드 좌표에 고정 소환(부착·추종 없음) (EffectVFX 용)
+		public void PlayOneShot(string address, Vector3 worldPosition)
+		{
+			if (string.IsNullOrEmpty(address))
+			{
+				return;
+			}
+
+			playOneShotAsync(address, null, worldPosition, true).Forget();
 		}
 
 		// 루프성 : parent 에 붙여 유지, 핸들 반환 → 호출자가 Release (RootVFX)
@@ -105,7 +116,7 @@ namespace ProjectOne.Utils
 
 		// ── 비동기 스폰 ───────────────────────────────────────────────
 
-		private async UniTask playOneShotAsync(string address, Transform anchor)
+		private async UniTask playOneShotAsync(string address, Transform anchor, Vector3 worldPosition, bool useWorld)
 		{
 			VFXItem item = await getItemAsync(address);
 			if (item == null || _isQuitting == true)
@@ -113,15 +124,24 @@ namespace ProjectOne.Utils
 				return;
 			}
 
-			// 비동기 로드 사이에 anchor 가 파괴됐을 수 있음
-			if (anchor == null)
+			if (useWorld == true)
 			{
-				ReturnToPool(item);
-				return;
+				// 월드 고정 소환 — 부모는 매니저 그대로, 좌표만 지정 (대상 추종 안 함)
+				item.transform.position = worldPosition;
+			}
+			else
+			{
+				// 비동기 로드 사이에 anchor 가 파괴됐을 수 있음
+				if (anchor == null)
+				{
+					ReturnToPool(item);
+					return;
+				}
+
+				item.transform.SetParent(anchor, false);
+				item.transform.localPosition = Vector3.zero;
 			}
 
-			item.transform.SetParent(anchor, false);
-			item.transform.localPosition = Vector3.zero;
 			item.gameObject.SetActive(true);
 			item.OnActivate();
 			item.PlayOneShot();
