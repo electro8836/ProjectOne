@@ -9,9 +9,13 @@ using ProjectOne.Resources;
 
 namespace ProjectOne.Unit
 {
-	public class MonsterPoolHub : MonoSingleton<MonsterPoolHub>
+	public sealed class MonsterPoolHub : Singleton<MonsterPoolHub>
 	{
 		private const int DefaultCapacity = 4;
+
+		private MonsterPoolHub()
+		{
+		}
 
 		private readonly Dictionary<int, MonsterPool> _pools = new Dictionary<int, MonsterPool>();
 
@@ -74,7 +78,7 @@ namespace ProjectOne.Unit
 		private MonsterPool createPool(GameObject prefab, int monsterId)
 		{
 			GameObject val = new GameObject($"MonsterPool_{monsterId}");
-			val.transform.SetParent(this.transform, false);
+			val.transform.SetParent(UnitContainer.Instance.GetRoot(UnitType.Monster), false);
 			val.SetActive(false);
 			MonsterPool monsterPool = val.AddComponent<MonsterPool>();
 			monsterPool.Setup(prefab, monsterId, 4);

@@ -23,8 +23,7 @@ namespace ProjectOne.Unit
 
 		protected override Monster CreateItem()
 		{
-			Transform root = UnitContainer.Instance.GetRoot(UnitType.Monster);
-			GameObject val = Object.Instantiate<GameObject>(_prefab, root);
+			GameObject val = Object.Instantiate<GameObject>(_prefab, transform);
 			Monster component = val.GetComponent<Monster>();
 			if (component == null)
 			{
