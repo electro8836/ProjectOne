@@ -81,7 +81,7 @@ namespace ProjectOne.Unit
 			val.transform.SetParent(UnitContainer.Instance.GetRoot(UnitType.Monster), false);
 			val.SetActive(false);
 			MonsterPool monsterPool = val.AddComponent<MonsterPool>();
-			monsterPool.Setup(prefab, monsterId, 4);
+			monsterPool.Setup(prefab, monsterId, DefaultCapacity);
 			val.SetActive(true);
 			return monsterPool;
 		}
