@@ -5,6 +5,7 @@ using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Combat;
 using ProjectOne.Buff;
+using ProjectOne.Utils;
 
 namespace ProjectOne.Skill
 {
@@ -50,6 +51,18 @@ namespace ProjectOne.Skill
 			}
 
 			List<UnitBase> targets = TargetResolver.FilterByApplyTarget(scanned, row.ApplyTarget, caster);
+
+			// 효과가 적용되는 각 대상 유닛 위치에서 효과 VFX 1회 출력
+			if (string.IsNullOrEmpty(row.EffectVFX) == false)
+			{
+				for (int i = 0; i < targets.Count; i++)
+				{
+					if (targets[i] != null)
+					{
+						VFXManager.Instance.PlayOneShot(row.EffectVFX, targets[i].transform);
+					}
+				}
+			}
 
 			switch (row.EffectType)
 			{

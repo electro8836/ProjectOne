@@ -18,6 +18,7 @@ namespace EDT {
             public string MotionName { get; set; } = string.Empty;
             public float MotionEffectTime { get; set; } = 0f;
             public bool IsOnHitTrigger { get; set; } = false;
+            public string SkillVFX { get; set; } = string.Empty;
             public SkillEffect StartEffect { get; set; } = SkillEffect.None;
             public SkillEffect Effect_0 { get; set; } = SkillEffect.None;
             public SkillEffect Effect_1 { get; set; } = SkillEffect.None;
@@ -58,6 +59,7 @@ namespace EDT {
                 row.MotionName = reader.ReadString();
                 row.MotionEffectTime = reader.ReadSingle();
                 row.IsOnHitTrigger = reader.ReadBoolean();
+                row.SkillVFX = reader.ReadString();
                 row.StartEffect = (SkillEffect)reader.ReadInt32();
                 row.Effect_0 = (SkillEffect)reader.ReadInt32();
                 row.Effect_1 = (SkillEffect)reader.ReadInt32();

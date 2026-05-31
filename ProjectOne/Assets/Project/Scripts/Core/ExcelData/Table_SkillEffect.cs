@@ -11,6 +11,7 @@ namespace EDT {
             public string Name { get; set; } = string.Empty;
             public SkillApplyTarget ApplyTarget { get; set; } = SkillApplyTarget.None;
             public SkillDamageType DamageType { get; set; } = SkillDamageType.None;
+            public string EffectVFX { get; set; } = string.Empty;
             public SkillEffectTypes EffectType { get; set; } = SkillEffectTypes.None;
             public string EffectParam_1 { get; set; } = string.Empty;
             public string EffectParam_2 { get; set; } = string.Empty;
@@ -45,6 +46,7 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.ApplyTarget = (SkillApplyTarget)reader.ReadInt32();
                 row.DamageType = (SkillDamageType)reader.ReadInt32();
+                row.EffectVFX = reader.ReadString();
                 row.EffectType = (SkillEffectTypes)reader.ReadInt32();
                 row.EffectParam_1 = reader.ReadString();
                 row.EffectParam_2 = reader.ReadString();

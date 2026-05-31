@@ -3,6 +3,7 @@ using UnityEngine;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Unit;
+using ProjectOne.Utils;
 
 namespace ProjectOne.Skill
 {
@@ -104,6 +105,12 @@ namespace ProjectOne.Skill
 		static void PlayAndApply(Table_SkillInfo.Row row, SkillInfo id, UnitBase caster)
 		{
 			PlayMotion(row, caster);
+
+			// 시전 캐릭터 위치에서 스킬 VFX 1회 출력
+			if (string.IsNullOrEmpty(row.SkillVFX) == false)
+			{
+				VFXManager.Instance.PlayOneShot(row.SkillVFX, caster.transform);
+			}
 
 			if (row.MotionEffectTime > 0f)
 			{

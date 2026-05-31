@@ -3,6 +3,7 @@ using EDT;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
+using ProjectOne.Utils;
 
 namespace ProjectOne.Buff
 {
@@ -24,6 +25,7 @@ namespace ProjectOne.Buff
 		float _intervalAccum;
 		readonly List<StatModifier> _modHandles = new List<StatModifier>(2);
 		bool _expired;
+		VFXHandle _rootVfx;   // 버프 지속 동안 owner 에 부착되는 루프성 VFX
 
 		public bool IsExpired
 		{
@@ -44,6 +46,12 @@ namespace ProjectOne.Buff
 			{
 				IsDebuff = row.IsDebuff;
 				IntervalEffect = row.IntervalEffect;
+
+				// RootVFX: 버프가 적용된 유닛에 부착해 지속 동안 따라다니게 함
+				if (string.IsNullOrEmpty(row.RootVFX) == false && owner != null)
+				{
+					_rootVfx = VFXManager.Instance.Attach(row.RootVFX, owner.transform);
+				}
 
 				// Effect: 부착 시 1회 발동 — owner를 caster로 해서 Self 효과가 owner에 적용되도록 함
 				if (row.Effect != SkillEffect.None)
@@ -107,6 +115,13 @@ namespace ProjectOne.Buff
 		// 버프 종료 — 부착 시 적용된 StatModifier 들을 전부 회수
 		public void Dispose()
 		{
+			// RootVFX 회수 — 버프 종료와 함께 사라짐
+			if (_rootVfx != null)
+			{
+				VFXManager.Instance.Release(_rootVfx);
+				_rootVfx = null;
+			}
+
 			if (Owner != null && Owner.Stats != null)
 			{
 				for (int i = 0; i < _modHandles.Count; i++)
