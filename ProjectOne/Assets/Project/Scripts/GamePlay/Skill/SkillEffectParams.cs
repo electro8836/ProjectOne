@@ -49,6 +49,7 @@ namespace ProjectOne.Skill
 				LogParseError(row, 1, "Damage.BaseDamage");
 				return false;
 			}
+
 			p.BaseDamage = baseDam;
 
 			// P2/P3 는 선택 — 계수 없으면 None
@@ -58,11 +59,13 @@ namespace ProjectOne.Skill
 				p.CoefValue = 0f;
 				return true;
 			}
+
 			if (Enum.TryParse(row.EffectParam_2, out StatTypes stat) == false)
 			{
 				LogParseError(row, 2, "Damage.CoefStat (StatTypes)");
 				return false;
 			}
+
 			p.CoefStat = stat;
 
 			if (TryParseFloat(row.EffectParam_3, out float coef) == false)
@@ -70,6 +73,7 @@ namespace ProjectOne.Skill
 				LogParseError(row, 3, "Damage.CoefValue");
 				return false;
 			}
+
 			p.CoefValue = coef;
 			return true;
 		}
@@ -82,6 +86,7 @@ namespace ProjectOne.Skill
 				LogParseError(row, 1, "ActivateBuff.BuffID");
 				return false;
 			}
+
 			p.BuffID = buffId;
 
 			// Duration 은 선택 — 비어있거나 "None" 이면 0 (무한 지속)
@@ -96,6 +101,7 @@ namespace ProjectOne.Skill
 					LogParseError(row, 2, "ActivateBuff.Duration");
 					return false;
 				}
+
 				p.Duration = duration;
 			}
 
@@ -111,8 +117,10 @@ namespace ProjectOne.Skill
 					LogParseError(row, 3, "ActivateBuff.Interval");
 					return false;
 				}
+
 				p.Interval = interval;
 			}
+
 			return true;
 		}
 
@@ -124,6 +132,7 @@ namespace ProjectOne.Skill
 				LogParseError(row, 1, "DeactivateBuff.BuffID");
 				return false;
 			}
+
 			p.BuffID = buffId;
 			return true;
 		}
@@ -136,6 +145,7 @@ namespace ProjectOne.Skill
 				LogParseError(row, 1, "Attribute.StatTypes");
 				return false;
 			}
+
 			p.AttrType = stat;
 
 			if (TryParseFloat(row.EffectParam_2, out float v) == false)
@@ -143,11 +153,13 @@ namespace ProjectOne.Skill
 				LogParseError(row, 2, "Attribute.Value");
 				return false;
 			}
+
 			// 테이블은 퍼센트(100=100%) 입력 — _Ratio/_Amp 는 분수로 변환, _Add 는 절대값 유지
 			if (IsPercentInput(stat) == true)
 			{
 				v = v / 100f;
 			}
+
 			p.Value = v;
 			return true;
 		}
@@ -166,6 +178,7 @@ namespace ProjectOne.Skill
 			{
 				return false;
 			}
+
 			return float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
 		}
 

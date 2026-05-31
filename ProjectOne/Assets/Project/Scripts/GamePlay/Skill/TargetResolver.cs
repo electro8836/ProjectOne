@@ -22,6 +22,7 @@ namespace ProjectOne.Skill
 			{
 				return _scratch;
 			}
+
 			switch (scanType)
 			{
 			case SkillScanType.None:
@@ -53,12 +54,15 @@ namespace ProjectOne.Skill
 							}
 						}
 					}
+
 					if (unitBase != null)
 					{
 						_scratch.Add(unitBase);
 					}
+
 					return _scratch;
 				}
+
 				for (int j = 0; j < all.Count; j++)
 				{
 					UnitBase unitBase3 = all[j];
@@ -82,12 +86,14 @@ namespace ProjectOne.Skill
 							flag = Scanner.InDonut(hitCenter, param1, param2, hitCenter2, radius);
 							break;
 						}
+
 						if (flag)
 						{
 							_scratch.Add(unitBase3);
 						}
 					}
 				}
+
 				return _scratch;
 			}
 			}
@@ -102,13 +108,16 @@ namespace ProjectOne.Skill
 				{
 					_self.Add(caster);
 				}
+
 				return _self;
 			}
+
 			_filtered.Clear();
 			if (target == SkillApplyTarget.None || scanned == null || caster == null)
 			{
 				return _filtered;
 			}
+
 			if (target == SkillApplyTarget.All)
 			{
 				for (int i = 0; i < scanned.Count; i++)
@@ -119,8 +128,10 @@ namespace ProjectOne.Skill
 						_filtered.Add(unitBase);
 					}
 				}
+
 				return _filtered;
 			}
+
 			for (int j = 0; j < scanned.Count; j++)
 			{
 				UnitBase unitBase2 = scanned[j];
@@ -128,6 +139,7 @@ namespace ProjectOne.Skill
 				{
 					continue;
 				}
+
 				switch (target)
 				{
 				case SkillApplyTarget.Enemy:
@@ -135,15 +147,18 @@ namespace ProjectOne.Skill
 					{
 						_filtered.Add(unitBase2);
 					}
+
 					break;
 				case SkillApplyTarget.Friendly:
 					if (IsFriendly(caster.Faction, unitBase2.Faction))
 					{
 						_filtered.Add(unitBase2);
 					}
+
 					break;
 				}
 			}
+
 			return _filtered;
 		}
 
@@ -154,11 +169,13 @@ namespace ProjectOne.Skill
 			{
 				return Vector2.right;
 			}
+
 			Vector2 facing = component.Facing;
 			if (facing.sqrMagnitude < 1E-06f)
 			{
 				return Vector2.right;
 			}
+
 			return facing;
 		}
 
@@ -168,10 +185,12 @@ namespace ProjectOne.Skill
 			{
 				return false;
 			}
+
 			if (otherFaction == Faction.None || otherFaction == Faction.Neutral)
 			{
 				return false;
 			}
+
 			return otherFaction != casterFaction;
 		}
 
@@ -181,6 +200,7 @@ namespace ProjectOne.Skill
 			{
 				return false;
 			}
+
 			return otherFaction == casterFaction;
 		}
 	}

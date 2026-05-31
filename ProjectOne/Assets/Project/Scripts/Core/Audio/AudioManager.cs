@@ -73,6 +73,7 @@ namespace ProjectOne.Audio
 			{
 				StopCoroutine(_crossfadeCoroutine);
 			}
+
 			_crossfadeCoroutine = StartCoroutine(fadeOutRoutine(fadeDuration));
 		}
 
@@ -167,6 +168,7 @@ namespace ProjectOne.Audio
 			{
 				return;
 			}
+
 			_activeBgmSource.volume   = effectiveBgmVolume;
 			_inactiveBgmSource.volume = 0f;
 		}

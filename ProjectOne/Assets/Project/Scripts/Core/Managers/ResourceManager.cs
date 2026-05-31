@@ -92,6 +92,7 @@ namespace ProjectOne.Resources
 			{
 				return;
 			}
+
 			if (!_entries.TryGetValue(address, out Entry entry))
 			{
 				return;
@@ -107,6 +108,7 @@ namespace ProjectOne.Resources
 			{
 				AddressableHelper.ReleaseAsset(entry.asset);
 			}
+
 			_entries.Remove(address);
 		}
 
@@ -158,6 +160,7 @@ namespace ProjectOne.Resources
 					AddressableHelper.ReleaseAsset(entry.asset);
 				}
 			}
+
 			_entries.Clear();
 		}
 	}

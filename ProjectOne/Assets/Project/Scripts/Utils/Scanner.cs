@@ -23,11 +23,13 @@ namespace ProjectOne.Utils
 			{
 				return false;
 			}
+
 			// 부채꼴 꼭지점이 대상 콜라이더 안 → 무조건 명중 (원점 근처 NaN 방지 겸용)
 			if (sqrDist <= targetRadius * targetRadius || sqrDist < 1E-06f)
 			{
 				return true;
 			}
+
 			// facing 정규화 방어 (InLine과 동일 패턴)
 			Vector2 dir = facing;
 			if (dir.sqrMagnitude < 1E-06f)
@@ -45,6 +47,7 @@ namespace ProjectOne.Utils
 			{
 				return true;
 			}
+
 			float cosHalf = Mathf.Cos(halfRad);
 			float sinHalf = Mathf.Sin(halfRad);
 
@@ -67,6 +70,7 @@ namespace ProjectOne.Utils
 			{
 				val.Normalize();
 			}
+
 			Vector2 val2 = new Vector2(val.y, 0f - val.x);
 			Vector2 val3 = point - origin;
 			float num = Vector2.Dot(val3, val);
@@ -75,6 +79,7 @@ namespace ProjectOne.Utils
 			{
 				return false;
 			}
+
 			float num3 = width * 0.5f + targetRadius;
 			return Mathf.Abs(num2) <= num3;
 		}
@@ -89,6 +94,7 @@ namespace ProjectOne.Utils
 			{
 				return sqrMagnitude >= num2 * num2;
 			}
+
 			return false;
 		}
 	}

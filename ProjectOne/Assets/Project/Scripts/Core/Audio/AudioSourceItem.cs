@@ -46,6 +46,7 @@ namespace ProjectOne.Audio
 				StopCoroutine(_lifeCoroutine);
 				_lifeCoroutine = null;
 			}
+
 			_audioSource.Stop();
 			_audioSource.clip = null;
 		}
@@ -58,6 +59,7 @@ namespace ProjectOne.Audio
 			{
 				return;
 			}
+
 			_isReleased = true;
 			_ownerPool.ReturnItem(this);
 		}

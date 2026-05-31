@@ -107,6 +107,7 @@ namespace ProjectOne.Editor
 				{
 					continue;
 				}
+
 				visitedFolders.Add(folder);
 				if (AssetDatabase.IsValidFolder(folder) == false)
 				{
@@ -152,6 +153,7 @@ namespace ProjectOne.Editor
 				{
 					continue;
 				}
+
 				visitedFolders.Add(folder);
 				if (AssetDatabase.IsValidFolder(folder) == false)
 				{
@@ -245,6 +247,7 @@ namespace ProjectOne.Editor
 				{
 					continue;
 				}
+
 				// Rules 정의에 대문자 섞여도 매칭되도록 비교 시 소문자 정규화
 				if (ext != r.ext.ToLower())
 				{
@@ -261,8 +264,10 @@ namespace ProjectOne.Editor
 					string relative = assetPath.Substring(r.folder.Length + 1);
 					address = Path.ChangeExtension(relative, null).Replace('\\', '/');
 				}
+
 				return true;
 			}
+
 			return false;
 		}
 

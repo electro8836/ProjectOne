@@ -56,6 +56,7 @@ namespace ProjectOne.Audio
 					oldest = _activeItems[i];
 				}
 			}
+
 			// ReturnToPool 경유하여 _isReleased 플래그와 _activeItems 동기화
 			oldest.ReturnToPool();
 		}

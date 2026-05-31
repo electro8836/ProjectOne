@@ -109,6 +109,7 @@ namespace ProjectOne.Test
 				{
 					f = Faction.Player;
 				}
+
 				await UnitFactory.Instance.CreateHeroAsync(e.characterId, e.position, f, ct);
 			}
 
@@ -120,6 +121,7 @@ namespace ProjectOne.Test
 				{
 					f = Faction.Enemy;
 				}
+
 				await UnitFactory.Instance.CreateMonsterAsync(e.monsterId, e.position, f, ct);
 			}
 		}
@@ -132,6 +134,7 @@ namespace ProjectOne.Test
 			{
 				return;
 			}
+
 			EDT.Loader loader = new EDT.Loader();
 			bool ok = loader.LoadAll(OpenTableFile, null);
 			if (ok == false)
@@ -139,6 +142,7 @@ namespace ProjectOne.Test
 				Debug.LogError($"[MapTestSpawner] 테이블 로드 실패: {loader.CurrentFile} / {loader.Error}");
 				return;
 			}
+
 			_tablesLoaded = true;
 		}
 
@@ -152,6 +156,7 @@ namespace ProjectOne.Test
 				Debug.LogError($"[MapTestSpawner] 테이블 파일 없음: {path}");
 				return null;
 			}
+
 			return new BinaryReader(new MemoryStream(ta.bytes));
 #else
 			return null;

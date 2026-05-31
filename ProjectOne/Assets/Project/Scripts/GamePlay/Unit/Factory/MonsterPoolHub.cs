@@ -23,10 +23,12 @@ namespace ProjectOne.Unit
 			{
 				return value;
 			}
+
 			if (_loading.TryGetValue(monsterId, out var inflight))
 			{
 				return await inflight.Task.AttachExternalCancellation(ct);
 			}
+
 			inflight = new UniTaskCompletionSource<MonsterPool>();
 			_loading[monsterId] = inflight;
 			try
@@ -39,6 +41,7 @@ namespace ProjectOne.Unit
 					inflight.TrySetResult(null);
 					return null;
 				}
+
 				GameObject val = await ResourceManager.Instance.AcquireAsync<GameObject>(row.Path, ct);
 				if (val == null)
 				{
@@ -47,6 +50,7 @@ namespace ProjectOne.Unit
 					inflight.TrySetResult(null);
 					return null;
 				}
+
 				MonsterPool monsterPool = createPool(val, monsterId);
 				_pools[monsterId] = monsterPool;
 				_loading.Remove(monsterId);

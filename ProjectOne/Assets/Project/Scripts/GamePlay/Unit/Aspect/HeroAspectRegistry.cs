@@ -22,6 +22,7 @@ namespace ProjectOne.Unit
 			{
 				return;
 			}
+
 			_aspects.Add(aspect);
 			_dirty = true;
 		}
@@ -32,6 +33,7 @@ namespace ProjectOne.Unit
 			{
 				return;
 			}
+
 			_aspects.Remove(aspect);
 		}
 
@@ -42,6 +44,7 @@ namespace ProjectOne.Unit
 			{
 				return;
 			}
+
 			EnsureSorted();
 			for (int i = 0; i < _aspects.Count; i++)
 			{
@@ -56,6 +59,7 @@ namespace ProjectOne.Unit
 			{
 				return;
 			}
+
 			for (int i = 0; i < _aspects.Count; i++)
 			{
 				IHeroAspect a = _aspects[i];
@@ -79,6 +83,7 @@ namespace ProjectOne.Unit
 			{
 				return;
 			}
+
 			// Stage 오름차순 — 동률은 등록 순서 유지(List.Sort 는 unstable 하지만 실용상 무시 가능)
 			_aspects.Sort(CompareByStage);
 			_dirty = false;

@@ -47,6 +47,7 @@ namespace ProjectOne.Unit
 				Debug.LogError($"[UnitFactory] Table_Character.Get({characterId}) == null");
 				return null;
 			}
+
 			string skinAddress = string.Empty;
 			if (row.SkinID > 0)
 			{
@@ -56,11 +57,13 @@ namespace ProjectOne.Unit
 					skinAddress = row2.Path;
 				}
 			}
+
 			Hero hero = await SpawnAndComposeAsync<Hero>(UnitType.Hero, row.Path, row.Name, characterId, row.BaseStatID, row.SkillSetID, skinAddress, pos, faction, ct);
 			if (hero == null)
 			{
 				return null;
 			}
+
 			HeroAspectRegistry.Instance.ApplyAll(hero);
 			hero.RefreshAnimationStats();
 			EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), characterId));
@@ -74,6 +77,7 @@ namespace ProjectOne.Unit
 			{
 				return null;
 			}
+
 			Monster monster = monsterPool.Spawn(pos);
 			monster.RefreshAnimationStats();
 			EventManager.Instance.Publish(new UnitSpawnedEvent(monster, UnitType.Monster, monster.GetID(), monsterId));
@@ -99,12 +103,14 @@ namespace ProjectOne.Unit
 				Debug.LogError($"[UnitFactory] 프리팹 Address 비어있음 (id={id})");
 				return null;
 			}
+
 			GameObject val = await ResourceManager.Instance.AcquireAsync<GameObject>(prefabAddress, ct);
 			if (val == null)
 			{
 				Debug.LogError(("[UnitFactory] 프리팹 로드 실패: " + prefabAddress));
 				return null;
 			}
+
 			Transform root = UnitContainer.Instance.GetRoot(unitType);
 			GameObject val2 = Object.Instantiate<GameObject>(val, pos, Quaternion.identity, root);
 			val2.name = $"{displayName}_{id}";
@@ -115,11 +121,13 @@ namespace ProjectOne.Unit
 				Object.Destroy(val2);
 				return null;
 			}
+
 			ComposeUnit(unit, id, baseStatId, skillSetId, faction);
 			if (!string.IsNullOrEmpty(skinAddress))
 			{
 				await ApplySkinAsync(unit, skinAddress, ct);
 			}
+
 			return unit;
 		}
 
@@ -142,6 +150,7 @@ namespace ProjectOne.Unit
 			{
 				component.Initialize(unit.Radius, 1f);
 			}
+
 			unit.SetFaction(faction);
 		}
 

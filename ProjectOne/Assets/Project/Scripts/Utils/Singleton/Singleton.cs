@@ -74,6 +74,7 @@ namespace ProjectOne.Utils
 				Destroy(gameObject);
 				return;
 			}
+
 			_instance = (T)this;
 			DontDestroyOnLoad(gameObject);
 		}

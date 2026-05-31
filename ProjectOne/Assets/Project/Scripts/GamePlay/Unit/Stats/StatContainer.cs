@@ -73,8 +73,10 @@ namespace ProjectOne.Unit.Stats
 					list = new List<StatModifier>(4);
 					_bySource[mod.Source] = list;
 				}
+
 				list.Add(mod);
 			}
+
 			return mod;
 		}
 
@@ -84,6 +86,7 @@ namespace ProjectOne.Unit.Stats
 			{
 				return;
 			}
+
 			Bucket b = GetOrCreate(mod.Group);
 			ApplyDelta(b, mod.Kind, -mod.Value);
 
@@ -108,17 +111,20 @@ namespace ProjectOne.Unit.Stats
 			{
 				return;
 			}
+
 			List<StatModifier> list;
 			if (_bySource.TryGetValue(source, out list) == false)
 			{
 				return;
 			}
+
 			for (int i = 0; i < list.Count; i++)
 			{
 				StatModifier mod = list[i];
 				Bucket b = GetOrCreate(mod.Group);
 				ApplyDelta(b, mod.Kind, -mod.Value);
 			}
+
 			_bySource.Remove(source);
 		}
 
@@ -130,11 +136,13 @@ namespace ProjectOne.Unit.Stats
 			{
 				return _emptyMods;
 			}
+
 			List<StatModifier> list;
 			if (_bySource.TryGetValue(source, out list) == false)
 			{
 				return _emptyMods;
 			}
+
 			return list;
 		}
 
@@ -156,8 +164,10 @@ namespace ProjectOne.Unit.Stats
 					b.Cached = (b.Base + b.Add) * (1f + b.Ratio) * (1f + b.Amp);
 					b.Dirty = false;
 				}
+
 				return b.Cached;
 			}
+
 			return GetField(b, part.Kind);
 		}
 
@@ -170,6 +180,7 @@ namespace ProjectOne.Unit.Stats
 				b = new Bucket();
 				_buckets[group] = b;
 			}
+
 			return b;
 		}
 
@@ -195,6 +206,7 @@ namespace ProjectOne.Unit.Stats
 				case ModifierTypes.Amp:   b.Amp   += delta; break;
 				default: return;
 			}
+
 			b.Dirty = true;
 		}
 
@@ -252,6 +264,7 @@ namespace ProjectOne.Unit.Stats
 					map[t] = new StatPart(t, ModifierTypes.Final);
 				}
 			}
+
 			return map;
 		}
 	}

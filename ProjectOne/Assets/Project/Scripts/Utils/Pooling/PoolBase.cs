@@ -57,6 +57,7 @@ namespace ProjectOne.Utils
 			{
 				preWarmed.Add(_pool.Get());
 			}
+
 			for (int i = 0; i < preWarmed.Count; i++)
 			{
 				_pool.Release(preWarmed[i]);

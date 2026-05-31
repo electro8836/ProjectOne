@@ -67,11 +67,13 @@ namespace ProjectOne.Dev
 			{
 				return;
 			}
+
 			Table_SkillInfo.Row row = Table_SkillInfo.Get(e.SkillId);
 			if (row == null || !isAreaScan(row.ScanType))
 			{
 				return;
 			}
+
 			Vector2 facing = Vector2.right;
 			UnitMover component = e.Caster.GetComponent<UnitMover>();
 			if (component != null)
@@ -82,6 +84,7 @@ namespace ProjectOne.Dev
 					facing = component.Facing;
 				}
 			}
+
 			ActiveScan activeScan = default(ActiveScan);
 			activeScan.type = row.ScanType;
 			activeScan.p1 = row.ScanParam1;
@@ -99,6 +102,7 @@ namespace ProjectOne.Dev
 			{
 				return type == SkillScanType.Donut;
 			}
+
 			return true;
 		}
 
@@ -108,6 +112,7 @@ namespace ProjectOne.Dev
 			{
 				return;
 			}
+
 			for (int num = _active.Count - 1; num >= 0; num--)
 			{
 				ActiveScan activeScan = _active[num];
@@ -176,6 +181,7 @@ namespace ProjectOne.Dev
 				val2 = new Vector3(center.x + Mathf.Cos(num6) * radius, center.y + Mathf.Sin(num6) * radius, 0f);
 				Gizmos.DrawLine(val, val2);
 			}
+
 			float num7 = num3 * (MathF.PI / 180f);
 			float num8 = (num3 + fullAngleDeg) * (MathF.PI / 180f);
 			Vector3 val3 = new Vector3(center.x, center.y, 0f);

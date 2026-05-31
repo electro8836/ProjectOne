@@ -100,6 +100,7 @@ namespace ProjectOne.Buff
 			{
 				return;
 			}
+
 			_modHandles.Add(mod);
 		}
 
@@ -113,6 +114,7 @@ namespace ProjectOne.Buff
 					Owner.Stats.RemoveModifier(_modHandles[i]);
 				}
 			}
+
 			_modHandles.Clear();
 			_expired = true;
 		}

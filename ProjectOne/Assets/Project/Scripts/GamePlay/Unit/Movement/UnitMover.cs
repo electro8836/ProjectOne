@@ -79,6 +79,7 @@ public class UnitMover : MonoBehaviour
 		{
 			transform.position = moveOnlyY;
 		}
+
 		// 둘 다 막혔으면 이동 안 함
 	}
 
@@ -88,6 +89,7 @@ public class UnitMover : MonoBehaviour
 		{
 			return true;
 		}
+
 		return TilemapGrid.Instance.IsWalkable(position, _unitRadius);
 	}
 
@@ -116,6 +118,7 @@ public class UnitMover : MonoBehaviour
 		{
 			return;
 		}
+
 		Facing = direction.normalized;
 	}
 

@@ -31,6 +31,7 @@ namespace ProjectOne.Skill
 			{
 				_buffScratch.Add(owner);
 			}
+
 			ApplyInternal(effectId, owner, source, SkillInfo.None, hostBuff, _buffScratch);
 		}
 
@@ -89,6 +90,7 @@ namespace ProjectOne.Skill
 			{
 				coef = source.Stats.GetStat(p.CoefStat) * p.CoefValue;
 			}
+
 			int rawDamage = Mathf.RoundToInt(p.BaseDamage + coef);
 			DamageType type = ResolveDamageType(row.DamageType);
 
@@ -148,6 +150,7 @@ namespace ProjectOne.Skill
 			{
 				pen = attacker.Stats.GetStat(penStat);
 			}
+
 			float effective = Mathf.Max(0f, def - pen);        // 0 밑으로 안 내려감
 			float reduction = Mathf.Clamp01(effective / 100f); // 상한 100%
 			int result = Mathf.RoundToInt(rawDamage * (1f - reduction));
@@ -161,6 +164,7 @@ namespace ProjectOne.Skill
 			{
 				return;
 			}
+
 			for (int i = 0; i < targets.Count; i++)
 			{
 				UnitBase t = targets[i];
@@ -168,6 +172,7 @@ namespace ProjectOne.Skill
 				{
 					continue;
 				}
+
 				t.BuffContainer.Apply(p.BuffID, p.Duration, p.Interval, source);
 			}
 		}
@@ -179,6 +184,7 @@ namespace ProjectOne.Skill
 			{
 				return;
 			}
+
 			for (int i = 0; i < targets.Count; i++)
 			{
 				UnitBase t = targets[i];
@@ -186,6 +192,7 @@ namespace ProjectOne.Skill
 				{
 					continue;
 				}
+
 				t.BuffContainer.Remove(p.BuffID);
 			}
 		}
@@ -222,6 +229,7 @@ namespace ProjectOne.Skill
 				{
 					hostBuff.RegisterModifier(handle);
 				}
+
 				// hostBuff == null 이면 영구 적용 (제거 핸들 없음) — Skill 직접 슬롯의 패시브 용도
 			}
 		}

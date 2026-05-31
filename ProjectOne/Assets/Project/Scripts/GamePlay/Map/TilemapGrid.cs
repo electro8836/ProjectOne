@@ -100,6 +100,7 @@ namespace ProjectOne.Map
 			{
 				return true;
 			}
+
 			return _obstacleMap.GetTile(cellPos) == null;
 		}
 

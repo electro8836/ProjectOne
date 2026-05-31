@@ -59,6 +59,7 @@ namespace ProjectOne.Unit
 				{
 					return 0f;
 				}
+
 				return _collider.radius;
 			}
 		}
@@ -144,11 +145,13 @@ namespace ProjectOne.Unit
 					_animator.SetMoving(_mover.IsMoving);
 					_animator.SetFacing(_mover.Facing);
 				}
+
 				float deltaTime = Time.deltaTime;
 				if (_buffContainer != null)
 				{
 					_buffContainer.Tick(deltaTime);
 				}
+
 				if (_skillContainer != null)
 				{
 					_skillContainer.Tick(deltaTime);
@@ -190,6 +193,7 @@ namespace ProjectOne.Unit
 				{
 					_animator.PlayHit();
 				}
+
 				if (info.KnockbackPower > 0f && _mover != null)
 				{
 					_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
@@ -206,10 +210,12 @@ namespace ProjectOne.Unit
 				{
 					_animator.PlayDead();
 				}
+
 				if (_mover != null)
 				{
 					_mover.SetMoveEnabled(enabled: false);
 				}
+
 				EventManager.Instance.Publish(new UnitDiedEvent(_id, _tableId, GetUnitType()));
 			}
 		}
@@ -223,10 +229,12 @@ namespace ProjectOne.Unit
 				_vitals.InitHp();
 				_vitals.InitBreakGage();
 			}
+
 			if (_animator != null)
 			{
 				_animator.ResetDead();
 			}
+
 			if (_mover != null)
 			{
 				_mover.SetMoveEnabled(enabled: true);

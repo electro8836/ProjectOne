@@ -72,6 +72,7 @@ namespace ProjectOne.Resources
 				{
 					Addressables.Release(handle);
 				}
+
 				throw;
 			}
 
@@ -179,6 +180,7 @@ namespace ProjectOne.Resources
 				{
 					Addressables.Release(handle);
 				}
+
 				throw;
 			}
 		}
@@ -213,6 +215,7 @@ namespace ProjectOne.Resources
 			{
 				return;
 			}
+
 			if (_assetHandles.TryGetValue(asset, out AsyncOperationHandle handle))
 			{
 				_assetHandles.Remove(asset);
@@ -230,6 +233,7 @@ namespace ProjectOne.Resources
 			{
 				return;
 			}
+
 			if (_assetHandles.TryGetValue(assets, out AsyncOperationHandle handle))
 			{
 				_assetHandles.Remove(assets);
@@ -247,10 +251,12 @@ namespace ProjectOne.Resources
 			{
 				return false;
 			}
+
 			if (_instanceHandles.TryGetValue(instance, out AsyncOperationHandle<GameObject> handle))
 			{
 				_instanceHandles.Remove(instance);
 			}
+
 			return Addressables.ReleaseInstance(instance);
 		}
 
@@ -266,6 +272,7 @@ namespace ProjectOne.Resources
 					Addressables.Release(handle);
 				}
 			}
+
 			_assetHandles.Clear();
 
 			var instances = new List<GameObject>(_instanceHandles.Keys);
@@ -277,6 +284,7 @@ namespace ProjectOne.Resources
 					Addressables.ReleaseInstance(go);
 				}
 			}
+
 			_instanceHandles.Clear();
 		}
 
@@ -298,6 +306,7 @@ namespace ProjectOne.Resources
 				{
 					Addressables.Release(handle);
 				}
+
 				throw;
 			}
 
@@ -308,6 +317,7 @@ namespace ProjectOne.Resources
 				{
 					Addressables.Release(handle);
 				}
+
 				throw new Exception($"에셋 로드 실패: {key}", err);
 			}
 
@@ -334,6 +344,7 @@ namespace ProjectOne.Resources
 				{
 					Addressables.Release(handle);
 				}
+
 				throw;
 			}
 
@@ -344,6 +355,7 @@ namespace ProjectOne.Resources
 				{
 					Addressables.Release(handle);
 				}
+
 				throw new Exception($"인스턴스화 실패: {key}", err);
 			}
 

@@ -52,6 +52,7 @@ namespace ProjectOne.Skill
 			{
 				return;
 			}
+
 			SkillRuntime rt = new SkillRuntime(id, source);
 			_byId.Add(id, rt);
 			_ordered.Add(rt);
@@ -70,6 +71,7 @@ namespace ProjectOne.Skill
 			{
 				return;
 			}
+
 			_byId.Remove(id);
 			_ordered.Remove(rt);
 		}
@@ -82,6 +84,7 @@ namespace ProjectOne.Skill
 			{
 				return;
 			}
+
 			_removeBuffer.Clear();
 			for (int i = 0; i < _ordered.Count; i++)
 			{
@@ -90,10 +93,12 @@ namespace ProjectOne.Skill
 					_removeBuffer.Add(_ordered[i].Id);
 				}
 			}
+
 			for (int i = 0; i < _removeBuffer.Count; i++)
 			{
 				Unregister(_removeBuffer[i]);
 			}
+
 			_removeBuffer.Clear();
 		}
 
@@ -104,16 +109,19 @@ namespace ProjectOne.Skill
 			{
 				return false;
 			}
+
 			SkillRuntime rt;
 			if (_byId.TryGetValue(id, out rt) == false)
 			{
 				return false;
 			}
+
 			// Passive(상시 적용) / OnHit(적중 시 확률 발동) 은 직접 시전 대상 아님
 			if (rt.CastingType == SkillCastingTypes.Passive || rt.CastingType == SkillCastingTypes.OnHit)
 			{
 				return false;
 			}
+
 			if (rt.CanCast() == false)
 			{
 				return false;
@@ -132,6 +140,7 @@ namespace ProjectOne.Skill
 			{
 				_idView.Add(_ordered[i].Id);
 			}
+
 			return _idView;
 		}
 
@@ -142,6 +151,7 @@ namespace ProjectOne.Skill
 			{
 				return false;
 			}
+
 			return rt.IsOnCooldown;
 		}
 
@@ -152,6 +162,7 @@ namespace ProjectOne.Skill
 			{
 				return 0f;
 			}
+
 			return rt.RemainingCooltime;
 		}
 
@@ -189,6 +200,7 @@ namespace ProjectOne.Skill
 				dispatch(id, kind);
 				return;
 			}
+
 			_pending.Add(new PendingEffect { remaining = delay, id = id, kind = kind });
 		}
 
@@ -211,6 +223,7 @@ namespace ProjectOne.Skill
 			{
 				return;
 			}
+
 			for (int i = 0; i < _ordered.Count; i++)
 			{
 				SkillRuntime rt = _ordered[i];
@@ -218,10 +231,12 @@ namespace ProjectOne.Skill
 				{
 					continue;
 				}
+
 				if (rt.CanCast() == false)
 				{
 					continue;
 				}
+
 				if (UnityEngine.Random.Range(0, 100) < rt.CastingParam)
 				{
 					SkillExecutor.Execute(rt.Id, _owner);

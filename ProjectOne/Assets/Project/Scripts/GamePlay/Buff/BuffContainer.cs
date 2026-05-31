@@ -52,6 +52,7 @@ namespace ProjectOne.Buff
 			{
 				return;
 			}
+
 			rt.Dispose();
 			_byId.Remove(id);
 			_ordered.Remove(rt);
@@ -77,6 +78,7 @@ namespace ProjectOne.Buff
 			{
 				_activeView.Add(_ordered[i].Id);
 			}
+
 			return _activeView;
 		}
 
@@ -90,6 +92,7 @@ namespace ProjectOne.Buff
 					_debuffView.Add(_ordered[i].Id);
 				}
 			}
+
 			return _debuffView;
 		}
 
@@ -112,6 +115,7 @@ namespace ProjectOne.Buff
 			{
 				Remove(_toRemove[i]);
 			}
+
 			_toRemove.Clear();
 		}
 	}

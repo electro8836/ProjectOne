@@ -27,6 +27,7 @@ namespace ProjectOne.Dev
 			{
 				return;
 			}
+
 			Debug.Log($"[전투] {e.Caster.name} 스킬 사용 → {e.SkillId}");
 		}
 
@@ -36,6 +37,7 @@ namespace ProjectOne.Dev
 			{
 				return;
 			}
+
 			string atk = e.Attacker != null ? e.Attacker.name : "?";
 			Debug.Log($"[전투] {e.Target.name} 피격 {e.Damage} (공격자:{atk}, 스킬:{(SkillInfo)e.SkillId})");
 		}

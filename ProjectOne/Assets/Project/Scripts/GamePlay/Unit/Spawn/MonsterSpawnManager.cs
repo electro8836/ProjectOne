@@ -80,6 +80,7 @@ namespace ProjectOne.Unit
 				{
 					continue;
 				}
+
 				if (spawnData.aliveCount < spawnData.minCount)
 				{
 					requestSpawns(spawnData, spawnData.minCount - spawnData.aliveCount);

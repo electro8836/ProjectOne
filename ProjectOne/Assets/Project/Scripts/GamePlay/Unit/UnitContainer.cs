@@ -66,6 +66,7 @@ namespace ProjectOne.Unit
 					return;
 				}
 			}
+
 			_units.Add(unit);
 
 			// Type별 캐시 동기화
@@ -76,6 +77,7 @@ namespace ProjectOne.Unit
 				list = new List<UnitBase>(64);
 				_byType[type] = list;
 			}
+
 			list.Add(unit);
 		}
 
@@ -85,6 +87,7 @@ namespace ProjectOne.Unit
 			{
 				return;
 			}
+
 			_units.Remove(unit);
 
 			// Type별 캐시 동기화
@@ -104,6 +107,7 @@ namespace ProjectOne.Unit
 			{
 				return _empty;
 			}
+
 			return list;
 		}
 
@@ -116,6 +120,7 @@ namespace ProjectOne.Unit
 			{
 				_clearBuffer.Add(_units[i]);
 			}
+
 			for (int i = 0; i < _clearBuffer.Count; i++)
 			{
 				UnitBase u = _clearBuffer[i];
@@ -124,6 +129,7 @@ namespace ProjectOne.Unit
 					Object.Destroy(u.gameObject);
 				}
 			}
+
 			_clearBuffer.Clear();
 		}
 
@@ -135,11 +141,13 @@ namespace ProjectOne.Unit
 			{
 				return;
 			}
+
 			_clearBuffer.Clear();
 			for (int i = 0; i < list.Count; i++)
 			{
 				_clearBuffer.Add(list[i]);
 			}
+
 			for (int i = 0; i < _clearBuffer.Count; i++)
 			{
 				UnitBase u = _clearBuffer[i];
@@ -148,6 +156,7 @@ namespace ProjectOne.Unit
 					Object.Destroy(u.gameObject);
 				}
 			}
+
 			_clearBuffer.Clear();
 		}
 	}

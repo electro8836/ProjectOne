@@ -63,6 +63,7 @@ namespace ProjectOF.Projectile
 				StopCoroutine(_lifeCoroutine);
 				_lifeCoroutine = null;
 			}
+
 			_data = default;
 		}
 
@@ -74,6 +75,7 @@ namespace ProjectOF.Projectile
 			{
 				return;
 			}
+
 			_isReleased = true;
 			_ownerPool.Release(this);
 		}

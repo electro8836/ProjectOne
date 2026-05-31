@@ -51,6 +51,7 @@ namespace ProjectOne.Map
 			{
 				return Vector2.zero;
 			}
+
 			return _flowField[GetIndex(x, y)];
 		}
 

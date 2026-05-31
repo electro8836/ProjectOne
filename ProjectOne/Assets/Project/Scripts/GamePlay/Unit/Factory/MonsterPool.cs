@@ -31,6 +31,7 @@ namespace ProjectOne.Unit
 				Debug.LogError($"[MonsterPool] 프리팹에 Monster 컴포넌트 없음 (id={_monsterId})");
 				return null;
 			}
+
 			Table_Monster.Row row = Table_Monster.Get(_monsterId);
 			int baseStatId = row?.BaseStatID ?? 0;
 			int skillSetId = row?.SkillSetID ?? 0;
