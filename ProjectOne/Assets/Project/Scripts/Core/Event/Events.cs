@@ -70,13 +70,15 @@ namespace ProjectOne.Event
 				public readonly UnitBase Attacker;
 				public readonly int Damage;
 				public readonly int SkillId;   // DamageInfo.SkillID (0=평타 등)
+				public readonly bool IsCritical;
 
-				public DamageTakenEvent(UnitBase target, UnitBase attacker, int damage, int skillId)
+				public DamageTakenEvent(UnitBase target, UnitBase attacker, int damage, int skillId, bool isCritical)
 				{
 						this.Target = target;
 						this.Attacker = attacker;
 						this.Damage = damage;
 						this.SkillId = skillId;
+						this.IsCritical = isCritical;
 				}
 		}
 
