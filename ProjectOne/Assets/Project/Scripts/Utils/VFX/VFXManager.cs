@@ -20,6 +20,9 @@ namespace ProjectOne.Utils
 		// 주소별 비활성 인스턴스 풀
 		private readonly Dictionary<string, Stack<VFXItem>> _pools = new Dictionary<string, Stack<VFXItem>>();
 
+		// 로드에 실패한(잘못된 Addressable 키) 주소 — 재시도/경고 폭주 방지용 블랙리스트
+		private readonly HashSet<string> _failedAddresses = new HashSet<string>();
+
 		// 활성 one-shot — 매 프레임 중앙 틱(Update)에서 종료 감지 후 풀로 회수
 		private readonly List<VFXItem> _activeOneShots = new List<VFXItem>(64);
 
@@ -289,12 +292,31 @@ namespace ProjectOne.Utils
 				return prefab;
 			}
 
+			// 이전에 로드 실패한 잘못된 키는 재시도하지 않음
+			if (_failedAddresses.Contains(address) == true)
+			{
+				return null;
+			}
+
 			if (_resourceManager == null)
 			{
 				_resourceManager = ResourceManager.Instance;
 			}
 
-			prefab = await _resourceManager.AcquireAsync<GameObject>(address);
+			try
+			{
+				prefab = await _resourceManager.AcquireAsync<GameObject>(address);
+			}
+			catch (System.Exception e)
+			{
+				// 반드시 여기서 예외를 관측(observe)한다.
+				// 방치하면 .Forget() 비동기의 미관측 예외가 UniTask 파이널라이저(백그라운드 스레드)에서
+				// Debug.LogException 으로 로깅되며 Unity 네이티브 힙을 손상시켜 종료 시 크래시한다.
+				_failedAddresses.Add(address);
+				Debug.LogWarning($"[VFXManager] VFX 로드 실패 — address:{address} ({e.Message})");
+				return null;
+			}
+
 			if (prefab == null)
 			{
 				return null;
@@ -346,6 +368,7 @@ namespace ProjectOne.Utils
 			_prefabs.Clear();
 			_pools.Clear();
 			_activeOneShots.Clear();
+			_failedAddresses.Clear();
 			base.OnDestroy();
 		}
 	}

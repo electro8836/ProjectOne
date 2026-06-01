@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using EDT;
+using ProjectOne.Audio;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
@@ -25,7 +26,8 @@ namespace ProjectOne.Buff
 		float _intervalAccum;
 		readonly List<StatModifier> _modHandles = new List<StatModifier>(2);
 		bool _expired;
-		VFXHandle _rootVfx;   // 버프 지속 동안 owner 에 부착되는 루프성 VFX
+		VFXHandle _rootVfx;        // 버프 지속 동안 owner 에 부착되는 루프성 VFX
+		AudioSfxHandle _rootSfx;   // 버프 지속 동안 재생되는 루프성 SFX
 
 		public bool IsExpired
 		{
@@ -51,6 +53,12 @@ namespace ProjectOne.Buff
 				if (string.IsNullOrEmpty(row.RootVFX) == false && owner != null)
 				{
 					_rootVfx = VFXManager.Instance.Attach(row.RootVFX, owner.transform);
+				}
+
+				// RootSFX: 버프 지속 동안 루프 재생, Dispose 에서 정지
+				if (string.IsNullOrEmpty(row.RootSFX) == false)
+				{
+					_rootSfx = AudioManager.Instance.PlayLoopSFX(row.RootSFX);
 				}
 
 				// Effect: 부착 시 1회 발동 — owner를 caster로 해서 Self 효과가 owner에 적용되도록 함
@@ -120,6 +128,13 @@ namespace ProjectOne.Buff
 			{
 				VFXManager.Instance.Release(_rootVfx);
 				_rootVfx = null;
+			}
+
+			// RootSFX 정지 — 버프 종료와 함께 멈춤
+			if (_rootSfx != null)
+			{
+				AudioManager.Instance.StopLoopSFX(_rootSfx);
+				_rootSfx = null;
 			}
 
 			if (Owner != null && Owner.Stats != null)

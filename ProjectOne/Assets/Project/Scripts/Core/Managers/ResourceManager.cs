@@ -73,15 +73,35 @@ namespace ProjectOne.Resources
 			}
 			catch (OperationCanceledException)
 			{
-				entry.loading.TrySetCanceled();
+				UniTaskCompletionSource<UnityEngine.Object> loading = entry.loading;
+				loading.TrySetCanceled();
 				_entries.Remove(address);
+				observeFaulted(loading);
 				throw;
 			}
 			catch (Exception e)
 			{
-				entry.loading.TrySetException(e);
+				UniTaskCompletionSource<UnityEngine.Object> loading = entry.loading;
+				loading.TrySetException(e);
 				_entries.Remove(address);
+				observeFaulted(loading);
 				throw;
+			}
+		}
+
+		// 동시 대기자가 없으면 loading TCS 에 set 된 예외가 미관측으로 남는다.
+		// 그러면 UniTask 파이널라이저(백그라운드 스레드)가 Debug.LogException 으로 처리하다
+		// Unity 네이티브 힙을 손상시켜 종료 시 크래시한다. 여기서 한 번 관측해 방지한다.
+		// (실패 자체는 호출자가 throw 로 별도 전파받는다)
+		private static void observeFaulted(UniTaskCompletionSource<UnityEngine.Object> source)
+		{
+			try
+			{
+				source.Task.GetAwaiter().GetResult();
+			}
+			catch
+			{
+				// 관측만 — 무시
 			}
 		}
 

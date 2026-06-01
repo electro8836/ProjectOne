@@ -21,8 +21,17 @@ namespace EDT
 		private static readonly Dictionary<string, ParserFn> _parsers
 			= buildParserMap();
 
+		// 도메인당 1회만 파싱. Table_*._all(static)은 초기화 코드가 없어,
+		// 도메인 리로드 off 환경에서 재호출되면 _all.Add가 중복 키 예외를 던진다.
+		private static bool _loaded;
+
 		public static async UniTask LoadAllAsync(CancellationToken ct = default)
 		{
+			if (_loaded)
+			{
+				return;
+			}
+
 			IList<TextAsset> assets = await ResourceManager.Instance
 				.PreloadByLabelAsync<TextAsset>(Label, null, ct);
 
@@ -42,6 +51,8 @@ namespace EDT
 			{
 				ResourceManager.Instance.ReleasePreloaded(assets);
 			}
+
+			_loaded = true;
 		}
 
 		private static void parseOne(TextAsset asset)

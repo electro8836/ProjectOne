@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EDT;
+using ProjectOne.Audio;
 using ProjectOne.Event;
 using ProjectOne.Unit;
 using ProjectOne.Utils;
@@ -110,6 +111,12 @@ namespace ProjectOne.Skill
 			if (string.IsNullOrEmpty(row.SkillVFX) == false)
 			{
 				VFXManager.Instance.PlayOneShot(row.SkillVFX, caster.transform);
+			}
+
+			// 스킬 SFX 1회 재생 (시전 시마다)
+			if (string.IsNullOrEmpty(row.SkillSFX) == false)
+			{
+				AudioManager.Instance.PlaySFX(row.SkillSFX);
 			}
 
 			if (row.MotionEffectTime > 0f)

@@ -19,7 +19,8 @@ namespace ProjectOne.Audio
 		}
 
 		// 외부 API. AudioManager.PlaySFX()가 호출한다.
-		public AudioSourceItem Spawn(AudioClip clip, float effectiveVolume)
+		// loop=true 면 루프성 SFX(RootSFX)로 재생되며 Voice Stealing 대상에서 제외된다.
+		public AudioSourceItem Spawn(AudioClip clip, float effectiveVolume, bool loop = false)
 		{
 			if (_activeItems.Count >= _maxVoices)
 			{
@@ -27,7 +28,7 @@ namespace ProjectOne.Audio
 			}
 
 			AudioSourceItem item = GetFromPool();
-			item.Initialize(clip, effectiveVolume, this);
+			item.Initialize(clip, effectiveVolume, this, loop);
 			item.OnActivate();
 			_activeItems.Add(item);
 			return item;
@@ -43,18 +44,25 @@ namespace ProjectOne.Audio
 
 		private void stealOldestVoice()
 		{
-			if (_activeItems.Count == 0)
+			// 루프성(RootSFX)은 강제 종료 대상에서 제외 — oneshot 중 가장 오래된 것만 뺏는다.
+			AudioSourceItem oldest = null;
+			for (int i = 0; i < _activeItems.Count; i++)
 			{
-				return;
-			}
+				if (_activeItems[i].IsLooping == true)
+				{
+					continue;
+				}
 
-			AudioSourceItem oldest = _activeItems[0];
-			for (int i = 1; i < _activeItems.Count; i++)
-			{
-				if (_activeItems[i].PlayStartTime < oldest.PlayStartTime)
+				if (oldest == null || _activeItems[i].PlayStartTime < oldest.PlayStartTime)
 				{
 					oldest = _activeItems[i];
 				}
+			}
+
+			// oneshot 이 하나도 없으면(전부 루프) 뺏지 않는다 — 신규 재생분은 풀 초과 생성으로 허용
+			if (oldest == null)
+			{
+				return;
 			}
 
 			// ReturnToPool 경유하여 _isReleased 플래그와 _activeItems 동기화

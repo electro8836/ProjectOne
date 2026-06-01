@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using EDT;
+using ProjectOne.Audio;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Combat;
@@ -60,6 +61,19 @@ namespace ProjectOne.Skill
 					if (targets[i] != null)
 					{
 						playEffectVFX(row.EffectVFX, targets[i], damageSource);
+					}
+				}
+			}
+
+			// 효과 SFX(피격음) — 대상별로 요청하되 AudioManager throttle 이 윈도우당 상한에서 컷.
+			// 100명이 동시 피격돼도 사운드는 _sfxThrottleMaxPerWindow 개까지만 재생된다.
+			if (string.IsNullOrEmpty(row.EffectSFX) == false)
+			{
+				for (int i = 0; i < targets.Count; i++)
+				{
+					if (targets[i] != null)
+					{
+						AudioManager.Instance.PlaySFXThrottled(row.EffectSFX);
 					}
 				}
 			}

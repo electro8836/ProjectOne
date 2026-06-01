@@ -13,10 +13,14 @@ namespace ProjectOne.Audio
 		private AudioSourcePool _ownerPool;
 		private float _playStartTime;
 		private bool _isReleased;
+		private bool _isLooping;
 		private Coroutine _lifeCoroutine;
 
 		// Voice Stealing 판정 시 AudioSourcePool이 비교에 사용
 		public float PlayStartTime => _playStartTime;
+
+		// 루프성 SFX(RootSFX 등)는 Voice Stealing 대상에서 제외하기 위해 AudioSourcePool이 확인
+		public bool IsLooping => _isLooping;
 
 		private void Awake()
 		{
@@ -24,19 +28,26 @@ namespace ProjectOne.Audio
 			_audioSource.playOnAwake = false;
 		}
 
-		public void Initialize(AudioClip clip, float effectiveVolume, AudioSourcePool pool)
+		public void Initialize(AudioClip clip, float effectiveVolume, AudioSourcePool pool, bool loop = false)
 		{
 			_audioSource.clip = clip;
 			_audioSource.volume = effectiveVolume;
+			_audioSource.loop = loop;
 			_ownerPool = pool;
 			_isReleased = false;
+			_isLooping = loop;
 			_playStartTime = Time.time;
 		}
 
 		public void OnActivate()
 		{
 			_audioSource.Play();
-			_lifeCoroutine = StartCoroutine(waitForPlayback());
+
+			// 루프성은 재생이 끝나지 않으므로 자동 반환 코루틴을 돌리지 않는다. StopLoopSFX 로만 회수.
+			if (_isLooping == false)
+			{
+				_lifeCoroutine = StartCoroutine(waitForPlayback());
+			}
 		}
 
 		public void OnDeactivate()
@@ -48,6 +59,7 @@ namespace ProjectOne.Audio
 			}
 
 			_audioSource.Stop();
+			_audioSource.loop = false;
 			_audioSource.clip = null;
 		}
 
