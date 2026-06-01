@@ -26,6 +26,17 @@ namespace ProjectOne.Audio
 		{
 			_audioSource = GetComponent<AudioSource>();
 			_audioSource.playOnAwake = false;
+			applyTwoDSettings(_audioSource);
+		}
+
+		// 위치 기반 3D 처리를 끄고 완전 2D로 고정한다. 인스펙터 설정과 무관하게 항상 동일하게 들리도록 보장.
+		private static void applyTwoDSettings(AudioSource source)
+		{
+			source.spatialBlend = 0f;       // 완전 2D
+			source.spatialize = false;      // 스페이셜라이저 플러그인 비활성
+			source.dopplerLevel = 0f;       // 도플러 없음
+			source.reverbZoneMix = 0f;      // 리버브 존 믹스 차단
+			source.bypassReverbZones = true;
 		}
 
 		public void Initialize(AudioClip clip, float effectiveVolume, AudioSourcePool pool, bool loop = false)

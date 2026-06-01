@@ -76,6 +76,10 @@ namespace ProjectOne.Audio
 			_activeBgmSource   = _bgmSourceA;
 			_inactiveBgmSource = _bgmSourceB;
 
+			// 인스펙터 설정과 무관하게 BGM 소스를 완전 2D로 고정 (위치 무관 동일 청취)
+			applyTwoDSettings(_bgmSourceA);
+			applyTwoDSettings(_bgmSourceB);
+
 			// BGM 소스는 채널에 등록하여 볼륨 변경 시 즉시 반영
 			_bgmChannel.RegisterSource(_bgmSourceA);
 			_bgmChannel.RegisterSource(_bgmSourceB);
@@ -296,6 +300,16 @@ namespace ProjectOne.Audio
 		}
 
 		// ── 내부 유틸 ────────────────────────────────────────────────────
+
+		// 위치 기반 3D 처리를 끄고 완전 2D로 고정한다. 인스펙터 설정과 무관하게 항상 동일하게 들리도록 보장.
+		private static void applyTwoDSettings(AudioSource source)
+		{
+			source.spatialBlend = 0f;       // 완전 2D
+			source.spatialize = false;      // 스페이셜라이저 플러그인 비활성
+			source.dopplerLevel = 0f;       // 도플러 없음
+			source.reverbZoneMix = 0f;      // 리버브 존 믹스 차단
+			source.bypassReverbZones = true;
+		}
 
 		private void swapBgmSources()
 		{
