@@ -96,4 +96,16 @@ namespace ProjectOne.Event
 						this.TableID = tableID;
 				}
 		}
+
+		// 게임 흐름 상태 전이 완료 알림 (GameFlow가 EnterAsync 성공 후 발행).
+		// StateType: 새로 진입한 상태의 구체 타입 (예: typeof(BootState))
+		public readonly struct GameStateChangedEvent
+		{
+				public readonly Type StateType;
+
+				public GameStateChangedEvent(Type stateType)
+				{
+						this.StateType = stateType;
+				}
+		}
 }
