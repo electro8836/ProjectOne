@@ -53,11 +53,11 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    ImpulseDuration: 0.2
+    ImpulseDuration: 0.1
     ImpulseType: 0
     DissipationRate: 0.25
     RawSignal: {fileID: 0}
-    AmplitudeGain: 1
+    AmplitudeGain: 0.35
     FrequencyGain: 1
     RepeatMode: 0
     Randomize: 1
@@ -75,8 +75,8 @@ MonoBehaviour:
         m_PostInfinity: 2
         m_RotationOrder: 4
       AttackTime: 0
-      SustainTime: 0.2
-      DecayTime: 0.7
+      SustainTime: 0.05
+      DecayTime: 0.25
       ScaleWithImpact: 1
       HoldForever: 0
     ImpactRadius: 100
@@ -84,4 +84,4 @@ MonoBehaviour:
     DissipationMode: 2
     DissipationDistance: 100
     PropagationSpeed: 343
-  DefaultVelocity: {x: 0, y: -1, z: 0}
+  DefaultVelocity: {x: 0.01, y: -0.02, z: 0}

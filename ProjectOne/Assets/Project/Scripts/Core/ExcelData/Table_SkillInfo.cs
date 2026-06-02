@@ -22,6 +22,7 @@ namespace EDT {
             public string SkillVFX { get; set; } = string.Empty;
             public SkillAnchorType SkillVFXAnchor { get; set; } = SkillAnchorType.None;
             public string SkillSFX { get; set; } = string.Empty;
+            public string CameraShake { get; set; } = string.Empty;
             public SkillEffect StartEffect { get; set; } = SkillEffect.None;
             public SkillEffect Effect_0 { get; set; } = SkillEffect.None;
             public SkillEffect Effect_1 { get; set; } = SkillEffect.None;
@@ -66,6 +67,7 @@ namespace EDT {
                 row.SkillVFX = reader.ReadString();
                 row.SkillVFXAnchor = (SkillAnchorType)reader.ReadInt32();
                 row.SkillSFX = reader.ReadString();
+                row.CameraShake = reader.ReadString();
                 row.StartEffect = (SkillEffect)reader.ReadInt32();
                 row.Effect_0 = (SkillEffect)reader.ReadInt32();
                 row.Effect_1 = (SkillEffect)reader.ReadInt32();

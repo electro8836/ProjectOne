@@ -57,8 +57,8 @@ MonoBehaviour:
     ImpulseType: 0
     DissipationRate: 0.25
     RawSignal: {fileID: 0}
-    AmplitudeGain: 1
-    FrequencyGain: 1
+    AmplitudeGain: 1.4
+    FrequencyGain: 1.3
     RepeatMode: 0
     Randomize: 1
     TimeEnvelope:
@@ -75,8 +75,8 @@ MonoBehaviour:
         m_PostInfinity: 2
         m_RotationOrder: 4
       AttackTime: 0
-      SustainTime: 0.2
-      DecayTime: 0.7
+      SustainTime: 0.12
+      DecayTime: 0.6
       ScaleWithImpact: 1
       HoldForever: 0
     ImpactRadius: 100
@@ -84,4 +84,4 @@ MonoBehaviour:
     DissipationMode: 2
     DissipationDistance: 100
     PropagationSpeed: 343
-  DefaultVelocity: {x: 0, y: -1, z: 0}
+  DefaultVelocity: {x: 0.02, y: -0.03, z: 0}

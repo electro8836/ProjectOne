@@ -4,10 +4,10 @@ using UnityEngine.SceneManagement;
 
 namespace ProjectOne.Flow
 {
-	// 로그인 상태 — 3.Login 씬 로드 후 서버 인증.
+	// 로그인 상태 — 3.Lobby 씬 로드 후 서버 인증.
 	public class LoginState : IGameState
 	{
-		private const string SceneName = "3.Login";
+		private const string SceneName = "3.Lobby";
 
 		public async UniTask EnterAsync(CancellationToken ct)
 		{

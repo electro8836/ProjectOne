@@ -105,6 +105,41 @@ namespace ProjectOne.CameraSystem
 
 		// ── 추종 ──────────────────────────────────────────────────────
 
+		// 씬 종속 가상 카메라를 런타임에 등록 (영속 매니저 ↔ 씬마다 생멸하는 vcam 연결).
+		// Battle 진입 시 CM_GameplayCam의 GameplayCameraRig가 OnEnable에서 호출한다.
+		public void SetVcam(CinemachineCamera vcam)
+		{
+			if (vcam == null)
+			{
+				return;
+			}
+
+			_vcam = vcam;
+			_follow = _vcam.GetComponent<CinemachineFollow>();
+			if (_defaultOrthoSize <= 0f)
+			{
+				_defaultOrthoSize = _vcam.Lens.OrthographicSize;
+			}
+
+			// 이미 추종 대상이 있으면(이벤트가 vcam 등록보다 먼저 온 경우) 즉시 재적용
+			if (_target != null)
+			{
+				SetFollowTarget(_target);
+			}
+		}
+
+		// 등록 해제 — 현재 들고 있는 vcam과 같을 때만 (늦게 파괴되는 이전 vcam이 새 vcam을 덮어쓰지 않도록)
+		public void ClearVcam(CinemachineCamera vcam)
+		{
+			if (_vcam != vcam)
+			{
+				return;
+			}
+
+			_vcam = null;
+			_follow = null;
+		}
+
 		// 외부에서 추종 대상을 직접 설정 (이벤트 외 수동 지정용)
 		public void SetFollowTarget(Transform target)
 		{

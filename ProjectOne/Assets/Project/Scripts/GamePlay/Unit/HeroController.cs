@@ -1,9 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using EDT;
 using ProjectOne.Unit.Input;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
+using ProjectOne.CameraSystem;
 
 namespace ProjectOne.Unit
 {
@@ -46,6 +48,20 @@ namespace ProjectOne.Unit
 
 		void Update()
 		{
+			// 테스트용 — 1/2 키로 카메라 쉐이크 확인
+			if (Keyboard.current != null)
+			{
+				if (Keyboard.current.digit1Key.wasPressedThisFrame == true)
+				{
+					CameraManager.Instance.Shake("shake_01");
+				}
+
+				if (Keyboard.current.digit2Key.wasPressedThisFrame == true)
+				{
+					CameraManager.Instance.Shake("shake_02");
+				}
+			}
+
 			if (_hero.IsDead == true)
 			{
 				_mover.Stop();
