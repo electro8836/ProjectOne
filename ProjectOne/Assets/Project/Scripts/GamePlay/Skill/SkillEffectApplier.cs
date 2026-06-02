@@ -165,8 +165,14 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
+				// 크리티컬 판정 — 대상별로 1회 굴림
+				bool isCritical;
+				bool isSuperCritical;
+				float critMul = RollCritical(source, out isCritical, out isSuperCritical);
+				int critDamage = Mathf.RoundToInt(rawDamage * critMul);
+
 				// 방어력(DEF/MDEF) 퍼센트 감소 — 대상별로 적용
-				int finalDamage = ApplyDefense(rawDamage, type, targets[i], source);
+				int finalDamage = ApplyDefense(critDamage, type, targets[i], source);
 
 				DamageInfo info = new DamageInfo
 				{
@@ -176,11 +182,45 @@ namespace ProjectOne.Skill
 					HitPoint = targets[i].transform.position,
 					KnockbackDir = Vector2.zero,
 					KnockbackPower = 0f,
-					IsCritical = false,
+					IsCritical = isCritical,
+					IsSuperCritical = isSuperCritical,
 					SkillID = (int)skillId
 				};
 				dmg.TakeDamage(in info);
 			}
+		}
+
+		// 공격자 스탯 기준 크리티컬 판정.
+		// - CritRate(0~100%)로 1차 검사, 크리면 SuperCritRate로 2차 검사
+		// - 배율: 크리 시 CritDam/100, 초크리면 (CritDam+SuperCritDam)/100 (비율 스탯이라 100=1.0배)
+		// - 비크리면 multiplier=1, isCritical=false, isSuperCritical=false
+		static float RollCritical(UnitBase attacker, out bool isCritical, out bool isSuperCritical)
+		{
+			isCritical = false;
+			isSuperCritical = false;
+			if (attacker == null || attacker.Stats == null)
+			{
+				return 1f;
+			}
+
+			float critRate = attacker.Stats.GetStat(StatTypes.CritRate);
+			if (Random.value * 100f >= critRate)
+			{
+				return 1f;
+			}
+
+			isCritical = true;
+			float critDam = attacker.Stats.GetStat(StatTypes.CritDam);
+
+			float superRate = attacker.Stats.GetStat(StatTypes.SuperCritRate);
+			if (Random.value * 100f < superRate)
+			{
+				isSuperCritical = true;
+				float superDam = attacker.Stats.GetStat(StatTypes.SuperCritDam);
+				return (critDam + superDam) / 100f;
+			}
+
+			return critDam / 100f;
 		}
 
 		// 테이블 SkillDamageType → 런타임 DamageType (Pure=감소 없는 고정 데미지, None=물리 기본)

@@ -292,7 +292,6 @@ GameObject:
   m_Component:
   - component: {fileID: 752248808}
   - component: {fileID: 752248807}
-  - component: {fileID: 752248809}
   m_Layer: 0
   m_Name: CombatDebuger
   m_TagString: Untagged
@@ -327,21 +326,52 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &752248809
+--- !u!1 &895942817
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 895942819}
+  - component: {fileID: 895942818}
+  m_Layer: 0
+  m_Name: FPSCounter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &895942818
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 752248806}
+  m_GameObject: {fileID: 895942817}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c1d70536f043ce4c9d87e25d8fca247, type: 3}
+  m_Script: {fileID: 11500000, guid: 191972ba7e66a314e92d0ca868984903, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Dev.AttackRangeDebugger
-  _show: 1
-  _alpha: 0.6
-  _duration: 0.5
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Dev.FPSCounter
+  _fontSize: 48
+  _color: {r: 1, g: 1, b: 1, a: 1}
+--- !u!4 &895942819
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 895942817}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.26376, y: 0.28666, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &961739749
 GameObject:
   m_ObjectHideFlags: 0
@@ -729,9 +759,9 @@ MonoBehaviour:
   _spawnList:
   - monsterId: 10001
     center: {x: 0, y: 0, z: 0}
-    radius: 1
-    minCount: 1
-    maxCount: 1
+    radius: 2
+    minCount: 10
+    maxCount: 20
     spawnInterval: 2
 --- !u!4 &1200190042
 Transform:
@@ -748,52 +778,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1402398395
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1402398396}
-  - component: {fileID: 1402398397}
-  m_Layer: 0
-  m_Name: FPSCounter
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1402398396
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1402398395}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.26376, y: 0.28666, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1402398397
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1402398395}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 191972ba7e66a314e92d0ca868984903, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Dev.FPSCounter
-  _fontSize: 48
-  _color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1001 &1934197159
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -929,7 +913,7 @@ SceneRoots:
   - {fileID: 543137986}
   - {fileID: 1200190042}
   - {fileID: 752248808}
-  - {fileID: 1402398396}
+  - {fileID: 895942819}
   - {fileID: 1042661633}
   - {fileID: 1934197159}
   - {fileID: 690392639}

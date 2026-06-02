@@ -27,9 +27,6 @@ namespace ProjectOne.Skill
 			{
 			case SkillScanType.None:
 				return _scratch;
-			case SkillScanType.Chain:
-				Debug.Log("[TargetResolver] Chain TODO — 빈 결과 반환");
-				return _scratch;
 			default:
 			{
 				Vector2 hitCenter = caster.HitCenter;

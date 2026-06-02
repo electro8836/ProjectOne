@@ -188,7 +188,7 @@ namespace ProjectOne.Unit
 		{
 			if (!IsDead)
 			{
-				EventManager.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID, info.IsCritical));
+				EventManager.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID, info.IsCritical, info.IsSuperCritical));
 				if (_animator != null)
 				{
 					_animator.PlayHit();

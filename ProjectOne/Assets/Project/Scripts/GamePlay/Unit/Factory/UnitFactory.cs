@@ -145,6 +145,12 @@ namespace ProjectOne.Unit
 			SkillContainer skillContainer = new SkillContainer(unit);
 			RegisterBaseSkills(skillContainer, skillSetId);
 			unit.SetSkillContainer(skillContainer);
+			SkillIndicator skillIndicator = unit.GetComponent<SkillIndicator>();
+			if (skillIndicator != null)
+			{
+				skillIndicator.SetSkills(skillContainer.GetAll());
+			}
+
 			UnitMover component = unit.GetComponent<UnitMover>();
 			if (component != null)
 			{

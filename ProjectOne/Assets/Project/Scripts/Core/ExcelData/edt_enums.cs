@@ -124,7 +124,6 @@ namespace EDT {
         Sector,
         Line,
         Donut,
-        Chain,
     }
 
     public enum SkillDamageType {
@@ -329,12 +328,12 @@ namespace EDT {
         CritDam,
         CritDam_Base,
         CritDam_Add,
-        CritDam_Ratio,
         SuperCritRate,
+        SuperCritRate_Base,
         SuperCritRate_Add,
         SuperCritDam,
+        SuperCritDam_Base,
         SuperCritDam_Add,
-        SuperCritDam_Ratio,
         MaxHP,
         MaxHP_Base,
         MaxHP_Add,
@@ -365,6 +364,7 @@ namespace EDT {
         Accuracy,
         Accuracy_Base,
         Accuracy_Add,
+        Accuracy_Ratio,
         BreakGage,
         BreakGage_Base,
         BreakGage_Add,

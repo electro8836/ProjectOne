@@ -26,6 +26,7 @@ namespace ProjectOne.Combat
 		public Vector2 KnockbackDir;
 		public float KnockbackPower;
 		public bool IsCritical;
+		public bool IsSuperCritical;
 		public int SkillID;
 	}
 }
