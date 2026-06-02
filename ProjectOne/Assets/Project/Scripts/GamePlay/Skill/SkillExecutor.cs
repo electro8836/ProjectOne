@@ -107,10 +107,11 @@ namespace ProjectOne.Skill
 		{
 			PlayMotion(row, caster);
 
-			// 시전 캐릭터 위치에서 스킬 VFX 1회 출력
+			// 시전 캐릭터에 스킬 VFX 1회 출력 — 앵커가 Center 면 충돌체 중심만큼 띄워 부착
 			if (string.IsNullOrEmpty(row.SkillVFX) == false)
 			{
-				VFXManager.Instance.PlayOneShot(row.SkillVFX, caster.transform);
+				Vector3 offset = (row.SkillVFXAnchor == SkillAnchorType.Center) ? (Vector3)(caster.HitCenter - (Vector2)caster.transform.position) : Vector3.zero;
+				VFXManager.Instance.PlayOneShot(row.SkillVFX, caster.transform, offset);
 			}
 
 			// 스킬 SFX 1회 재생 (시전 시마다)

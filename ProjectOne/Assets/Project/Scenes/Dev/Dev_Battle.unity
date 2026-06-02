@@ -299,7 +299,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &752248807
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -730,8 +730,8 @@ MonoBehaviour:
   - monsterId: 10001
     center: {x: 0, y: 0, z: 0}
     radius: 1
-    minCount: 50
-    maxCount: 100
+    minCount: 1
+    maxCount: 1
     spawnInterval: 2
 --- !u!4 &1200190042
 Transform:

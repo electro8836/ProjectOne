@@ -60,7 +60,7 @@ namespace ProjectOne.Skill
 				{
 					if (targets[i] != null)
 					{
-						playEffectVFX(row.EffectVFX, targets[i], damageSource);
+						playEffectVFX(row.EffectVFX, targets[i], damageSource, row.EffectType);
 					}
 				}
 			}
@@ -104,11 +104,18 @@ namespace ProjectOne.Skill
 			}
 		}
 
-		// 공격자→적 방향으로, 거리(밀착 정도)에 따라 적 중심~반지름 사이 지점에 피격 VFX 를 월드 소환
-		static void playEffectVFX(string address, UnitBase target, UnitBase attacker)
+		// Damage 효과는 공격자→적 방향으로 적 외곽에 배치, 그 외 효과는 적 중심(Center)에 고정 소환
+		static void playEffectVFX(string address, UnitBase target, UnitBase attacker, SkillEffectTypes effectType)
 		{
 			Vector2 center = target.HitCenter;
 			float z = target.transform.position.z;
+
+			// Damage 외 효과(버프/스탯 등)는 방향성 없이 대상 중심에 출력
+			if (effectType != SkillEffectTypes.Damage)
+			{
+				VFXManager.Instance.PlayOneShot(address, new Vector3(center.x, center.y, z));
+				return;
+			}
 
 			// 공격자 없음/자기 자신(버프 self) → 방향 없음 → 중심
 			if (attacker == null || attacker == target)

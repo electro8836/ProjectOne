@@ -9,13 +9,13 @@ namespace ProjectOne.UI
 	public class DamageTextManager : MonoSingleton<DamageTextManager>
 	{
 		[SerializeField] private DamageTextPool _pool;
-		[SerializeField] private float _offsetY = 0.2f;   // 콜라이더 반지름 위로 추가로 올릴 거리
+		[SerializeField] private float _offsetY = 0.0f;		// 콜라이더 반지름 위로 추가로 올릴 거리
 		[SerializeField] private Color _normalColor = Color.white;
-		[SerializeField] private Color _criticalColor = new Color(1f, 0.55f, 0f, 1f);  // 주황
+		[SerializeField] private Color _criticalColor = new Color(1f, 0.55f, 0f, 1f);	// 주황
 
-		[SerializeField] private float _stackSpacing = 0.35f;  // 동시 데미지 간 세로 간격(월드 단위)
-		[SerializeField] private int _maxStack = 5;            // 스택 최대 칸 수(초과 시 0부터 순환)
-		[SerializeField] private float _cullingMargin = 0.05f; // 화면 경계 컬링 여유값
+		[SerializeField] private float _stackSpacing = 0.35f;		// 동시 데미지 간 세로 간격(월드 단위)
+		[SerializeField] private int _maxStack = 5;					// 스택 최대 칸 수(초과 시 0부터 순환)
+		[SerializeField] private float _cullingMargin = 0.05f;		// 화면 경계 컬링 여유값
 
 		// 유닛(InstanceID) → 마지막 스폰 프레임 / 현재 스택 인덱스
 		private readonly Dictionary<int, StackInfo> _stacks = new Dictionary<int, StackInfo>();
@@ -32,6 +32,7 @@ namespace ProjectOne.UI
 		{
 			base.Awake();
 			_mainCamera = Camera.main;
+
 			EventManager.Instance.Subscribe<DamageTakenEvent>(onDamageTaken);
 			EventManager.Instance.Subscribe<UnitDiedEvent>(onUnitDied);
 		}
@@ -40,6 +41,7 @@ namespace ProjectOne.UI
 		{
 			EventManager.Instance.Unsubscribe<DamageTakenEvent>(onDamageTaken);
 			EventManager.Instance.Unsubscribe<UnitDiedEvent>(onUnitDied);
+
 			base.OnDestroy();
 		}
 
@@ -69,7 +71,7 @@ namespace ProjectOne.UI
 			next.Index = index;
 			_stacks[id] = next;
 
-			float upOffset = e.Target.Radius + _offsetY + index * _stackSpacing;
+			float upOffset = e.Target.Radius * 2 + _offsetY + index * _stackSpacing;
 			Vector3 worldPos = e.Target.transform.position + Vector3.up * upOffset;
 
 			if (isOffscreen(worldPos))

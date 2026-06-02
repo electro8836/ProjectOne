@@ -24,7 +24,6 @@ namespace ProjectOne.Utils
 				if (_ps == null)
 				{
 					_ps = GetComponentInChildren<ParticleSystem>(true);
-					_ps.GetComponent<ParticleSystemRenderer>().enableGPUInstancing = true;
 				}
 			}
 		}

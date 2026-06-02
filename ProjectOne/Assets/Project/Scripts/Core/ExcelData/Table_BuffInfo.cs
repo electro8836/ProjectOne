@@ -10,8 +10,9 @@ namespace EDT {
             public BuffInfo ID { get; set; } = BuffInfo.None;
             public string Name { get; set; } = string.Empty;
             public bool IsDebuff { get; set; } = false;
-            public string RootVFX { get; set; } = string.Empty;
-            public string RootSFX { get; set; } = string.Empty;
+            public string VFX { get; set; } = string.Empty;
+            public SkillAnchorType VFXAnchor { get; set; } = SkillAnchorType.None;
+            public string SFX { get; set; } = string.Empty;
             public SkillEffect Effect { get; set; } = SkillEffect.None;
             public SkillEffect IntervalEffect { get; set; } = SkillEffect.None;
         }
@@ -39,8 +40,9 @@ namespace EDT {
                 row.ID = (BuffInfo)reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.IsDebuff = reader.ReadBoolean();
-                row.RootVFX = reader.ReadString();
-                row.RootSFX = reader.ReadString();
+                row.VFX = reader.ReadString();
+                row.VFXAnchor = (SkillAnchorType)reader.ReadInt32();
+                row.SFX = reader.ReadString();
                 row.Effect = (SkillEffect)reader.ReadInt32();
                 row.IntervalEffect = (SkillEffect)reader.ReadInt32();
                 _all.Add( row.ID, row );

@@ -9,6 +9,7 @@ namespace ProjectOne.Utils
 	{
 		internal string Address;
 		internal Transform Parent;
+		internal Vector3 LocalOffset;   // parent 기준 부착 오프셋 (Center 앵커 등)
 		internal VFXItem Item;   // 로드 완료 전에는 null
 		internal bool Released;
 

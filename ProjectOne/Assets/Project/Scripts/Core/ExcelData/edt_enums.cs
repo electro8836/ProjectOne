@@ -144,6 +144,12 @@ namespace EDT {
         ActivateAura,
     }
 
+    public enum SkillAnchorType {
+        None,
+        Root,
+        Center,
+    }
+
     public enum StatTypes {
         None,
         ATK,

@@ -37,6 +37,12 @@ namespace ProjectOne.Utils
 		// one-shot : anchor 에 붙여(따라다님) 1회 재생, 파티클 수명 후 자동 반환 (SkillVFX 용)
 		public void PlayOneShot(string address, Transform anchor)
 		{
+			PlayOneShot(address, anchor, Vector3.zero);
+		}
+
+		// one-shot : anchor 에 붙여 localOffset 만큼 띄워 1회 재생 (Center 앵커 등)
+		public void PlayOneShot(string address, Transform anchor, Vector3 localOffset)
+		{
 			if (string.IsNullOrEmpty(address) || anchor == null)
 			{
 				return;
@@ -46,11 +52,11 @@ namespace ProjectOne.Utils
 			VFXItem item = tryGetItemSync(address);
 			if (item != null)
 			{
-				activateOneShot(item, anchor, Vector3.zero, false);
+				activateOneShot(item, anchor, localOffset, Vector3.zero, false);
 				return;
 			}
 
-			playOneShotAsync(address, anchor, Vector3.zero, false).Forget();
+			playOneShotAsync(address, anchor, localOffset, Vector3.zero, false).Forget();
 		}
 
 		// one-shot : 월드 좌표에 고정 소환(부착·추종 없음) (EffectVFX 용)
@@ -64,17 +70,24 @@ namespace ProjectOne.Utils
 			VFXItem item = tryGetItemSync(address);
 			if (item != null)
 			{
-				activateOneShot(item, null, worldPosition, true);
+				activateOneShot(item, null, Vector3.zero, worldPosition, true);
 				return;
 			}
 
-			playOneShotAsync(address, null, worldPosition, true).Forget();
+			playOneShotAsync(address, null, Vector3.zero, worldPosition, true).Forget();
 		}
 
 		// 루프성 : parent 에 붙여 유지, 핸들 반환 → 호출자가 Release (RootVFX)
 		public VFXHandle Attach(string address, Transform parent)
 		{
+			return Attach(address, parent, Vector3.zero);
+		}
+
+		// 루프성 : parent 에 localOffset 만큼 띄워 부착 유지 (Center 앵커 등)
+		public VFXHandle Attach(string address, Transform parent, Vector3 localOffset)
+		{
 			VFXHandle handle = new VFXHandle(address, parent);
+			handle.LocalOffset = localOffset;
 			if (string.IsNullOrEmpty(address) || parent == null)
 			{
 				handle.Released = true;
@@ -174,7 +187,7 @@ namespace ProjectOne.Utils
 		// ── 스폰 활성화 (동기·비동기 공유) ────────────────────────────
 
 		// one-shot 활성: 위치 지정 → 활성 → 재생 → 활성 리스트 등록
-		private void activateOneShot(VFXItem item, Transform anchor, Vector3 worldPosition, bool useWorld)
+		private void activateOneShot(VFXItem item, Transform anchor, Vector3 localOffset, Vector3 worldPosition, bool useWorld)
 		{
 			if (useWorld == true)
 			{
@@ -184,7 +197,7 @@ namespace ProjectOne.Utils
 			else
 			{
 				item.transform.SetParent(anchor, false);
-				item.transform.localPosition = Vector3.zero;
+				item.transform.localPosition = localOffset;
 			}
 
 			item.gameObject.SetActive(true);
@@ -205,7 +218,7 @@ namespace ProjectOne.Utils
 
 			handle.Item = item;
 			item.transform.SetParent(handle.Parent, false);
-			item.transform.localPosition = Vector3.zero;
+			item.transform.localPosition = handle.LocalOffset;
 			item.gameObject.SetActive(true);
 			item.OnActivate();
 			item.PlayLooping();
@@ -213,7 +226,7 @@ namespace ProjectOne.Utils
 
 		// ── 비동기 스폰 (최초 로드 필요 시에만) ───────────────────────
 
-		private async UniTask playOneShotAsync(string address, Transform anchor, Vector3 worldPosition, bool useWorld)
+		private async UniTask playOneShotAsync(string address, Transform anchor, Vector3 localOffset, Vector3 worldPosition, bool useWorld)
 		{
 			VFXItem item = await getItemAsync(address);
 			if (item == null || _isQuitting == true)
@@ -228,7 +241,7 @@ namespace ProjectOne.Utils
 				return;
 			}
 
-			activateOneShot(item, anchor, worldPosition, useWorld);
+			activateOneShot(item, anchor, localOffset, worldPosition, useWorld);
 		}
 
 		private async UniTask attachAsync(VFXHandle handle)

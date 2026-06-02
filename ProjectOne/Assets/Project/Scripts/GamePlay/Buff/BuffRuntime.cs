@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using EDT;
 using ProjectOne.Audio;
 using ProjectOne.Unit;
@@ -49,16 +50,17 @@ namespace ProjectOne.Buff
 				IsDebuff = row.IsDebuff;
 				IntervalEffect = row.IntervalEffect;
 
-				// RootVFX: 버프가 적용된 유닛에 부착해 지속 동안 따라다니게 함
-				if (string.IsNullOrEmpty(row.RootVFX) == false && owner != null)
+				// VFX: 버프가 적용된 유닛에 부착해 지속 동안 따라다니게 함 — 앵커가 Center 면 충돌체 중심만큼 띄움
+				if (string.IsNullOrEmpty(row.VFX) == false && owner != null)
 				{
-					_rootVfx = VFXManager.Instance.Attach(row.RootVFX, owner.transform);
+					Vector3 offset = (row.VFXAnchor == SkillAnchorType.Center) ? (Vector3)(owner.HitCenter - (Vector2)owner.transform.position) : Vector3.zero;
+					_rootVfx = VFXManager.Instance.Attach(row.VFX, owner.transform, offset);
 				}
 
-				// RootSFX: 버프 지속 동안 루프 재생, Dispose 에서 정지
-				if (string.IsNullOrEmpty(row.RootSFX) == false)
+				// SFX: 버프 지속 동안 루프 재생, Dispose 에서 정지
+				if (string.IsNullOrEmpty(row.SFX) == false)
 				{
-					_rootSfx = AudioManager.Instance.PlayLoopSFX(row.RootSFX);
+					_rootSfx = AudioManager.Instance.PlayLoopSFX(row.SFX);
 				}
 
 				// Effect: 부착 시 1회 발동 — owner를 caster로 해서 Self 효과가 owner에 적용되도록 함
