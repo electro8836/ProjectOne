@@ -10,11 +10,11 @@ namespace EDT {
             public BuffInfo ID { get; set; } = BuffInfo.None;
             public string Name { get; set; } = string.Empty;
             public bool IsDebuff { get; set; } = false;
+            public SkillEffect Effect { get; set; } = SkillEffect.None;
+            public SkillEffect IntervalEffect { get; set; } = SkillEffect.None;
             public string VFX { get; set; } = string.Empty;
             public SkillAnchorType VFXAnchor { get; set; } = SkillAnchorType.None;
             public string SFX { get; set; } = string.Empty;
-            public SkillEffect Effect { get; set; } = SkillEffect.None;
-            public SkillEffect IntervalEffect { get; set; } = SkillEffect.None;
         }
 
         public const string Filename = "edt_buffinfo.bytes";
@@ -40,11 +40,11 @@ namespace EDT {
                 row.ID = (BuffInfo)reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.IsDebuff = reader.ReadBoolean();
+                row.Effect = (SkillEffect)reader.ReadInt32();
+                row.IntervalEffect = (SkillEffect)reader.ReadInt32();
                 row.VFX = reader.ReadString();
                 row.VFXAnchor = (SkillAnchorType)reader.ReadInt32();
                 row.SFX = reader.ReadString();
-                row.Effect = (SkillEffect)reader.ReadInt32();
-                row.IntervalEffect = (SkillEffect)reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

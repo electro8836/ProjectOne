@@ -76,6 +76,38 @@ namespace ProjectOne.Unit
 
 		public BuffContainer BuffContainer => _buffContainer;
 
+		public UnitMover Mover => _mover;
+
+		// 행동 차단 키 집합 — 키별로 켜고 끄므로 여러 CC 가 겹쳐도 안전 (스턴+이동불가 동시 적용 등)
+		// 같은 키 중복 Add/Remove 가 무해 → 중복 적용·해제 누락에 강함
+		private readonly HashSet<string> _moveBlockKeys = new HashSet<string>();
+
+		private readonly HashSet<string> _skillBlockKeys = new HashSet<string>();
+
+		public bool IsMoveBlocked => _moveBlockKeys.Count > 0;
+
+		public bool IsSkillBlocked => _skillBlockKeys.Count > 0;
+
+		public void BlockMove(string key)
+		{
+			_moveBlockKeys.Add(key);
+		}
+
+		public void UnblockMove(string key)
+		{
+			_moveBlockKeys.Remove(key);
+		}
+
+		public void BlockSkill(string key)
+		{
+			_skillBlockKeys.Add(key);
+		}
+
+		public void UnblockSkill(string key)
+		{
+			_skillBlockKeys.Remove(key);
+		}
+
 		public int GetID()
 		{
 			return _id;
@@ -144,6 +176,12 @@ namespace ProjectOne.Unit
 				{
 					_animator.SetMoving(_mover.IsMoving);
 					_animator.SetFacing(_mover.Facing);
+				}
+
+				// 이동 차단 상태를 mover 에 반영 (스턴/이동불가 등 CC)
+				if (_mover != null)
+				{
+					_mover.SetMoveEnabled(IsMoveBlocked == false);
 				}
 
 				float deltaTime = Time.deltaTime;

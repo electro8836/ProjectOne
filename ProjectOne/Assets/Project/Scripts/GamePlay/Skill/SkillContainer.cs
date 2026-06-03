@@ -110,6 +110,12 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
+			// 스킬 차단(스턴/침묵 등) 상태면 시전 불가
+			if (_owner.IsSkillBlocked == true)
+			{
+				return false;
+			}
+
 			SkillRuntime rt;
 			if (_byId.TryGetValue(id, out rt) == false)
 			{

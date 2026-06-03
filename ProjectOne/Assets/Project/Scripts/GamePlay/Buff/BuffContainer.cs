@@ -36,6 +36,16 @@ namespace ProjectOne.Buff
 			BuffRuntime existing;
 			if (_byId.TryGetValue(id, out existing) == true)
 			{
+				// 동일 ID 재적용: 새 지속시간이 남은 시간보다 길 때만 갱신 (짧으면 무시 — 기존 상태이상 유지)
+				bool newIsInfinite = duration <= 0f;
+				if (newIsInfinite == false)
+				{
+					if (existing.IsInfinite == true || duration < existing.RemainingDuration)
+					{
+						return;
+					}
+				}
+
 				existing.Refresh(duration, interval);
 				return;
 			}

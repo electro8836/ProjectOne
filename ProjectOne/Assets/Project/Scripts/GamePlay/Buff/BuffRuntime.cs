@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EDT;
@@ -26,6 +27,7 @@ namespace ProjectOne.Buff
 
 		float _intervalAccum;
 		readonly List<StatModifier> _modHandles = new List<StatModifier>(2);
+		IBuffBehavior _behavior;   // 코드로 정의된 버프 동작 (없으면 null — 데이터 버프)
 		bool _expired;
 		VFXHandle _rootVfx;        // 버프 지속 동안 owner 에 부착되는 루프성 VFX
 		AudioSfxHandle _rootSfx;   // 버프 지속 동안 재생되는 루프성 SFX
@@ -67,6 +69,17 @@ namespace ProjectOne.Buff
 				if (row.Effect != SkillEffect.None)
 				{
 					SkillEffectApplier.ApplyOnBuff(row.Effect, owner, source, this);
+				}
+			}
+
+			// 코드로 정의된 버프(버프 ID 와 동일한 이름의 클래스)가 있으면 활성화 — 없으면 데이터 동작만 수행
+			Type behaviorType = Type.GetType(string.Format("ProjectOne.Buff.{0}", id.ToString()));
+			if (behaviorType != null)
+			{
+				_behavior = Activator.CreateInstance(behaviorType, owner, source) as IBuffBehavior;
+				if (_behavior != null)
+				{
+					_behavior.OnActivate();
 				}
 			}
 		}
@@ -125,6 +138,13 @@ namespace ProjectOne.Buff
 		// 버프 종료 — 부착 시 적용된 StatModifier 들을 전부 회수
 		public void Dispose()
 		{
+			// 코드 버프 비활성화 — 행동 차단 등 해제
+			if (_behavior != null)
+			{
+				_behavior.OnDeactivate();
+				_behavior = null;
+			}
+
 			// RootVFX 회수 — 버프 종료와 함께 사라짐
 			if (_rootVfx != null)
 			{
