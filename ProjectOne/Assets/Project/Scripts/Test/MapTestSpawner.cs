@@ -19,6 +19,7 @@ namespace ProjectOne.Test
 			public int characterId;          // Table_Character ID
 			public Vector3 position;
 			public Faction faction;          // None 이면 Player 기본
+			public bool autoControl;         // true 면 자동전투 AI, false 면 플레이어 직접조작
 		}
 
 		[System.Serializable]
@@ -110,7 +111,7 @@ namespace ProjectOne.Test
 					f = Faction.Player;
 				}
 
-				await UnitFactory.Instance.CreateHeroAsync(e.characterId, e.position, f, ct);
+				await UnitFactory.Instance.CreateHeroAsync(e.characterId, e.position, f, e.autoControl, ct);
 			}
 
 			for (int i = 0; i < _monsters.Count; i++)

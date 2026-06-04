@@ -176,7 +176,8 @@ namespace ProjectOne.Skill
 			return facing;
 		}
 
-		private static bool IsEnemy(Faction casterFaction, Faction otherFaction)
+		// AI 타겟팅 등 외부에서 적군 판정 재사용 — None/Neutral 은 적 아님
+		public static bool IsEnemy(Faction casterFaction, Faction otherFaction)
 		{
 			if (casterFaction == Faction.None)
 			{

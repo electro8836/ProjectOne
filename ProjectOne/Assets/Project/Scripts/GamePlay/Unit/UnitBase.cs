@@ -8,6 +8,7 @@ using ProjectOne.Event;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
 using ProjectOne.Buff;
+using ProjectOne.Unit.AI;
 
 namespace ProjectOne.Unit
 {
@@ -46,6 +47,8 @@ namespace ProjectOne.Unit
 		protected SkillContainer _skillContainer;
 
 		protected BuffContainer _buffContainer;
+
+		protected AiBrain _brain;
 
 		protected CircleCollider2D _collider;
 
@@ -171,6 +174,12 @@ namespace ProjectOne.Unit
 			_buffContainer = bc;
 		}
 
+		// AI 자동전투 두뇌 주입 — 미주입(null) 이면 자동전투 안 함 (플레이어 직접조작 등)
+		public void SetBrain(AiBrain brain)
+		{
+			_brain = brain;
+		}
+
 		protected virtual void LateUpdate()
 		{
 			if (!IsDead)
@@ -196,6 +205,12 @@ namespace ProjectOne.Unit
 				if (_skillContainer != null)
 				{
 					_skillContainer.Tick(deltaTime);
+				}
+
+				// AI 두뇌 갱신 — 타겟 탐색/이동/스킬 결정 (주입된 경우만)
+				if (_brain != null)
+				{
+					_brain.Tick(deltaTime);
 				}
 
 				// 브레이크 게이지 자동 회복 — 1초마다 BreakRecovery 스탯만큼 (ModifyBreakGage 가 최댓값 Clamp)

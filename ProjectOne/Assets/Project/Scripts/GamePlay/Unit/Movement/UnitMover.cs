@@ -1,5 +1,7 @@
 using UnityEngine;
+using System.Collections.Generic;
 using ProjectOne.Map;
+using ProjectOne.Unit;
 public class UnitMover : MonoBehaviour
 {
 	private float _unitRadius = 0.3f;
@@ -62,7 +64,7 @@ public class UnitMover : MonoBehaviour
 		Vector2 currentPos = transform.position;
 		Vector2 nextPos    = currentPos + velocity * Time.fixedDeltaTime;
 
-		if (IsWalkable(nextPos) == true)
+		if (CanMoveTo(currentPos, nextPos) == true)
 		{
 			transform.position = nextPos;
 			return;
@@ -72,16 +74,32 @@ public class UnitMover : MonoBehaviour
 		Vector2 moveOnlyX = new Vector2(nextPos.x, currentPos.y);
 		Vector2 moveOnlyY = new Vector2(currentPos.x, nextPos.y);
 
-		if (IsWalkable(moveOnlyX) == true)
+		if (CanMoveTo(currentPos, moveOnlyX) == true)
 		{
 			transform.position = moveOnlyX;
 		}
-		else if (IsWalkable(moveOnlyY) == true)
+		else if (CanMoveTo(currentPos, moveOnlyY) == true)
 		{
 			transform.position = moveOnlyY;
 		}
 
 		// 둘 다 막혔으면 이동 안 함
+	}
+
+	// 타일맵 통과 + 다른 유닛과 새로 겹치지 않을 때만 이동 허용
+	private bool CanMoveTo(Vector2 currentPos, Vector2 nextPos)
+	{
+		if (IsWalkable(nextPos) == false)
+		{
+			return false;
+		}
+
+		if (OverlapsNewUnit(currentPos, nextPos) == true)
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 	private bool IsWalkable(Vector2 position)
@@ -92,6 +110,43 @@ public class UnitMover : MonoBehaviour
 		}
 
 		return TilemapGrid.Instance.IsWalkable(position, _unitRadius);
+	}
+
+	// nextPos 에서 다른 유닛과 "새로" 겹치는지 — 이미 겹친 유닛은 무시(끼임에서 빠져나올 수 있게)
+	private bool OverlapsNewUnit(Vector2 currentPos, Vector2 nextPos)
+	{
+		if (UnitContainer.Instance == null)
+		{
+			return false;
+		}
+
+		IReadOnlyList<UnitBase> all = UnitContainer.Instance.All;
+		for (int i = 0; i < all.Count; i++)
+		{
+			UnitBase u = all[i];
+			if (u == null || u.transform == transform || u.IsDead == true)
+			{
+				continue;
+			}
+
+			float min = (_unitRadius + u.Radius) * 0.5f;
+			float minSqr = min * min;
+			Vector2 up = u.transform.position;
+
+			// 이미 겹쳐 있던 유닛은 무시 — 그쪽에서 빠져나오는 이동은 허용
+			if (((Vector2)up - currentPos).sqrMagnitude < minSqr)
+			{
+				continue;
+			}
+
+			// 이동 후 새로 겹치게 되면 차단
+			if (((Vector2)up - nextPos).sqrMagnitude < minSqr)
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	public void Initialize(float radius, float mass)

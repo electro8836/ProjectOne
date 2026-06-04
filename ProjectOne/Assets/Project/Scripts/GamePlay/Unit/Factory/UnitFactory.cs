@@ -8,12 +8,15 @@ using ProjectOne.Event;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
 using ProjectOne.Buff;
+using ProjectOne.Unit.AI;
 
 namespace ProjectOne.Unit
 {
 	public sealed class UnitFactory : Singleton<UnitFactory>
 	{
 		private const string SourceBase = "Base";
+
+		private const string SourceSpecial = "Special";
 
 		private const float DefaultMass = 1f;
 
@@ -30,7 +33,7 @@ namespace ProjectOne.Unit
 			switch (type)
 			{
 			case UnitType.Hero:
-				return await CreateHeroAsync(id, pos, (faction == Faction.None) ? Faction.Player : faction, ct);
+				return await CreateHeroAsync(id, pos, (faction == Faction.None) ? Faction.Player : faction, false, ct);
 			case UnitType.Monster:
 				return await CreateMonsterAsync(id, pos, (faction == Faction.None) ? Faction.Enemy : faction, ct);
 			default:
@@ -39,7 +42,8 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		public async UniTask<Hero> CreateHeroAsync(int characterId, Vector3 pos, Faction faction = Faction.Player, CancellationToken ct = default(CancellationToken))
+		// autoControl=true 면 자동전투 AI 두뇌 주입(NPC/PVP), false 면 플레이어 직접조작(HeroController 유지)
+		public async UniTask<Hero> CreateHeroAsync(int characterId, Vector3 pos, Faction faction = Faction.Player, bool autoControl = false, CancellationToken ct = default(CancellationToken))
 		{
 			Table_Character.Row row = Table_Character.Get(characterId);
 			if (row == null)
@@ -58,7 +62,7 @@ namespace ProjectOne.Unit
 				}
 			}
 
-			Hero hero = await SpawnAndComposeAsync<Hero>(UnitType.Hero, row.Path, row.Name, characterId, row.BaseStatID, row.SkillSetID, skinAddress, pos, faction, ct);
+			Hero hero = await SpawnAndComposeAsync<Hero>(UnitType.Hero, row.Path, row.Name, row, skinAddress, pos, faction, autoControl, ct);
 			if (hero == null)
 			{
 				return null;
@@ -96,11 +100,11 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		private async UniTask<T> SpawnAndComposeAsync<T>(UnitType unitType, string prefabAddress, string displayName, int id, int baseStatId, int skillSetId, string skinAddress, Vector3 pos, Faction faction, CancellationToken ct) where T : UnitBase
+		private async UniTask<T> SpawnAndComposeAsync<T>(UnitType unitType, string prefabAddress, string displayName, Table_Character.Row charRow, string skinAddress, Vector3 pos, Faction faction, bool autoControl, CancellationToken ct) where T : UnitBase
 		{
 			if (string.IsNullOrEmpty(prefabAddress))
 			{
-				Debug.LogError($"[UnitFactory] 프리팹 Address 비어있음 (id={id})");
+				Debug.LogError($"[UnitFactory] 프리팹 Address 비어있음 (id={charRow.ID})");
 				return null;
 			}
 
@@ -113,7 +117,7 @@ namespace ProjectOne.Unit
 
 			Transform root = UnitContainer.Instance.GetRoot(unitType);
 			GameObject val2 = Object.Instantiate<GameObject>(val, pos, Quaternion.identity, root);
-			val2.name = $"{displayName}_{id}";
+			val2.name = $"{displayName}_{charRow.ID}";
 			T unit = val2.GetComponent<T>();
 			if (unit == null)
 			{
@@ -122,7 +126,7 @@ namespace ProjectOne.Unit
 				return null;
 			}
 
-			ComposeUnit(unit, id, baseStatId, skillSetId, faction);
+			ComposeHero(unit, charRow, faction, autoControl);
 			if (!string.IsNullOrEmpty(skinAddress))
 			{
 				await ApplySkinAsync(unit, skinAddress, ct);
@@ -131,7 +135,8 @@ namespace ProjectOne.Unit
 			return unit;
 		}
 
-		public void ComposeUnit(UnitBase unit, int tableId, int baseStatId, int skillSetId, Faction faction)
+		// 공통 구성 — 스탯/체력/버프/스킬컨테이너/이동체 초기화. 스킬 등록·인디케이터는 호출자가 수행.
+		private void ComposeBase(UnitBase unit, int tableId, int baseStatId, Faction faction)
 		{
 			unit.SetIDs(_nextInstanceId++, tableId);
 			StatContainer stats = StatContainerFactory.FromBaseStatID(baseStatId);
@@ -143,14 +148,7 @@ namespace ProjectOne.Unit
 			BuffContainer buffContainer = new BuffContainer(unit);
 			unit.SetBuffContainer(buffContainer);
 			SkillContainer skillContainer = new SkillContainer(unit);
-			RegisterBaseSkills(skillContainer, skillSetId);
 			unit.SetSkillContainer(skillContainer);
-			SkillIndicator skillIndicator = unit.GetComponent<SkillIndicator>();
-			if (skillIndicator != null)
-			{
-				skillIndicator.SetSkills(skillContainer.GetAll());
-			}
-
 			UnitMover component = unit.GetComponent<UnitMover>();
 			if (component != null)
 			{
@@ -158,6 +156,45 @@ namespace ProjectOne.Unit
 			}
 
 			unit.SetFaction(faction);
+		}
+
+		// 몬스터 구성 — SkillSet 기반 스킬 등록 (MonsterPool 에서 호출)
+		public void ComposeUnit(UnitBase unit, int tableId, int baseStatId, int skillSetId, Faction faction)
+		{
+			ComposeBase(unit, tableId, baseStatId, faction);
+			RegisterBaseSkills(unit.SkillContainer, skillSetId);
+			RefreshSkillIndicator(unit);
+		}
+
+		// 히어로 구성 — Base/Passive/Special 스킬 등록. autoControl 이면 자동전투 두뇌 주입 + 입력 컨트롤러 비활성화.
+		private void ComposeHero(UnitBase unit, Table_Character.Row row, Faction faction, bool autoControl)
+		{
+			ComposeBase(unit, row.ID, row.BaseStatID, faction);
+			SkillContainer sc = unit.SkillContainer;
+			sc.Register(row.BaseAttackSkill, SourceBase);
+			sc.Register(row.PassiveSkill, SourceBase);
+			sc.Register(row.SpecialSkill_1, SourceSpecial);
+			sc.Register(row.SpecialSkill_2, SourceSpecial);
+			RefreshSkillIndicator(unit);
+
+			if (autoControl == true)
+			{
+				// 이동/시선은 플레이어(HeroController)가 그대로 담당 — AI 는 스킬 자동 시전만.
+				AiBrain brain = AiBrainFactory.CreateForHero(unit);
+				if (brain != null)
+				{
+					unit.SetBrain(brain);
+				}
+			}
+		}
+
+		private static void RefreshSkillIndicator(UnitBase unit)
+		{
+			SkillIndicator skillIndicator = unit.GetComponent<SkillIndicator>();
+			if (skillIndicator != null)
+			{
+				skillIndicator.SetSkills(unit.SkillContainer.GetAll());
+			}
 		}
 
 		private static void RegisterBaseSkills(SkillContainer sc, int skillSetId)

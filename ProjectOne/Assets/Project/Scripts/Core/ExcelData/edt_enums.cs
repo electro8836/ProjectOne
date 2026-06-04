@@ -179,6 +179,8 @@ namespace EDT {
     public enum SkillInfo {
         None,
         SKILL_BASEATTACK_01,
+        SKILL_BASEATTACK_02,
+        SKILL_BASEATTACK_03,
         SKILL_POWERATTACK_01,
         SKILL_PASSIVE_01,
         SKILL_PASSIVE_02,
@@ -192,6 +194,8 @@ namespace EDT {
         SKILL_USE_POSTION_01,
         SKILL_USE_SCROLL_01,
         SKILL_BREAK,
+        SKILL_CLASS_BASIC_01,
+        SKILL_CLASS_BASIC_02,
     }
 
     public enum SkillEffect {
@@ -215,10 +219,10 @@ namespace EDT {
         SE_ACTIVATE_DEBUFF_MOVESPEED_01,
         SE_DECREASE_MOVESPEED_01,
         SE_TAKE_DAMAGE_101,
-        SE_KNOCKBACK_01,
         SE_ACTIVATE_DEBUFF_BREAK_01,
         SE_ACTIVATE_DEBUFF_BREAK_02,
         SE_DECREASE_DAMAGETAKEN,
+        SE_ACTIVATE_BUFF_DASH,
     }
 
     public enum BuffInfo {

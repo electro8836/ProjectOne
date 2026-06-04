@@ -172,6 +172,33 @@ namespace ProjectOne.Skill
 			return rt.RemainingCooltime;
 		}
 
+		// 고유(Special) 스킬 여부 — AI 자동전투 셀렉터에서 제외 판정용
+		public bool IsSpecial(SkillInfo id)
+		{
+			SkillRuntime rt;
+			if (_byId.TryGetValue(id, out rt) == false)
+			{
+				return false;
+			}
+
+			return rt.Source == "Special";
+		}
+
+		// 보유 스킬 중 기본 공격(IsBasicAttack) 스킬 — AI 탐지반경/폴백 공격용. 없으면 None.
+		public SkillInfo GetBasicAttack()
+		{
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				Table_SkillInfo.Row row = Table_SkillInfo.Get(_ordered[i].Id);
+				if (row != null && row.IsBasicAttack == true)
+				{
+					return _ordered[i].Id;
+				}
+			}
+
+			return SkillInfo.None;
+		}
+
 		public void Tick(float dt)
 		{
 			for (int i = 0; i < _ordered.Count; i++)
