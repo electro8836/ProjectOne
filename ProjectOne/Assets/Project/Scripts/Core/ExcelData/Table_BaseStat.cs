@@ -22,6 +22,8 @@ namespace EDT {
             public int BreakGage_Base { get; set; } = 0;
             public int BreakDamage_Base { get; set; } = 0;
             public int BreakRecovery_Base { get; set; } = 0;
+            public int KnockBack_Base { get; set; } = 0;
+            public int KnockBackResist_Base { get; set; } = 0;
             public int Evasion_Base { get; set; } = 0;
             public int Block_Base { get; set; } = 0;
         }
@@ -61,6 +63,8 @@ namespace EDT {
                 row.BreakGage_Base = reader.ReadInt32();
                 row.BreakDamage_Base = reader.ReadInt32();
                 row.BreakRecovery_Base = reader.ReadInt32();
+                row.KnockBack_Base = reader.ReadInt32();
+                row.KnockBackResist_Base = reader.ReadInt32();
                 row.Evasion_Base = reader.ReadInt32();
                 row.Block_Base = reader.ReadInt32();
                 _all.Add( row.ID, row );

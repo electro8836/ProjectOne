@@ -12,6 +12,7 @@ public class UnitMover : MonoBehaviour
 	private Vector2 _overrideVelocity;
 	private bool _hasOverride;
 	private readonly float _moveSpeedMultiplier = 0.1f;
+	private readonly float _knockbackMultiplier = 0.1f;
 
 	public Vector2 Facing { get; private set; } = Vector2.right;
 	public bool IsMoving    { get { return _moveVelocity.sqrMagnitude > 0.01f; } }
@@ -133,7 +134,7 @@ public class UnitMover : MonoBehaviour
 
 	public void AddImpulse(Vector2 force)
 	{
-		Vector2 newVelocity = force * _inverseMass;
+		Vector2 newVelocity = force * _inverseMass * _knockbackMultiplier;
 		if (newVelocity.sqrMagnitude > _impulseVelocity.sqrMagnitude)
 		{
 			_impulseVelocity = newVelocity;

@@ -43,6 +43,15 @@ namespace ProjectOne.Utils
 	{
 		private static T _instance;
 
+		// 애플리케이션(또는 에디터 플레이) 종료 중 여부.
+		// 종료 시점에 Instance가 새 GameObject를 만들면 정리되지 못한 채 남아
+		// "Some objects were not cleaned up..." 경고가 발생하므로 이를 막는다.
+		private static bool _isQuitting;
+
+		// 새 인스턴스를 생성하지 않고 살아있는 인스턴스가 있는지만 확인.
+		// OnDisable/OnDestroy 등 종료 흐름에서 Instance 접근 전에 사용한다.
+		public static bool HasInstance => _instance != null && _isQuitting == false;
+
 		public static T Instance
 		{
 			get
@@ -50,6 +59,12 @@ namespace ProjectOne.Utils
 				if (_instance != null)
 				{
 					return _instance;
+				}
+
+				// 종료 중이면 새 인스턴스를 만들지 않는다 (정리되지 못한 객체 잔류 방지)
+				if (_isQuitting == true)
+				{
+					return null;
 				}
 
 				// 씬에 이미 배치된 인스턴스 탐색 (비용은 최초 1회)
@@ -77,6 +92,13 @@ namespace ProjectOne.Utils
 
 			_instance = (T)this;
 			DontDestroyOnLoad(gameObject);
+		}
+
+		// 종료 진입을 가장 먼저 포착 (OnApplicationQuit → OnDisable → OnDestroy 순서).
+		// 이후 종료 흐름의 Instance 접근이 새 객체를 만들지 않도록 한다.
+		protected virtual void OnApplicationQuit()
+		{
+			_isQuitting = true;
 		}
 
 		protected virtual void OnDestroy()

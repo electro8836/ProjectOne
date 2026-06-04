@@ -6,7 +6,7 @@ namespace ProjectOne.Unit.Stats
 {
 	// 유닛 스탯 컨테이너 (POCO)
 	// 공식: Final = (Base + Add) * (1 + Ratio) * (1 + Amp)
-	// - StatTypes 키 하나로 그룹/파트 모두 표현 (예: ATK, ATK_Base, ATK_Add, ATK_Ratio, ATK_Amp)
+	// - StatInfo 키 하나로 그룹/파트 모두 표현 (예: ATK, ATK_Base, ATK_Add, ATK_Ratio, ATK_Amp)
 	// - 변경된 그룹만 dirty 표시 → GetStat 시 lazy 재계산
 	public sealed class StatContainer
 	{
@@ -21,23 +21,23 @@ namespace ProjectOne.Unit.Stats
 		}
 
 		// (그룹, 파트) 매핑 — enum 이름에서 자동 파싱하여 1회 초기화
-		static readonly Dictionary<StatTypes, StatPart> _partMap = BuildPartMap();
+		static readonly Dictionary<StatInfo, StatPart> _partMap = BuildPartMap();
 
-		readonly Dictionary<StatTypes, Bucket> _buckets = new Dictionary<StatTypes, Bucket>();
+		readonly Dictionary<StatInfo, Bucket> _buckets = new Dictionary<StatInfo, Bucket>();
 
 		// 출처(source)별 modifier 인덱스 — 빈 source는 등록 안 함
 		readonly Dictionary<string, List<StatModifier>> _bySource = new Dictionary<string, List<StatModifier>>();
 
 		// === Base 채널 (영구 성장: Table 주입, 레벨업, 강화 등) ===
 
-		public void SetBase(StatTypes type, float value)
+		public void SetBase(StatInfo type, float value)
 		{
 			StatPart part = _partMap[type];
 			Bucket b = GetOrCreate(part.Group);
 			ApplyDelta(b, part.Kind, value - GetField(b, part.Kind));
 		}
 
-		public void AddBase(StatTypes type, float delta)
+		public void AddBase(StatInfo type, float delta)
 		{
 			StatPart part = _partMap[type];
 			Bucket b = GetOrCreate(part.Group);
@@ -47,13 +47,13 @@ namespace ProjectOne.Unit.Stats
 		// === Modifier 채널 (탈착 가능: 아이템, 버프) ===
 
 		// type은 _Add / _Ratio / _Amp 중 하나만 허용 (_Base는 SetBase/AddBase 사용)
-		public StatModifier AddModifier(StatTypes type, float value)
+		public StatModifier AddModifier(StatInfo type, float value)
 		{
 			return AddModifier(type, value, string.Empty);
 		}
 
 		// source 태그 부착 버전 — RemoveAllFromSource 로 일괄 제거 가능
-		public StatModifier AddModifier(StatTypes type, float value, string source)
+		public StatModifier AddModifier(StatInfo type, float value, string source)
 		{
 			StatPart part = _partMap[type];
 			if (part.Kind == ModifierTypes.Base || part.Kind == ModifierTypes.Final)
@@ -149,7 +149,7 @@ namespace ProjectOne.Unit.Stats
 		// === 조회 ===
 
 		// type=ATK면 최종(공식 적용), type=ATK_Base/_Add/_Ratio/_Amp면 누적 구성값
-		public float GetStat(StatTypes type)
+		public float GetStat(StatInfo type)
 		{
 			StatPart part = _partMap[type];
 			if (!_buckets.TryGetValue(part.Group, out Bucket b))
@@ -173,7 +173,7 @@ namespace ProjectOne.Unit.Stats
 
 		// === 내부 ===
 
-		Bucket GetOrCreate(StatTypes group)
+		Bucket GetOrCreate(StatInfo group)
 		{
 			if (!_buckets.TryGetValue(group, out Bucket b))
 			{
@@ -214,12 +214,12 @@ namespace ProjectOne.Unit.Stats
 		// - "ATK_Base" → group=ATK, kind=Base
 		// - "ATK"      → group=ATK, kind=Final
 		// - "LifeSteal_Ratio" 등 단독 비율(그룹 enum이 따로 없음) → group=자기자신, kind=Final
-		static Dictionary<StatTypes, StatPart> BuildPartMap()
+		static Dictionary<StatInfo, StatPart> BuildPartMap()
 		{
-			var map = new Dictionary<StatTypes, StatPart>();
-			foreach (StatTypes t in Enum.GetValues(typeof(StatTypes)))
+			var map = new Dictionary<StatInfo, StatPart>();
+			foreach (StatInfo t in Enum.GetValues(typeof(StatInfo)))
 			{
-				if (t == StatTypes.None)
+				if (t == StatInfo.None)
 				{
 					continue;
 				}
@@ -254,7 +254,7 @@ namespace ProjectOne.Unit.Stats
 					continue;
 				}
 
-				if (Enum.TryParse<StatTypes>(groupName, out StatTypes group))
+				if (Enum.TryParse<StatInfo>(groupName, out StatInfo group))
 				{
 					map[t] = new StatPart(group, kind);
 				}

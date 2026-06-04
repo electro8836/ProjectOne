@@ -7,18 +7,19 @@ namespace ProjectOne.Skill
 {
 	// SkillEffect.Row 의 EffectParam_1~7 (string) 을 EffectType별 강타입 struct로 파싱
 	// 컨벤션:
-	//   Damage             : P1=기본데미지(float), P2=계수 속성(StatTypes 이름), P3=계수값(float)
+	//   Damage             : P1=기본데미지(float), P2=계수 속성(StatInfo 이름), P3=계수값(float), P5=넉백 힘 방향·비율(-/+, 0=없음)
 	//   ActivateBuff       : P1=BuffInfo ID(enum 이름), P2=지속시간 sec(0=무한), P3=발동 간격 sec
 	//   DeactivateBuff     : P1=BuffInfo ID
-	//   IncreaseAttribute  : P1=StatTypes 이름(_Add/_Ratio/_Amp), P2=증가 수치 (_Ratio/_Amp 는 퍼센트 입력 100=100%, _Add 는 절대값)
-	//   DecreaseAttribute  : P1=StatTypes 이름(_Add/_Ratio/_Amp), P2=감소 수치 (_Ratio/_Amp 는 퍼센트 입력 100=100%, _Add 는 절대값)
+	//   IncreaseAttribute  : P1=StatInfo 이름(_Add/_Ratio/_Amp), P2=증가 수치 (_Ratio/_Amp 는 퍼센트 입력 100=100%, _Add 는 절대값)
+	//   DecreaseAttribute  : P1=StatInfo 이름(_Add/_Ratio/_Amp), P2=감소 수치 (_Ratio/_Amp 는 퍼센트 입력 100=100%, _Add 는 절대값)
 	//   ActivateAura       : P1=Aura ID, P2=지속시간 (현재 stub)
 
 	public struct DamageParams
 	{
 		public float BaseDamage;
-		public StatTypes CoefStat;   // None 이면 계수 없음
+		public StatInfo CoefStat;   // None 이면 계수 없음
 		public float CoefValue;
+		public float KnockbackRatio; // 0=없음, +는 밀어내기, -는 당기기 (시전자 넉백 파워에 곱할 비율)
 	}
 
 	public struct ActivateBuffParams
@@ -35,7 +36,7 @@ namespace ProjectOne.Skill
 
 	public struct AttributeParams
 	{
-		public StatTypes AttrType;
+		public StatInfo AttrType;
 		public float Value;
 	}
 
@@ -52,17 +53,30 @@ namespace ProjectOne.Skill
 
 			p.BaseDamage = baseDam;
 
+			// P5 넉백 힘 방향·비율 — 선택 (비어있거나 "None" 이면 0). 음수 허용(당기기)
+			p.KnockbackRatio = 0f;
+			if (string.IsNullOrEmpty(row.EffectParam_5) == false && row.EffectParam_5 != "None")
+			{
+				if (TryParseFloat(row.EffectParam_5, out float kbRatio) == false)
+				{
+					LogParseError(row, 5, "Damage.KnockbackRatio");
+					return false;
+				}
+
+				p.KnockbackRatio = kbRatio;
+			}
+
 			// P2/P3 는 선택 — 계수 없으면 None
 			if (string.IsNullOrEmpty(row.EffectParam_2) == true || row.EffectParam_2 == "None")
 			{
-				p.CoefStat = StatTypes.None;
+				p.CoefStat = StatInfo.None;
 				p.CoefValue = 0f;
 				return true;
 			}
 
-			if (Enum.TryParse(row.EffectParam_2, out StatTypes stat) == false)
+			if (Enum.TryParse(row.EffectParam_2, out StatInfo stat) == false)
 			{
-				LogParseError(row, 2, "Damage.CoefStat (StatTypes)");
+				LogParseError(row, 2, "Damage.CoefStat (StatInfo)");
 				return false;
 			}
 
@@ -140,9 +154,9 @@ namespace ProjectOne.Skill
 		public static bool TryParseAttribute(Table_SkillEffect.Row row, out AttributeParams p)
 		{
 			p = new AttributeParams();
-			if (Enum.TryParse(row.EffectParam_1, out StatTypes stat) == false)
+			if (Enum.TryParse(row.EffectParam_1, out StatInfo stat) == false)
 			{
-				LogParseError(row, 1, "Attribute.StatTypes");
+				LogParseError(row, 1, "Attribute.StatInfo");
 				return false;
 			}
 
@@ -165,7 +179,7 @@ namespace ProjectOne.Skill
 		}
 
 		// _Ratio/_Amp 파트는 퍼센트 입력 → 분수 변환 대상 (BuildPartMap 의 suffix 분류와 동일 규칙)
-		static bool IsPercentInput(StatTypes stat)
+		static bool IsPercentInput(StatInfo stat)
 		{
 			string n = stat.ToString();
 			return n.EndsWith("_Ratio") == true || n.EndsWith("_Amp") == true;

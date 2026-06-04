@@ -201,8 +201,8 @@ namespace ProjectOne.Unit
 		{
 			if (!(_animator == null) && _stats != null)
 			{
-				_animator.SetAttackSpeed(_stats.GetStat(StatTypes.AtkSpeed));
-				_animator.SetMoveSpeed(_stats.GetStat(StatTypes.MoveSpeed));
+				_animator.SetAttackSpeed(_stats.GetStat(StatInfo.AtkSpeed));
+				_animator.SetMoveSpeed(_stats.GetStat(StatInfo.MoveSpeed));
 			}
 		}
 

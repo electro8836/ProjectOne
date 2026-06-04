@@ -149,7 +149,7 @@ namespace ProjectOne.Skill
 			}
 
 			float coef = 0f;
-			if (p.CoefStat != StatTypes.None && source != null && source.Stats != null)
+			if (p.CoefStat != StatInfo.None && source != null && source.Stats != null)
 			{
 				coef = source.Stats.GetStat(p.CoefStat) * p.CoefValue;
 			}
@@ -174,20 +174,62 @@ namespace ProjectOne.Skill
 				// 방어력(DEF/MDEF) 퍼센트 감소 — 대상별로 적용
 				int finalDamage = ApplyDefense(critDamage, type, targets[i], source);
 
+				// 넉백 힘 — 시전자 KnockBack 스탯 × 비율, 대상 KnockBackResist 로 퍼센트 감소
+				Vector2 kbDir;
+				float kbPower;
+				ResolveKnockback(p.KnockbackRatio, source, targets[i], out kbDir, out kbPower);
+
 				DamageInfo info = new DamageInfo
 				{
 					Attacker = source,
 					Damage = finalDamage,
 					DamageType = type,
 					HitPoint = targets[i].transform.position,
-					KnockbackDir = Vector2.zero,
-					KnockbackPower = 0f,
+					KnockbackDir = kbDir,
+					KnockbackPower = kbPower,
 					IsCritical = isCritical,
 					IsSuperCritical = isSuperCritical,
 					SkillID = (int)skillId
 				};
 				dmg.TakeDamage(in info);
 			}
+		}
+
+		// 넉백 힘/방향 산출.
+		// - 힘 = 시전자 KnockBack 스탯 × |ratio| × (1 - clamp01(대상 KnockBackResist/100))
+		// - 방향 = 시전자→대상(밀어내기), ratio 음수면 반대(당기기)
+		// - ratio 0 / 시전자 없음 / 넉백 스탯 0 / 두 위치 동일 → 넉백 없음(power=0)
+		static void ResolveKnockback(float ratio, UnitBase source, UnitBase target, out Vector2 dir, out float power)
+		{
+			dir = Vector2.zero;
+			power = 0f;
+
+			if (ratio == 0f || source == null || source.Stats == null || target == null)
+			{
+				return;
+			}
+
+			float casterKnock = source.Stats.GetStat(StatInfo.KnockBack);
+			if (casterKnock <= 0f)
+			{
+				return;
+			}
+
+			Vector2 delta = (Vector2)target.HitCenter - (Vector2)source.HitCenter;
+			if (delta.sqrMagnitude <= Mathf.Epsilon)
+			{
+				return;
+			}
+
+			dir = delta.normalized;
+			if (ratio < 0f)
+			{
+				dir = -dir;
+			}
+
+			float resist = target.Stats != null ? target.Stats.GetStat(StatInfo.KnockBackResist) : 0f;
+			float reduction = Mathf.Clamp01(resist / 100f);
+			power = casterKnock * Mathf.Abs(ratio) * (1f - reduction);
 		}
 
 		// 공격자 스탯 기준 크리티컬 판정.
@@ -203,20 +245,20 @@ namespace ProjectOne.Skill
 				return 1f;
 			}
 
-			float critRate = attacker.Stats.GetStat(StatTypes.CritRate);
+			float critRate = attacker.Stats.GetStat(StatInfo.CritRate);
 			if (Random.value * 100f >= critRate)
 			{
 				return 1f;
 			}
 
 			isCritical = true;
-			float critDam = attacker.Stats.GetStat(StatTypes.CritDam);
+			float critDam = attacker.Stats.GetStat(StatInfo.CritDam);
 
-			float superRate = attacker.Stats.GetStat(StatTypes.SuperCritRate);
+			float superRate = attacker.Stats.GetStat(StatInfo.SuperCritRate);
 			if (Random.value * 100f < superRate)
 			{
 				isSuperCritical = true;
-				float superDam = attacker.Stats.GetStat(StatTypes.SuperCritDam);
+				float superDam = attacker.Stats.GetStat(StatInfo.SuperCritDam);
 				return (critDam + superDam) / 100f;
 			}
 
@@ -244,8 +286,8 @@ namespace ProjectOne.Skill
 			}
 
 			bool magical = type == DamageType.Magical;
-			StatTypes defStat = magical ? StatTypes.MDEF : StatTypes.DEF;
-			StatTypes penStat = magical ? StatTypes.Pen_Magic : StatTypes.Pen_Physical;
+			StatInfo defStat = magical ? StatInfo.MDEF : StatInfo.DEF;
+			StatInfo penStat = magical ? StatInfo.Pen_Magic : StatInfo.Pen_Physical;
 
 			float def = target.Stats.GetStat(defStat);
 			float pen = 0f;

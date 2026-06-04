@@ -48,74 +48,74 @@ namespace ProjectOne.Unit.Stats.EditorTests
 		static void Test_SetBase()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.ATK_Base, 100f);
-			AssertApprox("SetBase → GetStat(ATK)", 100f, c.GetStat(StatTypes.ATK));
-			AssertApprox("SetBase → GetStat(ATK_Base)", 100f, c.GetStat(StatTypes.ATK_Base));
+			c.SetBase(StatInfo.ATK_Base, 100f);
+			AssertApprox("SetBase → GetStat(ATK)", 100f, c.GetStat(StatInfo.ATK));
+			AssertApprox("SetBase → GetStat(ATK_Base)", 100f, c.GetStat(StatInfo.ATK_Base));
 		}
 
 		static void Test_AddModifier_Add()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.ATK_Base, 100f);
-			c.AddModifier(StatTypes.ATK_Add, 20f);
-			AssertApprox("Base+Add → Final", 120f, c.GetStat(StatTypes.ATK));
+			c.SetBase(StatInfo.ATK_Base, 100f);
+			c.AddModifier(StatInfo.ATK_Add, 20f);
+			AssertApprox("Base+Add → Final", 120f, c.GetStat(StatInfo.ATK));
 		}
 
 		static void Test_AddModifier_Ratio()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.ATK_Base, 100f);
-			c.AddModifier(StatTypes.ATK_Add, 20f);
-			c.AddModifier(StatTypes.ATK_Ratio, 0.5f);
-			AssertApprox("(Base+Add)*(1+Ratio)", 180f, c.GetStat(StatTypes.ATK));
+			c.SetBase(StatInfo.ATK_Base, 100f);
+			c.AddModifier(StatInfo.ATK_Add, 20f);
+			c.AddModifier(StatInfo.ATK_Ratio, 0.5f);
+			AssertApprox("(Base+Add)*(1+Ratio)", 180f, c.GetStat(StatInfo.ATK));
 		}
 
 		static void Test_AddModifier_Amp()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.ATK_Base, 100f);
-			c.AddModifier(StatTypes.ATK_Add, 20f);
-			c.AddModifier(StatTypes.ATK_Ratio, 0.5f);
-			c.AddModifier(StatTypes.ATK_Amp, 0.1f);
-			AssertApprox("(Base+Add)*(1+Ratio)*(1+Amp)", 198f, c.GetStat(StatTypes.ATK));
+			c.SetBase(StatInfo.ATK_Base, 100f);
+			c.AddModifier(StatInfo.ATK_Add, 20f);
+			c.AddModifier(StatInfo.ATK_Ratio, 0.5f);
+			c.AddModifier(StatInfo.ATK_Amp, 0.1f);
+			AssertApprox("(Base+Add)*(1+Ratio)*(1+Amp)", 198f, c.GetStat(StatInfo.ATK));
 		}
 
 		static void Test_RemoveModifier_RevertsValue()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.ATK_Base, 100f);
-			StatModifier addMod = c.AddModifier(StatTypes.ATK_Add, 20f);
-			StatModifier ratMod = c.AddModifier(StatTypes.ATK_Ratio, 0.5f);
-			AssertApprox("before remove", 180f, c.GetStat(StatTypes.ATK));
+			c.SetBase(StatInfo.ATK_Base, 100f);
+			StatModifier addMod = c.AddModifier(StatInfo.ATK_Add, 20f);
+			StatModifier ratMod = c.AddModifier(StatInfo.ATK_Ratio, 0.5f);
+			AssertApprox("before remove", 180f, c.GetStat(StatInfo.ATK));
 
 			c.RemoveModifier(ratMod);
-			AssertApprox("after remove Ratio", 120f, c.GetStat(StatTypes.ATK));
+			AssertApprox("after remove Ratio", 120f, c.GetStat(StatInfo.ATK));
 
 			c.RemoveModifier(addMod);
-			AssertApprox("after remove Add", 100f, c.GetStat(StatTypes.ATK));
+			AssertApprox("after remove Add", 100f, c.GetStat(StatInfo.ATK));
 		}
 
 		static void Test_PartialQueries()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.ATK_Base, 100f);
-			c.AddModifier(StatTypes.ATK_Add, 30f);
-			c.AddModifier(StatTypes.ATK_Ratio, 0.2f);
-			c.AddModifier(StatTypes.ATK_Amp, 0.1f);
+			c.SetBase(StatInfo.ATK_Base, 100f);
+			c.AddModifier(StatInfo.ATK_Add, 30f);
+			c.AddModifier(StatInfo.ATK_Ratio, 0.2f);
+			c.AddModifier(StatInfo.ATK_Amp, 0.1f);
 
-			AssertApprox("GetStat(ATK_Base)",  100f, c.GetStat(StatTypes.ATK_Base));
-			AssertApprox("GetStat(ATK_Add)",   30f,  c.GetStat(StatTypes.ATK_Add));
-			AssertApprox("GetStat(ATK_Ratio)", 0.2f, c.GetStat(StatTypes.ATK_Ratio));
-			AssertApprox("GetStat(ATK_Amp)",   0.1f, c.GetStat(StatTypes.ATK_Amp));
+			AssertApprox("GetStat(ATK_Base)",  100f, c.GetStat(StatInfo.ATK_Base));
+			AssertApprox("GetStat(ATK_Add)",   30f,  c.GetStat(StatInfo.ATK_Add));
+			AssertApprox("GetStat(ATK_Ratio)", 0.2f, c.GetStat(StatInfo.ATK_Ratio));
+			AssertApprox("GetStat(ATK_Amp)",   0.1f, c.GetStat(StatInfo.ATK_Amp));
 		}
 
 		static void Test_AddBase_Accumulates()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.HP_Base, 500f);
-			c.AddBase(StatTypes.HP_Base, 100f);
-			c.AddBase(StatTypes.HP_Base, 50f);
-			AssertApprox("AddBase 누적", 650f, c.GetStat(StatTypes.HP));
+			c.SetBase(StatInfo.MaxHP_Base, 500f);
+			c.AddBase(StatInfo.MaxHP_Base, 100f);
+			c.AddBase(StatInfo.MaxHP_Base, 50f);
+			AssertApprox("AddBase 누적", 650f, c.GetStat(StatInfo.MaxHP));
 		}
 
 		static void Test_AddModifier_RejectsBaseAndFinal()
@@ -124,7 +124,7 @@ namespace ProjectOne.Unit.Stats.EditorTests
 			bool threw = false;
 			try
 			{
-				c.AddModifier(StatTypes.ATK_Base, 10f);
+				c.AddModifier(StatInfo.ATK_Base, 10f);
 			}
 			catch (System.ArgumentException)
 			{
@@ -135,7 +135,7 @@ namespace ProjectOne.Unit.Stats.EditorTests
 			threw = false;
 			try
 			{
-				c.AddModifier(StatTypes.ATK, 10f);
+				c.AddModifier(StatInfo.ATK, 10f);
 			}
 			catch (System.ArgumentException)
 			{
@@ -148,24 +148,24 @@ namespace ProjectOne.Unit.Stats.EditorTests
 		{
 			// MoveSpeed 그룹을 먼저 세팅·캐싱 → ATK 그룹 변경 후에도 MoveSpeed 캐시 무효화 안 됨
 			var c = new StatContainer();
-			c.SetBase(StatTypes.MoveSpeed_Base, 5f);
-			c.AddModifier(StatTypes.MoveSpeed_Ratio, 0.2f);
-			float moveBefore = c.GetStat(StatTypes.MoveSpeed); // 캐시됨
+			c.SetBase(StatInfo.MoveSpeed_Base, 5f);
+			c.AddModifier(StatInfo.MoveSpeed_Ratio, 0.2f);
+			float moveBefore = c.GetStat(StatInfo.MoveSpeed); // 캐시됨
 
-			c.SetBase(StatTypes.ATK_Base, 200f);
-			c.AddModifier(StatTypes.ATK_Add, 10f);
+			c.SetBase(StatInfo.ATK_Base, 200f);
+			c.AddModifier(StatInfo.ATK_Add, 10f);
 
-			float moveAfter = c.GetStat(StatTypes.MoveSpeed);
+			float moveAfter = c.GetStat(StatInfo.MoveSpeed);
 			AssertApprox("MoveSpeed 캐시 영향 없음", moveBefore, moveAfter);
-			AssertApprox("ATK 그룹은 정상 계산", 210f, c.GetStat(StatTypes.ATK));
+			AssertApprox("ATK 그룹은 정상 계산", 210f, c.GetStat(StatInfo.ATK));
 		}
 
 		static void Test_UnsetGroup_ReturnsZero()
 		{
 			var c = new StatContainer();
 			// 한 번도 안 건드린 그룹은 0
-			AssertApprox("unset Final = 0", 0f, c.GetStat(StatTypes.ATK));
-			AssertApprox("unset Base = 0",  0f, c.GetStat(StatTypes.ATK_Base));
+			AssertApprox("unset Final = 0", 0f, c.GetStat(StatInfo.ATK));
+			AssertApprox("unset Base = 0",  0f, c.GetStat(StatInfo.ATK_Base));
 		}
 
 		// ===== Vitals =====
@@ -173,7 +173,7 @@ namespace ProjectOne.Unit.Stats.EditorTests
 		static void Test_Vitals_InitAndClamp()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.HP_Base, 1000f);
+			c.SetBase(StatInfo.MaxHP_Base, 1000f);
 			var v = new Vitals(c);
 			v.InitHp();
 			AssertApprox("InitHp = Max", 1000f, v.Hp);
@@ -191,7 +191,7 @@ namespace ProjectOne.Unit.Stats.EditorTests
 		static void Test_Vitals_ZeroDetection()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.BreakGage_Base, 100f);
+			c.SetBase(StatInfo.BreakGage_Base, 100f);
 			var v = new Vitals(c);
 			v.InitBreakGage();
 			AssertTrue("IsBreakGageZero false (max)", !v.IsBreakGageZero);
@@ -202,13 +202,13 @@ namespace ProjectOne.Unit.Stats.EditorTests
 		static void Test_Vitals_RespectsUpdatedMax()
 		{
 			var c = new StatContainer();
-			c.SetBase(StatTypes.HP_Base, 1000f);
+			c.SetBase(StatInfo.MaxHP_Base, 1000f);
 			var v = new Vitals(c);
 			v.InitHp();
 
 			// 현재 1000/1000. MaxHP가 +20% 버프
-			c.AddModifier(StatTypes.HP_Ratio, 0.2f);
-			AssertApprox("새 MaxHP = 1200", 1200f, c.GetStat(StatTypes.HP));
+			c.AddModifier(StatInfo.MaxHP_Ratio, 0.2f);
+			AssertApprox("새 MaxHP = 1200", 1200f, c.GetStat(StatInfo.MaxHP));
 
 			// 현재값은 그대로
 			AssertApprox("현재값 그대로", 1000f, v.Hp);

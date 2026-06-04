@@ -15,21 +15,23 @@ namespace ProjectOne.Unit.Stats
 				return c;
 			}
 
-			c.SetBase(StatTypes.ATK_Base,             row.ATK_Base);
-			c.SetBase(StatTypes.MATK_Base,            row.MATK_Base);
-			c.SetBase(StatTypes.CritRate_Base,        row.CritRate_Base);
-			c.SetBase(StatTypes.CritDam_Base,         row.CritDam_Base);
-			c.SetBase(StatTypes.HP_Base,              row.MaxHP_Base);
-			c.SetBase(StatTypes.DEF_Base,             row.DEF_Base);
-			c.SetBase(StatTypes.MDEF_Base,            row.MDEF_Base);
-			c.SetBase(StatTypes.HP_Regen_Base,        row.HpRecovery_Base);
-			c.SetBase(StatTypes.AtkSpeed_Base,        row.AtkSpeed_Base);
-			c.SetBase(StatTypes.MoveSpeed_Base,       row.MoveSpeed_Base);
-			c.SetBase(StatTypes.Accuracy_Base,        row.Accuracy_Base);
-			c.SetBase(StatTypes.BreakGage_Base,       row.BreakGage_Base);
-			c.SetBase(StatTypes.BreakDamage_Base,     row.BreakDamage_Base);
-			c.SetBase(StatTypes.BreakRecovery_Base,   row.BreakRecovery_Base);
-			c.SetBase(StatTypes.Evasion_Base,         row.Evasion_Base);
+			c.SetBase(StatInfo.ATK_Base,             row.ATK_Base);
+			c.SetBase(StatInfo.MATK_Base,            row.MATK_Base);
+			c.SetBase(StatInfo.CritRate_Base,        row.CritRate_Base);
+			c.SetBase(StatInfo.CritDam_Base,         row.CritDam_Base);
+			c.SetBase(StatInfo.MaxHP_Base,           row.MaxHP_Base);
+			c.SetBase(StatInfo.DEF_Base,             row.DEF_Base);
+			c.SetBase(StatInfo.MDEF_Base,            row.MDEF_Base);
+			c.SetBase(StatInfo.HpRecovery_Base,      row.HpRecovery_Base);
+			c.SetBase(StatInfo.AtkSpeed_Base,        row.AtkSpeed_Base);
+			c.SetBase(StatInfo.MoveSpeed_Base,       row.MoveSpeed_Base);
+			c.SetBase(StatInfo.Accuracy_Base,        row.Accuracy_Base);
+			c.SetBase(StatInfo.BreakGage_Base,       row.BreakGage_Base);
+			c.SetBase(StatInfo.BreakDamage_Base,     row.BreakDamage_Base);
+			c.SetBase(StatInfo.BreakRecovery_Base,   row.BreakRecovery_Base);
+			c.SetBase(StatInfo.KnockBack_Base,       row.KnockBack_Base);
+			c.SetBase(StatInfo.KnockBackResist_Base, row.KnockBackResist_Base);
+			c.SetBase(StatInfo.Evasion_Base,         row.Evasion_Base);
 
 			return c;
 		}

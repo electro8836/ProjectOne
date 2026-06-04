@@ -86,7 +86,7 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			_mover.Move(move, _hero.Stats.GetStat(StatTypes.MoveSpeed));
+			_mover.Move(move, _hero.Stats.GetStat(StatInfo.MoveSpeed));
 		}
 
 		// 평타 입력 → 보유 첫 스킬 발동. 범위 밖 적이어도 TryCast가 그대로 실행.

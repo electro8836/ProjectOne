@@ -25,6 +25,12 @@ namespace ProjectOne.CameraSystem
 
 		private void OnDisable()
 		{
+			// 종료 중이면 매니저를 새로 만들지 않는다 (정리되지 못한 객체 잔류 방지)
+			if (CameraManager.HasInstance == false)
+			{
+				return;
+			}
+
 			CameraManager.Instance.ClearVcam(_vcam);
 		}
 	}

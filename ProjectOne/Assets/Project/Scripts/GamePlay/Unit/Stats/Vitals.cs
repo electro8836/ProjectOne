@@ -20,22 +20,22 @@ namespace ProjectOne.Unit.Stats
 
 		public void InitHp()
 		{
-			Hp = _stats.GetStat(StatTypes.HP);
+			Hp = _stats.GetStat(StatInfo.MaxHP);
 		}
 
 		public void InitBreakGage()
 		{
-			BreakGage = _stats.GetStat(StatTypes.BreakGage);
+			BreakGage = _stats.GetStat(StatInfo.BreakGage);
 		}
 
 		public void ModifyHp(float delta)
 		{
-			Hp = Mathf.Clamp(Hp + delta, 0f, _stats.GetStat(StatTypes.HP));
+			Hp = Mathf.Clamp(Hp + delta, 0f, _stats.GetStat(StatInfo.MaxHP));
 		}
 
 		public void ModifyBreakGage(float delta)
 		{
-			BreakGage = Mathf.Clamp(BreakGage + delta, 0f, _stats.GetStat(StatTypes.BreakGage));
+			BreakGage = Mathf.Clamp(BreakGage + delta, 0f, _stats.GetStat(StatInfo.BreakGage));
 		}
 
 		public bool IsHpZero        => Hp <= 0f;
