@@ -7,6 +7,7 @@ using ProjectOne.Unit.Stats;
 using ProjectOne.Combat;
 using ProjectOne.Buff;
 using ProjectOne.Utils;
+using ProjectOne.Event;
 
 namespace ProjectOne.Skill
 {
@@ -252,6 +253,9 @@ namespace ProjectOne.Skill
 			{
 				_applyingGuardBreak = prev;
 			}
+
+			// 브레이크 UI 등 외부 구독자에게 발동 알림
+			EventManager.Instance.Publish(new GuardBreakTriggeredEvent(victim, attacker));
 		}
 
 		// 스킬의 모든 효과를 단일 대상(target)에 강제 적용 — ScanType 무시, source 로 데미지 귀속.

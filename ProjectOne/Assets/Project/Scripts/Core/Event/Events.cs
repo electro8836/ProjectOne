@@ -84,6 +84,19 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 가드브레이크 발동 알림. 피격 유닛 위로 브레이크 UI를 띄우는 등에서 구독.
+		public readonly struct GuardBreakTriggeredEvent
+		{
+				public readonly UnitBase Victim;
+				public readonly UnitBase Attacker;
+
+				public GuardBreakTriggeredEvent(UnitBase victim, UnitBase attacker)
+				{
+						this.Victim = victim;
+						this.Attacker = attacker;
+				}
+		}
+
 		// 유닛 스폰 글로벌 알림 (HeroAspect 외 보조 채널 — UI/사운드/튜토리얼 등).
 		public readonly struct UnitSpawnedEvent
 		{
