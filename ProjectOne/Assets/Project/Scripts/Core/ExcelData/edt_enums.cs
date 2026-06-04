@@ -191,7 +191,7 @@ namespace EDT {
         SKILL_DEMON_ATTACK_03,
         SKILL_USE_POSTION_01,
         SKILL_USE_SCROLL_01,
-        SKILL_BREAK_01,
+        SKILL_BREAK,
     }
 
     public enum SkillEffect {
@@ -216,8 +216,9 @@ namespace EDT {
         SE_DECREASE_MOVESPEED_01,
         SE_TAKE_DAMAGE_101,
         SE_KNOCKBACK_01,
-        SE_ACTIVATE_BUFF_BREAK_01,
-        SE_DECREASE_KNOCKBACKREGIST_01,
+        SE_ACTIVATE_DEBUFF_BREAK_01,
+        SE_ACTIVATE_DEBUFF_BREAK_02,
+        SE_DECREASE_DAMAGETAKEN,
     }
 
     public enum BuffInfo {
@@ -226,11 +227,11 @@ namespace EDT {
         BUFF_ATTACKSPEED_01,
         DEBUFF_MOVESPEED_01,
         BUFF_POTION_01,
-        DEBUFF_BREAK,
         DEBUFF_STUN,
         DEBUFF_SILENCE,
         DEBUFF_BINDING,
         DEBUFF_KNOCKBACK,
+        DEBUFF_BREAK,
     }
 
     public enum StatInfo {
@@ -278,7 +279,12 @@ namespace EDT {
         HpRecovery_Ratio,
         LifeSteal_Ratio,
         SpellVamp_Ratio,
-        DamReduce_Ratio,
+        DamageReduction,
+        DamageReduction_Base,
+        DamageReduction_Add,
+        DamageTakenAmp,
+        DamageTakenAmp_Base,
+        DamageTakenAmp_Add,
         AtkSpeed,
         AtkSpeed_Base,
         AtkSpeed_Add,

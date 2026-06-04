@@ -18,6 +18,9 @@ namespace ProjectOne.Skill
 		// 버프 경로(ApplyOnBuff) 전용 — owner 1명만 담아 ApplyInternal 의 scanned 자리에 전달
 		static readonly List<UnitBase> _buffScratch = new List<UnitBase>(1);
 
+		// 가드브레이크 강제 적용(SKILL_BREAK) 중 플래그 — 이 동안의 피격은 게이지를 다시 깎지 않음(재발동 방지)
+		static bool _applyingGuardBreak;
+
 		public static void Apply(SkillEffect effectId, UnitBase caster, SkillInfo skillId, List<UnitBase> scanned)
 		{
 			ApplyInternal(effectId, caster, caster, skillId, hostBuff: null, scanned: scanned);
@@ -172,7 +175,10 @@ namespace ProjectOne.Skill
 				int critDamage = Mathf.RoundToInt(rawDamage * critMul);
 
 				// 방어력(DEF/MDEF) 퍼센트 감소 — 대상별로 적용
-				int finalDamage = ApplyDefense(critDamage, type, targets[i], source);
+				int afterDefense = ApplyDefense(critDamage, type, targets[i], source);
+
+				// 받는 데미지 감소/증폭 — DEF 다음 단계: dam × (1 - DamageReduction) × DamageTakenAmp
+				int finalDamage = ApplyIncomingMultipliers(afterDefense, targets[i]);
 
 				// 넉백 힘 — 시전자 KnockBack 스탯 × 비율, 대상 KnockBackResist 로 퍼센트 감소
 				Vector2 kbDir;
@@ -192,7 +198,85 @@ namespace ProjectOne.Skill
 					SkillID = (int)skillId
 				};
 				dmg.TakeDamage(in info);
+
+				// 브레이크 게이지 데미지 = 공격자 BreakDamage × EffectParam_4 (HP 데미지와 무관)
+				// 게이지 0 도달 시 가드브레이크 발동 — TriggerGuardBreak 가 게이지를 먼저 가득 채워 재진입 방지
+				if (_applyingGuardBreak == false && p.BreakDamageRatio != 0f && source != null && source.Stats != null
+					&& targets[i] != null && targets[i].Vitals != null && targets[i].IsDead == false)
+				{
+					float breakDmg = source.Stats.GetStat(StatInfo.BreakDamage) * p.BreakDamageRatio;
+					if (breakDmg > 0f)
+					{
+						targets[i].Vitals.ModifyBreakGage(-breakDmg);
+						if (targets[i].Vitals.IsBreakGageZero == true)
+						{
+							TriggerGuardBreak(targets[i], source);
+						}
+					}
+				}
 			}
+		}
+
+		// 받는 데미지 감소/증가 적용 — DEF/MDEF 방어 다음 단계.
+		// dam × (1 - DamageReduction) × (1 + DamageTakenAmp)
+		// - 두 스탯 모두 100 스케일(30 = 30%) → 사용 시 /100. 0이면 증감 없음.
+		// - DamageReduction: Clamp01 (100 이상이면 데미지 0)
+		static int ApplyIncomingMultipliers(int damage, UnitBase target)
+		{
+			if (target == null || target.Stats == null)
+			{
+				return damage;
+			}
+
+			float reduction = Mathf.Clamp01(target.Stats.GetStat(StatInfo.DamageReduction) / 100f);
+			float amp = target.Stats.GetStat(StatInfo.DamageTakenAmp) / 100f;
+			int result = Mathf.RoundToInt(damage * (1f - reduction) * (1f + amp));
+			return Mathf.Max(0, result);
+		}
+
+		// 가드브레이크 발동 — 브레이크 게이지가 0이 된 victim 에게 호출.
+		// 1) 게이지를 즉시 가득 채워(요구 5) SKILL_BREAK 자체 데미지로 인한 재진입(무한 발동) 방지
+		// 2) SKILL_BREAK 강제 적용 — 스턴/디버프(ActivateBuff)와 가드브레이크 데미지(P4×attacker.BreakDamage)
+		static void TriggerGuardBreak(UnitBase victim, UnitBase attacker)
+		{
+			victim.Vitals.InitBreakGage();
+
+			// SKILL_BREAK 적용 동안 게이지 감소 차단 → 재발동 방지
+			bool prev = _applyingGuardBreak;
+			_applyingGuardBreak = true;
+			try
+			{
+				ApplyForced(SkillInfo.SKILL_BREAK, victim, attacker);
+			}
+			finally
+			{
+				_applyingGuardBreak = prev;
+			}
+		}
+
+		// 스킬의 모든 효과를 단일 대상(target)에 강제 적용 — ScanType 무시, source 로 데미지 귀속.
+		// ApplyOnBuff 경로 재사용 → 효과행은 ApplyTarget=Self 전제 (대상이 owner 후보로 통과해야 함).
+		public static void ApplyForced(SkillInfo skill, UnitBase target, UnitBase source)
+		{
+			if (target == null)
+			{
+				return;
+			}
+
+			Table_SkillInfo.Row row = Table_SkillInfo.Get(skill);
+			if (row == null)
+			{
+				Debug.LogError($"[SkillEffectApplier] ApplyForced — Skill 행 없음: {skill}");
+				return;
+			}
+
+			ApplyOnBuff(row.StartEffect, target, source, null);
+			ApplyOnBuff(row.Effect_0,     target, source, null);
+			ApplyOnBuff(row.Effect_1,     target, source, null);
+			ApplyOnBuff(row.Effect_2,     target, source, null);
+			ApplyOnBuff(row.Effect_3,     target, source, null);
+			ApplyOnBuff(row.Effect_4,     target, source, null);
+			ApplyOnBuff(row.FinishEffect, target, source, null);
 		}
 
 		// 넉백 힘/방향 산출.

@@ -7,7 +7,7 @@ namespace ProjectOne.Skill
 {
 	// SkillEffect.Row 의 EffectParam_1~7 (string) 을 EffectType별 강타입 struct로 파싱
 	// 컨벤션:
-	//   Damage             : P1=기본데미지(float), P2=계수 속성(StatInfo 이름), P3=계수값(float), P5=넉백 힘 방향·비율(-/+, 0=없음)
+	//   Damage             : P1=기본데미지(float), P2=계수 속성(StatInfo 이름), P3=계수값(float), P4=브레이크 게이지 데미지 비율(공격자 BreakDamage 배수, 1=100%, 0=없음 / HP 데미지와 무관), P5=넉백 힘 방향·비율(-/+, 0=없음)
 	//   ActivateBuff       : P1=BuffInfo ID(enum 이름), P2=지속시간 sec(0=무한), P3=발동 간격 sec
 	//   DeactivateBuff     : P1=BuffInfo ID
 	//   IncreaseAttribute  : P1=StatInfo 이름(_Add/_Ratio/_Amp), P2=증가 수치 (_Ratio/_Amp 는 퍼센트 입력 100=100%, _Add 는 절대값)
@@ -19,6 +19,7 @@ namespace ProjectOne.Skill
 		public float BaseDamage;
 		public StatInfo CoefStat;   // None 이면 계수 없음
 		public float CoefValue;
+		public float BreakDamageRatio; // 0=없음, 공격자 BreakDamage 스탯에 곱할 비율 (브레이크 게이지 데미지, 1=100%, HP 데미지와 무관)
 		public float KnockbackRatio; // 0=없음, +는 밀어내기, -는 당기기 (시전자 넉백 파워에 곱할 비율)
 	}
 
@@ -52,6 +53,19 @@ namespace ProjectOne.Skill
 			}
 
 			p.BaseDamage = baseDam;
+
+			// P4 브레이크 게이지 데미지 비율 — 선택 (비어있거나 "None" 이면 0). 게이지 감소 = 공격자 BreakDamage × 비율 (HP 무관)
+			p.BreakDamageRatio = 0f;
+			if (string.IsNullOrEmpty(row.EffectParam_4) == false && row.EffectParam_4 != "None")
+			{
+				if (TryParseFloat(row.EffectParam_4, out float breakRatio) == false)
+				{
+					LogParseError(row, 4, "Damage.BreakDamageRatio");
+					return false;
+				}
+
+				p.BreakDamageRatio = breakRatio;
+			}
 
 			// P5 넉백 힘 방향·비율 — 선택 (비어있거나 "None" 이면 0). 음수 허용(당기기)
 			p.KnockbackRatio = 0f;

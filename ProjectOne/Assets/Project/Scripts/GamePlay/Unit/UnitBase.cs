@@ -84,6 +84,9 @@ namespace ProjectOne.Unit
 
 		private readonly HashSet<string> _skillBlockKeys = new HashSet<string>();
 
+		// 브레이크 게이지 자동 회복 1초 주기 누적기
+		private float _breakRecoveryAccum;
+
 		public bool IsMoveBlocked => _moveBlockKeys.Count > 0;
 
 		public bool IsSkillBlocked => _skillBlockKeys.Count > 0;
@@ -193,6 +196,21 @@ namespace ProjectOne.Unit
 				if (_skillContainer != null)
 				{
 					_skillContainer.Tick(deltaTime);
+				}
+
+				// 브레이크 게이지 자동 회복 — 1초마다 BreakRecovery 스탯만큼 (ModifyBreakGage 가 최댓값 Clamp)
+				if (_vitals != null && _stats != null)
+				{
+					_breakRecoveryAccum += deltaTime;
+					if (_breakRecoveryAccum >= 1f)
+					{
+						_breakRecoveryAccum -= 1f;
+						float rec = _stats.GetStat(StatInfo.BreakRecovery);
+						if (rec > 0f)
+						{
+							_vitals.ModifyBreakGage(rec);
+						}
+					}
 				}
 			}
 		}
