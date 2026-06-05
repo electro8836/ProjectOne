@@ -19,6 +19,9 @@ namespace ProjectOne.Unit
 		// 유닛 일괄 구동 로직 (순수 클래스) — 컨테이너가 소유하고 직접 호출
 		readonly UnitSimulator _simulator = new UnitSimulator();
 
+		// 충돌 후보 조회용 공간 해시 — FixedUpdate 에서 프레임당 1회 Rebuild
+		readonly UnitSpatialHash _spatialHash = new UnitSpatialHash();
+
 		// Type별 활성 유닛 캐시 — enum 키, List 값. 둘 다 동적 컬렉션.
 		readonly Dictionary<UnitType, List<UnitBase>> _byType = new Dictionary<UnitType, List<UnitBase>>();
 		static readonly List<UnitBase> _empty = new List<UnitBase>(0);
@@ -30,6 +33,12 @@ namespace ProjectOne.Unit
 		public IReadOnlyList<UnitBase> All
 		{
 			get { return _units; }
+		}
+
+		// 충돌 후보 조회용 공간 해시 — UnitMover 가 인접 유닛만 순회하는 데 사용
+		public UnitSpatialHash SpatialHash
+		{
+			get { return _spatialHash; }
 		}
 
 		protected override void Awake()
@@ -46,10 +55,11 @@ namespace ProjectOne.Unit
 			return go.transform;
 		}
 
-		// 캐시 갱신을 UnitMover.FixedUpdate 보다 먼저 — 무버가 최신 CachedPos 를 본다
+		// 캐시 갱신을 UnitMover.FixedUpdate 보다 먼저 — 무버가 최신 CachedPos 와 공간 해시를 본다
 		void FixedUpdate()
 		{
 			_simulator.RefreshCache(_units);
+			_spatialHash.Rebuild(_units);
 		}
 
 		// 캐시 재갱신 → 분리 배치 계산 → 전체 유닛 ManualTick

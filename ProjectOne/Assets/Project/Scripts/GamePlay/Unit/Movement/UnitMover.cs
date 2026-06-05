@@ -16,6 +16,9 @@ public class UnitMover : MonoBehaviour
 	private readonly float _moveSpeedMultiplier = 0.1f;
 	private readonly float _knockbackMultiplier = 0.1f;
 
+	// 공간 해시 조회 결과 재사용 버퍼 — 충돌 검사마다 채워 씀 (할당 방지)
+	private readonly List<UnitBase> _queryBuffer = new List<UnitBase>(32);
+
 	public Vector2 Facing { get; private set; } = Vector2.right;
 	public bool IsMoving    { get { return _moveVelocity.sqrMagnitude > 0.01f; } }
 	public bool IsImpulsed  { get { return _impulseVelocity.sqrMagnitude > 0.01f; } }
@@ -110,10 +113,11 @@ public class UnitMover : MonoBehaviour
 		Vector2 slideVel = velocity;
 		Vector2 nextPos  = currentPos + velocity * Time.fixedDeltaTime;
 
-		IReadOnlyList<UnitBase> all = UnitContainer.Instance.All;
-		for (int i = 0; i < all.Count; i++)
+		// 인접 셀 후보만 조회 — 전체 유닛 brute-force 순회 회피
+		UnitContainer.Instance.SpatialHash.Query(nextPos, _queryBuffer);
+		for (int i = 0; i < _queryBuffer.Count; i++)
 		{
-			UnitBase u = all[i];
+			UnitBase u = _queryBuffer[i];
 			if (u == null || u.transform == transform || u.IsDead == true)
 			{
 				continue;
@@ -188,10 +192,11 @@ public class UnitMover : MonoBehaviour
 			return false;
 		}
 
-		IReadOnlyList<UnitBase> all = UnitContainer.Instance.All;
-		for (int i = 0; i < all.Count; i++)
+		// 인접 셀 후보만 조회 — 전체 유닛 brute-force 순회 회피
+		UnitContainer.Instance.SpatialHash.Query(nextPos, _queryBuffer);
+		for (int i = 0; i < _queryBuffer.Count; i++)
 		{
-			UnitBase u = all[i];
+			UnitBase u = _queryBuffer[i];
 			if (u == null || u.transform == transform || u.IsDead == true)
 			{
 				continue;
