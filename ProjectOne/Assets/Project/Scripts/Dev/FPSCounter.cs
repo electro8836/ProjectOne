@@ -29,7 +29,7 @@ namespace ProjectOne.Dev
 			_style.normal.textColor = _color;
 
 			float fps = 1f / Mathf.Max(_deltaTime, 0.0001f);
-			GUI.Label(new Rect(10f, 10f, 500f, 100f), $"FPS: {fps:0.0}", _style);
+			GUI.Label(new Rect(10f, 10f, 500f, 200f), $"FPS: {fps:0.0}", _style);
 		}
 	}
 }
