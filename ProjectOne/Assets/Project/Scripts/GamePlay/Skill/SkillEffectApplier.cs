@@ -201,9 +201,10 @@ namespace ProjectOne.Skill
 				dmg.TakeDamage(in info);
 
 				// 브레이크 게이지 데미지 = 공격자 BreakDamage × EffectParam_4 (HP 데미지와 무관)
-				// 게이지 0 도달 시 가드브레이크 발동 — TriggerGuardBreak 가 게이지를 먼저 가득 채워 재진입 방지
+				// 브레이크 상태 중(IsBreak)에는 게이지 추가 감소 없음
 				if (_applyingGuardBreak == false && p.BreakDamageRatio != 0f && source != null && source.Stats != null
-					&& targets[i] != null && targets[i].Vitals != null && targets[i].IsDead == false)
+					&& targets[i] != null && targets[i].Vitals != null && targets[i].Stats != null && targets[i].IsDead == false
+					&& targets[i].Vitals.IsBreak == false && targets[i].Stats.GetStat(StatInfo.BreakGage) > 0f)
 				{
 					float breakDmg = source.Stats.GetStat(StatInfo.BreakDamage) * p.BreakDamageRatio;
 					if (breakDmg > 0f)
@@ -236,13 +237,11 @@ namespace ProjectOne.Skill
 		}
 
 		// 가드브레이크 발동 — 브레이크 게이지가 0이 된 victim 에게 호출.
-		// 1) 게이지를 즉시 가득 채워(요구 5) SKILL_BREAK 자체 데미지로 인한 재진입(무한 발동) 방지
-		// 2) SKILL_BREAK 강제 적용 — 스턴/디버프(ActivateBuff)와 가드브레이크 데미지(P4×attacker.BreakDamage)
+		// 브레이크 상태(IsBreak) 진입 후 SKILL_BREAK 강제 적용 — 스턴/디버프(ActivateBuff)와 가드브레이크 데미지
 		static void TriggerGuardBreak(UnitBase victim, UnitBase attacker)
 		{
-			victim.Vitals.InitBreakGage();
+			victim.Vitals.SetBreakGage(0f);
 
-			// SKILL_BREAK 적용 동안 게이지 감소 차단 → 재발동 방지
 			bool prev = _applyingGuardBreak;
 			_applyingGuardBreak = true;
 			try

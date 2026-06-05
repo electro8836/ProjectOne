@@ -213,7 +213,8 @@ namespace ProjectOne.Unit
 					_brain.Tick(deltaTime);
 				}
 
-				// 브레이크 게이지 자동 회복 — 1초마다 BreakRecovery 스탯만큼 (ModifyBreakGage 가 최댓값 Clamp)
+				// 브레이크 게이지 회복 — 1초마다 BreakRecovery 스탯만큼
+				// 브레이크 상태면 내부 풀에 누적(최대치 도달 시 해제), 아니면 게이지 직접 회복
 				if (_vitals != null && _stats != null)
 				{
 					_breakRecoveryAccum += deltaTime;
@@ -223,7 +224,14 @@ namespace ProjectOne.Unit
 						float rec = _stats.GetStat(StatInfo.BreakRecovery);
 						if (rec > 0f)
 						{
-							_vitals.ModifyBreakGage(rec);
+							if (_vitals.IsBreak)
+							{
+								_vitals.TickBreakRecover(rec);
+							}
+							else
+							{
+								_vitals.ModifyBreakGage(rec);
+							}
 						}
 					}
 				}
@@ -267,7 +275,12 @@ namespace ProjectOne.Unit
 
 				if (info.KnockbackPower > 0f && _mover != null)
 				{
-					_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
+					float maxBreakGage = _stats != null ? _stats.GetStat(StatInfo.BreakGage) : 0f;
+					bool applyKnockback = maxBreakGage <= 0f || (_vitals != null && _vitals.IsBreak);
+					if (applyKnockback)
+					{
+						_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
+					}
 				}
 			}
 		}
