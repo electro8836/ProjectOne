@@ -217,7 +217,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Test.MapTestSpawner
   _heroes:
-  - characterId: 102
+  - characterId: 101
     position: {x: -1, y: 0, z: 0}
     faction: 1
     autoControl: 1
@@ -1078,6 +1078,30 @@ PrefabInstance:
     - target: {fileID: 1560239447130894752, guid: 07994700622799541b8ee71632dffafc, type: 3}
       propertyPath: _stackSpacing
       value: 0.15
+      objectReference: {fileID: 0}
+    - target: {fileID: 1560239447130894752, guid: 07994700622799541b8ee71632dffafc, type: 3}
+      propertyPath: _criticalColor.b
+      value: 0.1462264
+      objectReference: {fileID: 0}
+    - target: {fileID: 1560239447130894752, guid: 07994700622799541b8ee71632dffafc, type: 3}
+      propertyPath: _criticalColor.g
+      value: 0.9022444
+      objectReference: {fileID: 0}
+    - target: {fileID: 1560239447130894752, guid: 07994700622799541b8ee71632dffafc, type: 3}
+      propertyPath: _criticalColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1560239447130894752, guid: 07994700622799541b8ee71632dffafc, type: 3}
+      propertyPath: _superCriticalColor.b
+      value: 0.87304294
+      objectReference: {fileID: 0}
+    - target: {fileID: 1560239447130894752, guid: 07994700622799541b8ee71632dffafc, type: 3}
+      propertyPath: _superCriticalColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1560239447130894752, guid: 07994700622799541b8ee71632dffafc, type: 3}
+      propertyPath: _superCriticalColor.r
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3406518246972130243, guid: 07994700622799541b8ee71632dffafc, type: 3}
       propertyPath: m_LocalPosition.x

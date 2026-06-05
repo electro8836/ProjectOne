@@ -1,3 +1,5 @@
+using EDT;
+
 namespace ProjectOne.Unit.AI
 {
 	// AI 타입 분기를 한 곳에 격리 — 유닛 정보로 적절한 behavior 를 만들어 AiBrain 을 생성.
@@ -7,6 +9,15 @@ namespace ProjectOne.Unit.AI
 		public static AiBrain CreateForHero(UnitBase hero)
 		{
 			return new AiBrain(hero, new HeroAutoBehavior());
+		}
+
+		// 몬스터: 히어로로 접근 이동 + 사거리 내 스킬 자동 시전.
+		// 일반/엘리트/보스 모두 현재는 접근형 — 보스 전용 BossBehavior 는 3단계까지 폴백.
+		public static AiBrain CreateForMonster(UnitBase monster, MonsterTypes type)
+		{
+			// 플로우필드 중앙 재베이크 코디네이터 보장 (MonoSingleton 최초 접근 시 자동 생성)
+			_ = MonsterAiCoordinator.Instance;
+			return new AiBrain(monster, new MonsterApproachBehavior());
 		}
 	}
 }

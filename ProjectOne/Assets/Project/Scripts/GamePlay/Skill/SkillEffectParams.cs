@@ -46,13 +46,19 @@ namespace ProjectOne.Skill
 		public static bool TryParseDamage(Table_SkillEffect.Row row, out DamageParams p)
 		{
 			p = new DamageParams();
-			if (TryParseFloat(row.EffectParam_1, out float baseDam) == false)
+			if (string.IsNullOrEmpty(row.EffectParam_1) == true || row.EffectParam_1 == "None")
+			{
+				p.BaseDamage = 0f;
+			}
+			else if (TryParseFloat(row.EffectParam_1, out float baseDam) == false)
 			{
 				LogParseError(row, 1, "Damage.BaseDamage");
 				return false;
 			}
-
-			p.BaseDamage = baseDam;
+			else
+			{
+				p.BaseDamage = baseDam;
+			}
 
 			// P4 브레이크 게이지 데미지 비율 — 선택 (비어있거나 "None" 이면 0). 게이지 감소 = 공격자 BreakDamage × 비율 (HP 무관)
 			p.BreakDamageRatio = 0f;

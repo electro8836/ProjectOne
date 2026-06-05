@@ -8,11 +8,13 @@ namespace EDT {
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public string Desc { get; set; } = string.Empty;
+            public SkillInfo BaseAttackSkill { get; set; } = SkillInfo.None;
             public SkillInfo Skill_1 { get; set; } = SkillInfo.None;
             public SkillInfo Skill_2 { get; set; } = SkillInfo.None;
             public SkillInfo Skill_3 { get; set; } = SkillInfo.None;
             public SkillInfo Skill_4 { get; set; } = SkillInfo.None;
+            public SkillInfo SpecialSkill_1 { get; set; } = SkillInfo.None;
+            public SkillInfo SpecialSkill_2 { get; set; } = SkillInfo.None;
         }
 
         public const string Filename = "edt_skillset.bytes";
@@ -36,11 +38,13 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.Desc = reader.ReadString();
+                row.BaseAttackSkill = (SkillInfo)reader.ReadInt32();
                 row.Skill_1 = (SkillInfo)reader.ReadInt32();
                 row.Skill_2 = (SkillInfo)reader.ReadInt32();
                 row.Skill_3 = (SkillInfo)reader.ReadInt32();
                 row.Skill_4 = (SkillInfo)reader.ReadInt32();
+                row.SpecialSkill_1 = (SkillInfo)reader.ReadInt32();
+                row.SpecialSkill_2 = (SkillInfo)reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

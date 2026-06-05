@@ -166,15 +166,25 @@ namespace ProjectOne.Unit
 			RefreshSkillIndicator(unit);
 		}
 
-		// 히어로 구성 — Base/Passive/Special 스킬 등록. autoControl 이면 자동전투 두뇌 주입 + 입력 컨트롤러 비활성화.
+		// 히어로 구성 — SkillSet 기반 스킬 등록. autoControl 이면 자동전투 두뇌 주입 + 입력 컨트롤러 비활성화.
 		private void ComposeHero(UnitBase unit, Table_Character.Row row, Faction faction, bool autoControl)
 		{
 			ComposeBase(unit, row.ID, row.BaseStatID, faction);
 			SkillContainer sc = unit.SkillContainer;
-			sc.Register(row.BaseAttackSkill, SourceBase);
-			sc.Register(row.PassiveSkill, SourceBase);
-			sc.Register(row.SpecialSkill_1, SourceSpecial);
-			sc.Register(row.SpecialSkill_2, SourceSpecial);
+			if (row.BaseSkillSet > 0)
+			{
+				Table_SkillSet.Row skillSetRow = Table_SkillSet.Get(row.BaseSkillSet);
+				if (skillSetRow != null)
+				{
+					sc.Register(skillSetRow.BaseAttackSkill, SourceBase);
+					sc.Register(skillSetRow.Skill_1, SourceBase);
+					sc.Register(skillSetRow.Skill_2, SourceBase);
+					sc.Register(skillSetRow.Skill_3, SourceBase);
+					sc.Register(skillSetRow.Skill_4, SourceBase);
+					sc.Register(skillSetRow.SpecialSkill_1, SourceSpecial);
+					sc.Register(skillSetRow.SpecialSkill_2, SourceSpecial);
+				}
+			}
 			RefreshSkillIndicator(unit);
 
 			if (autoControl == true)
@@ -199,17 +209,22 @@ namespace ProjectOne.Unit
 
 		private static void RegisterBaseSkills(SkillContainer sc, int skillSetId)
 		{
-			if (skillSetId > 0)
+			if (skillSetId <= 0)
 			{
-				Table_SkillSet.Row row = Table_SkillSet.Get(skillSetId);
-				if (row != null)
-				{
-					sc.Register(row.Skill_1, "Base");
-					sc.Register(row.Skill_2, "Base");
-					sc.Register(row.Skill_3, "Base");
-					sc.Register(row.Skill_4, "Base");
-				}
+				return;
 			}
+			Table_SkillSet.Row row = Table_SkillSet.Get(skillSetId);
+			if (row == null)
+			{
+				return;
+			}
+			sc.Register(row.BaseAttackSkill, "Base");
+			sc.Register(row.Skill_1, "Base");
+			sc.Register(row.Skill_2, "Base");
+			sc.Register(row.Skill_3, "Base");
+			sc.Register(row.Skill_4, "Base");
+			sc.Register(row.SpecialSkill_1, "Base");
+			sc.Register(row.SpecialSkill_2, "Base");
 		}
 
 		private static async UniTask ApplySkinAsync(UnitBase unit, string skinAddress, CancellationToken ct)

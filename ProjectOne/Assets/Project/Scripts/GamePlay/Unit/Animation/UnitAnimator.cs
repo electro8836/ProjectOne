@@ -10,6 +10,13 @@ namespace ProjectOne.Unit
 
 		private bool _lastIsMoving;
 
+		// 좌우 플립 판정용 — facing.x 를 시간 기반으로 누적해 고빈도 부호 진동(분산 조향 떨림)을 흡수
+		private float _facingXSmoothed;
+
+		private const float FacingSmoothRate = 10f;
+
+		private const float FacingDeadband = 0.05f;
+
 		[SerializeField]
 		private float _attackSpeedScale = 100f;
 
@@ -82,10 +89,26 @@ namespace ProjectOne.Unit
 
 		public void SetFacing(Vector2 facing)
 		{
-			bool flag = facing.x < 0f;
-			if (_spriteRenderer.flipX != flag)
+			// 이동 벡터 x를 시간 기반으로 부드럽게 누적 — 평균 이동 방향은 일관되므로
+			// 평활값 부호는 실제 진행 방향(우회 길찾기 포함)을 따라가되 순간 떨림만 흡수
+			_facingXSmoothed = Mathf.Lerp(_facingXSmoothed, facing.x, Time.deltaTime * FacingSmoothRate);
+
+			// 0 근처(거의 수직 이동)면 마지막 좌우 방향 유지 → 미세 부호반전 플립 방지
+			if (_facingXSmoothed > FacingDeadband)
 			{
-				_spriteRenderer.flipX = flag;
+				ApplyFlip(false);
+			}
+			else if (_facingXSmoothed < -FacingDeadband)
+			{
+				ApplyFlip(true);
+			}
+		}
+
+		private void ApplyFlip(bool flip)
+		{
+			if (_spriteRenderer.flipX != flip)
+			{
+				_spriteRenderer.flipX = flip;
 			}
 		}
 
