@@ -33,8 +33,8 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			Vector2 selfPos = self.transform.position;
-			Vector2 dirToTarget = (Vector2)target.transform.position - selfPos;
+			Vector2 selfPos = self.CachedPos;
+			Vector2 dirToTarget = target.CachedPos - selfPos;
 
 			// 시선을 타겟으로 — Sector/Line 스킬이 타겟을 조준하도록 이동/시전 전에 설정
 			self.Mover.SetFacing(dirToTarget);
@@ -83,7 +83,8 @@ namespace ProjectOne.Unit.AI
 				approach = dirToTarget.normalized;
 			}
 
-			Vector2 separation = ComputeSeparation(self, selfPos);
+			// 분리 벡터는 UnitSimulator 가 프레임당 1회 배치 계산해 둔 값을 읽는다
+			Vector2 separation = self.CachedSeparation;
 			Vector2 final = approach + separation * _separationWeight;
 			if (final.sqrMagnitude < 1e-6f)
 			{
@@ -99,7 +100,7 @@ namespace ProjectOne.Unit.AI
 			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
 			UnitBase nearest = null;
 			float nearestSqr = float.MaxValue;
-			Vector2 selfPos = self.transform.position;
+			Vector2 selfPos = self.CachedPos;
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase h = heroes[i];
@@ -113,7 +114,7 @@ namespace ProjectOne.Unit.AI
 					continue;
 				}
 
-				float sqr = ((Vector2)h.transform.position - selfPos).sqrMagnitude;
+				float sqr = (h.CachedPos - selfPos).sqrMagnitude;
 				if (sqr < nearestSqr)
 				{
 					nearestSqr = sqr;
@@ -156,7 +157,8 @@ namespace ProjectOne.Unit.AI
 				return false;
 			}
 
-			Vector2 heroPos = hero.transform.position;
+			Vector2 heroPos = hero.CachedPos;
+			float stoppingDistSqr = stoppingDist * stoppingDist;
 			IReadOnlyList<UnitBase> monsters = UnitContainer.Instance.GetByType(UnitType.Monster);
 			for (int i = 0; i < monsters.Count; i++)
 			{
@@ -167,53 +169,21 @@ namespace ProjectOne.Unit.AI
 				}
 
 				// 자신과 인접한 아군만 (접촉 반경 2배 이내)
-				float contactR = self.Radius + m.Radius;
-				if (((Vector2)m.transform.position - selfPos).sqrMagnitude > contactR * contactR * 4f)
+				float contactR = self.CachedRadius + m.CachedRadius;
+				Vector2 mPos = m.CachedPos;
+				if ((mPos - selfPos).sqrMagnitude > contactR * contactR * 4f)
 				{
 					continue;
 				}
 
 				// 그 아군이 히어로 정지 거리 내에 있으면 → 나는 줄을 서야 함
-				if (((Vector2)m.transform.position - heroPos).magnitude <= stoppingDist)
+				if ((mPos - heroPos).sqrMagnitude <= stoppingDistSqr)
 				{
 					return true;
 				}
 			}
 
 			return false;
-		}
-
-		// 이웃 몬스터에서 멀어지는 반발 벡터 — 슬라이딩에 필요한 비스듬한 각도를 제공한다
-		private static Vector2 ComputeSeparation(UnitBase self, Vector2 selfPos)
-		{
-			Vector2 sum = Vector2.zero;
-			if (UnitContainer.Instance == null)
-			{
-				return sum;
-			}
-
-			IReadOnlyList<UnitBase> monsters = UnitContainer.Instance.GetByType(UnitType.Monster);
-			for (int i = 0; i < monsters.Count; i++)
-			{
-				UnitBase m = monsters[i];
-				if (m == null || m == self || m.IsDead == true)
-				{
-					continue;
-				}
-
-				Vector2 away = selfPos - (Vector2)m.transform.position;
-				float distSqr = away.sqrMagnitude;
-				float r = self.Radius + m.Radius;
-				if (distSqr < 1e-6f || distSqr > r * r)
-				{
-					continue;
-				}
-
-				float dist = Mathf.Sqrt(distSqr);
-				sum += away / dist * (1f - dist / r);
-			}
-
-			return sum;
 		}
 	}
 }

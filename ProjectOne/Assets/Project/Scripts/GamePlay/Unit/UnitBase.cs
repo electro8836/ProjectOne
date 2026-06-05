@@ -54,6 +54,15 @@ namespace ProjectOne.Unit
 
 		public bool IsDead { get; protected set; }
 
+		// 프레임 캐시 — UnitSimulator 가 프레임당 1회 갱신. 핫 루프(충돌/분리)는 이 필드만 읽어
+		// transform.position / collider.radius 네이티브 브릿지 호출을 피한다.
+		public Vector2 CachedPos { get; private set; }
+
+		public float CachedRadius { get; private set; }
+
+		// 분리(Separation) 벡터 — UnitSimulator 가 몬스터 전체를 배치 계산해 기록
+		public Vector2 CachedSeparation { get; internal set; }
+
 		public float Radius
 		{
 			get
@@ -65,6 +74,13 @@ namespace ProjectOne.Unit
 
 				return _collider.radius;
 			}
+		}
+
+		// 프레임 시작 위치/반경을 캐시. UnitSimulator 가 모든 유닛에 대해 프레임당 1회 호출.
+		public void RefreshFrameCache()
+		{
+			CachedPos = transform.position;
+			CachedRadius = Radius;
 		}
 
 		public Vector2 HitCenter => (Vector2)this.transform.position + ((_collider != null) ? _collider.offset : Vector2.zero);
@@ -191,7 +207,9 @@ namespace ProjectOne.Unit
 			_brain = brain;
 		}
 
-		protected virtual void LateUpdate()
+		// UnitSimulator 가 프레임당 1회 호출 — 개별 MonoBehaviour.LateUpdate 콜백 오버헤드 제거.
+		// (애니메이션/CC/Buff/Skill/AI/브레이크게이지 갱신)
+		public virtual void ManualTick(float dt)
 		{
 			if (!IsDead)
 			{
@@ -207,7 +225,7 @@ namespace ProjectOne.Unit
 					_mover.SetMoveEnabled(IsMoveBlocked == false);
 				}
 
-				float deltaTime = Time.deltaTime;
+				float deltaTime = dt;
 				if (_buffContainer != null)
 				{
 					_buffContainer.Tick(deltaTime);

@@ -217,7 +217,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Test.MapTestSpawner
   _heroes:
-  - characterId: 102
+  - characterId: 101
     position: {x: -1, y: 0, z: 0}
     faction: 1
     autoControl: 1
@@ -351,50 +351,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 362e21bcdb2530f4fadca9b2f9682c2e, type: 3}
---- !u!1 &752248806
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 752248808}
-  - component: {fileID: 752248807}
-  m_Layer: 0
-  m_Name: CombatDebuger
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &752248807
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 752248806}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 08261b7f76551054e832736421e888d7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Dev.CombatDebugLogger
---- !u!4 &752248808
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 752248806}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.3043, y: -0.00856, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &895942817
 GameObject:
   m_ObjectHideFlags: 0
@@ -857,14 +813,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3dacf593947bf945adc2b6b97f9f484, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.MonsterSpawnManager
-  _returnDelay: 1.5
+  _returnDelay: 1
   _showSkillIndicators: 1
   _spawnList:
   - monsterId: 10001
     center: {x: -1, y: 0, z: 0}
     radius: 1
-    minCount: 1
-    maxCount: 1
+    minCount: 100
+    maxCount: 100
     spawnInterval: 2
 --- !u!4 &1200190042
 Transform:
@@ -1161,7 +1117,6 @@ SceneRoots:
   - {fileID: 1055818876}
   - {fileID: 543137986}
   - {fileID: 1200190042}
-  - {fileID: 752248808}
   - {fileID: 895942819}
   - {fileID: 1042661633}
   - {fileID: 1934197159}

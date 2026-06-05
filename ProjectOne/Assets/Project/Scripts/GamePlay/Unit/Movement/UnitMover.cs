@@ -119,24 +119,24 @@ public class UnitMover : MonoBehaviour
 				continue;
 			}
 
-			float min    = (_unitRadius + u.Radius) * 0.5f;
+			float min    = (_unitRadius + u.CachedRadius) * 0.5f;
 			float minSqr = min * min;
-			Vector2 up   = u.transform.position;
+			Vector2 up   = u.CachedPos;
 
 			// 이미 겹쳐 있는 유닛은 무시 (끼임에서 빠져나올 수 있게)
-			if (((Vector2)up - currentPos).sqrMagnitude < minSqr)
+			if ((up - currentPos).sqrMagnitude < minSqr)
 			{
 				continue;
 			}
 
 			// 원래 velocity로 이동 시 새로 겹치는 유닛만 처리
-			if (((Vector2)up - nextPos).sqrMagnitude >= minSqr)
+			if ((up - nextPos).sqrMagnitude >= minSqr)
 			{
 				continue;
 			}
 
 			// 충돌 법선: 상대 유닛 → 자신 (밀려나야 할 방향)
-			Vector2 normal = currentPos - (Vector2)up;
+			Vector2 normal = currentPos - up;
 			if (normal.sqrMagnitude < 1e-6f)
 			{
 				continue;
@@ -197,18 +197,18 @@ public class UnitMover : MonoBehaviour
 				continue;
 			}
 
-			float min = (_unitRadius + u.Radius) * 0.5f;
+			float min = (_unitRadius + u.CachedRadius) * 0.5f;
 			float minSqr = min * min;
-			Vector2 up = u.transform.position;
+			Vector2 up = u.CachedPos;
 
 			// 이미 겹쳐 있던 유닛은 무시 — 그쪽에서 빠져나오는 이동은 허용
-			if (((Vector2)up - currentPos).sqrMagnitude < minSqr)
+			if ((up - currentPos).sqrMagnitude < minSqr)
 			{
 				continue;
 			}
 
 			// 이동 후 새로 겹치게 되면 차단
-			if (((Vector2)up - nextPos).sqrMagnitude < minSqr)
+			if ((up - nextPos).sqrMagnitude < minSqr)
 			{
 				return true;
 			}

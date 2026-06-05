@@ -4,14 +4,20 @@ using ProjectOne.Utils;
 
 namespace ProjectOne.Unit
 {
-	// 활성 유닛 컨테이너 (MonoSingleton) — 레지스트리 + Hierarchy 부모 통합
+	// 활성 유닛 컨테이너 (MonoSingleton) — 레지스트리 + Hierarchy 부모 통합 + 유닛 일괄 구동
 	// - 유닛은 OnEnable/OnDisable 에서 자기 자신을 등록/해제
 	// - GetRoot(type) 으로 Type별 부모 Transform 제공 → UnitFactory 가 스폰 시 부모로 사용
 	// - GetByType(type) 으로 Type별 활성 목록 캐시 노출 (적 탐지 등)
 	// - ClearAll/ClearByType 으로 씬 전환·전투 종료 시 일괄 정리
+	// - Fixed/LateUpdate 에서 UnitSimulator 를 구동 (캐시 갱신 / 분리 계산 / 전체 ManualTick)
+	// ExecutionOrder 를 앞당겨 캐시 갱신이 UnitMover.FixedUpdate 보다 먼저 일어나게 한다.
+	[DefaultExecutionOrder(-100)]
 	public class UnitContainer : MonoSingleton<UnitContainer>
 	{
 		readonly List<UnitBase> _units = new List<UnitBase>(256);
+
+		// 유닛 일괄 구동 로직 (순수 클래스) — 컨테이너가 소유하고 직접 호출
+		readonly UnitSimulator _simulator = new UnitSimulator();
 
 		// Type별 활성 유닛 캐시 — enum 키, List 값. 둘 다 동적 컬렉션.
 		readonly Dictionary<UnitType, List<UnitBase>> _byType = new Dictionary<UnitType, List<UnitBase>>();
@@ -38,6 +44,20 @@ namespace ProjectOne.Unit
 			GameObject go = new GameObject(name);
 			go.transform.SetParent(transform, false);
 			return go.transform;
+		}
+
+		// 캐시 갱신을 UnitMover.FixedUpdate 보다 먼저 — 무버가 최신 CachedPos 를 본다
+		void FixedUpdate()
+		{
+			_simulator.RefreshCache(_units);
+		}
+
+		// 캐시 재갱신 → 분리 배치 계산 → 전체 유닛 ManualTick
+		void LateUpdate()
+		{
+			_simulator.RefreshCache(_units);
+			_simulator.ComputeSeparations(GetByType(UnitType.Monster));
+			_simulator.TickAll(_units, Time.deltaTime);
 		}
 
 		// UnitFactory 가 Instantiate 시 부모로 사용
