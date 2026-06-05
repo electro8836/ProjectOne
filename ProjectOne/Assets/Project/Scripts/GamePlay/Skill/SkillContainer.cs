@@ -233,6 +233,12 @@ namespace ProjectOne.Skill
 			}
 		}
 
+		// 넉백 등 경직 발생 시 호출 — 예약된 모든 지연 효과를 취소
+		public void CancelPendingEffects()
+		{
+			_pending.Clear();
+		}
+
 		// SkillExecutor 가 지연 발동을 예약 — delay <= 0 이면 즉시 디스패치
 		public void Schedule(float delay, SkillInfo id, PendingKind kind)
 		{

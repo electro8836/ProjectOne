@@ -65,6 +65,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3b244983af0af04f8cc331c1577ddac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.UnitAnimator
+  _outlineWidth: 0.0002
   _attackSpeedScale: 1
   _moveSpeedScale: 1
   _minMotionMul: 0.1
@@ -185,7 +186,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.SkillIndicator
   _displayDuration: 0.1
-  _color: {r: 1, g: 1, b: 1, a: 0.5}
+  _color: {r: 1, g: 1, b: 1, a: 0.15686275}
   _sortingLayerName: Shadow
   _sortingOrder: -1
   _ringThickness: 0.05

@@ -23,6 +23,12 @@ namespace ProjectOne.Buff
 
 			_owner.BlockMove(nameof(DEBUFF_KNOCKBACK));
 			_owner.BlockSkill(nameof(DEBUFF_KNOCKBACK));
+
+			// 넉백 시 진행 중인 MotionEffectTime 대기 취소 — 경직 중 데미지 적용 방지
+			if (_owner.SkillContainer != null)
+			{
+				_owner.SkillContainer.CancelPendingEffects();
+			}
 		}
 
 		public void OnDeactivate()

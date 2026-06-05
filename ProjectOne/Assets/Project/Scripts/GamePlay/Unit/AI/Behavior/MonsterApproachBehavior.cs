@@ -39,9 +39,6 @@ namespace ProjectOne.Unit.AI
 			// 시선을 타겟으로 — Sector/Line 스킬이 타겟을 조준하도록 이동/시전 전에 설정
 			self.Mover.SetFacing(dirToTarget);
 
-			// 범위 내 적이 있고 쿨다운이 아니면 자동 시전
-			SkillSelector.Select(self, false);
-
 			// 히스테리시스 정지 판정
 			float range = GetAttackRange(self);
 			float dist = dirToTarget.magnitude;
@@ -69,6 +66,8 @@ namespace ProjectOne.Unit.AI
 			if (_approaching == false)
 			{
 				self.Mover.Stop();
+				// 정지 상태에서만 스킬 시전 — 이동 중 공격 방지
+				SkillSelector.Select(self, false);
 				return;
 			}
 
