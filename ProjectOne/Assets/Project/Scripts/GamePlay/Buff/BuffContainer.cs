@@ -26,7 +26,7 @@ namespace ProjectOne.Buff
 			get { return _owner; }
 		}
 
-		public void Apply(BuffInfo id, float duration, float interval, UnitBase source)
+		public void Apply(BuffInfo id, float duration, float interval, UnitBase source, SkillInfo sourceSkill = SkillInfo.None)
 		{
 			if (id == BuffInfo.None)
 			{
@@ -50,7 +50,7 @@ namespace ProjectOne.Buff
 				return;
 			}
 
-			BuffRuntime rt = new BuffRuntime(id, _owner, source, duration, interval);
+			BuffRuntime rt = new BuffRuntime(id, _owner, source, duration, interval, sourceSkill);
 			_byId.Add(id, rt);
 			_ordered.Add(rt);
 		}

@@ -192,6 +192,8 @@ namespace EDT {
         SKILL_BREAK,
         SKILL_CLASS_BASIC_01,
         SKILL_CLASS_BASIC_02,
+        SKILL_DASH_01,
+        SKILL_DASH_ATTACK_01,
     }
 
     public enum SkillEffect {
@@ -220,7 +222,9 @@ namespace EDT {
         SE_ACTIVATE_DEBUFF_BREAK_01,
         SE_ACTIVATE_DEBUFF_BREAK_02,
         SE_DECREASE_DAMAGETAKEN,
-        SE_ACTIVATE_BUFF_DASH,
+        SE_ACTIVATE_BUFF_DASH_01,
+        SE_ACTIVATE_BUFF_DASH_ATTACK_01,
+        SE_DASH_ATTACK_DAMAGE_01,
     }
 
     public enum BuffInfo {
@@ -234,6 +238,8 @@ namespace EDT {
         DEBUFF_BINDING,
         DEBUFF_KNOCKBACK,
         DEBUFF_BREAK,
+        BUFF_DASH,
+        BUFF_DASH_ATTACK,
     }
 
     public enum StatInfo {

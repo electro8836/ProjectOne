@@ -18,8 +18,10 @@ namespace ProjectOne.Unit
 			public SkillInfo id;
 			public Transform tr;
 			public bool needsFacing;  // 부채꼴/직선은 facing 방향으로 회전
-			public float hideTime;
-			public bool active;
+			public float showTime;    // 표시 시작 예정 시각 (발동 + MotionEffectTime)
+			public float hideTime;    // 숨김 예정 시각 (showTime + _displayDuration)
+			public bool active;       // 처리 중(표시 대기 또는 표시)
+			public bool visible;      // 메시가 실제 보이는 중
 		}
 
 		[SerializeField] private float _displayDuration = 0.1f;
@@ -136,8 +138,10 @@ namespace ProjectOne.Unit
 			item.id = id;
 			item.tr = go.transform;
 			item.needsFacing = (row.ScanType == SkillScanType.Sector || row.ScanType == SkillScanType.Line);
+			item.showTime = 0f;
 			item.hideTime = 0f;
 			item.active = false;
+			item.visible = false;
 			_items.Add(item);
 			_byId.Add(id, item);
 		}
@@ -155,21 +159,15 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			// 발동 시점의 중심/방향으로 자식 위치·회전 갱신
-			Vector2 center = _owner.HitCenter;
-			item.tr.position = new Vector3(center.x, center.y, 0f);
-			if (item.needsFacing == true)
-			{
-				Vector2 facing = GetFacing();
-				float angle = Mathf.Atan2(facing.y, facing.x) * Mathf.Rad2Deg;
-				item.tr.rotation = Quaternion.Euler(0f, 0f, angle);
-			}
+			// 효과가 적용되는 시점(발동 + MotionEffectTime)에 맞춰 표시 예약 — 위치/회전은 표시 시점에 갱신
+			Table_SkillInfo.Row row = Table_SkillInfo.Get(evt.SkillId);
+			float delay = (row != null) ? Mathf.Max(0f, row.MotionEffectTime) : 0f;
 
-			item.hideTime = Time.time + _displayDuration;
+			item.showTime = Time.time + delay;
+			item.hideTime = item.showTime + _displayDuration;
 			if (item.active == false)
 			{
 				item.active = true;
-				item.tr.gameObject.SetActive(true);
 				_activeCount++;
 			}
 		}
@@ -191,12 +189,40 @@ namespace ProjectOne.Unit
 					continue;
 				}
 
+				// 표시 종료
 				if (now >= item.hideTime)
 				{
+					if (item.visible == true)
+					{
+						item.tr.gameObject.SetActive(false);
+						item.visible = false;
+					}
+
 					item.active = false;
-					item.tr.gameObject.SetActive(false);
 					_activeCount--;
+					continue;
 				}
+
+				// 표시 시작(MotionEffectTime 경과) — 이 시점의 중심/방향으로 갱신 후 출력
+				if (now >= item.showTime && item.visible == false)
+				{
+					UpdateItemTransform(item);
+					item.tr.gameObject.SetActive(true);
+					item.visible = true;
+				}
+			}
+		}
+
+		// 인디케이터 표시 시작 시점의 캐스터 중심/방향으로 자식 위치·회전을 갱신
+		private void UpdateItemTransform(Item item)
+		{
+			Vector2 center = _owner.HitCenter;
+			item.tr.position = new Vector3(center.x, center.y, 0f);
+			if (item.needsFacing == true)
+			{
+				Vector2 facing = GetFacing();
+				float angle = Mathf.Atan2(facing.y, facing.x) * Mathf.Rad2Deg;
+				item.tr.rotation = Quaternion.Euler(0f, 0f, angle);
 			}
 		}
 

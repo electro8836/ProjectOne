@@ -88,7 +88,7 @@ namespace ProjectOne.Skill
 					ApplyDamage(row, targets, damageSource, skillId);
 					break;
 				case SkillEffectTypes.ActivateBuff:
-					ApplyActivateBuff(row, targets, damageSource);
+					ApplyActivateBuff(row, targets, damageSource, skillId);
 					break;
 				case SkillEffectTypes.DeactivateBuff:
 					ApplyDeactivateBuff(row, targets);
@@ -389,7 +389,7 @@ namespace ProjectOne.Skill
 			return Mathf.Max(0, result);
 		}
 
-		static void ApplyActivateBuff(Table_SkillEffect.Row row, List<UnitBase> targets, UnitBase source)
+		static void ApplyActivateBuff(Table_SkillEffect.Row row, List<UnitBase> targets, UnitBase source, SkillInfo skillId)
 		{
 			ActivateBuffParams p;
 			if (SkillEffectParams.TryParseActivateBuff(row, out p) == false)
@@ -405,7 +405,7 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				t.BuffContainer.Apply(p.BuffID, p.Duration, p.Interval, source);
+				t.BuffContainer.Apply(p.BuffID, p.Duration, p.Interval, source, skillId);
 			}
 		}
 

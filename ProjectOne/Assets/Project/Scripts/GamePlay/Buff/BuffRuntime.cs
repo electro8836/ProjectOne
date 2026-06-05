@@ -24,10 +24,13 @@ namespace ProjectOne.Buff
 		public float RemainingDuration { get; private set; }
 		public float IntervalSec { get; private set; }
 		public SkillEffect IntervalEffect { get; private set; }
+		public SkillEffect Effect { get; private set; }     // 부착 시 1회 적용되는 효과 — 코드 버프(대시 공격)가 경로 데미지 소스로도 참조
+		public SkillInfo SourceSkill { get; private set; }  // 이 버프를 발동시킨 스킬 — 코드 버프가 ScanType/ScanParam 등을 읽는 데 사용
 
 		float _intervalAccum;
 		readonly List<StatModifier> _modHandles = new List<StatModifier>(2);
 		IBuffBehavior _behavior;   // 코드로 정의된 버프 동작 (없으면 null — 데이터 버프)
+		ITickableBuff _tickable;   // 매 프레임 갱신이 필요한 코드 버프 (없으면 null)
 		bool _expired;
 		VFXHandle _rootVfx;        // 버프 지속 동안 owner 에 부착되는 루프성 VFX
 		AudioSfxHandle _rootSfx;   // 버프 지속 동안 재생되는 루프성 SFX
@@ -37,11 +40,12 @@ namespace ProjectOne.Buff
 			get { return _expired; }
 		}
 
-		public BuffRuntime(BuffInfo id, UnitBase owner, UnitBase source, float duration, float intervalSec)
+		public BuffRuntime(BuffInfo id, UnitBase owner, UnitBase source, float duration, float intervalSec, SkillInfo sourceSkill = SkillInfo.None)
 		{
 			Id = id;
 			Owner = owner;
 			Source = source;
+			SourceSkill = sourceSkill;
 			IsInfinite = duration <= 0f;
 			RemainingDuration = IsInfinite ? 0f : duration;
 			IntervalSec = intervalSec;
@@ -51,6 +55,7 @@ namespace ProjectOne.Buff
 			{
 				IsDebuff = row.IsDebuff;
 				IntervalEffect = row.IntervalEffect;
+				Effect = row.Effect;
 
 				// VFX: 버프가 적용된 유닛에 부착해 지속 동안 따라다니게 함 — 앵커가 Center 면 충돌체 중심만큼 띄움
 				if (string.IsNullOrEmpty(row.VFX) == false && owner != null)
@@ -79,6 +84,12 @@ namespace ProjectOne.Buff
 				_behavior = Activator.CreateInstance(behaviorType, owner, source) as IBuffBehavior;
 				if (_behavior != null)
 				{
+					_tickable = _behavior as ITickableBuff;
+					if (_tickable != null)
+					{
+						_tickable.SetHost(this);
+					}
+
 					_behavior.OnActivate();
 				}
 			}
@@ -98,6 +109,13 @@ namespace ProjectOne.Buff
 		{
 			if (_expired == true)
 			{
+				return;
+			}
+
+			// 코드 버프의 프레임 갱신 — 자체 종료 조건(거리 도달·막힘 등) 충족 시 즉시 만료
+			if (_tickable != null && _tickable.Tick(dt) == true)
+			{
+				_expired = true;
 				return;
 			}
 
@@ -143,6 +161,7 @@ namespace ProjectOne.Buff
 			{
 				_behavior.OnDeactivate();
 				_behavior = null;
+				_tickable = null;
 			}
 
 			// RootVFX 회수 — 버프 종료와 함께 사라짐

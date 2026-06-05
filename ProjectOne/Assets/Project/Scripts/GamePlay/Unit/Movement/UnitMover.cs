@@ -13,6 +13,8 @@ public class UnitMover : MonoBehaviour
 	[SerializeField] private float _impulseDrag = 10f;
 	private Vector2 _overrideVelocity;
 	private bool _hasOverride;
+	private bool _overridePierce;   // override 이동 중 유닛 충돌 무시(벽만 차단) — 대시 공격 관통용
+	private bool _overrideBlocked;  // override 이동이 다음 위치로 갈 수 없어 막힌 상태(latch) — 코드 버프가 종료 판정에 사용
 	private readonly float _moveSpeedMultiplier = 0.1f;
 	private readonly float _knockbackMultiplier = 0.1f;
 
@@ -23,6 +25,7 @@ public class UnitMover : MonoBehaviour
 	public bool IsMoving    { get { return _moveVelocity.sqrMagnitude > 0.01f; } }
 	public bool IsImpulsed  { get { return _impulseVelocity.sqrMagnitude > 0.01f; } }
 	public bool MoveEnabled { get { return _moveEnabled; } }
+	public bool OverrideBlocked { get { return _overrideBlocked; } }
 
 	private void FixedUpdate()
 	{
@@ -55,8 +58,15 @@ public class UnitMover : MonoBehaviour
 			ApplyMovement(finalVelocity);
 		}
 
-		// Facing은 Move 채널 기준으로만 갱신
-		if (_moveVelocity.sqrMagnitude > 0.01f)
+		// Facing 갱신 — override(대시 등) 중엔 이동(override) 방향을 바라봄(입력 기반 Facing 무시), 평소엔 Move 채널 기준
+		if (_hasOverride == true)
+		{
+			if (_overrideVelocity.sqrMagnitude > 0.01f)
+			{
+				Facing = _overrideVelocity.normalized;
+			}
+		}
+		else if (_moveVelocity.sqrMagnitude > 0.01f)
 		{
 			Facing = _moveVelocity.normalized;
 		}
@@ -66,6 +76,23 @@ public class UnitMover : MonoBehaviour
 	{
 		Vector2 currentPos = transform.position;
 		Vector2 nextPos    = currentPos + velocity * Time.fixedDeltaTime;
+
+		// override 이동(대시/대시 공격): 슬라이딩 없이 다음 위치 판정만 — 갈 수 없으면 그 자리에서 정지하고 막힘 latch
+		if (_hasOverride == true)
+		{
+			// 관통은 벽(IsWalkable)만, 비관통은 벽+유닛(CanMoveTo) 판정
+			bool canMove = _overridePierce == true ? IsWalkable(nextPos) : CanMoveTo(currentPos, nextPos);
+			if (canMove == true)
+			{
+				transform.position = nextPos;
+			}
+			else
+			{
+				_overrideBlocked = true;
+			}
+
+			return;
+		}
 
 		if (CanMoveTo(currentPos, nextPos) == true)
 		{
@@ -274,15 +301,18 @@ public class UnitMover : MonoBehaviour
 		_impulseVelocity = Vector2.zero;
 	}
 
-	public void SetOverride(Vector2 velocity)
+	public void SetOverride(Vector2 velocity, bool pierceUnits = false)
 	{
 		_overrideVelocity = velocity;
 		_hasOverride      = true;
+		_overridePierce   = pierceUnits;
+		_overrideBlocked  = false;
 	}
 
 	public void ClearOverride()
 	{
 		_overrideVelocity = Vector2.zero;
 		_hasOverride      = false;
+		_overridePierce   = false;
 	}
 }
