@@ -8,6 +8,10 @@ namespace ProjectOne.Unit
 
 		private SpriteRenderer _spriteRenderer;
 
+		private MaterialPropertyBlock _mpb;
+
+		private static readonly int OutlineWidthId = Shader.PropertyToID("_OutlineWidth");
+
 		private bool _lastIsMoving;
 
 		// 좌우 플립 판정용 — facing.x 를 시간 기반으로 누적해 고빈도 부호 진동(분산 조향 떨림)을 흡수
@@ -16,6 +20,9 @@ namespace ProjectOne.Unit
 		private const float FacingSmoothRate = 10f;
 
 		private const float FacingDeadband = 0.05f;
+
+		[SerializeField]
+		private float _outlineWidth = 0.0002f;
 
 		[SerializeField]
 		private float _attackSpeedScale = 100f;
@@ -64,6 +71,7 @@ namespace ProjectOne.Unit
 		{
 			_animator = this.GetComponentInChildren<Animator>();
 			_spriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
+			_mpb = new MaterialPropertyBlock();
 		}
 
 		// 발밑(피벗 하단) Y좌표를 정수 sortingOrder로 변환해 유닛 간 앞뒤 정렬을 결정한다.
@@ -165,6 +173,30 @@ namespace ProjectOne.Unit
 		{
 			_animator.ResetTrigger(HashHDead);
 			_animator.SetBool(HashIsDead, false);
+		}
+
+		private void OnValidate()
+		{
+			if (_spriteRenderer == null)
+			{
+				_spriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
+			}
+			if (_spriteRenderer == null) { return; }
+			if (_mpb == null)
+			{
+				_mpb = new MaterialPropertyBlock();
+			}
+			_spriteRenderer.GetPropertyBlock(_mpb);
+			_mpb.SetFloat(OutlineWidthId, _outlineWidth);
+			_spriteRenderer.SetPropertyBlock(_mpb);
+		}
+
+		public void SetOutlineEnabled(bool enabled)
+		{
+			if (_spriteRenderer == null) { return; }
+			_spriteRenderer.GetPropertyBlock(_mpb);
+			_mpb.SetFloat(OutlineWidthId, enabled ? _outlineWidth : 0f);
+			_spriteRenderer.SetPropertyBlock(_mpb);
 		}
 
 		public void SetController(RuntimeAnimatorController controller)

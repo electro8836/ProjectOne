@@ -90,9 +90,20 @@ namespace ProjectOne.Unit
 		// 브레이크 게이지 자동 회복 1초 주기 누적기
 		private float _breakRecoveryAccum;
 
+		private bool _wasKnockbackImmune;
+
 		public bool IsMoveBlocked => _moveBlockKeys.Count > 0;
 
 		public bool IsSkillBlocked => _skillBlockKeys.Count > 0;
+
+		public bool IsKnockbackImmune
+		{
+			get
+			{
+				if (_stats == null || _vitals == null) { return false; }
+				return _stats.GetStat(StatInfo.BreakGage) > 0f && !_vitals.IsBreak;
+			}
+		}
 
 		public void BlockMove(string key)
 		{
@@ -234,6 +245,14 @@ namespace ProjectOne.Unit
 							}
 						}
 					}
+
+					// 넉백 면역 상태(브레이크 게이지 보유 중) 변화 시 외곽선 토글
+					bool isImmune = IsKnockbackImmune;
+					if (isImmune != _wasKnockbackImmune)
+					{
+						_wasKnockbackImmune = isImmune;
+						_animator?.SetOutlineEnabled(isImmune);
+					}
 				}
 			}
 		}
@@ -268,19 +287,14 @@ namespace ProjectOne.Unit
 			if (!IsDead)
 			{
 				EventManager.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID, info.IsCritical, info.IsSuperCritical));
-				if (_animator != null)
+				if (_animator != null && !IsKnockbackImmune)
 				{
 					_animator.PlayHit();
 				}
 
-				if (info.KnockbackPower > 0f && _mover != null)
+				if (info.KnockbackPower > 0f && _mover != null && !IsKnockbackImmune)
 				{
-					float maxBreakGage = _stats != null ? _stats.GetStat(StatInfo.BreakGage) : 0f;
-					bool applyKnockback = maxBreakGage <= 0f || (_vitals != null && _vitals.IsBreak);
-					if (applyKnockback)
-					{
-						_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
-					}
+					_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
 				}
 			}
 		}
@@ -308,6 +322,7 @@ namespace ProjectOne.Unit
 		{
 			this.transform.position = pos;
 			IsDead = false;
+			_wasKnockbackImmune = false;
 			if (_vitals != null)
 			{
 				_vitals.InitHp();
@@ -317,6 +332,7 @@ namespace ProjectOne.Unit
 			if (_animator != null)
 			{
 				_animator.ResetDead();
+				_animator.SetOutlineEnabled(false);
 			}
 
 			if (_mover != null)
