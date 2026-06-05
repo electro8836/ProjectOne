@@ -45,9 +45,15 @@ namespace ProjectOne.Unit.AI
 			// 히스테리시스 정지 판정
 			float range = GetAttackRange(self);
 			float dist = dirToTarget.magnitude;
+
+			// 물리 접촉 거리와 공격 사거리 중 더 큰 값으로 정지 — ScanParam1 이 작아도 닿으면 정지
+			float stoppingDist = Mathf.Max(range, self.Radius + target.Radius);
+
 			if (_approaching == true)
 			{
-				if (dist <= range)
+				bool inRange = dist <= stoppingDist;
+				bool inQueue = inRange == false && IsQueuedBehindAlly(self, selfPos, target, stoppingDist);
+				if (inRange || inQueue)
 				{
 					_approaching = false;
 				}
@@ -141,6 +147,41 @@ namespace ProjectOne.Unit.AI
 			}
 
 			return row.ScanParam1;
+		}
+
+		// 자신과 인접한 아군이 이미 히어로 정지 거리 내에 있으면 true — 뒷줄 몬스터 대기 정지
+		private static bool IsQueuedBehindAlly(UnitBase self, Vector2 selfPos, UnitBase hero, float stoppingDist)
+		{
+			if (UnitContainer.Instance == null)
+			{
+				return false;
+			}
+
+			Vector2 heroPos = hero.transform.position;
+			IReadOnlyList<UnitBase> monsters = UnitContainer.Instance.GetByType(UnitType.Monster);
+			for (int i = 0; i < monsters.Count; i++)
+			{
+				UnitBase m = monsters[i];
+				if (m == null || m == self || m.IsDead == true || m.Faction != self.Faction)
+				{
+					continue;
+				}
+
+				// 자신과 인접한 아군만 (접촉 반경 2배 이내)
+				float contactR = self.Radius + m.Radius;
+				if (((Vector2)m.transform.position - selfPos).sqrMagnitude > contactR * contactR * 4f)
+				{
+					continue;
+				}
+
+				// 그 아군이 히어로 정지 거리 내에 있으면 → 나는 줄을 서야 함
+				if (((Vector2)m.transform.position - heroPos).magnitude <= stoppingDist)
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		// 이웃 몬스터에서 멀어지는 반발 벡터 — 슬라이딩에 필요한 비스듬한 각도를 제공한다

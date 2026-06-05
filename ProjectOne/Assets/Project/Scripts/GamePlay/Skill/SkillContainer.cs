@@ -134,7 +134,15 @@ namespace ProjectOne.Skill
 			}
 
 			SkillExecutor.Execute(id, _owner);
-			rt.StartCooldown();
+			if (rt.IsBasicAttack && _owner.Stats != null)
+			{
+				float atkSpeed = _owner.Stats.GetStat(StatInfo.AtkSpeed);
+				rt.StartCooldown(atkSpeed > 0f ? rt.Cooltime / atkSpeed : rt.Cooltime);
+			}
+			else
+			{
+				rt.StartCooldown();
+			}
 			return true;
 		}
 

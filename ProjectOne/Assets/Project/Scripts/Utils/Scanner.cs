@@ -24,12 +24,6 @@ namespace ProjectOne.Utils
 				return false;
 			}
 
-			// 부채꼴 꼭지점이 대상 콜라이더 안 → 무조건 명중 (원점 근처 NaN 방지 겸용)
-			if (sqrDist <= targetRadius * targetRadius || sqrDist < 1E-06f)
-			{
-				return true;
-			}
-
 			// facing 정규화 방어 (InLine과 동일 패턴)
 			Vector2 dir = facing;
 			if (dir.sqrMagnitude < 1E-06f)
@@ -48,15 +42,17 @@ namespace ProjectOne.Utils
 				return true;
 			}
 
-			float cosHalf = Mathf.Cos(halfRad);
-			float sinHalf = Mathf.Sin(halfRad);
+			// 완전히 같은 위치면 방향 계산 불가 → 명중 처리
+			if (sqrDist < 1E-06f)
+			{
+				return true;
+			}
 
-			// 각도 비교를 코사인(내적) 비교로 치환해 Asin/Acos 제거
-			// angle ≤ halfAngle + angularRadius
-			//  ⟺ Dot(dir, val) ≥ cosHalf·√(sqrDist − tr²) − sinHalf·tr
-			float lhs = Vector2.Dot(dir, val);
-			float rhs = cosHalf * Mathf.Sqrt(sqrDist - targetRadius * targetRadius) - sinHalf * targetRadius;
-			return lhs >= rhs;
+			// 대상 중심 방향 기준 각도 판정
+			// dot(dir, val) = dist·cos(θ), cosHalf·√sqrDist = dist·cos(halfAngle)
+			// → θ ≤ halfAngle ⟺ dot(dir, val) ≥ cosHalf·dist
+			float cosHalf = Mathf.Cos(halfRad);
+			return Vector2.Dot(dir, val) >= cosHalf * Mathf.Sqrt(sqrDist);
 		}
 
 		public static bool InLine(Vector2 origin, Vector2 facing, float length, float width, Vector2 point, float targetRadius = 0f)

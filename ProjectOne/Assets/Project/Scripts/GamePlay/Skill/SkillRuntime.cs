@@ -11,6 +11,7 @@ namespace ProjectOne.Skill
 		public string Source { get; private set; }       // 출처 태그 (Base/Equipment/...)
 		public SkillCastingTypes CastingType { get; private set; }  // 시전 방식 (TryCast 거부/OnHit 판정용)
 		public int CastingParam { get; private set; }              // OnHit=확률%, Casting=지연 초
+		public bool IsBasicAttack { get; private set; }
 
 		public SkillRuntime(SkillInfo id)
 			: this(id, string.Empty)
@@ -27,6 +28,7 @@ namespace ProjectOne.Skill
 				Cooltime = row.CooltimeSec;
 				CastingType = row.CastingType;
 				CastingParam = row.CastingParam;
+				IsBasicAttack = row.IsBasicAttack;
 			}
 		}
 
@@ -43,6 +45,11 @@ namespace ProjectOne.Skill
 		public void StartCooldown()
 		{
 			RemainingCooltime = Cooltime;
+		}
+
+		public void StartCooldown(float overrideCooltime)
+		{
+			RemainingCooltime = overrideCooltime;
 		}
 
 		public void Tick(float dt)

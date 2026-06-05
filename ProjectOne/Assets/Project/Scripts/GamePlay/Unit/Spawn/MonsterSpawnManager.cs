@@ -27,6 +27,10 @@ namespace ProjectOne.Unit
 		[SerializeField]
 		private float _returnDelay = 1.5f;
 
+		[Tooltip("개발용: 체크하면 몬스터 스킬 발동 시 범위 인디케이터(주황) 표시")]
+		[SerializeField]
+		private bool _showSkillIndicators = false;
+
 		[Tooltip("몬스터 id별 스폰 설정 목록 — 일반/엘리트/보스 각각 엔트리 하나씩 등록")]
 		[SerializeField]
 		private List<SpawnData> _spawnList = new List<SpawnData>();
@@ -119,6 +123,13 @@ namespace ProjectOne.Unit
 			else
 			{
 				_active[monster.GetID()] = new ActiveEntry(monster, data);
+
+				if (_showSkillIndicators && monster.GetComponent<SkillIndicator>() == null)
+				{
+					SkillIndicator ind = monster.gameObject.AddComponent<SkillIndicator>();
+					ind.SetDevColor(new Color(1f, 0.65f, 0.1f, 0.5f));
+					ind.SetSkills(monster.SkillContainer.GetAll());
+				}
 			}
 		}
 

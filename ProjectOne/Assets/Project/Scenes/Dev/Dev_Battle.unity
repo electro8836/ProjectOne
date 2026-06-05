@@ -217,7 +217,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Test.MapTestSpawner
   _heroes:
-  - characterId: 101
+  - characterId: 103
     position: {x: -1, y: 0, z: 0}
     faction: 1
     autoControl: 1
@@ -858,12 +858,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.MonsterSpawnManager
   _returnDelay: 1.5
+  _showSkillIndicators: 1
   _spawnList:
   - monsterId: 10001
     center: {x: 0, y: 0, z: 0}
     radius: 2
-    minCount: 20
-    maxCount: 30
+    minCount: 1
+    maxCount: 1
     spawnInterval: 2
 --- !u!4 &1200190042
 Transform:

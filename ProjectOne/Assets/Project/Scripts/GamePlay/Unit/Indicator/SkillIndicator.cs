@@ -200,6 +200,16 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 개발용 색상 재설정 — AddComponent 직후 Awake가 끝난 뒤 호출한다.
+		public void SetDevColor(Color color)
+		{
+			_color = color;
+			if (_material != null)
+			{
+				_material.color = _color;
+			}
+		}
+
 		private Vector2 GetFacing()
 		{
 			if (_mover == null)
