@@ -36,8 +36,9 @@ namespace ProjectOne.Skill
 			switch (row.CastingType)
 			{
 				case SkillCastingTypes.Casting:
-					// CastingParam 초 후 모션+효과 발동
-					caster.SkillContainer.Schedule(row.CastingParam, id, PendingKind.PlayAndApply);
+					// 캐스팅 시간(CastingParam) 안에서 진행 — 진입 모션은 IsCasting(Bool) 전이가 담당.
+					// 종료 MotionEffectTime 초 전에 공격모션, 종료 시점에 효과 발동 (BeginCasting 2단계 예약)
+					caster.SkillContainer.BeginCasting(row.CastingParam, row.MotionEffectTime, id);
 					break;
 				case SkillCastingTypes.Passive:
 					// 보통 Register 에서 ApplyPassive 로 처리됨 — 직접 호출 시 안전망으로 효과만 즉시 적용
@@ -68,8 +69,9 @@ namespace ProjectOne.Skill
 			ApplyEffects(row, id, caster);
 		}
 
-		// SkillContainer.Tick 예약 디스패치 진입점 — Casting 대기 종료 후
-		public static void RunPlayAndApply(SkillInfo id, UnitBase caster)
+		// SkillContainer.Tick 예약 디스패치 진입점 — 캐스팅 공격모션 단계(종료 MotionEffectTime 초 전)
+		// 공격모션(MotionNames[1]) + VFX + SFX 만 재생, 효과는 캐스팅 종료 시점 RunApplyEffects 에서
+		public static void RunCastAttackMotion(SkillInfo id, UnitBase caster)
 		{
 			if (caster == null || caster.IsDead == true)
 			{
@@ -82,7 +84,7 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			PlayAndApply(row, id, caster);
+			PlayMotionVfxSfx(row, caster, 1);
 		}
 
 		// SkillContainer.Tick 예약 디스패치 진입점 — MotionEffectTime 대기 종료 후
@@ -102,10 +104,26 @@ namespace ProjectOne.Skill
 			ApplyEffects(row, id, caster);
 		}
 
-		// 모션 트리거 후 MotionEffectTime 만큼 지연했다가 효과 적용 (0 이면 즉시)
+		// 모션 트리거 후 MotionEffectTime 만큼 지연했다가 효과 적용 (0 이면 즉시) — 비캐스팅(Instant/None/OnHit) 전용
 		static void PlayAndApply(Table_SkillInfo.Row row, SkillInfo id, UnitBase caster)
 		{
-			PlayMotion(row, caster);
+			// 비캐스팅 발동 모션 — 첫 번째 모션
+			PlayMotionVfxSfx(row, caster, 0);
+
+			if (row.MotionEffectTime > 0f)
+			{
+				caster.SkillContainer.Schedule(row.MotionEffectTime, id, PendingKind.ApplyEffects);
+			}
+			else
+			{
+				ApplyEffects(row, id, caster);
+			}
+		}
+
+		// 발동 모션 트리거 + 스킬 VFX/SFX 1회 재생 (효과 적용은 별도)
+		static void PlayMotionVfxSfx(Table_SkillInfo.Row row, UnitBase caster, int motionIndex)
+		{
+			PlayMotionAt(row, caster, motionIndex);
 
 			// 시전 캐릭터에 스킬 VFX 1회 출력 — 앵커가 Center 면 충돌체 중심만큼 띄워 부착
 			if (string.IsNullOrEmpty(row.SkillVFX) == false)
@@ -118,15 +136,6 @@ namespace ProjectOne.Skill
 			if (string.IsNullOrEmpty(row.SkillSFX) == false)
 			{
 				AudioManager.Instance.PlaySFX(row.SkillSFX);
-			}
-
-			if (row.MotionEffectTime > 0f)
-			{
-				caster.SkillContainer.Schedule(row.MotionEffectTime, id, PendingKind.ApplyEffects);
-			}
-			else
-			{
-				ApplyEffects(row, id, caster);
 			}
 		}
 
@@ -167,10 +176,16 @@ namespace ProjectOne.Skill
 			SkillEffectApplier.Apply(effectId, caster, skillId, scanned);
 		}
 
-		// MotionName 비어있으면 모션 없음
-		static void PlayMotion(Table_SkillInfo.Row row, UnitBase caster)
+		// MotionNames[index] 모션 재생 — 인덱스 범위 밖이거나 비어있으면 모션 없음
+		static void PlayMotionAt(Table_SkillInfo.Row row, UnitBase caster, int index)
 		{
-			if (string.IsNullOrEmpty(row.MotionName) == true)
+			if (row.MotionNames == null || index < 0 || index >= row.MotionNames.Length)
+			{
+				return;
+			}
+
+			string motionName = row.MotionNames[index];
+			if (string.IsNullOrEmpty(motionName) == true)
 			{
 				return;
 			}
@@ -178,7 +193,7 @@ namespace ProjectOne.Skill
 			UnitAnimator anim = caster.GetComponent<UnitAnimator>();
 			if (anim != null)
 			{
-				anim.PlayMotion(row.MotionName);
+				anim.PlayMotion(motionName);
 			}
 		}
 	}

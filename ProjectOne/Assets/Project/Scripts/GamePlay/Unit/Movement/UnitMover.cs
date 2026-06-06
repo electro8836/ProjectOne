@@ -13,6 +13,7 @@ public class UnitMover : MonoBehaviour
 	[SerializeField] private float _impulseDrag = 10f;
 	private Vector2 _overrideVelocity;
 	private bool _hasOverride;
+	private bool _facingLocked;   // 캐스팅 중 조준 고정 — SetFacing/자동 갱신 무시
 	private bool _overridePierce;   // override 이동 중 유닛 충돌 무시(벽만 차단) — 대시 공격 관통용
 	private bool _overrideBlocked;  // override 이동이 다음 위치로 갈 수 없어 막힌 상태(latch) — 코드 버프가 종료 판정에 사용
 	private readonly float _moveSpeedMultiplier = 0.1f;
@@ -59,16 +60,20 @@ public class UnitMover : MonoBehaviour
 		}
 
 		// Facing 갱신 — override(대시 등) 중엔 이동(override) 방향을 바라봄(입력 기반 Facing 무시), 평소엔 Move 채널 기준
-		if (_hasOverride == true)
+		// 캐스팅 중(_facingLocked)에는 조준을 시작 방향으로 고정
+		if (_facingLocked == false)
 		{
-			if (_overrideVelocity.sqrMagnitude > 0.01f)
+			if (_hasOverride == true)
 			{
-				Facing = _overrideVelocity.normalized;
+				if (_overrideVelocity.sqrMagnitude > 0.01f)
+				{
+					Facing = _overrideVelocity.normalized;
+				}
 			}
-		}
-		else if (_moveVelocity.sqrMagnitude > 0.01f)
-		{
-			Facing = _moveVelocity.normalized;
+			else if (_moveVelocity.sqrMagnitude > 0.01f)
+			{
+				Facing = _moveVelocity.normalized;
+			}
 		}
 	}
 
@@ -270,12 +275,23 @@ public class UnitMover : MonoBehaviour
 
 	public void SetFacing(Vector2 direction)
 	{
+		if (_facingLocked == true)
+		{
+			return;
+		}
+
 		if (direction.sqrMagnitude < 0.01f)
 		{
 			return;
 		}
 
 		Facing = direction.normalized;
+	}
+
+	// 캐스팅 중 조준 고정 토글 — 잠금 시 SetFacing/자동 facing 갱신을 무시한다
+	public void SetFacingLocked(bool locked)
+	{
+		_facingLocked = locked;
 	}
 
 	public void SetMoveEnabled(bool enabled)

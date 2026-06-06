@@ -196,6 +196,7 @@ namespace EDT {
         SKILL_DASH_ATTACK_01,
         SKILL_CASTING_ATTACK_01,
         SKILL_CASTING_ATTACK_02,
+        SKILL_CASTING_ATTACK_03,
     }
 
     public enum SkillEffect {
@@ -229,6 +230,7 @@ namespace EDT {
         SE_DASH_ATTACK_DAMAGE_01,
         SE_CASTING_DAMAGE_01,
         SE_CASTING_DAMAGE_02,
+        SE_CASTING_DAMAGE_03,
     }
 
     public enum BuffInfo {

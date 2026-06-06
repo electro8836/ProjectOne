@@ -59,7 +59,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: b46e41c64511d7244be8a0876933c555, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -128,7 +128,6 @@ GameObject:
   - component: {fileID: 9042077060376671782}
   - component: {fileID: 4914937315472065632}
   - component: {fileID: 7650283851600670556}
-  - component: {fileID: -1349756456548330040}
   m_Layer: 0
   m_Name: Prefab_BossMonster_01
   m_TagString: Untagged
@@ -177,6 +176,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3b244983af0af04f8cc331c1577ddac, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.UnitAnimator
+  _outlineWidth: 0.0005
   _attackSpeedScale: 1
   _moveSpeedScale: 1
   _minMotionMul: 0.1
@@ -259,32 +259,3 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0.17}
   m_Radius: 0.2
---- !u!114 &-1349756456548330040
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7373308975196601987}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0038c16c34866b4f9e25c9c0dc0f7e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Behavior::Unity.Behavior.BehaviorGraphAgent
-  m_Graph: {fileID: -418872170206996218, guid: 3def1ffe18667994db0e6d2cbee1f009, type: 2}
-  m_BlackboardVariableOverridesList:
-  - rid: 4291454472656519483
-  m_OriginalGraph: {fileID: 0}
-  m_IsInitialised: 0
-  m_IsStarted: 0
-  references:
-    version: 2
-    RefIds:
-    - rid: 4291454472656519483
-      type: {class: 'BlackboardVariable`1[[UnityEngine.GameObject, UnityEngine.CoreModule]]', ns: Unity.Behavior, asm: Unity.Behavior}
-      data:
-        GUID:
-          m_Value0: 1
-          m_Value1: 0
-        Name: Self
-        m_Value: {fileID: 7373308975196601987}

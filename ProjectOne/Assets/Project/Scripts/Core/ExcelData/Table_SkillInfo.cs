@@ -16,7 +16,7 @@ namespace EDT {
             public SkillScanType ScanType { get; set; } = SkillScanType.None;
             public float ScanParam1 { get; set; } = 0f;
             public float ScanParam2 { get; set; } = 0f;
-            public string MotionName { get; set; } = string.Empty;
+            public string[] MotionNames { get; set; } = Array.Empty<string>();
             public float MotionEffectTime { get; set; } = 0f;
             public bool IsOnHitTrigger { get; set; } = false;
             public string SkillVFX { get; set; } = string.Empty;
@@ -61,7 +61,7 @@ namespace EDT {
                 row.ScanType = (SkillScanType)reader.ReadInt32();
                 row.ScanParam1 = reader.ReadSingle();
                 row.ScanParam2 = reader.ReadSingle();
-                row.MotionName = reader.ReadString();
+                { int _n = reader.ReadInt32(); row.MotionNames = new string[_n]; for(int _i=0;_i<_n;_i++) row.MotionNames[_i] = reader.ReadString(); }
                 row.MotionEffectTime = reader.ReadSingle();
                 row.IsOnHitTrigger = reader.ReadBoolean();
                 row.SkillVFX = reader.ReadString();

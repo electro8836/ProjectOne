@@ -22,6 +22,9 @@ namespace ProjectOne.Buff
 			}
 
 			_owner.BlockSkill(nameof(BUFF_SILENCE));
+
+			// 침묵 시 진행 중인 캐스팅 취소
+			_owner.SkillContainer?.CancelCasting();
 		}
 
 		public void OnDeactivate()

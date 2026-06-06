@@ -313,6 +313,8 @@ namespace ProjectOne.Unit
 				if (info.KnockbackPower > 0f && _mover != null && !IsKnockbackImmune)
 				{
 					_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
+					// 넉백 발생 → 진행 중인 캐스팅 취소
+					_skillContainer?.CancelCasting();
 				}
 			}
 		}
@@ -322,6 +324,12 @@ namespace ProjectOne.Unit
 			if (!IsDead)
 			{
 				IsDead = true;
+				// 캐스팅 중 사망 시 시전 상태/이동·스킬 차단/캐스팅 모션(IsCasting)을 함께 정리
+				if (_skillContainer != null)
+				{
+					_skillContainer.CancelCasting();
+				}
+
 				if (_animator != null)
 				{
 					_animator.PlayDead();

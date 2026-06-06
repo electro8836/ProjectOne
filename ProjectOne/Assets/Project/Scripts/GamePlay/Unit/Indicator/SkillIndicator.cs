@@ -23,10 +23,15 @@ namespace ProjectOne.Unit
 			public bool active;       // 처리 중(표시 대기 또는 표시)
 			public bool visible;      // 메시가 실제 보이는 중
 			public bool refreshPending; // 다음 showTime 도달 시 위치/방향을 다시 갱신해야 함
+			public Transform fillTr;    // 캐스팅 채움용 자식(없으면 null = 비캐스팅 스킬)
+			public bool isCasting;      // 캐스팅 스킬 여부 — 표시/종료를 IsCasting 폴링으로 제어
+			public float castDuration;  // CastingParam(초) — 채움이 0→풀 크기로 도달하는 시간
+			public float castStartTime; // 캐스팅(표시) 시작 시각
 		}
 
 		[SerializeField] private float _displayDuration = 0.1f;
 		[SerializeField] private Color _color = new Color(1f, 0.3f, 0.3f, 0.5f);
+		[SerializeField] private Color _fillColor = new Color(1f, 0.3f, 0.3f, 0.8f);  // 캐스팅 채움 — 범위보다 진한 알파
 		[SerializeField] private string _sortingLayerName = "Shadow";  // Floor 타일맵 위, 캐릭터·벽(GamePlay) 아래
 		[SerializeField] private int _sortingOrder = -1;
 		[SerializeField] private float _ringThickness = 0.05f;
@@ -35,6 +40,7 @@ namespace ProjectOne.Unit
 		private UnitBase _owner;
 		private UnitMover _mover;
 		private Material _material;
+		private Material _fillMaterial;
 		private readonly List<Item> _items = new List<Item>(8);
 		private readonly Dictionary<SkillInfo, Item> _byId = new Dictionary<SkillInfo, Item>();
 		private int _activeCount;
@@ -46,6 +52,9 @@ namespace ProjectOne.Unit
 			// 텍스처 없는 단색 렌더 (URP 2D에서 Sprites/Default 는 흰색 × color)
 			_material = new Material(Shader.Find("Sprites/Default"));
 			_material.color = _color;
+			// 캐스팅 채움용 — 같은 셰이더에 진한 알파
+			_fillMaterial = new Material(Shader.Find("Sprites/Default"));
+			_fillMaterial.color = _fillColor;
 		}
 
 		private void OnEnable()
@@ -63,6 +72,11 @@ namespace ProjectOne.Unit
 			if (_material != null)
 			{
 				Destroy(_material);
+			}
+
+			if (_fillMaterial != null)
+			{
+				Destroy(_fillMaterial);
 			}
 		}
 
@@ -91,6 +105,11 @@ namespace ProjectOne.Unit
 				{
 					Destroy(_items[i].tr.gameObject);
 				}
+
+				if (_items[i].fillTr != null)
+				{
+					Destroy(_items[i].fillTr.gameObject);
+				}
 			}
 
 			_items.Clear();
@@ -112,21 +131,48 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			Mesh mesh = BuildMesh(row.ScanType, row.ScanParam1, row.ScanParam2);
-			if (mesh == null)
+			IndicatorMeshBuilder builder = IndicatorMeshBuilder.Get(row.ScanType);
+			if (builder == null)
 			{
 				return;  // None 등 표시 대상 아님
 			}
 
-			GameObject go = new GameObject("Indicator_" + id.ToString());
+			Mesh mesh = builder.Build(row.ScanParam1, row.ScanParam2, _segments, _ringThickness);
+
+			bool isCasting = (row.CastingType == SkillCastingTypes.Casting);
+
+			Item item = new Item();
+			item.id = id;
+			item.tr = CreateMeshChild("Indicator_" + id.ToString(), mesh, _material, _sortingOrder);
+			item.needsFacing = (row.ScanType == SkillScanType.Sector || row.ScanType == SkillScanType.Line);
+			item.showTime = 0f;
+			item.hideTime = 0f;
+			item.active = false;
+			item.visible = false;
+			item.refreshPending = false;
+			item.isCasting = isCasting;
+			item.castDuration = isCasting ? row.CastingParam : 0f;
+			// 캐스팅 스킬은 같은 메시를 공유하는 채움 자식을 하나 더 만들어 범위 위에 그린다
+			if (isCasting == true)
+			{
+				item.fillTr = CreateMeshChild("IndicatorFill_" + id.ToString(), mesh, _fillMaterial, _sortingOrder + 1);
+			}
+
+			_items.Add(item);
+			_byId.Add(id, item);
+		}
+
+		// 단색 메시 자식 GameObject 생성 — 2D 불필요 렌더 기능 차단 (VFXOptimizerWindow 와 동일 패턴)
+		private Transform CreateMeshChild(string name, Mesh mesh, Material mat, int order)
+		{
+			GameObject go = new GameObject(name);
 			go.transform.SetParent(this.transform, false);
 			MeshFilter mf = go.AddComponent<MeshFilter>();
 			mf.sharedMesh = mesh;
 			MeshRenderer mr = go.AddComponent<MeshRenderer>();
-			mr.sharedMaterial = _material;
+			mr.sharedMaterial = mat;
 			mr.sortingLayerName = _sortingLayerName;
-			mr.sortingOrder = _sortingOrder;
-			// 2D 불필요 렌더 기능 차단 (VFXOptimizerWindow 와 동일 패턴)
+			mr.sortingOrder = order;
 			mr.shadowCastingMode = ShadowCastingMode.Off;
 			mr.receiveShadows = false;
 			mr.lightProbeUsage = LightProbeUsage.Off;
@@ -134,18 +180,7 @@ namespace ProjectOne.Unit
 			mr.motionVectorGenerationMode = MotionVectorGenerationMode.ForceNoMotion;
 			mr.allowOcclusionWhenDynamic = false;
 			go.SetActive(false);
-
-			Item item = new Item();
-			item.id = id;
-			item.tr = go.transform;
-			item.needsFacing = (row.ScanType == SkillScanType.Sector || row.ScanType == SkillScanType.Line);
-			item.showTime = 0f;
-			item.hideTime = 0f;
-			item.active = false;
-			item.visible = false;
-			item.refreshPending = false;
-			_items.Add(item);
-			_byId.Add(id, item);
+			return go.transform;
 		}
 
 		private void OnSkillCast(SkillCastEvent evt)
@@ -161,10 +196,24 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			// 효과가 적용되는 시점(발동 + MotionEffectTime)에 맞춰 표시 예약 — 위치/회전은 표시 시점에 갱신
+			// 캐스팅 스킬: 시전 시작 즉시 범위+채움을 띄우고, 종료는 IsCasting 폴링으로 처리(hideTime 미사용)
+			if (item.isCasting == true)
+			{
+				item.showTime = Time.time;
+				item.castStartTime = Time.time;
+				item.refreshPending = true;
+				if (item.active == false)
+				{
+					item.active = true;
+					_activeCount++;
+				}
+
+				return;
+			}
+
+			// 비캐스팅: 효과가 적용되는 시점(발동 + MotionEffectTime)에 맞춰 표시 예약 — 위치/회전은 표시 시점에 갱신
 			Table_SkillInfo.Row row = Table_SkillInfo.Get(evt.SkillId);
 			float delay = (row != null) ? Mathf.Max(0f, row.MotionEffectTime) : 0f;
-
 			item.showTime = Time.time + delay;
 			item.hideTime = item.showTime + _displayDuration;
 			// 매 시전마다 표시 시점에 현재 방향으로 재정렬하도록 예약 (공속이 빨라 표시가 겹쳐도 갱신됨)
@@ -184,12 +233,26 @@ namespace ProjectOne.Unit
 				return;
 			}
 
+			// 사망 시 표시 중인 인디케이터를 즉시 전부 숨김 (캐스팅 중 사망 시 IsCasting 잔류로 채움이 계속되는 것도 차단)
+			if (_owner != null && _owner.IsDead == true)
+			{
+				HideAllActive();
+				return;
+			}
+
 			float now = Time.time;
 			for (int i = 0; i < _items.Count; i++)
 			{
 				Item item = _items[i];
 				if (item.active == false)
 				{
+					continue;
+				}
+
+				// 캐스팅 스킬은 별도 경로 — 시작 즉시 표시, 채움 스케일링, IsCasting 종료 시 숨김
+				if (item.isCasting == true)
+				{
+					UpdateCastingItem(item, now);
 					continue;
 				}
 
@@ -222,16 +285,95 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 표시 중인 모든 항목을 즉시 숨기고 활성 상태를 해제한다 (사망 등).
+		private void HideAllActive()
+		{
+			for (int i = 0; i < _items.Count; i++)
+			{
+				Item item = _items[i];
+				if (item.active == false)
+				{
+					continue;
+				}
+
+				if (item.visible == true)
+				{
+					item.tr.gameObject.SetActive(false);
+					if (item.fillTr != null)
+					{
+						item.fillTr.gameObject.SetActive(false);
+					}
+
+					item.visible = false;
+				}
+
+				item.active = false;
+				item.refreshPending = false;
+			}
+
+			_activeCount = 0;
+		}
+
+		// 캐스팅 항목 처리 — 표시 시작/채움 스케일링/종료(IsCasting 폴링)
+		private void UpdateCastingItem(Item item, float now)
+		{
+			// 표시 시작 — 범위/채움을 현재 중심·방향으로 정렬 후 출력, 채움은 크기 0에서 시작
+			if (item.refreshPending == true)
+			{
+				UpdateItemTransform(item);
+				if (item.visible == false)
+				{
+					item.tr.gameObject.SetActive(true);
+					item.fillTr.gameObject.SetActive(true);
+					item.visible = true;
+				}
+
+				item.fillTr.localScale = Vector3.zero;
+				item.refreshPending = false;
+			}
+
+			// 자기 스킬이 현재 캐스팅 중일 때만 표시 유지 — 다른 스킬 캐스팅 중 이전 항목이 잔류하는 것 방지
+			var sc = _owner.SkillContainer;
+			if (sc == null || sc.IsCasting == false || sc.CastingSkillId != item.id)
+			{
+				if (item.visible == true)
+				{
+					item.tr.gameObject.SetActive(false);
+					item.fillTr.gameObject.SetActive(false);
+					item.visible = false;
+				}
+
+				item.active = false;
+				_activeCount--;
+				return;
+			}
+
+			// 진행 중 — 채움을 0→풀 크기로 스케일링 (CastingParam 이 0이면 즉시 가득)
+			float t = (item.castDuration > 0f) ? Mathf.Clamp01((now - item.castStartTime) / item.castDuration) : 1f;
+			item.fillTr.localScale = new Vector3(t, t, 1f);
+		}
+
 		// 인디케이터 표시 시작 시점의 캐스터 중심/방향으로 자식 위치·회전을 갱신
 		private void UpdateItemTransform(Item item)
 		{
 			Vector2 center = _owner.HitCenter;
-			item.tr.position = new Vector3(center.x, center.y, 0f);
+			Vector3 pos = new Vector3(center.x, center.y, 0f);
+			item.tr.position = pos;
+			if (item.fillTr != null)
+			{
+				item.fillTr.position = pos;
+			}
+
 			if (item.needsFacing == true)
 			{
 				Vector2 facing = GetFacing();
 				float angle = Mathf.Atan2(facing.y, facing.x) * Mathf.Rad2Deg;
-				item.tr.rotation = Quaternion.Euler(0f, 0f, angle);
+				Quaternion rot = Quaternion.Euler(0f, 0f, angle);
+				item.tr.rotation = rot;
+				if (item.fillTr != null)
+				{
+					item.fillTr.rotation = rot;
+				}
 			}
 		}
 
@@ -259,117 +401,6 @@ namespace ProjectOne.Unit
 			}
 
 			return facing;
-		}
-
-		// ScanType 에 맞는 로컬 메시(원점 중심)를 생성한다. None 이면 null.
-		// 파라미터 해석은 Scanner / TargetResolver 의 판정과 일치시킨다.
-		private Mesh BuildMesh(SkillScanType type, float param1, float param2)
-		{
-			switch (type)
-			{
-			case SkillScanType.Circle:
-				return BuildFan(param1, 360f, false);
-			case SkillScanType.Target:
-				return BuildRing(param1 - _ringThickness * 0.5f, param1 + _ringThickness * 0.5f);
-			case SkillScanType.Sector:
-				return BuildFan(param1, param2, true);
-			case SkillScanType.Line:
-				return BuildLineMesh(param1, param2);
-			case SkillScanType.Donut:
-				// Scanner.InDonut 기준: param1 = 외경, param2 = 내경
-				return BuildRing(param2, param1);
-			default:
-				return null;
-			}
-		}
-
-		// 부채꼴/원 메시. centeredOnX=true 면 +X축 중심으로 ±fullAngle/2,
-		// false 면 0~fullAngle 전체. 정점은 로컬 원점 기준.
-		private Mesh BuildFan(float radius, float fullAngleDeg, bool centeredOnX)
-		{
-			int seg = Mathf.Max(3, _segments);
-			float startRad = (centeredOnX ? -fullAngleDeg * 0.5f : 0f) * Mathf.Deg2Rad;
-			float stepRad = fullAngleDeg * Mathf.Deg2Rad / seg;
-
-			Vector3[] verts = new Vector3[seg + 2];
-			verts[0] = Vector3.zero;
-			for (int i = 0; i <= seg; i++)
-			{
-				float a = startRad + stepRad * i;
-				verts[i + 1] = new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f);
-			}
-
-			int[] tris = new int[seg * 3];
-			for (int i = 0; i < seg; i++)
-			{
-				tris[i * 3] = 0;
-				tris[i * 3 + 1] = i + 1;
-				tris[i * 3 + 2] = i + 2;
-			}
-
-			return CreateMesh(verts, tris);
-		}
-
-		// 도넛/링 메시. innerR~outerR 사이를 채운다. 로컬 원점 기준.
-		private Mesh BuildRing(float innerR, float outerR)
-		{
-			if (innerR < 0f)
-			{
-				innerR = 0f;
-			}
-
-			int seg = Mathf.Max(3, _segments);
-			float stepRad = Mathf.PI * 2f / seg;
-
-			Vector3[] verts = new Vector3[(seg + 1) * 2];
-			for (int i = 0; i <= seg; i++)
-			{
-				float a = stepRad * i;
-				float cos = Mathf.Cos(a);
-				float sin = Mathf.Sin(a);
-				verts[i * 2] = new Vector3(cos * innerR, sin * innerR, 0f);
-				verts[i * 2 + 1] = new Vector3(cos * outerR, sin * outerR, 0f);
-			}
-
-			int[] tris = new int[seg * 6];
-			for (int i = 0; i < seg; i++)
-			{
-				int inner0 = i * 2;
-				int outer0 = i * 2 + 1;
-				int inner1 = (i + 1) * 2;
-				int outer1 = (i + 1) * 2 + 1;
-				int t = i * 6;
-				tris[t] = inner0;
-				tris[t + 1] = outer0;
-				tris[t + 2] = outer1;
-				tris[t + 3] = inner0;
-				tris[t + 4] = outer1;
-				tris[t + 5] = inner1;
-			}
-
-			return CreateMesh(verts, tris);
-		}
-
-		// 직선(사각형) 메시. origin 이 시작점, +X 로 length, 폭 ±width/2. 로컬 원점 기준.
-		private Mesh BuildLineMesh(float length, float width)
-		{
-			float half = width * 0.5f;
-			Vector3[] verts = new Vector3[4];
-			verts[0] = new Vector3(0f, -half, 0f);
-			verts[1] = new Vector3(0f, half, 0f);
-			verts[2] = new Vector3(length, half, 0f);
-			verts[3] = new Vector3(length, -half, 0f);
-			int[] tris = new int[6] { 0, 1, 2, 0, 2, 3 };
-			return CreateMesh(verts, tris);
-		}
-
-		private Mesh CreateMesh(Vector3[] verts, int[] tris)
-		{
-			Mesh mesh = new Mesh();
-			mesh.vertices = verts;
-			mesh.triangles = tris;
-			mesh.RecalculateBounds();
-			return mesh;
 		}
 	}
 }

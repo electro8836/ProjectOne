@@ -63,6 +63,8 @@ namespace ProjectOne.Unit
 
 		private static readonly int HashIsDead = Animator.StringToHash("IsDead");
 
+		private static readonly int HashIsCasting = Animator.StringToHash("IsCasting");
+
 		private static readonly int HashAttackSpeedMul = Animator.StringToHash("AttackSpeedMul");
 
 		private static readonly int HashMoveSpeedMul = Animator.StringToHash("MoveSpeedMul");
@@ -138,6 +140,12 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 캐스팅(시전) 지속 상태 설정 — 시작 시 true, 발동/취소/사망 시 false
+		public void SetCasting(bool isCasting)
+		{
+			_animator.SetBool(HashIsCasting, isCasting);
+		}
+
 		public void SetAttackSpeed(float atkSpeed)
 		{
 			float num = Mathf.Clamp(atkSpeed * _attackSpeedScale, _minMotionMul, _maxMotionMul);
@@ -208,6 +216,7 @@ namespace ProjectOne.Unit
 				_animator.ResetTrigger(HashSkill);
 				_animator.ResetTrigger(HashHit);
 				_animator.ResetTrigger(HashHDead);
+				_animator.SetBool(HashIsCasting, false);
 				_lastIsMoving = _animator.GetBool(HashIsMoving);
 			}
 		}
