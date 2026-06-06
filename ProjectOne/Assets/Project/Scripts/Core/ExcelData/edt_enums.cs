@@ -197,6 +197,7 @@ namespace EDT {
         SKILL_CASTING_ATTACK_01,
         SKILL_CASTING_ATTACK_02,
         SKILL_CASTING_ATTACK_03,
+        SKILL_DAMAGE_IMMUNITY,
     }
 
     public enum SkillEffect {
@@ -215,10 +216,6 @@ namespace EDT {
         SE_INCREASE_MOVESPEED_01,
         SE_ACTIVATE_BUFF_ATTACKSPEED_01,
         SE_INCREASE_ATTACKSPEED_01,
-        SE_ACTIVATE_BUFF_POTION_01,
-        SE_ACTIVATE_BUFF_SCROLL_01,
-        SE_INCREASE_HP_01,
-        SE_INCREASE_HP_INTERVAL_01,
         SE_ACTIVATE_DEBUFF_MOVESPEED_01,
         SE_DECREASE_MOVESPEED_01,
         SE_TAKE_DAMAGE_101,
@@ -231,6 +228,7 @@ namespace EDT {
         SE_CASTING_DAMAGE_01,
         SE_CASTING_DAMAGE_02,
         SE_CASTING_DAMAGE_03,
+        SE_ACTIVATE_BUFF_DAMAGE_IMMUNITY,
     }
 
     public enum BuffInfo {
@@ -238,14 +236,13 @@ namespace EDT {
         BUFF_MOVESPEED_01,
         BUFF_ATTACKSPEED_01,
         DEBUFF_MOVESPEED_01,
-        BUFF_POTION_01,
         DEBUFF_STUN,
         DEBUFF_SILENCE,
         DEBUFF_BINDING,
-        DEBUFF_KNOCKBACK,
         DEBUFF_BREAK,
         BUFF_DASH,
         BUFF_DASH_ATTACK,
+        BUFF_DAMAGE_IMMUNITY,
     }
 
     public enum StatInfo {
@@ -387,6 +384,7 @@ namespace EDT {
         TableDungeonStage,
         TableMaterial,
         TableMonster,
+        TableMonsterPhase,
         TableReward,
         TableSkillInfo,
         TableSkillEffect,

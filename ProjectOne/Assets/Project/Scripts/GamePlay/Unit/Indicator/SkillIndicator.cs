@@ -350,7 +350,15 @@ namespace ProjectOne.Unit
 
 			// 진행 중 — 채움을 0→풀 크기로 스케일링 (CastingParam 이 0이면 즉시 가득)
 			float t = (item.castDuration > 0f) ? Mathf.Clamp01((now - item.castStartTime) / item.castDuration) : 1f;
-			item.fillTr.localScale = new Vector3(t, t, 1f);
+			// 방향성 스킬(Line/Sector)은 폭 고정, 길이(X)만 성장 — 원형/도넛은 균등 성장
+			if (item.needsFacing == true)
+			{
+				item.fillTr.localScale = new Vector3(t, 1f, 1f);
+			}
+			else
+			{
+				item.fillTr.localScale = new Vector3(t, t, 1f);
+			}
 		}
 
 		// 인디케이터 표시 시작 시점의 캐스터 중심/방향으로 자식 위치·회전을 갱신

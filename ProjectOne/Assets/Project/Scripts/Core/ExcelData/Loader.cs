@@ -128,6 +128,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - MonsterPhase
+            {
+                CurrentFile = Table_MonsterPhase.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_MonsterPhase._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Reward
             {
                 CurrentFile = Table_Reward.Filename;
