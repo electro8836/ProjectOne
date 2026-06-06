@@ -22,6 +22,7 @@ namespace ProjectOne.Unit
 			public float hideTime;    // 숨김 예정 시각 (showTime + _displayDuration)
 			public bool active;       // 처리 중(표시 대기 또는 표시)
 			public bool visible;      // 메시가 실제 보이는 중
+			public bool refreshPending; // 다음 showTime 도달 시 위치/방향을 다시 갱신해야 함
 		}
 
 		[SerializeField] private float _displayDuration = 0.1f;
@@ -142,6 +143,7 @@ namespace ProjectOne.Unit
 			item.hideTime = 0f;
 			item.active = false;
 			item.visible = false;
+			item.refreshPending = false;
 			_items.Add(item);
 			_byId.Add(id, item);
 		}
@@ -165,6 +167,8 @@ namespace ProjectOne.Unit
 
 			item.showTime = Time.time + delay;
 			item.hideTime = item.showTime + _displayDuration;
+			// 매 시전마다 표시 시점에 현재 방향으로 재정렬하도록 예약 (공속이 빨라 표시가 겹쳐도 갱신됨)
+			item.refreshPending = true;
 			if (item.active == false)
 			{
 				item.active = true;
@@ -189,6 +193,20 @@ namespace ProjectOne.Unit
 					continue;
 				}
 
+				// 표시 시작/갱신(MotionEffectTime 경과) — 이 시점의 중심/방향으로 갱신 후 출력.
+				// visible 여부와 무관하게 새 시전이 들어올 때마다(refreshPending) 다시 정렬한다.
+				if (now >= item.showTime && item.refreshPending == true)
+				{
+					UpdateItemTransform(item);
+					if (item.visible == false)
+					{
+						item.tr.gameObject.SetActive(true);
+						item.visible = true;
+					}
+
+					item.refreshPending = false;
+				}
+
 				// 표시 종료
 				if (now >= item.hideTime)
 				{
@@ -200,15 +218,6 @@ namespace ProjectOne.Unit
 
 					item.active = false;
 					_activeCount--;
-					continue;
-				}
-
-				// 표시 시작(MotionEffectTime 경과) — 이 시점의 중심/방향으로 갱신 후 출력
-				if (now >= item.showTime && item.visible == false)
-				{
-					UpdateItemTransform(item);
-					item.tr.gameObject.SetActive(true);
-					item.visible = true;
 				}
 			}
 		}
