@@ -15,6 +15,9 @@ namespace ProjectOne.Skill
 
 		private static readonly List<UnitBase> _self = new List<UnitBase>(1);
 
+		// Target 스캔용 후보 거리(sqrMagnitude) — _scratch 와 인덱스 1:1 대응
+		private static readonly List<float> _scratchDist = new List<float>(32);
+
 		public static List<UnitBase> ScanByType(SkillScanType scanType, float param1, float param2, UnitBase caster)
 		{
 			_scratch.Clear();
@@ -34,8 +37,10 @@ namespace ProjectOne.Skill
 				IReadOnlyList<UnitBase> all = UnitContainer.Instance.All;
 				if (scanType == SkillScanType.Target)
 				{
-					UnitBase unitBase = null;
-					float num = float.MaxValue;
+					// param2 = 타겟 수 (ScanParam2). 0 이하면 1명으로 처리(하위호환)
+					int count = (param2 < 1f) ? 1 : (int)param2;
+					// 반경 내 유효한 적을 모두 후보로 수집 (거리 함께 보관)
+					_scratchDist.Clear();
 					for (int i = 0; i < all.Count; i++)
 					{
 						UnitBase unitBase2 = all[i];
@@ -44,17 +49,42 @@ namespace ProjectOne.Skill
 							Vector2 val = unitBase2.HitCenter - hitCenter;
 							float sqrMagnitude = val.sqrMagnitude;
 							float num2 = param1 + unitBase2.Radius;
-							if (!(sqrMagnitude > num2 * num2) && sqrMagnitude < num)
+							if (!(sqrMagnitude > num2 * num2))
 							{
-								num = sqrMagnitude;
-								unitBase = unitBase2;
+								_scratch.Add(unitBase2);
+								_scratchDist.Add(sqrMagnitude);
 							}
 						}
 					}
 
-					if (unitBase != null)
+					// 가장 가까운 count 명을 앞쪽으로 부분 선택정렬 (후보가 적으면 있는 만큼만)
+					int select = (count < _scratch.Count) ? count : _scratch.Count;
+					for (int k = 0; k < select; k++)
 					{
-						_scratch.Add(unitBase);
+						int minIdx = k;
+						for (int m = k + 1; m < _scratch.Count; m++)
+						{
+							if (_scratchDist[m] < _scratchDist[minIdx])
+							{
+								minIdx = m;
+							}
+						}
+
+						if (minIdx != k)
+						{
+							UnitBase tmpUnit = _scratch[k];
+							_scratch[k] = _scratch[minIdx];
+							_scratch[minIdx] = tmpUnit;
+							float tmpDist = _scratchDist[k];
+							_scratchDist[k] = _scratchDist[minIdx];
+							_scratchDist[minIdx] = tmpDist;
+						}
+					}
+
+					// count 초과분 제거
+					if (_scratch.Count > select)
+					{
+						_scratch.RemoveRange(select, _scratch.Count - select);
 					}
 
 					return _scratch;
