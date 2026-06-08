@@ -15,9 +15,9 @@ MonoBehaviour:
   m_DefaultGroup: 06568f916fc41f349b12d0ef338508e2
   m_currentHash:
     serializedVersion: 2
-    Hash: 58811570d19a3f14ccfe9df0c1f996b2
+    Hash: 9dbe33817b75e0d3cd55a51067160d87
   m_OptimizeCatalogSize: 0
-  m_BuildRemoteCatalog: 0
+  m_BuildRemoteCatalog: 1
   m_CatalogRequestsTimeout: 0
   m_DisableCatalogUpdateOnStart: 0
   m_InternalIdNamingMode: 0
@@ -33,6 +33,7 @@ MonoBehaviour:
   m_UniqueBundleIds: 0
   m_EnableJsonCatalog: 0
   m_NonRecursiveBuilding: 1
+  m_AllowNestedBundleFolders: 0
   m_CCDEnabled: 0
   m_maxConcurrentWebRequests: 3
   m_UseUWRForLocalBundles: 0
@@ -41,6 +42,7 @@ MonoBehaviour:
   m_BundleRedirectLimit: -1
   m_SharedBundleSettings: 0
   m_SharedBundleSettingsCustomGroupIndex: 0
+  m_simulatedLoadDelay: 0.1
   m_ContiguousBundles: 1
   m_StripUnityVersionFromBundleBuild: 0
   m_DisableVisibleSubAssetRepresentations: 0
@@ -50,10 +52,10 @@ MonoBehaviour:
   m_CheckForContentUpdateRestrictionsOption: 0
   m_MonoScriptBundleCustomNaming: 
   m_RemoteCatalogBuildPath:
-    m_Id: 
+    m_Id: 068feab8740b4d446a52185329f3b016
   m_RemoteCatalogLoadPath:
-    m_Id: 
-  m_ContentStateBuildPathProfileVariableName: 
+    m_Id: 6eafe7188ce735647af56d6dc46b7e45
+  m_ContentStateBuildPathProfileVariableName: <default settings path>
   m_CustomContentStateBuildPath: 
   m_ContentStateBuildPath: 
   m_BuildAddressablesWithPlayerBuild: 0
@@ -81,7 +83,7 @@ MonoBehaviour:
       - m_Id: 3dfe81f3cf1e61c4fa189f34f3de8e27
         m_Value: '[UnityEngine.AddressableAssets.Addressables.BuildPath]/[BuildTarget]'
       - m_Id: 6eafe7188ce735647af56d6dc46b7e45
-        m_Value: <undefined>
+        m_Value: http://localhost:9000/StandaloneWindows64
       - m_Id: 9639fcf14431b5046abb1544b57e640b
         m_Value: '{UnityEngine.AddressableAssets.Addressables.RuntimePath}/[BuildTarget]'
       - m_Id: b936197ac303cfb47a3b8f8def18afe9
@@ -108,6 +110,11 @@ MonoBehaviour:
     - default
     - Tables
     - SFX
+    - Prefabs_Maps
+    - Prefabs_Units
+    - Animators_Units
+    - Prefabs_Effects
+    - Prefabs_UI
   m_SchemaTemplates: []
   m_GroupTemplateObjects:
   - {fileID: 11400000, guid: 2cf1b467fa2bab644b622cca0613c0c4, type: 2}

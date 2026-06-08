@@ -40,7 +40,7 @@ namespace ProjectOne.Test
 
 		void Awake()
 		{
-			EnsureTablesLoaded();
+			//EnsureTablesLoaded();
 		}
 
 		void Start()

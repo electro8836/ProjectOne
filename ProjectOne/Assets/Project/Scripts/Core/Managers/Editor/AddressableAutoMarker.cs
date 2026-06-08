@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
@@ -6,6 +5,7 @@ using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
 using UnityEditor.AddressableAssets.Settings.GroupSchemas;
 using UnityEngine;
+using ProjectOne.Resources;
 
 namespace ProjectOne.Editor
 {
@@ -15,13 +15,15 @@ namespace ProjectOne.Editor
 	//   예) Assets/Project/Prefabs/Units/Models/Prefab_Hero_01.prefab → "Prefab_Hero_01"
 	//   예) Assets/Project/Prefabs/Units/Animations/Hero/AnimController_Hero.controller → "AnimController_Hero"
 	// 정책 메모: .anim 은 마킹하지 않음 — Controller 가 Addressable 이면 의존성으로 번들 포함됨
+	// label 정책: 에셋 마킹 시 group명을 Addressables label로도 자동 부여
+	//   → GetDownloadSizeAsync("Prefabs_Units") 등 label 기반 다운로드 가능
 	public class AddressableAutoMarker : AssetPostprocessor
 	{
 		private struct Rule
 		{
 			public string folder;          // 감시 폴더
 			public string ext;             // 허용 확장자 (소문자, 점 포함)
-			public string group;           // 마킹할 그룹 이름
+			public string group;           // 마킹할 그룹 이름 (= Addressables label로도 사용)
 			public bool flattenAddress;    // true 면 address = 파일명만, false 면 폴더 상대경로
 		}
 
@@ -34,6 +36,10 @@ namespace ProjectOne.Editor
 			new Rule { folder = "Assets/Project/Prefabs/UI",      ext = ".prefab",     group = "Prefabs_UI",      flattenAddress = true },
 			new Rule { folder = "Assets/Project/Prefabs/Maps",    ext = ".prefab",     group = "Prefabs_Maps",    flattenAddress = true },
 		};
+
+		// PatchConfig.asset 위치 — Addressables에 올리지 않음 (AssetBundleLoader가 인스펙터로 보유)
+		private const string _patchConfigDir       = "Assets/Project/Data/ScriptableObject/Config";
+		private const string _patchConfigAssetPath = "Assets/Project/Data/ScriptableObject/Config/PatchConfig.asset";
 
 		// ── AssetPostprocessor 진입점 ─────────────────────────────────
 
@@ -127,6 +133,10 @@ namespace ProjectOne.Editor
 
 			EditorUtility.SetDirty(settings);
 			AssetDatabase.SaveAssets();
+
+			// 마킹 완료 후 PatchConfig.asset 자동 갱신
+			refreshPatchConfig();
+
 			EditorUtility.DisplayDialog("완료", $"{count}개 에셋을 Addressable로 마킹했습니다.", "확인");
 		}
 
@@ -194,8 +204,9 @@ namespace ProjectOne.Editor
 			AddressableAssetGroup group = getOrCreateGroup(settings, groupName);
 			AddressableAssetEntry existing = settings.FindAssetEntry(guid);
 
-			// 이미 같은 그룹 + 같은 주소면 스킵
-			if (existing != null && existing.parentGroup == group && existing.address == address)
+			// 이미 같은 그룹 + 같은 주소 + label이 있으면 스킵
+			if (existing != null && existing.parentGroup == group && existing.address == address
+				&& existing.labels.Contains(groupName))
 			{
 				return false;
 			}
@@ -203,7 +214,11 @@ namespace ProjectOne.Editor
 			AddressableAssetEntry entry = settings.CreateOrMoveEntry(guid, group, false, false);
 			entry.address = address;
 
-			Debug.Log($"[Addressables] 마킹: {address} → 그룹: {groupName}");
+			// group명을 Addressables label로 자동 부여 (GetDownloadSizeAsync에서 label로 사용)
+			settings.AddLabel(groupName);
+			entry.SetLabel(groupName, true);
+
+			Debug.Log($"[Addressables] 마킹: {address} → 그룹/라벨: {groupName}");
 			return true;
 		}
 
@@ -222,11 +237,12 @@ namespace ProjectOne.Editor
 			}
 
 			// 자동 마킹 규칙에 해당하는 경로만 제거 (수동 마킹 보호)
-			if (!matchRule(assetPath, out _, out _))
+			if (!matchRule(assetPath, out string groupName, out _))
 			{
 				return false;
 			}
 
+			entry.SetLabel(groupName, false);
 			settings.RemoveAssetEntry(guid, false);
 			return true;
 		}
@@ -243,7 +259,7 @@ namespace ProjectOne.Editor
 				Rule r = Rules[i];
 
 				// 경로가 해당 폴더(하위 포함) 안에 있고 확장자가 일치해야 매칭
-				if (!assetPath.StartsWith(r.folder + "/", StringComparison.OrdinalIgnoreCase))
+				if (!assetPath.StartsWith(r.folder + "/", System.StringComparison.OrdinalIgnoreCase))
 				{
 					continue;
 				}
@@ -294,6 +310,51 @@ namespace ProjectOne.Editor
 
 			Debug.Log($"[Addressables] 그룹 생성: {groupName}");
 			return group;
+		}
+
+		// Rules에서 distinct group명 목록을 추출해 PatchConfig.asset의 _downloadLabels만 갱신
+		// MarkAll() 완료 후 자동 호출 → 수동 편집 불필요
+		// PatchConfig는 Addressables에 올리지 않음 (AssetBundleLoader가 인스펙터로 보유)
+		private static void refreshPatchConfig()
+		{
+			// Rules에서 중복 없는 group 목록 추출 (순서 유지)
+			var seen = new HashSet<string>();
+			var labelList = new List<string>();
+			for (int i = 0; i < Rules.Length; i++)
+			{
+				if (seen.Add(Rules[i].group))
+				{
+					labelList.Add(Rules[i].group);
+				}
+			}
+
+			// Config 폴더 없으면 생성 (Data/ScriptableObject 까지는 존재한다고 가정)
+			if (!AssetDatabase.IsValidFolder(_patchConfigDir))
+			{
+				AssetDatabase.CreateFolder("Assets/Project/Data/ScriptableObject", "Config");
+			}
+
+			// PatchConfig.asset 로드 또는 신규 생성
+			PatchConfig config = AssetDatabase.LoadAssetAtPath<PatchConfig>(_patchConfigAssetPath);
+			if (config == null)
+			{
+				config = ScriptableObject.CreateInstance<PatchConfig>();
+				AssetDatabase.CreateAsset(config, _patchConfigAssetPath);
+			}
+
+			// SerializedObject로 _downloadLabels만 갱신 (다른 필드는 보존)
+			var so = new SerializedObject(config);
+			SerializedProperty labelsProp = so.FindProperty("_downloadLabels");
+			labelsProp.arraySize = labelList.Count;
+			for (int i = 0; i < labelList.Count; i++)
+			{
+				labelsProp.GetArrayElementAtIndex(i).stringValue = labelList[i];
+			}
+			so.ApplyModifiedProperties();
+			EditorUtility.SetDirty(config);
+
+			AssetDatabase.SaveAssets();
+			Debug.Log($"[Addressables] PatchConfig 갱신 완료: [{string.Join(", ", labelList)}]");
 		}
 	}
 }
