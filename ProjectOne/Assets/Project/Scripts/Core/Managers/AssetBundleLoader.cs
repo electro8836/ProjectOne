@@ -81,14 +81,15 @@ namespace ProjectOne.Resources
 		public async UniTask<IReadOnlyList<string>> CheckCatalogUpdateAsync(CancellationToken ct = default)
 		{
 			AsyncOperationHandle<List<string>> handle = Addressables.CheckForCatalogUpdates(false);
+			bool succeeded = false;
 			try
 			{
 				await handle.ToUniTask(cancellationToken: ct);
+				succeeded = true;
 			}
-			catch
+			finally
 			{
-				if (handle.IsValid()) { Addressables.Release(handle); }
-				throw;
+				if (!succeeded && handle.IsValid()) { Addressables.Release(handle); }
 			}
 
 			if (handle.Status != AsyncOperationStatus.Succeeded)
@@ -109,14 +110,15 @@ namespace ProjectOne.Resources
 			if (catalogIds == null || catalogIds.Count == 0) { return; }
 
 			AsyncOperationHandle<List<IResourceLocator>> handle = Addressables.UpdateCatalogs(catalogIds, false);
+			bool succeeded = false;
 			try
 			{
 				await handle.ToUniTask(cancellationToken: ct);
+				succeeded = true;
 			}
-			catch
+			finally
 			{
-				if (handle.IsValid()) { Addressables.Release(handle); }
-				throw;
+				if (!succeeded && handle.IsValid()) { Addressables.Release(handle); }
 			}
 
 			if (handle.Status != AsyncOperationStatus.Succeeded)
@@ -202,7 +204,8 @@ namespace ProjectOne.Resources
 				if (sizes[i] > 0)
 				{
 					var reporter = new LabelProgressReporter(this, sizes[i], downloadedBytes, totalBytes, progress);
-					await downloadLabelAsync(list[i], reporter, maxRetry, ct);
+					bool ok = await downloadLabelAsync(list[i], reporter, maxRetry, ct);
+					if (!ok) { return; }
 					downloadedBytes += sizes[i];
 				}
 
@@ -230,7 +233,8 @@ namespace ProjectOne.Resources
 
 		// ── 내부 구현 ─────────────────────────────────────────────────────
 
-		private async UniTask downloadLabelAsync(
+		// 성공 시 true, 실패(재시도 소진) 시 false 반환, 취소 시 OCE 전파
+		private async UniTask<bool> downloadLabelAsync(
 			string label,
 			LabelProgressReporter reporter,
 			int maxRetry,
@@ -238,23 +242,32 @@ namespace ProjectOne.Resources
 		{
 			for (int attempt = 0; attempt <= maxRetry; attempt++)
 			{
-				try
+				(bool cancelled, bool ok) = await AddressableHelper.TryDownloadDependenciesAsync(label, reporter, ct).SuppressCancellationThrow();
+				if (cancelled)
 				{
-					await AddressableHelper.DownloadDependenciesAsync(label, reporter, ct);
-					return;
+					ct.ThrowIfCancellationRequested();
+					return false;
 				}
-				catch (OperationCanceledException)
+
+				if (ok) { return true; }
+
+				if (attempt >= maxRetry)
 				{
-					throw;
+					Debug.LogError($"[AssetBundleLoader] '{label}' 다운로드 최대 재시도 초과 ({maxRetry + 1}회)");
+					return false;
 				}
-				catch (Exception e)
+
+				int delayMs = _baseRetryDelayMs * (1 << attempt);
+				Debug.LogWarning($"[AssetBundleLoader] '{label}' 다운로드 실패 (시도 {attempt + 1}/{maxRetry + 1}), {delayMs}ms 후 재시도.");
+				bool delayCancelled = await UniTask.Delay(delayMs, cancellationToken: ct).SuppressCancellationThrow();
+				if (delayCancelled)
 				{
-					if (attempt >= maxRetry) { throw; }
-					int delayMs = _baseRetryDelayMs * (1 << attempt);
-					Debug.LogWarning($"[AssetBundleLoader] '{label}' 다운로드 실패 (시도 {attempt + 1}/{maxRetry + 1}), {delayMs}ms 후 재시도. {e.Message}");
-					await UniTask.Delay(delayMs, cancellationToken: ct);
+					ct.ThrowIfCancellationRequested();
+					return false;
 				}
 			}
+
+			return false;
 		}
 
 		// 원격 URL의 호스트+스킴을 _serverUrl로 치환

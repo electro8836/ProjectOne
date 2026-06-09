@@ -431,23 +431,12 @@ namespace ProjectOne.Audio
 				_resourceManager = ResourceManager.Instance;
 			}
 
-			AudioClip clip;
-			try
-			{
-				clip = await _resourceManager.AcquireAsync<AudioClip>(address);
-			}
-			catch (System.Exception e)
-			{
-				// 반드시 여기서 예외를 관측(observe)한다.
-				// 방치하면 .Forget() 비동기의 미관측 예외가 UniTask 파이널라이저(백그라운드 스레드)에서
-				// Debug.LogException 으로 로깅되며 Unity 네이티브 힙을 손상시켜 종료 시 크래시한다.
-				_failedAddresses.Add(address);
-				Debug.LogWarning($"[AudioManager] SFX 로드 실패 — address:{address} ({e.Message})");
-				return null;
-			}
-
+			// AcquireAsync는 로드 실패 시 null 반환(내부 LogError 처리) — 예외 없음
+			AudioClip clip = await _resourceManager.AcquireAsync<AudioClip>(address);
 			if (clip == null)
 			{
+				_failedAddresses.Add(address);
+				Debug.LogWarning($"[AudioManager] SFX 로드 실패 — address:{address}");
 				return null;
 			}
 

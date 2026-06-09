@@ -33,12 +33,14 @@ namespace ProjectOne.Resources
 		// ── 공개 API ──────────────────────────────────────────────────
 
 		// 참조카운트 +1 후 에셋 반환. 같은 address 동시 호출도 안전.
+		// 로드 실패 시 null 반환 (LogError는 내부 처리) — 취소 시 OCE 전파
 		public async UniTask<T> AcquireAsync<T>(string address, CancellationToken ct = default)
 			where T : UnityEngine.Object
 		{
 			if (string.IsNullOrEmpty(address))
 			{
-				throw new ArgumentException("address가 비어 있음", nameof(address));
+				Debug.LogError("[ResourceManager] address가 비어 있음");
+				return null;
 			}
 
 			if (_entries.TryGetValue(address, out Entry entry))
@@ -46,7 +48,14 @@ namespace ProjectOne.Resources
 				// 다른 호출이 로드 중이면 그 결과를 공유
 				if (entry.loading != null)
 				{
-					UnityEngine.Object loaded = await entry.loading.Task.AttachExternalCancellation(ct);
+					(bool waitCancelled, UnityEngine.Object loaded) = await entry.loading.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
+					if (waitCancelled)
+					{
+						ct.ThrowIfCancellationRequested();
+						return null;
+					}
+
+					if (loaded == null) { return null; }
 					entry.refCount++;
 					return loaded as T;
 				}
@@ -63,45 +72,46 @@ namespace ProjectOne.Resources
 			};
 			_entries[address] = entry;
 
+			(bool loadCancelled, T asset) = await tryLoadAssetAsync<T>(address, ct).SuppressCancellationThrow();
+			if (loadCancelled)
+			{
+				entry.loading.TrySetCanceled();
+				_entries.Remove(address);
+				ct.ThrowIfCancellationRequested();
+				return null;
+			}
+
+			if (asset == null)
+			{
+				// tryLoadAssetAsync에서 이미 LogError 처리됨
+				entry.loading.TrySetResult(null);
+				_entries.Remove(address);
+				return null;
+			}
+
+			entry.asset = asset;
+			entry.loading.TrySetResult(asset);
+			entry.loading = null;
+			return asset;
+		}
+
+		// AddressableHelper.LoadAsync 실패를 null 반환으로 변환하는 최소 래퍼
+		// — 호출부의 try-catch 불필요하도록 격리. OCE는 그대로 전파.
+		private async UniTask<T> tryLoadAssetAsync<T>(string address, CancellationToken ct)
+			where T : UnityEngine.Object
+		{
 			try
 			{
-				T asset = await AddressableHelper.LoadAsync<T>(address, ct);
-				entry.asset = asset;
-				entry.loading.TrySetResult(asset);
-				entry.loading = null;
-				return asset;
+				return await AddressableHelper.LoadAsync<T>(address, ct);
 			}
 			catch (OperationCanceledException)
 			{
-				UniTaskCompletionSource<UnityEngine.Object> loading = entry.loading;
-				loading.TrySetCanceled();
-				_entries.Remove(address);
-				observeFaulted(loading);
 				throw;
 			}
 			catch (Exception e)
 			{
-				UniTaskCompletionSource<UnityEngine.Object> loading = entry.loading;
-				loading.TrySetException(e);
-				_entries.Remove(address);
-				observeFaulted(loading);
-				throw;
-			}
-		}
-
-		// 동시 대기자가 없으면 loading TCS 에 set 된 예외가 미관측으로 남는다.
-		// 그러면 UniTask 파이널라이저(백그라운드 스레드)가 Debug.LogException 으로 처리하다
-		// Unity 네이티브 힙을 손상시켜 종료 시 크래시한다. 여기서 한 번 관측해 방지한다.
-		// (실패 자체는 호출자가 throw 로 별도 전파받는다)
-		private static void observeFaulted(UniTaskCompletionSource<UnityEngine.Object> source)
-		{
-			try
-			{
-				source.Task.GetAwaiter().GetResult();
-			}
-			catch
-			{
-				// 관측만 — 무시
+				Debug.LogError($"[ResourceManager] 에셋 로드 실패: {address} ({e.Message})");
+				return null;
 			}
 		}
 

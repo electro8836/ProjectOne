@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -23,7 +22,6 @@ namespace ProjectOne.Flow
 
 		// 다음 상태로 전이.
 		// 각 상태가 EnterAsync 말미에서 이 메서드를 .Forget()으로 호출해 연쇄한다.
-		// 내부 try/catch로 미관측 예외를 흡수한다(.Forget() 종료 크래시 방지).
 		public async UniTask ChangeStateAsync(IGameState next)
 		{
 			if (next == null)
@@ -40,26 +38,18 @@ namespace ProjectOne.Flow
 			_transitionCts = new CancellationTokenSource();
 			CancellationToken ct = _transitionCts.Token;
 
-			try
+			if (_current != null)
 			{
-				if (_current != null)
-				{
-					await _current.ExitAsync();
-				}
+				bool exitCancelled = await _current.ExitAsync().SuppressCancellationThrow();
+				if (exitCancelled) { return; }
+			}
 
-				_current = next;
-				await next.EnterAsync(ct);
+			_current = next;
 
-				EventManager.Instance.Publish(new GameStateChangedEvent(next.GetType()));
-			}
-			catch (OperationCanceledException)
-			{
-				// 다른 전이에 의해 취소됨 — 정상 흐름
-			}
-			catch (Exception e)
-			{
-				Debug.LogError("상태 전이 실패: " + next.GetType().Name + " / " + e.Message);
-			}
+			bool enterCancelled = await next.EnterAsync(ct).SuppressCancellationThrow();
+			if (enterCancelled) { return; }
+
+			EventManager.Instance.Publish(new GameStateChangedEvent(next.GetType()));
 		}
 	}
 }

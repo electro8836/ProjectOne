@@ -20,8 +20,7 @@ namespace ProjectOne.Flow
 	{
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
-			AssetBundleLoader loader = AssetBundleLoader.Instance;
-			PatchConfig config = loader.Config;
+			PatchConfig config = AssetBundleLoader.Instance.Config;
 			if (config == null || config.DownloadLabels.Count == 0)
 			{
 				Debug.LogWarning("[PatchState] PatchConfig 미연결 또는 label 없음. 패치 건너뜀. (부트 씬 AssetBundleLoader에 PatchConfig 연결 필요)");
@@ -48,21 +47,21 @@ namespace ProjectOne.Flow
 			// 서버가 번들 URL을 내려줬으면 런타임 주입 (스텁 단계에선 보통 빈 값)
 			if (!string.IsNullOrEmpty(ver.bundleServerUrl))
 			{
-				loader.SetServerUrl(ver.bundleServerUrl);
+				AssetBundleLoader.Instance.SetServerUrl(ver.bundleServerUrl);
 			}
 
 			var labels = new List<string>(config.DownloadLabels);
 
 			// 2. 카탈로그 갱신
-			IReadOnlyList<string> catalogIds = await loader.CheckCatalogUpdateAsync(ct);
+			IReadOnlyList<string> catalogIds = await AssetBundleLoader.Instance.CheckCatalogUpdateAsync(ct);
 			if (catalogIds.Count > 0)
 			{
 				Debug.Log($"[PatchState] 카탈로그 {catalogIds.Count}개 갱신 중...");
-				await loader.UpdateCatalogsAsync(catalogIds, ct);
+				await AssetBundleLoader.Instance.UpdateCatalogsAsync(catalogIds, ct);
 			}
 
 			// 3. 다운로드 크기 체크
-			BundleCheckResult check = await loader.CheckUpdateAsync(labels, ct);
+			BundleCheckResult check = await AssetBundleLoader.Instance.CheckUpdateAsync(labels, ct);
 			if (!check.hasUpdate)
 			{
 				Debug.Log("[PatchState] 다운로드할 번들 없음. 패치 완료.");
@@ -71,7 +70,7 @@ namespace ProjectOne.Flow
 			}
 
 			// 4. 여유 공간 확인
-			long available = loader.GetAvailableStorageBytes();
+			long available = AssetBundleLoader.Instance.GetAvailableStorageBytes();
 			if (available < check.totalBytes)
 			{
 				long needMB = check.totalBytes / 1024 / 1024;
@@ -85,7 +84,7 @@ namespace ProjectOne.Flow
 			long totalMB = check.totalBytes / 1024 / 1024;
 			Debug.Log($"[PatchState] 다운로드 시작: {totalMB} MB ({labels.Count}개 그룹)");
 			var progressReporter = new System.Progress<BundleDownloadProgress>(onPatchProgress);
-			await loader.DownloadAsync(labels, progressReporter, maxRetry: 3, ct);
+			await AssetBundleLoader.Instance.DownloadAsync(labels, progressReporter, maxRetry: 3, ct);
 
 			Debug.Log("[PatchState] 다운로드 완료.");
 			GameFlow.Instance.ChangeStateAsync(new LoginState()).Forget();

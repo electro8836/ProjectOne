@@ -244,14 +244,8 @@ namespace ProjectOne.Skill
 
 			bool prev = _applyingGuardBreak;
 			_applyingGuardBreak = true;
-			try
-			{
-				ApplyForced(SkillInfo.SKILL_BREAK, victim, attacker);
-			}
-			finally
-			{
-				_applyingGuardBreak = prev;
-			}
+			ApplyForced(SkillInfo.SKILL_BREAK, victim, attacker);
+			_applyingGuardBreak = prev;
 
 			// 브레이크 UI 등 외부 구독자에게 발동 알림
 			EventManager.Instance.Publish(new GuardBreakTriggeredEvent(victim, attacker));
@@ -446,16 +440,13 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				StatModifier handle;
-				try
+				if (!t.Stats.CanAddModifier(p.AttrType))
 				{
-					handle = t.Stats.AddModifier(p.AttrType, p.Value * signMul);
-				}
-				catch (System.ArgumentException e)
-				{
-					Debug.LogError($"[SkillEffectApplier] AddModifier 실패 — Effect:{row.ID}, Stat:{p.AttrType} ({e.Message})");
+					Debug.LogError($"[SkillEffectApplier] AddModifier 실패 — Effect:{row.ID}, Stat:{p.AttrType} (Base/Final 스탯은 Modifier 불가)");
 					continue;
 				}
+
+				StatModifier handle = t.Stats.AddModifier(p.AttrType, p.Value * signMul);
 
 				if (hostBuff != null)
 				{

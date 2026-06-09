@@ -62,18 +62,18 @@ namespace ProjectOne.Resources
 			}
 
 			AsyncOperationHandle<IList<T>> handle = Addressables.LoadAssetsAsync<T>(label, null);
+			bool succeeded = false;
 			try
 			{
 				await handle.ToUniTask(cancellationToken: ct);
+				succeeded = true;
 			}
-			catch (OperationCanceledException)
+			finally
 			{
-				if (handle.IsValid())
+				if (!succeeded && handle.IsValid())
 				{
 					Addressables.Release(handle);
 				}
-
-				throw;
 			}
 
 			if (handle.Status != AsyncOperationStatus.Succeeded)
@@ -137,15 +137,9 @@ namespace ProjectOne.Resources
 
 			AsyncOperationHandle<SceneInstance> handle =
 				Addressables.LoadSceneAsync(address, mode, activateOnLoad);
-			try
-			{
-				await handle.ToUniTask(cancellationToken: ct);
-			}
-			catch (OperationCanceledException)
-			{
-				// 씬은 비활성/해제 처리가 까다로워 호출자가 책임지게 그대로 throw
-				throw;
-			}
+
+			// 씬 비활성/해제 처리는 호출자 책임 — 취소/실패 시 그대로 전파
+			await handle.ToUniTask(cancellationToken: ct);
 
 			if (handle.Status != AsyncOperationStatus.Succeeded)
 			{
@@ -167,21 +161,48 @@ namespace ProjectOne.Resources
 		public static async UniTask<long> GetDownloadSizeAsync(object key, CancellationToken ct = default)
 		{
 			AsyncOperationHandle<long> handle = Addressables.GetDownloadSizeAsync(key);
+			bool succeeded = false;
 			try
 			{
 				await handle.ToUniTask(cancellationToken: ct);
-				long size = handle.Result;
-				Addressables.Release(handle);
-				return size;
+				succeeded = true;
 			}
-			catch
+			finally
 			{
-				if (handle.IsValid())
+				if (!succeeded && handle.IsValid())
 				{
 					Addressables.Release(handle);
 				}
+			}
 
+			long size = handle.Result;
+			Addressables.Release(handle);
+			return size;
+		}
+
+		// 다운로드 성공 여부를 bool로 반환 — 실패 시 LogWarning 후 false 반환, 취소는 OCE 재전파
+		public static async UniTask<bool> TryDownloadDependenciesAsync(
+			object key,
+			IProgress<float> progress = null,
+			CancellationToken ct = default)
+		{
+			AsyncOperationHandle handle = Addressables.DownloadDependenciesAsync(key, false);
+			try
+			{
+				await handle.ToUniTask(progress: progress, cancellationToken: ct);
+				if (handle.IsValid()) { Addressables.Release(handle); }
+				return true;
+			}
+			catch (OperationCanceledException)
+			{
+				if (handle.IsValid()) { Addressables.Release(handle); }
 				throw;
+			}
+			catch (Exception e)
+			{
+				Debug.LogWarning($"[AddressableHelper] 다운로드 실패: {key} ({e.Message})");
+				if (handle.IsValid()) { Addressables.Release(handle); }
+				return false;
 			}
 		}
 
@@ -296,18 +317,18 @@ namespace ProjectOne.Resources
 			CancellationToken ct)
 			where T : UnityEngine.Object
 		{
+			bool succeeded = false;
 			try
 			{
 				await handle.ToUniTask(cancellationToken: ct);
+				succeeded = true;
 			}
-			catch (OperationCanceledException)
+			finally
 			{
-				if (handle.IsValid())
+				if (!succeeded && handle.IsValid())
 				{
 					Addressables.Release(handle);
 				}
-
-				throw;
 			}
 
 			if (handle.Status != AsyncOperationStatus.Succeeded || handle.Result == null)
@@ -330,22 +351,25 @@ namespace ProjectOne.Resources
 			object key,
 			CancellationToken ct)
 		{
+			bool succeeded = false;
 			try
 			{
 				await handle.ToUniTask(cancellationToken: ct);
+				succeeded = true;
 			}
-			catch (OperationCanceledException)
+			finally
 			{
-				if (handle.IsValid() && handle.Result != null)
+				if (!succeeded && handle.IsValid())
 				{
-					Addressables.ReleaseInstance(handle.Result);
+					if (handle.Result != null)
+					{
+						Addressables.ReleaseInstance(handle.Result);
+					}
+					else
+					{
+						Addressables.Release(handle);
+					}
 				}
-				else if (handle.IsValid())
-				{
-					Addressables.Release(handle);
-				}
-
-				throw;
 			}
 
 			if (handle.Status != AsyncOperationStatus.Succeeded || handle.Result == null)

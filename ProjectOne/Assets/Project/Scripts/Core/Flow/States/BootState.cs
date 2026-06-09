@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -14,28 +13,17 @@ namespace ProjectOne.Flow
 	{
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
-			try
-			{
-				// 1) 정적 테이블 일괄 로드 (Addressables 라벨 "Tables")
-				await TableLoader.LoadAllAsync(ct);
+			// 1) 정적 테이블 일괄 로드 (Addressables 라벨 "Tables")
+			bool cancelled = await TableLoader.LoadAllAsync(ct).SuppressCancellationThrow();
+			if (cancelled) { return; }
 
-				// 2) SFX 클립 일괄 프리로드 (Addressables 라벨 "SFX") — 첫 재생 끊김 방지
-				await AudioManager.Instance.PreloadSFXByLabelAsync("SFX", ct);
+			// 2) SFX 클립 일괄 프리로드 (Addressables 라벨 "SFX") — 첫 재생 끊김 방지
+			cancelled = await AudioManager.Instance.PreloadSFXByLabelAsync("SFX", ct).SuppressCancellationThrow();
+			if (cancelled) { return; }
 
-				Debug.Log("부트 완료 — Character:" + Table_Character.All().Count
-					+ " Monster:" + Table_Monster.All().Count
-					+ " BaseStat:" + Table_BaseStat.All().Count);
-			}
-			catch (OperationCanceledException)
-			{
-				// 정상 취소 — 무시
-				return;
-			}
-			catch (Exception e)
-			{
-				Debug.LogError("부트 실패: " + e.Message);
-				return;
-			}
+			Debug.Log("부트 완료 — Character:" + Table_Character.All().Count
+				+ " Monster:" + Table_Monster.All().Count
+				+ " BaseStat:" + Table_BaseStat.All().Count);
 
 			// 다음 상태로 자동 전이
 			GameFlow.Instance.ChangeStateAsync(new TitleState()).Forget();

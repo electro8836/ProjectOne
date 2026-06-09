@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -35,38 +34,38 @@ namespace ProjectOne.Unit
 
 			inflight = new UniTaskCompletionSource<MonsterPool>();
 			_loading[monsterId] = inflight;
-			try
+
+			Table_Monster.Row row = Table_Monster.Get(monsterId);
+			if (row == null || string.IsNullOrEmpty(row.Path))
 			{
-				Table_Monster.Row row = Table_Monster.Get(monsterId);
-				if (row == null || string.IsNullOrEmpty(row.Path))
-				{
-					Debug.LogError($"[MonsterPoolHub] Table_Monster 또는 Path 없음 (id={monsterId})");
-					_loading.Remove(monsterId);
-					inflight.TrySetResult(null);
-					return null;
-				}
-
-				GameObject val = await ResourceManager.Instance.AcquireAsync<GameObject>(row.Path, ct);
-				if (val == null)
-				{
-					Debug.LogError(("[MonsterPoolHub] 프리팹 로드 실패: " + row.Path));
-					_loading.Remove(monsterId);
-					inflight.TrySetResult(null);
-					return null;
-				}
-
-				MonsterPool monsterPool = createPool(val, monsterId);
-				_pools[monsterId] = monsterPool;
+				Debug.LogError($"[MonsterPoolHub] Table_Monster 또는 Path 없음 (id={monsterId})");
 				_loading.Remove(monsterId);
-				inflight.TrySetResult(monsterPool);
-				return monsterPool;
+				inflight.TrySetResult(null);
+				return null;
 			}
-			catch (OperationCanceledException)
+
+			(bool loadCancelled, GameObject val) = await ResourceManager.Instance.AcquireAsync<GameObject>(row.Path, ct).SuppressCancellationThrow();
+			if (loadCancelled)
 			{
 				_loading.Remove(monsterId);
 				inflight.TrySetCanceled();
-				throw;
+				ct.ThrowIfCancellationRequested();
+				return null;
 			}
+
+			if (val == null)
+			{
+				Debug.LogError("[MonsterPoolHub] 프리팹 로드 실패: " + row.Path);
+				_loading.Remove(monsterId);
+				inflight.TrySetResult(null);
+				return null;
+			}
+
+			MonsterPool monsterPool = createPool(val, monsterId);
+			_pools[monsterId] = monsterPool;
+			_loading.Remove(monsterId);
+			inflight.TrySetResult(monsterPool);
+			return monsterPool;
 		}
 
 		public MonsterPool GetPool(int monsterId)

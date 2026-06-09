@@ -46,6 +46,13 @@ namespace ProjectOne.Unit.Stats
 
 		// === Modifier 채널 (탈착 가능: 아이템, 버프) ===
 
+		// AddModifier에 유효한 타입인지 사전 검사 (Base/Final은 불가)
+		public bool CanAddModifier(StatInfo type)
+		{
+			StatPart part = _partMap[type];
+			return part.Kind != ModifierTypes.Base && part.Kind != ModifierTypes.Final;
+		}
+
 		// type은 _Add / _Ratio / _Amp 중 하나만 허용 (_Base는 SetBase/AddBase 사용)
 		public StatModifier AddModifier(StatInfo type, float value)
 		{
