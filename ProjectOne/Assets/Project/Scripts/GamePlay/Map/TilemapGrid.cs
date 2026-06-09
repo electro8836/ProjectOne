@@ -24,6 +24,8 @@ namespace ProjectOne.Map
 		private FlowField _flowField = new FlowField();
 		private Vector3Int _boundsMin;
 
+		[SerializeField] bool DEV_ShowDrawGizmos = false;
+
 		public void Setup(Grid grid, Tilemap groundMap, Tilemap obstacleMap)
 		{
 			_grid = grid;
@@ -121,5 +123,85 @@ namespace ProjectOne.Map
 
 			return true;
 		}
+
+#if UNITY_EDITOR
+		private void OnDrawGizmos()
+		{
+			if (_grid == null || _flowField == null || _flowField.Width == 0)
+			{
+				return;
+			}
+
+			if(DEV_ShowDrawGizmos == false)
+			{
+				return;
+			}
+
+			Vector3 cellSize  = _grid.cellSize;
+			float   halfW     = cellSize.x * 0.5f;
+			float   halfH     = cellSize.y * 0.5f;
+			float   innerHalf = Mathf.Min(cellSize.x, cellSize.y) * 0.4f;
+
+			for (int y = 0; y < _flowField.Height; y++)
+			{
+				for (int x = 0; x < _flowField.Width; x++)
+				{
+					Vector3Int cellPos = new Vector3Int(_boundsMin.x + x, _boundsMin.y + y, 0);
+					Vector3 center = _grid.GetCellCenterWorld(cellPos);
+
+					DEV_DrawGizmosBox(center, new Vector2(halfW, halfH), Color.white);
+
+					if (_flowField.GetCostAt(x, y) == false)
+					{
+						DEV_DrawGizmosX(center, innerHalf, Color.red);
+					}
+					else
+					{
+						Vector2 dir = _flowField.GetDirection(x, y);
+						if (dir != Vector2.zero)
+						{
+							DEV_DrawGizmosArrow(center, dir, innerHalf * 2f, Color.yellow);
+						}
+					}
+				}
+			}
+		}
+
+		private void DEV_DrawGizmosX(Vector3 center, float size, Color color)
+		{
+			Gizmos.color = color;
+			Gizmos.DrawLine(center + new Vector3(-size, -size, 0f), center + new Vector3(size, size, 0f));
+			Gizmos.DrawLine(center + new Vector3(-size,  size, 0f), center + new Vector3(size, -size, 0f));
+		}
+
+		private void DEV_DrawGizmosArrow(Vector3 center, Vector2 dir, float length, Color color)
+		{
+			Gizmos.color = color;
+			Vector3 d     = new Vector3(dir.x, dir.y, 0f);
+			float   half  = length * 0.5f;
+			Vector3 start = center - d * half;
+			Vector3 end   = center + d * half;
+			Gizmos.DrawLine(start, end);
+
+			float   headSize = length * 0.3f;
+			Vector3 right    = new Vector3(-d.y, d.x, 0f);
+			Gizmos.DrawLine(end, end - d * headSize + right * headSize);
+			Gizmos.DrawLine(end, end - d * headSize - right * headSize);
+		}
+
+		private void DEV_DrawGizmosBox(Vector3 center, Vector2 size, Color color)
+		{
+			Gizmos.color = color;
+			float left = center.x - size.x;
+			float right = center.x + size.x;
+			float up = center.y - size.y;
+			float down = center.y + size.y;
+
+			Gizmos.DrawLine(new Vector2(left, up), new Vector2(right, up));
+			Gizmos.DrawLine(new Vector2(left, down), new Vector2(right, down));
+			Gizmos.DrawLine(new Vector2(left, up), new Vector2(left, down));
+			Gizmos.DrawLine(new Vector2(right, up), new Vector2(right, down));
+		}
+#endif
 	}
 }

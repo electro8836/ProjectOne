@@ -60,6 +60,16 @@ namespace ProjectOne.Map
 			return x >= 0 && x < Width && y >= 0 && y < Height;
 		}
 
+		public bool GetCostAt(int x, int y)
+		{
+			if (_costField == null || IsInBounds(x, y) == false)
+			{
+				return false;
+			}
+
+			return _costField[GetIndex(x, y)];
+		}
+
 		private void BuildIntegrationField(int targetX, int targetY)
 		{
 			int size = Width * Height;

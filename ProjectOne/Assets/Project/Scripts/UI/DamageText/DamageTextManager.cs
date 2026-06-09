@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using UnityEngine;
-using ProjectOne.Utils;
 using ProjectOne.Event;
 using ProjectOne.Unit;
 
 namespace ProjectOne.UI
 {
-	// 데미지 텍스트 전역 진입점. DamageTakenEvent를 구독해 피격 유닛 위로 데미지 숫자를 띄운다.
-	public class DamageTextManager : MonoSingleton<DamageTextManager>
+	// 데미지 텍스트 진입점. DamageTakenEvent를 구독해 피격 유닛 위로 데미지 숫자를 띄운다.
+	// 전투 씬의 WorldUICanvas 하위에 배치되어 씬과 생명주기를 함께한다.
+	public class DamageTextManager : MonoBehaviour
 	{
 		[SerializeField] private DamageTextPool _pool;
 		[SerializeField] private float _offsetY = 0.0f;		// 콜라이더 반지름 위로 추가로 올릴 거리
@@ -34,21 +34,18 @@ namespace ProjectOne.UI
 			public int Index;
 		}
 
-		protected override void Awake()
+		private void Awake()
 		{
-			base.Awake();
 			_mainCamera = Camera.main;
 
 			EventManager.Instance.Subscribe<DamageTakenEvent>(onDamageTaken);
 			EventManager.Instance.Subscribe<UnitDiedEvent>(onUnitDied);
 		}
 
-		protected override void OnDestroy()
+		private void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<DamageTakenEvent>(onDamageTaken);
 			EventManager.Instance.Unsubscribe<UnitDiedEvent>(onUnitDied);
-
-			base.OnDestroy();
 		}
 
 		private void Update()

@@ -1,0 +1,52 @@
+using System.Threading;
+using Cysharp.Threading.Tasks;
+using TMPro;
+using UnityEngine;
+
+namespace ProjectOne.UI
+{
+	// 확인/취소 팝업. UIManager.ShowConfirmPopupAsync가 WaitResultAsync로 결과를 기다린다.
+	public class ConfirmPopup : UIScreen
+	{
+		[SerializeField] private TextMeshProUGUI _messageText;
+		[SerializeField] private UIButton _confirmButton;
+		[SerializeField] private UIButton _cancelButton;
+
+		private UniTaskCompletionSource<bool> _tcs;
+
+		private void Awake()
+		{
+			_confirmButton.onClick.AddListener(onConfirm);
+			_cancelButton.onClick.AddListener(onCancel);
+		}
+
+		private void OnDestroy()
+		{
+			_confirmButton.onClick.RemoveListener(onConfirm);
+			_cancelButton.onClick.RemoveListener(onCancel);
+		}
+
+		// UIManager가 인스턴스화 직후 호출해 결과를 기다린다.
+		public async UniTask<bool> WaitResultAsync(string message, CancellationToken ct)
+		{
+			_messageText.text = message;
+			_tcs = new UniTaskCompletionSource<bool>();
+
+			(bool cancelled, bool result) = await _tcs.Task
+				.AttachExternalCancellation(ct)
+				.SuppressCancellationThrow();
+
+			return !cancelled && result;
+		}
+
+		private void onConfirm()
+		{
+			_tcs?.TrySetResult(true);
+		}
+
+		private void onCancel()
+		{
+			_tcs?.TrySetResult(false);
+		}
+	}
+}

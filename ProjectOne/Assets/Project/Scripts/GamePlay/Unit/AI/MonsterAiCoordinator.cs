@@ -6,12 +6,10 @@ using ProjectOne.Utils;
 namespace ProjectOne.Unit.AI
 {
 	// 몬스터 길찾기용 플로우필드 중앙 재베이크 전담 (MonoSingleton).
-	// 살아있는 첫 히어로 위치로 일정 주기 1회만 베이크 — 몬스터 개별 베이크 금지.
+	// 살아있는 첫 히어로가 다른 그리드 셀로 이동할 때만 베이크 — 몬스터 개별 베이크 금지.
 	public sealed class MonsterAiCoordinator : MonoSingleton<MonsterAiCoordinator>
 	{
-		private const float Interval = 0.3f;
-
-		private float _accum;
+		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
 		private void Update()
 		{
@@ -20,19 +18,20 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			_accum += Time.deltaTime;
-			if (_accum < Interval)
+			UnitBase hero = FindFirstAliveHero();
+			if (hero == null)
 			{
 				return;
 			}
 
-			_accum = 0f;
-
-			UnitBase hero = FindFirstAliveHero();
-			if (hero != null)
+			Vector3Int currentCell = TilemapGrid.Instance.WorldToCell(hero.transform.position);
+			if (currentCell == _lastHeroCell)
 			{
-				TilemapGrid.Instance.BakeFlowField(hero.transform.position);
+				return;
 			}
+
+			_lastHeroCell = currentCell;
+			TilemapGrid.Instance.BakeFlowField(hero.transform.position);
 		}
 
 		private static UnitBase FindFirstAliveHero()
