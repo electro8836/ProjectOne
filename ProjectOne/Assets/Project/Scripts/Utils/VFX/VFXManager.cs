@@ -311,13 +311,8 @@ namespace ProjectOne.Utils
 				return null;
 			}
 
-			if (_resourceManager == null)
-			{
-				_resourceManager = ResourceManager.Instance;
-			}
-
 			// AcquireAsync는 로드 실패 시 null 반환(내부 LogError 처리) — 예외 없음
-			prefab = await _resourceManager.AcquireAsync<GameObject>(address);
+			prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address);
 			if (prefab == null)
 			{
 				_failedAddresses.Add(address);

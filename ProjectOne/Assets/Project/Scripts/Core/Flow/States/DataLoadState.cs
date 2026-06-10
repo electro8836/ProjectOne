@@ -10,7 +10,7 @@ namespace ProjectOne.Flow
 		public UniTask EnterAsync(CancellationToken ct)
 		{
 			// 스텁 — 즉시 다음 상태로 전이
-			GameFlow.Instance.ChangeStateAsync(new StageState()).Forget();
+			GameFlow.Instance.ChangeStateAsync(new LobbyState()).Forget();
 			return UniTask.CompletedTask;
 		}
 

@@ -50,9 +50,6 @@ namespace ProjectOne.Audio
 		// 라벨로 일괄 프리로드한 SFX 핸들 — OnDestroy 에서 ReleasePreloaded 로 반환
 		private IList<AudioClip> _preloadedSfx;
 
-		// 첫 클립 로드 때 캐시 (OnDestroy 에서 Release, Instance 게터 재생성 회피)
-		private ResourceManager _resourceManager;
-
 		// 매니저 파괴 진행 여부 — 비동기 콜백이 파괴 후 도착하는 경우 가드
 		private bool _isQuitting;
 
@@ -217,12 +214,7 @@ namespace ProjectOne.Audio
 		// (부트 시 1회 호출 — TableLoader 의 "Tables" 라벨 프리로드와 동일 패턴)
 		public async UniTask PreloadSFXByLabelAsync(string label = "SFX", CancellationToken ct = default)
 		{
-			if (_resourceManager == null)
-			{
-				_resourceManager = ResourceManager.Instance;
-			}
-
-			_preloadedSfx = await _resourceManager.PreloadByLabelAsync<AudioClip>(label, null, ct);
+			_preloadedSfx = await ResourceManager.Instance.PreloadByLabelAsync<AudioClip>(label, null, ct);
 			for (int i = 0; i < _preloadedSfx.Count; i++)
 			{
 				AudioClip clip = _preloadedSfx[i];
@@ -426,13 +418,8 @@ namespace ProjectOne.Audio
 				return null;
 			}
 
-			if (_resourceManager == null)
-			{
-				_resourceManager = ResourceManager.Instance;
-			}
-
 			// AcquireAsync는 로드 실패 시 null 반환(내부 LogError 처리) — 예외 없음
-			AudioClip clip = await _resourceManager.AcquireAsync<AudioClip>(address);
+			AudioClip clip = await ResourceManager.Instance.AcquireAsync<AudioClip>(address);
 			if (clip == null)
 			{
 				_failedAddresses.Add(address);
@@ -447,7 +434,7 @@ namespace ProjectOne.Audio
 			}
 			else
 			{
-				_resourceManager.Release(address);
+				ResourceManager.Instance.Release(address);
 			}
 
 			return clip;
@@ -459,21 +446,21 @@ namespace ProjectOne.Audio
 		{
 			_isQuitting = true;
 
-			// 라벨 프리로드분은 ReleasePreloaded 로 일괄 반환 (lazy 로드분과 소유 경로가 분리됨)
-			// 종료 중 ResourceManager 재생성을 피하려 캐시된 _resourceManager 사용
-			if (_preloadedSfx != null && _resourceManager != null)
+			if (_preloadedSfx != null)
 			{
-				_resourceManager.ReleasePreloaded(_preloadedSfx);
+				if (ResourceManager.HasInstance)
+				{
+					ResourceManager.Instance.ReleasePreloaded(_preloadedSfx);
+				}
 				_preloadedSfx = null;
 			}
 
-			// 캐시한 클립 주소마다 refCount 반환 (앱 종료 시엔 ResourceManager 가 이미 파괴됐을 수 있어 null 가드)
-			if (_resourceManager != null)
+			if (ResourceManager.HasInstance)
 			{
 				List<string> keys = new List<string>(_clipCache.Keys);
 				for (int i = 0; i < keys.Count; i++)
 				{
-					_resourceManager.Release(keys[i]);
+					ResourceManager.Instance.Release(keys[i]);
 				}
 			}
 

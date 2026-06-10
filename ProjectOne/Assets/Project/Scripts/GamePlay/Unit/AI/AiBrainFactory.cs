@@ -15,8 +15,6 @@ namespace ProjectOne.Unit.AI
 		// 일반/엘리트/보스 모두 현재는 접근형 — 보스 전용 BossBehavior 는 3단계까지 폴백.
 		public static AiBrain CreateForMonster(UnitBase monster, MonsterTypes type)
 		{
-			// 플로우필드 중앙 재베이크 코디네이터 보장 (MonoSingleton 최초 접근 시 자동 생성)
-			_ = MonsterAiCoordinator.Instance;
 			return new AiBrain(monster, new MonsterApproachBehavior());
 		}
 	}
