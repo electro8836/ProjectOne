@@ -16,14 +16,14 @@ namespace ProjectOne.UI
 
 		private void Awake()
 		{
-			_confirmButton.onClick.AddListener(onConfirm);
-			_cancelButton.onClick.AddListener(onCancel);
+			_confirmButton.OnClickEvent += onConfirm;
+			_cancelButton.OnClickEvent += onCancel;
 		}
 
 		private void OnDestroy()
 		{
-			_confirmButton.onClick.RemoveListener(onConfirm);
-			_cancelButton.onClick.RemoveListener(onCancel);
+			_confirmButton.OnClickEvent -= onConfirm;
+			_cancelButton.OnClickEvent -= onCancel;
 		}
 
 		// UIManager가 인스턴스화 직후 호출해 결과를 기다린다.

@@ -18,16 +18,6 @@ namespace EDT {
         ItemBox,
     }
 
-    public enum CurrencyType {
-        None,
-        Gold,
-        Dia,
-        GoldDungeonTicket,
-        ExpDungeonTicket,
-        RaidTicket,
-        PVPTicket,
-    }
-
     public enum EquipmentType {
         None,
         Weapon,
@@ -174,6 +164,16 @@ namespace EDT {
         Btn2,
         Btn3,
         Btn4,
+    }
+
+    public enum CurrencyInfo {
+        None,
+        Gold,
+        Dia,
+        GoldDungeonTicket,
+        ExpDungeonTicket,
+        RaidTicket,
+        PVPTicket,
     }
 
     public enum SkillInfo {

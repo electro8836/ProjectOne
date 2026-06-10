@@ -9,17 +9,14 @@ using ProjectOne.Resources;
 namespace ProjectOne.UI
 {
 	// UI 전역 진입점.
-	// - Canvas 계층(Scene / Overlay / Popup) 관리
+	// - 씬을 가로지르는 Canvas 계층(Overlay / Popup) 관리
 	// - GameStateChangedEvent를 구독해 오버레이 스택을 자동 정리
-	// - 씬이 자신의 Canvas를 등록/해제하면 Scene 층을 갱신
+	// (씬 전용 HUD는 각 씬의 Canvas에 직접 배치 — 매니저가 소유하지 않음)
 	public class UIManager : MonoSingleton<UIManager>
 	{
 		[Header("Canvas 계층")]
 		[SerializeField] private Canvas _overlayCanvas;	// Sort Order 200, DontDestroyOnLoad
 		[SerializeField] private Canvas _popupCanvas;	// Sort Order 300, DontDestroyOnLoad
-
-		// Scene Canvas — 씬이 RegisterSceneCanvas로 등록
-		private Canvas _sceneCanvas;
 
 		// 오버레이 스택 (Back키 처리, 직렬 닫기용)
 		private readonly Stack<UIScreen> _overlayStack = new Stack<UIScreen>();
@@ -37,23 +34,6 @@ namespace ProjectOne.UI
 		{
 			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
 			base.OnDestroy();
-		}
-
-		// ── Scene Canvas 등록/해제 ───────────────────────────────────────
-
-		// 씬의 Canvas가 Awake에서 자신을 등록한다.
-		public void RegisterSceneCanvas(Canvas canvas)
-		{
-			_sceneCanvas = canvas;
-		}
-
-		// 씬의 Canvas가 OnDestroy에서 등록을 해제한다.
-		public void UnregisterSceneCanvas(Canvas canvas)
-		{
-			if (_sceneCanvas == canvas)
-			{
-				_sceneCanvas = null;
-			}
 		}
 
 		// ── 오버레이 ────────────────────────────────────────────────────

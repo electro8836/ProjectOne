@@ -7,17 +7,17 @@ namespace ProjectOne.Event
 {
 		public struct ResourceChangeEvent
 		{
-				public readonly int ResourceType;
+				public readonly EDT.CurrencyInfo CurrencyType;
 				public readonly int PreviousAmount;
 				public readonly int CurrentAmount;
 				public readonly int Delta;
 
-				ResourceChangeEvent(int resourceType, int previousAmount, int currentAmount)
+				public ResourceChangeEvent(EDT.CurrencyInfo currencyType, int previousAmount, int currentAmount)
 				{
-						this.ResourceType = resourceType;
+						this.CurrencyType = currencyType;
 						this.PreviousAmount = previousAmount;
 						this.CurrentAmount = currentAmount;
-						this.Delta = CurrentAmount - PreviousAmount;
+						this.Delta = currentAmount - previousAmount;
 				}
 		}
 		

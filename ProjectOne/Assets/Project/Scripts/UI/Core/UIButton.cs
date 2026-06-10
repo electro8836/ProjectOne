@@ -1,47 +1,69 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
+using DG.Tweening;
 using ProjectOne.Audio;
+using ProjectOne.Utils;
 
 namespace ProjectOne.UI
 {
-	// Button 상속으로 SFX를 자동 처리한다.
-	// 씬에서 Button 대신 UIButton을 선택하면 onClick 콜백 등록은 기존과 동일하게 사용.
-	public class UIButton : Button
+	// 일반 버튼. 입력은 베이스가 처리하고, 여기서는 ButtonThemeData 기반 연출만 담당한다.
+	// 클릭 시 윈도우 열기/닫기 등은 외부에서 OnClickEvent를 구독해 연결한다.
+	[AddComponentMenu("Custom UI/UI Button")]
+	public class UIButton : UIBaseInteractable
 	{
-		// 빈 문자열이면 AudioManager 기본 버튼음 사용
-		[SerializeField] private string _sfxAddress = string.Empty;
+		[Header("Theme & Feedback")]
+		[SerializeField] private ButtonThemeData _themeData;
+		[SerializeField] private RectTransform _targetGraphic;
 
-		// onClick 리스너 대신 override로 처리 — 부모 onClick 콜백과 순서 충돌 없음
-		public override void OnPointerClick(PointerEventData eventData)
+		private Vector2 _originalPosition;
+
+		private void Awake()
 		{
-			base.OnPointerClick(eventData);
-
-			if (IsActive() && IsInteractable())
+			if (_targetGraphic != null)
 			{
-				playSfx();
+				_originalPosition = _targetGraphic.anchoredPosition;
 			}
+
+			OnPointerDownEvent += playDownFeedback;
+			OnPointerUpEvent += playUpFeedback;
+			OnClickEvent += playClickFeedback;
 		}
 
-		// 게임패드/키보드 Submit 경로도 동일하게 처리
-		public override void OnSubmit(BaseEventData eventData)
+		private void OnDestroy()
 		{
-			base.OnSubmit(eventData);
-
-			if (IsActive() && IsInteractable())
-			{
-				playSfx();
-			}
+			OnPointerDownEvent -= playDownFeedback;
+			OnPointerUpEvent -= playUpFeedback;
+			OnClickEvent -= playClickFeedback;
 		}
 
-		private void playSfx()
+		private void playDownFeedback()
 		{
-			if (!AudioManager.HasInstance)
+			if (_themeData == null || _targetGraphic == null) { return; }
+
+			_targetGraphic.DOKill();
+			_targetGraphic.DOAnchorPos(_originalPosition + _themeData.pressedOffset, _themeData.animationDuration).SetEase(Ease.OutQuad);
+		}
+
+		private void playUpFeedback()
+		{
+			if (_themeData == null || _targetGraphic == null) { return; }
+
+			_targetGraphic.DOKill();
+			_targetGraphic.DOAnchorPos(_originalPosition, _themeData.animationDuration).SetEase(Ease.OutBack);
+		}
+
+		private void playClickFeedback()
+		{
+			if (_themeData == null) { return; }
+
+			if (!string.IsNullOrEmpty(_themeData.sfxAddress) && AudioManager.HasInstance)
 			{
-				return;
+				AudioManager.Instance.PlaySFX(_themeData.sfxAddress);
 			}
 
-			AudioManager.Instance.PlaySFX(_sfxAddress);
+			if (!string.IsNullOrEmpty(_themeData.vfxAddress) && VFXManager.HasInstance)
+			{
+				VFXManager.Instance.PlayOneShot(_themeData.vfxAddress, transform);
+			}
 		}
 	}
 }

@@ -26,9 +26,6 @@ namespace ProjectOne.Utils
 		// 활성 one-shot — 매 프레임 중앙 틱(Update)에서 종료 감지 후 풀로 회수
 		private readonly List<VFXItem> _activeOneShots = new List<VFXItem>(64);
 
-		// OnDestroy 시 Acquire 한 주소를 반환하기 위해 첫 로드 때 캐시 (Instance 게터 재생성 회피)
-		private ResourceManager _resourceManager;
-
 		// 매니저 파괴 진행 여부 — 비동기 콜백이 파괴 후 도착하는 경우 가드
 		private bool _isQuitting;
 
@@ -327,7 +324,7 @@ namespace ProjectOne.Utils
 			}
 			else
 			{
-				_resourceManager.Release(address);
+				ResourceManager.Instance.Release(address);
 			}
 
 			return prefab;
@@ -354,12 +351,12 @@ namespace ProjectOne.Utils
 			_isQuitting = true;
 
 			// 캐시한 프리팹 주소마다 refCount 반환 (앱 종료 시엔 ResourceManager 가 이미 파괴됐을 수 있어 null 가드)
-			if (_resourceManager != null)
+			if (ResourceManager.HasInstance)
 			{
 				List<string> keys = new List<string>(_prefabs.Keys);
 				for (int i = 0; i < keys.Count; i++)
 				{
-					_resourceManager.Release(keys[i]);
+					ResourceManager.Instance.Release(keys[i]);
 				}
 			}
 

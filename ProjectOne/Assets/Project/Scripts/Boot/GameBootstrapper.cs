@@ -10,8 +10,6 @@ namespace ProjectOne.Boot
 	// - 실제 초기화/전이 책임은 GameFlow와 각 상태(BootState 등)로 넘어갔다.
 	public class GameBootstrapper : MonoBehaviour
 	{
-		[SerializeField] bool _showFlowField = false;
-
 		private void Start()
 		{
 			// 흐름의 첫 상태로 진입 — 이후 전이는 각 상태가 연쇄한다.

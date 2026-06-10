@@ -4,10 +4,9 @@ using UnityEngine.SceneManagement;
 
 namespace ProjectOne.Flow
 {
-	// 던전 상태 — 5.Dungeon 씬 로드. Stage ⇅ Dungeon 입퇴장.
-	public class DungeonState : IGameState
+	public class BattleState : IGameState
 	{
-		private const string SceneName = "5.Dungeon";
+		private const string SceneName = "4.Battle";
 
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
