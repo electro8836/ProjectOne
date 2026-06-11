@@ -62,8 +62,8 @@ public class UnitMover : MonoBehaviour
 		}
 
 		// Facing 갱신 — override(대시 등) 중엔 이동(override) 방향을 바라봄(입력 기반 Facing 무시), 평소엔 Move 채널 기준
-		// 캐스팅 중(_facingLocked)에는 조준을 시작 방향으로 고정
-		if (_facingLocked == false)
+		// 캐스팅 중(_facingLocked) 또는 넉백(임펄스) 중에는 자동 facing 갱신을 멈춰 시선을 고정
+		if (_facingLocked == false && IsImpulsed == false)
 		{
 			if (_hasOverride == true)
 			{
