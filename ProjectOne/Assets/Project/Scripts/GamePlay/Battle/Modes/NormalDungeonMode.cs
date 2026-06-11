@@ -100,7 +100,7 @@ namespace ProjectOne.Battle
 			RegisterGroup(stage.EliteMonsterIDs, count);
 			if (stage.BossMonsterID > 0)
 			{
-				MonsterSpawnManager.Instance.RegisterSpawn(stage.BossMonsterID, _monsterSpawnCenter, _monsterSpawnRadius, 1, 1, 0f);
+				MonsterSpawnManager.Instance.RegisterSpawn(stage.BossMonsterID, _monsterSpawnCenter, _monsterSpawnRadius, 10, 10, 0f);
 			}
 		}
 

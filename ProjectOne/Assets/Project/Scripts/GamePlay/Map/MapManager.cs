@@ -82,10 +82,10 @@ namespace ProjectOne.Map
 			return _current != null ? _current.GetFlowDirection(worldPos) : Vector2.zero;
 		}
 
-		// 맵이 없으면 통행 가능으로 간주 (기존 UnitMover 동작과 동일)
-		public bool IsWalkable(Vector2 position, float radius)
+		// 반지름 radius 인 원을 장애물 밖으로 밀어낸 위치를 반환 (맵 없으면 그대로)
+		public Vector2 ResolveWallCollision(Vector2 pos, float radius)
 		{
-			return _current == null || _current.IsWalkable(position, radius);
+			return _current != null ? _current.ResolveWallCollision(pos, radius) : pos;
 		}
 
 		public Vector3Int WorldToCell(Vector2 worldPos)

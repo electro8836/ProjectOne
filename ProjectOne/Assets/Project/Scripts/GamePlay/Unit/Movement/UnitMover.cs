@@ -5,6 +5,7 @@ using ProjectOne.Unit;
 public class UnitMover : MonoBehaviour
 {
 	private float _unitRadius = 0.3f;
+	private Vector2 _unitOffset;   // 콜라이더 중심 오프셋 — 충돌 판정은 transform.position + _unitOffset(center) 기준
 	private float _inverseMass = 1f;
 	private float _effectiveDrag = 10f;
 	private Vector2 _moveVelocity;
@@ -79,58 +80,67 @@ public class UnitMover : MonoBehaviour
 
 	private void ApplyMovement(Vector2 velocity)
 	{
-		Vector2 currentPos = transform.position;
-		Vector2 nextPos    = currentPos + velocity * Time.fixedDeltaTime;
+		// 충돌 판정은 콜라이더 중심(center) 기준 — transform 에 기록할 때만 _unitOffset 을 차감해 환원한다.
+		Vector2 currentCenter = (Vector2)transform.position + _unitOffset;
+		Vector2 desired       = currentCenter + velocity * Time.fixedDeltaTime;
 
-		// override 이동(대시/대시 공격): 슬라이딩 없이 다음 위치 판정만 — 갈 수 없으면 그 자리에서 정지하고 막힘 latch
+		// override 이동(대시/대시 공격): 슬라이딩 없이 벽에 닿으면 정지하고 막힘 latch
 		if (_hasOverride == true)
 		{
-			// 관통은 벽(IsWalkable)만, 비관통은 벽+유닛(CanMoveTo) 판정
-			bool canMove = _overridePierce == true ? IsWalkable(nextPos) : CanMoveTo(currentPos, nextPos);
-			if (canMove == true)
-			{
-				transform.position = nextPos;
-			}
-			else
+			Vector2 oResolved = ResolveWalls(desired);
+			bool wallHit     = (oResolved - desired).sqrMagnitude > 1e-6f;
+			bool unitBlocked = _overridePierce == false && OverlapsNewUnit(currentCenter, desired);
+			if (wallHit == true || unitBlocked == true)
 			{
 				_overrideBlocked = true;
-			}
-
-			return;
-		}
-
-		if (CanMoveTo(currentPos, nextPos) == true)
-		{
-			transform.position = nextPos;
-			return;
-		}
-
-		// 유닛-유닛 원형 충돌: 법선 방향 성분 제거 슬라이딩 (리지드바디와 동일한 원리)
-		Vector2 slideVel = ComputeCircleSlide(currentPos, velocity);
-		if (slideVel.sqrMagnitude > 0.001f)
-		{
-			Vector2 slidePos = currentPos + slideVel * Time.fixedDeltaTime;
-			if (CanMoveTo(currentPos, slidePos) == true)
-			{
-				transform.position = slidePos;
 				return;
 			}
+
+			transform.position = desired - _unitOffset;
+			return;
 		}
 
-		// 타일맵 등 직교 장애물: 축 분리 슬라이딩 (기존 방식 유지)
-		Vector2 moveOnlyX = new Vector2(nextPos.x, currentPos.y);
-		Vector2 moveOnlyY = new Vector2(currentPos.x, nextPos.y);
-
-		if (CanMoveTo(currentPos, moveOnlyX) == true)
+		// 유닛-유닛: 새로 겹치면 법선 슬라이딩으로 속도 보정 (리지드바디와 동일한 원리)
+		Vector2 v = velocity;
+		if (OverlapsNewUnit(currentCenter, desired) == true)
 		{
-			transform.position = moveOnlyX;
-		}
-		else if (CanMoveTo(currentPos, moveOnlyY) == true)
-		{
-			transform.position = moveOnlyY;
+			v = ComputeCircleSlide(currentCenter, velocity);
+			desired = currentCenter + v * Time.fixedDeltaTime;
+			if (OverlapsNewUnit(currentCenter, desired) == true)
+			{
+				desired = currentCenter;   // 유닛에 완전히 막힘 — 위치 이동 없음
+				v = Vector2.zero;
+			}
 		}
 
-		// 모두 막혔으면 이동 안 함
+		// 벽: 연속 원-AABB 충돌로 밀어내 미끄러진다 (이동 방향+중심 기준으로 법선 자동 결정)
+		Vector2 resolved   = ResolveWalls(desired);
+		Vector2 correction = resolved - desired;   // 밀어낸 방향 ≈ 접촉 법선
+
+		// 속도 유지: 벽으로 파고든 수직 성분만큼 잃지 않도록, 접선 방향으로 원래 속력만큼 다시 미끄러진다
+		if (correction.sqrMagnitude > 1e-8f && v.sqrMagnitude > 1e-8f)
+		{
+			Vector2 normal  = correction.normalized;
+			Vector2 tangent = v - Vector2.Dot(v, normal) * normal;
+			if (tangent.sqrMagnitude > 1e-8f)
+			{
+				Vector2 slideVel = tangent.normalized * v.magnitude;
+				resolved = ResolveWalls(currentCenter + slideVel * Time.fixedDeltaTime);
+			}
+		}
+
+		transform.position = resolved - _unitOffset;
+	}
+
+	// 반지름 원을 장애물 밖으로 밀어낸 위치 (맵 없으면 그대로)
+	private Vector2 ResolveWalls(Vector2 pos)
+	{
+		if (MapManager.HasInstance == false)
+		{
+			return pos;
+		}
+
+		return MapManager.Instance.ResolveWallCollision(pos, _unitRadius);
 	}
 
 	// 원래 velocity로 이동 시 새로 겹치는 유닛들의 충돌 법선을 기준으로 슬라이딩 속도를 계산한다.
@@ -190,32 +200,6 @@ public class UnitMover : MonoBehaviour
 		return slideVel;
 	}
 
-	// 타일맵 통과 + 다른 유닛과 새로 겹치지 않을 때만 이동 허용
-	private bool CanMoveTo(Vector2 currentPos, Vector2 nextPos)
-	{
-		if (IsWalkable(nextPos) == false)
-		{
-			return false;
-		}
-
-		if (OverlapsNewUnit(currentPos, nextPos) == true)
-		{
-			return false;
-		}
-
-		return true;
-	}
-
-	private bool IsWalkable(Vector2 position)
-	{
-		if (MapManager.HasInstance == false)
-		{
-			return true;
-		}
-
-		return MapManager.Instance.IsWalkable(position, _unitRadius);
-	}
-
 	// nextPos 에서 다른 유닛과 "새로" 겹치는지 — 이미 겹친 유닛은 무시(끼임에서 빠져나올 수 있게)
 	private bool OverlapsNewUnit(Vector2 currentPos, Vector2 nextPos)
 	{
@@ -254,9 +238,10 @@ public class UnitMover : MonoBehaviour
 		return false;
 	}
 
-	public void Initialize(float radius, float mass)
+	public void Initialize(float radius, Vector2 offset, float mass)
 	{
 		_unitRadius = radius;
+		_unitOffset = offset;
 
 		float safeMass = Mathf.Max(0.01f, mass);
 		_inverseMass = 1f / safeMass;

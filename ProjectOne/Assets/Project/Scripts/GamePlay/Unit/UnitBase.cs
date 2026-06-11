@@ -76,10 +76,14 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 콜라이더 중심 오프셋 — 충돌 기준점은 transform.position 이 아니라 transform.position + offset.
+		public Vector2 ColliderOffset => (_collider != null) ? _collider.offset : Vector2.zero;
+
 		// 프레임 시작 위치/반경을 캐시. UnitSimulator 가 모든 유닛에 대해 프레임당 1회 호출.
+		// CachedPos 는 콜라이더 중심(transform.position + offset) 기준 — 모든 충돌/분리/AI 가 동일 기준 사용.
 		public void RefreshFrameCache()
 		{
-			CachedPos = transform.position;
+			CachedPos = (Vector2)transform.position + ColliderOffset;
 			CachedRadius = Radius;
 		}
 

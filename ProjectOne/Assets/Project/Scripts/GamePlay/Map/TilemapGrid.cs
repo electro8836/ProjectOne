@@ -5,18 +5,6 @@ namespace ProjectOne.Map
 {
 	public class TilemapGrid : MonoBehaviour
 	{
-		private static readonly Vector2[] _sampleDirections =
-		{
-			new Vector2( 1f,      0f),
-			new Vector2(-1f,      0f),
-			new Vector2( 0f,      1f),
-			new Vector2( 0f,     -1f),
-			new Vector2( 0.7071f,  0.7071f),
-			new Vector2(-0.7071f,  0.7071f),
-			new Vector2( 0.7071f, -0.7071f),
-			new Vector2(-0.7071f, -0.7071f),
-		};
-
 		// 맵 프리팹에서 인스펙터로 직접 연결 — 자식 이름 매칭 대신 명시적 참조
 		[SerializeField] private Grid _grid;
 		[SerializeField] private Tilemap _groundMap;
@@ -99,22 +87,91 @@ namespace ProjectOne.Map
 			return _obstacleMap.GetTile(cellPos) == null;
 		}
 
-		public bool IsWalkable(Vector2 position, float radius)
+		// 연속 원-AABB 충돌 해소 — 반지름 radius 인 원을 장애물 셀 밖으로 밀어낸 위치를 반환한다.
+		// 가장 가까운 점 기준 법선으로 수직 성분만 밀어내므로 접선 이동(미끄러짐)이 보존되고,
+		// 볼록 코너에서는 꼭짓점 기준 방사형 법선이 나와 반지름 거리로 매끄럽게 돌아 나간다.
+		public Vector2 ResolveWallCollision(Vector2 pos, float radius)
 		{
-			if (!IsCellWalkable(WorldToCell(position)))
+			if (_obstacleMap == null)
 			{
-				return false;
+				return pos;
 			}
 
-			for (int i = 0; i < _sampleDirections.Length; i++)
+			Vector2 half      = (Vector2)_grid.cellSize * 0.5f;
+			float   radiusSqr = radius * radius;
+
+			// 코너/오목부 안정화를 위해 최대 2패스 — 변화 없으면 조기 종료
+			for (int pass = 0; pass < 2; pass++)
 			{
-				if (!IsCellWalkable(WorldToCell(position + _sampleDirections[i] * radius)))
+				Vector3Int minCell = WorldToCell(pos - new Vector2(radius, radius));
+				Vector3Int maxCell = WorldToCell(pos + new Vector2(radius, radius));
+				bool pushed = false;
+
+				for (int cy = minCell.y; cy <= maxCell.y; cy++)
 				{
-					return false;
+					for (int cx = minCell.x; cx <= maxCell.x; cx++)
+					{
+						Vector3Int cell = new Vector3Int(cx, cy, 0);
+						if (IsCellWalkable(cell) == true)
+						{
+							continue;
+						}
+
+						Vector2 center  = CellToWorld(cell);
+						Vector2 minB    = center - half;
+						Vector2 maxB    = center + half;
+						Vector2 closest = new Vector2(Mathf.Clamp(pos.x, minB.x, maxB.x), Mathf.Clamp(pos.y, minB.y, maxB.y));
+						Vector2 delta   = pos - closest;
+						float   distSqr = delta.sqrMagnitude;
+
+						if (distSqr >= radiusSqr)
+						{
+							continue;
+						}
+
+						if (distSqr > 1e-8f)
+						{
+							float dist = Mathf.Sqrt(distSqr);
+							pos += delta / dist * (radius - dist);
+						}
+						else
+						{
+							// 중심이 셀 내부 — 4변 중 최소 침투 축으로 밀어낸다
+							float left  = pos.x - minB.x;
+							float right = maxB.x - pos.x;
+							float down  = pos.y - minB.y;
+							float up    = maxB.y - pos.y;
+							float minPen = Mathf.Min(Mathf.Min(left, right), Mathf.Min(down, up));
+
+							if (minPen == left)
+							{
+								pos.x = minB.x - radius;
+							}
+							else if (minPen == right)
+							{
+								pos.x = maxB.x + radius;
+							}
+							else if (minPen == down)
+							{
+								pos.y = minB.y - radius;
+							}
+							else
+							{
+								pos.y = maxB.y + radius;
+							}
+						}
+
+						pushed = true;
+					}
+				}
+
+				if (pushed == false)
+				{
+					break;
 				}
 			}
 
-			return true;
+			return pos;
 		}
 
 #if UNITY_EDITOR
