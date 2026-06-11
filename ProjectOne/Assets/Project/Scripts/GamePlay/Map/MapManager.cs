@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -28,20 +27,7 @@ namespace ProjectOne.Map
 
 			UnloadMap();
 
-			GameObject mapGo;
-			try
-			{
-				mapGo = await AddressableHelper.InstantiateAsync(mapPrefabAddress, null, true, ct);
-			}
-			catch (OperationCanceledException)
-			{
-				throw;
-			}
-			catch (Exception e)
-			{
-				Debug.LogError($"[MapManager] 맵 인스턴스화 실패: {mapPrefabAddress} ({e.Message})");
-				return false;
-			}
+			GameObject mapGo = await AddressableHelper.InstantiateAsync(mapPrefabAddress, null, true, ct);
 
 			TilemapGrid tilemapGrid = mapGo.GetComponent<TilemapGrid>();
 			if (tilemapGrid == null)

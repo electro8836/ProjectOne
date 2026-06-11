@@ -72,7 +72,7 @@ namespace ProjectOne.Resources
 			};
 			_entries[address] = entry;
 
-			(bool loadCancelled, T asset) = await tryLoadAssetAsync<T>(address, ct).SuppressCancellationThrow();
+			(bool loadCancelled, T asset) = await AddressableHelper.TryLoadAsync<T>(address, ct).SuppressCancellationThrow();
 			if (loadCancelled)
 			{
 				entry.loading.TrySetCanceled();
@@ -83,7 +83,7 @@ namespace ProjectOne.Resources
 
 			if (asset == null)
 			{
-				// tryLoadAssetAsync에서 이미 LogError 처리됨
+				// AddressableHelper.TryLoadAsync에서 이미 LogError 처리됨
 				entry.loading.TrySetResult(null);
 				_entries.Remove(address);
 				return null;
@@ -93,26 +93,6 @@ namespace ProjectOne.Resources
 			entry.loading.TrySetResult(asset);
 			entry.loading = null;
 			return asset;
-		}
-
-		// AddressableHelper.LoadAsync 실패를 null 반환으로 변환하는 최소 래퍼
-		// — 호출부의 try-catch 불필요하도록 격리. OCE는 그대로 전파.
-		private async UniTask<T> tryLoadAssetAsync<T>(string address, CancellationToken ct)
-			where T : UnityEngine.Object
-		{
-			try
-			{
-				return await AddressableHelper.LoadAsync<T>(address, ct);
-			}
-			catch (OperationCanceledException)
-			{
-				throw;
-			}
-			catch (Exception e)
-			{
-				Debug.LogError($"[ResourceManager] 에셋 로드 실패: {address} ({e.Message})");
-				return null;
-			}
 		}
 
 		// 참조카운트 -1, 0이 되면 실제 Addressables.Release

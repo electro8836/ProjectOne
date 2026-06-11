@@ -39,6 +39,25 @@ namespace ProjectOne.Resources
 			return await awaitAssetHandle(handle, address, ct);
 		}
 
+		// LoadAsync 실패를 null 반환으로 변환 (호출부 try-catch 제거용). OCE는 그대로 전파.
+		public static async UniTask<T> TryLoadAsync<T>(string address, CancellationToken ct = default)
+			where T : UnityEngine.Object
+		{
+			try
+			{
+				return await LoadAsync<T>(address, ct);
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch (Exception e)
+			{
+				Debug.LogError($"[AddressableHelper] 에셋 로드 실패: {address} ({e.Message})");
+				return null;
+			}
+		}
+
 		// AssetReference 로 에셋 로드. 빌드 시 안전(주소 오타 방지).
 		public static async UniTask<T> LoadAsync<T>(AssetReference reference, CancellationToken ct = default)
 			where T : UnityEngine.Object

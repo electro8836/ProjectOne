@@ -152,17 +152,21 @@ namespace ProjectOne.Resources
 		// 조회 실패 시 long.MaxValue 반환 — 다운로드 전 사전 확인용.
 		public long GetAvailableStorageBytes()
 		{
-			try
+			string root = Path.GetPathRoot(Application.persistentDataPath);
+			if (string.IsNullOrEmpty(root))
 			{
-				string root = Path.GetPathRoot(Application.persistentDataPath);
-				var drive = new DriveInfo(root);
-				return drive.AvailableFreeSpace;
-			}
-			catch (Exception e)
-			{
-				Debug.LogWarning($"[AssetBundleLoader] 여유 공간 조회 실패: {e.Message}");
+				Debug.LogWarning("[AssetBundleLoader] 저장소 루트 경로 확인 실패");
 				return long.MaxValue;
 			}
+
+			DriveInfo drive = new DriveInfo(root);
+			if (!drive.IsReady)
+			{
+				Debug.LogWarning($"[AssetBundleLoader] 드라이브 준비 안 됨: {root}");
+				return long.MaxValue;
+			}
+
+			return drive.AvailableFreeSpace;
 		}
 
 		// ── 다운로드 ──────────────────────────────────────────────────────
