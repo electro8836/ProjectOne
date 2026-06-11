@@ -94,7 +94,8 @@ namespace EDT {
     public enum SkillCastingTypes {
         None,
         Instant,
-        OnHit,
+        OnHitCaster,
+        OnHitTarget,
         Passive,
         Casting,
     }
@@ -182,6 +183,11 @@ namespace EDT {
         SKILL_BASEATTACK_02,
         SKILL_BASEATTACK_03,
         SKILL_POWERATTACK_01,
+        SKILL_POWERATTACK_02,
+        SKILL_POWERATTACK_03,
+        SKILL_SPECIALATTACK_01,
+        SKILL_SPECIALATTACK_02,
+        SKILL_SPECIALATTACK_03,
         SKILL_PASSIVE_01,
         SKILL_PASSIVE_02,
         SKILL_SKELETONWARRIOR_ATTACK_01,

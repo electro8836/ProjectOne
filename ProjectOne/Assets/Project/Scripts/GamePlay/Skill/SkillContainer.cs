@@ -32,6 +32,9 @@ namespace ProjectOne.Skill
 		readonly List<SkillInfo> _idView = new List<SkillInfo>(8);
 		readonly List<PendingEffect> _pending = new List<PendingEffect>(8);
 
+		// OnHitTarget 발동 시 명중 적 목록의 안정 스냅샷 (TriggerOnHitSkills 내 프록 재진입 대비)
+		readonly List<UnitBase> _onHitTargets = new List<UnitBase>(8);
+
 		// 캐스팅(시전) 진행 중 여부 — 시전 시작 시 true, 발동/취소 시 false
 		bool _isCasting;
 		public bool IsCasting => _isCasting;
@@ -133,8 +136,8 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			// Passive(상시 적용) / OnHit(적중 시 확률 발동) 은 직접 시전 대상 아님
-			if (rt.CastingType == SkillCastingTypes.Passive || rt.CastingType == SkillCastingTypes.OnHit)
+			// Passive(상시 적용) / OnHit 계열(적중 시 확률 발동) 은 직접 시전 대상 아님
+			if (rt.CastingType == SkillCastingTypes.Passive || rt.CastingType == SkillCastingTypes.OnHitCaster || rt.CastingType == SkillCastingTypes.OnHitTarget)
 			{
 				return false;
 			}
@@ -349,31 +352,48 @@ namespace ProjectOne.Skill
 			}
 		}
 
-		// IsOnHitTrigger 공격 적중 시 호출 — 보유한 OnHit 스킬마다 CastingParam% 확률로 발동 (스킬별 1회)
-		public void TriggerOnHitSkills()
+		// IsOnHitTrigger 공격 적중 시 호출 — 보유한 OnHit 계열 스킬 발동 (쿨타임 없음, 확률로만).
+		// - OnHitCaster : 공격당 1회 확률 판정 → 캐스터 기준 발동
+		// - OnHitTarget : 명중한 적(hitEnemies)마다 개별 확률 판정 → 해당 적 위치에서 발동
+		public void TriggerOnHitSkills(List<UnitBase> hitEnemies)
 		{
 			if (_owner == null || _owner.IsDead == true)
 			{
 				return;
 			}
 
+			// 프록 Execute 가 호출자 버퍼(SkillExecutor._onHitEnemies)를 덮어쓸 수 있어 안정 스냅샷으로 복사
+			_onHitTargets.Clear();
+			for (int i = 0; i < hitEnemies.Count; i++)
+			{
+				_onHitTargets.Add(hitEnemies[i]);
+			}
+
 			for (int i = 0; i < _ordered.Count; i++)
 			{
 				SkillRuntime rt = _ordered[i];
-				if (rt.CastingType != SkillCastingTypes.OnHit)
+				if (rt.CastingType == SkillCastingTypes.OnHitCaster)
 				{
-					continue;
+					if (UnityEngine.Random.Range(0, 100) < rt.CastingParam)
+					{
+						SkillExecutor.Execute(rt.Id, _owner);
+					}
 				}
-
-				if (rt.CanCast() == false)
+				else if (rt.CastingType == SkillCastingTypes.OnHitTarget)
 				{
-					continue;
-				}
+					for (int j = 0; j < _onHitTargets.Count; j++)
+					{
+						UnitBase victim = _onHitTargets[j];
+						if (victim == null || victim.IsDead == true)
+						{
+							continue;
+						}
 
-				if (UnityEngine.Random.Range(0, 100) < rt.CastingParam)
-				{
-					SkillExecutor.Execute(rt.Id, _owner);
-					rt.StartCooldown();
+						if (UnityEngine.Random.Range(0, 100) < rt.CastingParam)
+						{
+							SkillExecutor.ExecuteAtTarget(rt.Id, _owner, victim);
+						}
+					}
 				}
 			}
 		}

@@ -63,6 +63,23 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// OnHitTarget 프록이 피격자 위치에서 발동될 때 — 인디케이터를 해당 월드 위치/방향에 잠시 표시.
+		public readonly struct SkillProcAtTargetEvent
+		{
+				public readonly UnitBase Caster;
+				public readonly SkillInfo SkillId;
+				public readonly Vector2 Position;   // 피격자 HitCenter
+				public readonly Vector2 Facing;     // 캐스터→피격자 방향
+
+				public SkillProcAtTargetEvent(UnitBase caster, SkillInfo skillId, Vector2 position, Vector2 facing)
+				{
+						this.Caster = caster;
+						this.SkillId = skillId;
+						this.Position = position;
+						this.Facing = facing;
+				}
+		}
+
 		// 피격 알림 (HP 차감 직전, 모든 유닛 공통). 데미지 텍스트/전투로그/디버그 등에서 구독.
 		public readonly struct DamageTakenEvent
 		{

@@ -18,7 +18,7 @@ namespace ProjectOne.Skill
 		// Target 스캔용 후보 거리(sqrMagnitude) — _scratch 와 인덱스 1:1 대응
 		private static readonly List<float> _scratchDist = new List<float>(32);
 
-		public static List<UnitBase> ScanByType(SkillScanType scanType, float param1, float param2, UnitBase caster)
+		public static List<UnitBase> ScanByType(SkillScanType scanType, float param1, float param2, UnitBase caster, bool useOverride = false, Vector2 centerOverride = default, Vector2 facingOverride = default)
 		{
 			_scratch.Clear();
 			if (caster == null)
@@ -32,8 +32,8 @@ namespace ProjectOne.Skill
 				return _scratch;
 			default:
 			{
-				Vector2 hitCenter = caster.HitCenter;
-				Vector2 facing = GetFacing(caster);
+				Vector2 hitCenter = useOverride ? centerOverride : caster.HitCenter;
+				Vector2 facing = useOverride ? facingOverride : GetFacing(caster);
 				IReadOnlyList<UnitBase> all = UnitContainer.Instance.All;
 				if (scanType == SkillScanType.Target)
 				{

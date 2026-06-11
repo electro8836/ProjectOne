@@ -17,6 +17,7 @@ namespace ProjectOne.Unit
 		{
 			public SkillInfo id;
 			public Transform tr;
+			public Mesh mesh;         // 빌드한 범위 메시 — 트랜션트(피격자 위치 표시)가 재사용
 			public bool needsFacing;  // 부채꼴/직선은 facing 방향으로 회전
 			public float showTime;    // 표시 시작 예정 시각 (발동 + MotionEffectTime)
 			public float hideTime;    // 숨김 예정 시각 (showTime + _displayDuration)
@@ -27,6 +28,15 @@ namespace ProjectOne.Unit
 			public bool isCasting;      // 캐스팅 스킬 여부 — 표시/종료를 IsCasting 폴링으로 제어
 			public float castDuration;  // CastingParam(초) — 채움이 0→풀 크기로 도달하는 시간
 			public float castStartTime; // 캐스팅(표시) 시작 시각
+		}
+
+		// 임의 월드 위치에 잠깐 띄우는 범위 표시 — OnHitTarget 프록이 피격자마다 동시에 띄울 수 있게 풀로 재사용.
+		private sealed class Transient
+		{
+			public Transform tr;
+			public MeshFilter mf;
+			public float hideTime;
+			public bool active;
 		}
 
 		[SerializeField] private float _displayDuration = 0.1f;
@@ -44,6 +54,8 @@ namespace ProjectOne.Unit
 		private readonly List<Item> _items = new List<Item>(8);
 		private readonly Dictionary<SkillInfo, Item> _byId = new Dictionary<SkillInfo, Item>();
 		private int _activeCount;
+		private readonly List<Transient> _transients = new List<Transient>(8);
+		private int _activeTransients;
 
 		private void Awake()
 		{
@@ -60,11 +72,13 @@ namespace ProjectOne.Unit
 		private void OnEnable()
 		{
 			EventManager.Instance.Subscribe<SkillCastEvent>(OnSkillCast);
+			EventManager.Instance.Subscribe<SkillProcAtTargetEvent>(OnProcAtTarget);
 		}
 
 		private void OnDisable()
 		{
 			EventManager.Instance.Unsubscribe<SkillCastEvent>(OnSkillCast);
+			EventManager.Instance.Unsubscribe<SkillProcAtTargetEvent>(OnProcAtTarget);
 		}
 
 		private void OnDestroy()
@@ -115,6 +129,17 @@ namespace ProjectOne.Unit
 			_items.Clear();
 			_byId.Clear();
 			_activeCount = 0;
+
+			for (int i = 0; i < _transients.Count; i++)
+			{
+				if (_transients[i].tr != null)
+				{
+					Destroy(_transients[i].tr.gameObject);
+				}
+			}
+
+			_transients.Clear();
+			_activeTransients = 0;
 		}
 
 		// 단일 스킬에 대한 자식 인디케이터를 미리 생성한다 (비패시브 + 범위형만).
@@ -143,6 +168,7 @@ namespace ProjectOne.Unit
 
 			Item item = new Item();
 			item.id = id;
+			item.mesh = mesh;
 			item.tr = CreateMeshChild("Indicator_" + id.ToString(), mesh, _material, _sortingOrder);
 			item.needsFacing = (row.ScanType == SkillScanType.Sector || row.ScanType == SkillScanType.Line);
 			item.showTime = 0f;
@@ -225,10 +251,66 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// OnHitTarget 프록 — 피격자 위치/방향에 범위를 트랜션트로 잠시 표시 (여러 피격자면 각각 동시 표시)
+		private void OnProcAtTarget(SkillProcAtTargetEvent evt)
+		{
+			if (evt.Caster != _owner)
+			{
+				return;
+			}
+
+			Item item;
+			if (_byId.TryGetValue(evt.SkillId, out item) == false)
+			{
+				return;  // 메시 없음(미지원 ScanType 등) → 표시 대상 아님
+			}
+
+			Transient t = GetTransient();
+			t.mf.sharedMesh = item.mesh;
+			t.tr.position = new Vector3(evt.Position.x, evt.Position.y, 0f);
+			if (item.needsFacing == true)
+			{
+				float angle = Mathf.Atan2(evt.Facing.y, evt.Facing.x) * Mathf.Rad2Deg;
+				t.tr.rotation = Quaternion.Euler(0f, 0f, angle);
+			}
+			else
+			{
+				t.tr.rotation = Quaternion.identity;
+			}
+
+			if (t.active == false)
+			{
+				t.tr.gameObject.SetActive(true);
+				t.active = true;
+				_activeTransients++;
+			}
+
+			t.hideTime = Time.time + _displayDuration;
+		}
+
+		// 비활성 트랜션트 재사용, 없으면 신규 생성
+		private Transient GetTransient()
+		{
+			for (int i = 0; i < _transients.Count; i++)
+			{
+				if (_transients[i].active == false)
+				{
+					return _transients[i];
+				}
+			}
+
+			Transient t = new Transient();
+			t.tr = CreateMeshChild("IndicatorProc_" + _transients.Count.ToString(), null, _material, _sortingOrder);
+			t.mf = t.tr.GetComponent<MeshFilter>();
+			t.active = false;
+			_transients.Add(t);
+			return t;
+		}
+
 		private void Update()
 		{
 			// 활성 항목이 없으면 매 프레임 비용 거의 0
-			if (_activeCount == 0)
+			if (_activeCount == 0 && _activeTransients == 0)
 			{
 				return;
 			}
@@ -283,6 +365,18 @@ namespace ProjectOne.Unit
 					_activeCount--;
 				}
 			}
+
+			// 트랜션트(피격자 위치 표시) 만료 처리
+			for (int i = 0; i < _transients.Count; i++)
+			{
+				Transient t = _transients[i];
+				if (t.active == true && now >= t.hideTime)
+				{
+					t.tr.gameObject.SetActive(false);
+					t.active = false;
+					_activeTransients--;
+				}
+			}
 		}
 
 		// 표시 중인 모든 항목을 즉시 숨기고 활성 상태를 해제한다 (사망 등).
@@ -312,6 +406,18 @@ namespace ProjectOne.Unit
 			}
 
 			_activeCount = 0;
+
+			for (int i = 0; i < _transients.Count; i++)
+			{
+				Transient t = _transients[i];
+				if (t.active == true)
+				{
+					t.tr.gameObject.SetActive(false);
+					t.active = false;
+				}
+			}
+
+			_activeTransients = 0;
 		}
 
 		// 캐스팅 항목 처리 — 표시 시작/채움 스케일링/종료(IsCasting 폴링)
