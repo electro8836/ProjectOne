@@ -29,7 +29,8 @@ public class UnitMover : MonoBehaviour
 	public bool MoveEnabled { get { return _moveEnabled; } }
 	public bool OverrideBlocked { get { return _overrideBlocked; } }
 
-	private void FixedUpdate()
+	// UnitContainer.FixedUpdate 가 일괄 구동 — per-MonoBehaviour FixedUpdate 콜백 오버헤드 제거
+	public void ManualFixedTick(float dt)
 	{
 		// 우선순위: Override > Move + Impulse
 		Vector2 finalVelocity;
@@ -49,7 +50,7 @@ public class UnitMover : MonoBehaviour
 			// Impulse 감쇄 (mass가 클수록 초기 속도 낮음 + 감쇄도 빠름)
 			if (_impulseVelocity.sqrMagnitude > 0f)
 			{
-				_impulseVelocity = Vector2.MoveTowards(_impulseVelocity, Vector2.zero, _effectiveDrag * Time.fixedDeltaTime);
+				_impulseVelocity = Vector2.MoveTowards(_impulseVelocity, Vector2.zero, _effectiveDrag * dt);
 			}
 
 			finalVelocity = move + _impulseVelocity;
@@ -57,7 +58,7 @@ public class UnitMover : MonoBehaviour
 
 		if (finalVelocity.sqrMagnitude > 0.001f)
 		{
-			ApplyMovement(finalVelocity);
+			ApplyMovement(finalVelocity, dt);
 		}
 
 		// Facing 갱신 — override(대시 등) 중엔 이동(override) 방향을 바라봄(입력 기반 Facing 무시), 평소엔 Move 채널 기준
@@ -78,18 +79,21 @@ public class UnitMover : MonoBehaviour
 		}
 	}
 
-	private void ApplyMovement(Vector2 velocity)
+	private void ApplyMovement(Vector2 velocity, float dt)
 	{
 		// 충돌 판정은 콜라이더 중심(center) 기준 — transform 에 기록할 때만 _unitOffset 을 차감해 환원한다.
 		Vector2 currentCenter = (Vector2)transform.position + _unitOffset;
-		Vector2 desired       = currentCenter + velocity * Time.fixedDeltaTime;
+		Vector2 desired       = currentCenter + velocity * dt;
+
+		// 인접 유닛 후보를 프레임당 1회만 조회 — currentCenter 기준 3×3 (이동 스텝이 셀보다 훨씬 작아 desired 커버)
+		List<UnitBase> cands = QueryNeighbors(currentCenter);
 
 		// override 이동(대시/대시 공격): 슬라이딩 없이 벽에 닿으면 정지하고 막힘 latch
 		if (_hasOverride == true)
 		{
 			Vector2 oResolved = ResolveWalls(desired);
 			bool wallHit     = (oResolved - desired).sqrMagnitude > 1e-6f;
-			bool unitBlocked = _overridePierce == false && OverlapsNewUnit(currentCenter, desired);
+			bool unitBlocked = _overridePierce == false && OverlapsNewUnit(cands, currentCenter, desired);
 			if (wallHit == true || unitBlocked == true)
 			{
 				_overrideBlocked = true;
@@ -102,11 +106,11 @@ public class UnitMover : MonoBehaviour
 
 		// 유닛-유닛: 새로 겹치면 법선 슬라이딩으로 속도 보정 (리지드바디와 동일한 원리)
 		Vector2 v = velocity;
-		if (OverlapsNewUnit(currentCenter, desired) == true)
+		if (OverlapsNewUnit(cands, currentCenter, desired) == true)
 		{
-			v = ComputeCircleSlide(currentCenter, velocity);
-			desired = currentCenter + v * Time.fixedDeltaTime;
-			if (OverlapsNewUnit(currentCenter, desired) == true)
+			v = ComputeCircleSlide(cands, currentCenter, velocity, dt);
+			desired = currentCenter + v * dt;
+			if (OverlapsNewUnit(cands, currentCenter, desired) == true)
 			{
 				desired = currentCenter;   // 유닛에 완전히 막힘 — 위치 이동 없음
 				v = Vector2.zero;
@@ -125,11 +129,24 @@ public class UnitMover : MonoBehaviour
 			if (tangent.sqrMagnitude > 1e-8f)
 			{
 				Vector2 slideVel = tangent.normalized * v.magnitude;
-				resolved = ResolveWalls(currentCenter + slideVel * Time.fixedDeltaTime);
+				resolved = ResolveWalls(currentCenter + slideVel * dt);
 			}
 		}
 
 		transform.position = resolved - _unitOffset;
+	}
+
+	// 인접 유닛 후보를 _queryBuffer 에 채워 반환 (프레임당 1회 조회 후 충돌 판정들이 공유)
+	private List<UnitBase> QueryNeighbors(Vector2 center)
+	{
+		if (UnitContainer.Instance == null)
+		{
+			_queryBuffer.Clear();
+			return _queryBuffer;
+		}
+
+		UnitContainer.Instance.SpatialHash.Query(center, _queryBuffer);
+		return _queryBuffer;
 	}
 
 	// 반지름 원을 장애물 밖으로 밀어낸 위치 (맵 없으면 그대로)
@@ -145,21 +162,15 @@ public class UnitMover : MonoBehaviour
 
 	// 원래 velocity로 이동 시 새로 겹치는 유닛들의 충돌 법선을 기준으로 슬라이딩 속도를 계산한다.
 	// 각 충돌 유닛에 대해 법선 방향 성분을 제거 → 남은 성분이 미끄러지는 방향.
-	private Vector2 ComputeCircleSlide(Vector2 currentPos, Vector2 velocity)
+	// cands 는 호출자가 1회 조회한 인접 후보 — 자체 조회하지 않는다.
+	private Vector2 ComputeCircleSlide(List<UnitBase> cands, Vector2 currentPos, Vector2 velocity, float dt)
 	{
-		if (UnitContainer.Instance == null)
-		{
-			return velocity;
-		}
-
 		Vector2 slideVel = velocity;
-		Vector2 nextPos  = currentPos + velocity * Time.fixedDeltaTime;
+		Vector2 nextPos  = currentPos + velocity * dt;
 
-		// 인접 셀 후보만 조회 — 전체 유닛 brute-force 순회 회피
-		UnitContainer.Instance.SpatialHash.Query(nextPos, _queryBuffer);
-		for (int i = 0; i < _queryBuffer.Count; i++)
+		for (int i = 0; i < cands.Count; i++)
 		{
-			UnitBase u = _queryBuffer[i];
+			UnitBase u = cands[i];
 			if (u == null || u.transform == transform || u.IsDead == true)
 			{
 				continue;
@@ -201,18 +212,12 @@ public class UnitMover : MonoBehaviour
 	}
 
 	// nextPos 에서 다른 유닛과 "새로" 겹치는지 — 이미 겹친 유닛은 무시(끼임에서 빠져나올 수 있게)
-	private bool OverlapsNewUnit(Vector2 currentPos, Vector2 nextPos)
+	// cands 는 호출자가 1회 조회한 인접 후보 — 자체 조회하지 않는다.
+	private bool OverlapsNewUnit(List<UnitBase> cands, Vector2 currentPos, Vector2 nextPos)
 	{
-		if (UnitContainer.Instance == null)
+		for (int i = 0; i < cands.Count; i++)
 		{
-			return false;
-		}
-
-		// 인접 셀 후보만 조회 — 전체 유닛 brute-force 순회 회피
-		UnitContainer.Instance.SpatialHash.Query(nextPos, _queryBuffer);
-		for (int i = 0; i < _queryBuffer.Count; i++)
-		{
-			UnitBase u = _queryBuffer[i];
+			UnitBase u = cands[i];
 			if (u == null || u.transform == transform || u.IsDead == true)
 			{
 				continue;

@@ -36,38 +36,54 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		// 몬스터 분리 벡터 배치 계산 — pair-wise(i<j) 로 각 쌍을 1회만 계산해 양쪽에 반대로 누적.
+		// 모든 유닛 이동(UnitMover) 일괄 고정 스텝 구동 — per-MonoBehaviour FixedUpdate 콜백 제거.
+		// 캐시/공간해시 Rebuild 이후에 호출해야 무버가 최신 상태를 본다.
+		public void TickMovers(IReadOnlyList<UnitBase> all, float dt)
+		{
+			for (int i = 0; i < all.Count; i++)
+			{
+				UnitBase u = all[i];
+				if (u != null && u.Mover != null)
+				{
+					u.Mover.ManualFixedTick(dt);
+				}
+			}
+		}
+
+		// 인접 후보 조회 버퍼 — 분리 계산용(GC 회피로 재사용)
+		private readonly List<UnitBase> _separationBuffer = new List<UnitBase>(32);
+
+		// 몬스터 분리 벡터 배치 계산 — 공간 해시로 인접 후보만 조회해 O(M·k).
+		// 각 몬스터가 자기 기준 반발을 누적(self 1방향) — 결과는 pair-wise 와 동등.
 		// 결과는 각 유닛의 CachedSeparation 에 기록. (MonsterApproachBehavior 가 읽음)
-		public void ComputeSeparations(IReadOnlyList<UnitBase> monsters)
+		public void ComputeSeparations(IReadOnlyList<UnitBase> monsters, UnitSpatialHash hash)
 		{
 			int count = monsters.Count;
 
-			// 1) 전부 초기화
-			for (int i = 0; i < count; i++)
-			{
-				UnitBase m = monsters[i];
-				if (m != null)
-				{
-					m.CachedSeparation = Vector2.zero;
-				}
-			}
-
-			// 2) pair-wise 반발 누적 (기존 MonsterApproachBehavior.ComputeSeparation 공식 이식)
 			for (int i = 0; i < count; i++)
 			{
 				UnitBase a = monsters[i];
-				if (a == null || a.IsDead == true)
+				if (a == null)
 				{
 					continue;
 				}
 
-				Vector2 aPos = a.CachedPos;
-				float aRad = a.CachedRadius;
-
-				for (int j = i + 1; j < count; j++)
+				if (a.IsDead == true)
 				{
-					UnitBase b = monsters[j];
-					if (b == null || b.IsDead == true)
+					a.CachedSeparation = Vector2.zero;
+					continue;
+				}
+
+				Vector2 aPos = a.CachedPos;
+				float   aRad = a.CachedRadius;
+				Vector2 sum  = Vector2.zero;
+
+				// 인접 셀 후보만 조회 — 셀(1.0) ≫ 반발 반경(반경합 ~0.6)이라 3×3 으로 커버
+				hash.Query(aPos, _separationBuffer);
+				for (int j = 0; j < _separationBuffer.Count; j++)
+				{
+					UnitBase b = _separationBuffer[j];
+					if (b == null || b == a || b.IsDead == true || b.GetUnitType() != UnitType.Monster)
 					{
 						continue;
 					}
@@ -81,12 +97,10 @@ namespace ProjectOne.Unit
 					}
 
 					float dist = Mathf.Sqrt(distSqr);
-					Vector2 push = away / dist * (1f - dist / r);
-
-					// a 는 b 에서 멀어지는 방향, b 는 그 반대
-					a.CachedSeparation += push;
-					b.CachedSeparation -= push;
+					sum += away / dist * (1f - dist / r);
 				}
+
+				a.CachedSeparation = sum;
 			}
 		}
 	}

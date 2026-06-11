@@ -55,18 +55,21 @@ namespace ProjectOne.Unit
 			return go.transform;
 		}
 
-		// 캐시 갱신을 UnitMover.FixedUpdate 보다 먼저 — 무버가 최신 CachedPos 와 공간 해시를 본다
+		// 캐시 갱신 → 공간 해시 Rebuild → 모든 유닛 이동 일괄 구동
+		// (무버를 여기서 직접 구동 — per-MonoBehaviour FixedUpdate 콜백 오버헤드 제거)
 		void FixedUpdate()
 		{
 			_simulator.RefreshCache(_units);
 			_spatialHash.Rebuild(_units);
+			_simulator.TickMovers(_units, Time.fixedDeltaTime);
 		}
 
-		// 캐시 재갱신 → 분리 배치 계산 → 전체 유닛 ManualTick
+		// 캐시 재갱신 → 공간 해시 Rebuild → 분리 배치 계산 → 전체 유닛 ManualTick
 		void LateUpdate()
 		{
 			_simulator.RefreshCache(_units);
-			_simulator.ComputeSeparations(GetByType(UnitType.Monster));
+			_spatialHash.Rebuild(_units);
+			_simulator.ComputeSeparations(GetByType(UnitType.Monster), _spatialHash);
 			_simulator.TickAll(_units, Time.deltaTime);
 		}
 
