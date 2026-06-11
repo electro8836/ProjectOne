@@ -1,10 +1,9 @@
-using ProjectOne.Utils;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 namespace ProjectOne.Map
 {
-	public class TilemapGrid : MonoSingleton<TilemapGrid>
+	public class TilemapGrid : MonoBehaviour
 	{
 		private static readonly Vector2[] _sampleDirections =
 		{
@@ -18,21 +17,15 @@ namespace ProjectOne.Map
 			new Vector2(-0.7071f, -0.7071f),
 		};
 
-		private Grid _grid;
-		private Tilemap _groundMap;
-		private Tilemap _obstacleMap;
+		// 맵 프리팹에서 인스펙터로 직접 연결 — 자식 이름 매칭 대신 명시적 참조
+		[SerializeField] private Grid _grid;
+		[SerializeField] private Tilemap _groundMap;
+		[SerializeField] private Tilemap _obstacleMap;
+
 		private FlowField _flowField = new FlowField();
 		private Vector3Int _boundsMin;
 
 		[SerializeField] bool DEV_ShowDrawGizmos = false;
-
-		public void Setup(Grid grid, Tilemap groundMap, Tilemap obstacleMap)
-		{
-			_grid = grid;
-			_groundMap = groundMap;
-			_obstacleMap = obstacleMap;
-			InitializeFlowField();
-		}
 
 		public void InitializeFlowField()
 		{

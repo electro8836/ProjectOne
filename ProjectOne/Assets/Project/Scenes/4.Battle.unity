@@ -180,6 +180,50 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c28fa218c53aa1046b6fd934c34b8cfb, type: 3}
+--- !u!1 &456453392
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 456453394}
+  - component: {fileID: 456453393}
+  m_Layer: 0
+  m_Name: MapManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &456453393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456453392}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 542f2384df192c049bc232c7c208d0cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Map.MapManager
+--- !u!4 &456453394
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 456453392}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &457814673
 GameObject:
   m_ObjectHideFlags: 0
@@ -211,13 +255,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.MonsterSpawnManager
   _returnDelay: 1.5
   _showSkillIndicators: 1
-  _spawnList:
-  - monsterId: 10001
-    center: {x: -1, y: 0, z: 0}
-    radius: 1
-    minCount: 10
-    maxCount: 20
-    spawnInterval: 2
+  _spawnList: []
 --- !u!4 &457814675
 Transform:
   m_ObjectHideFlags: 0
@@ -233,7 +271,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &659657599
+--- !u!1 &469544200
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -241,43 +279,81 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 659657601}
-  - component: {fileID: 659657600}
+  - component: {fileID: 469544202}
+  - component: {fileID: 469544201}
   m_Layer: 0
-  m_Name: TestHeroSpawner
+  m_Name: BattleDirector
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &659657600
+--- !u!114 &469544201
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 659657599}
+  m_GameObject: {fileID: 469544200}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fc07d0da7edd3e4faf2613203213e6e, type: 3}
+  m_Script: {fileID: 11500000, guid: 589f5d463ec4e4042901d6b27eef6db5, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Test.MapTestSpawner
-  _heroes:
-  - characterId: 102
-    position: {x: 0, y: 0, z: 0}
-    faction: 1
-    autoControl: 1
-  _monsters: []
---- !u!4 &659657601
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Battle.BattleDirector
+--- !u!4 &469544202
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 659657599}
+  m_GameObject: {fileID: 469544200}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -7.13181, y: -0.27456, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &664684727
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 664684729}
+  - component: {fileID: 664684728}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &664684728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 664684727}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b89767a49e1ba004bb175c6eef9e2677, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.AI.MonsterAiCoordinator
+--- !u!4 &664684729
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 664684727}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.88988, y: 2.0375, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -812,8 +888,10 @@ SceneRoots:
   m_Roots:
   - {fileID: 1940576918}
   - {fileID: 126272506}
-  - {fileID: 659657601}
   - {fileID: 457814675}
   - {fileID: 1209743811}
   - {fileID: 939089215}
   - {fileID: 1756788491}
+  - {fileID: 664684729}
+  - {fileID: 469544202}
+  - {fileID: 456453394}

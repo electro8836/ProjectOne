@@ -208,12 +208,12 @@ public class UnitMover : MonoBehaviour
 
 	private bool IsWalkable(Vector2 position)
 	{
-		if (TilemapGrid.Instance == null)
+		if (MapManager.HasInstance == false)
 		{
 			return true;
 		}
 
-		return TilemapGrid.Instance.IsWalkable(position, _unitRadius);
+		return MapManager.Instance.IsWalkable(position, _unitRadius);
 	}
 
 	// nextPos 에서 다른 유닛과 "새로" 겹치는지 — 이미 겹친 유닛은 무시(끼임에서 빠져나올 수 있게)

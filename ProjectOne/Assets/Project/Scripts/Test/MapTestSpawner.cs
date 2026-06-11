@@ -3,10 +3,8 @@ using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 using ProjectOne.Unit;
 using ProjectOne.Map;
-using ProjectOne.Resources;
 
 namespace ProjectOne.Test
 {
@@ -56,48 +54,14 @@ namespace ProjectOne.Test
 			await SpawnAllAsync(ct);
 		}
 
-		// 맵 프리팹을 인스턴스화하고 Grid/Tilemap 참조를 모아 TilemapGrid.Setup 호출
+		// 맵 로드/플로우필드 초기화는 MapManager 가 전담 (TilemapGrid 직렬화 참조 사용)
 		async UniTask LoadMapAsync(CancellationToken ct)
 		{
-			GameObject mapGo = await AddressableHelper.InstantiateAsync(MapAddress, null, true, ct);
-			if (mapGo == null)
+			bool ok = await MapManager.Instance.LoadMapAsync(MapAddress, ct);
+			if (ok == false)
 			{
-				Debug.LogError($"[MapTestSpawner] 맵 인스턴스화 실패: {MapAddress}");
-				return;
+				Debug.LogError($"[MapTestSpawner] 맵 로드 실패: {MapAddress}");
 			}
-
-			Grid grid = mapGo.GetComponent<Grid>();
-			TilemapGrid tilemapGrid = mapGo.GetComponent<TilemapGrid>();
-			if (grid == null || tilemapGrid == null)
-			{
-				Debug.LogError($"[MapTestSpawner] 맵 프리팹에 Grid/TilemapGrid 없음: {MapAddress}");
-				return;
-			}
-
-			// 자식 Tilemap을 이름으로 ground/obstacle 구분
-			Tilemap groundMap = null;
-			Tilemap obstacleMap = null;
-			Tilemap[] maps = mapGo.GetComponentsInChildren<Tilemap>(true);
-			for (int i = 0; i < maps.Length; i++)
-			{
-				string n = maps[i].name;
-				if (n.Contains("Obstacle") == true)
-				{
-					obstacleMap = maps[i];
-				}
-				else if (n.Contains("Floor") == true)
-				{
-					groundMap = maps[i];
-				}
-			}
-
-			if (groundMap == null || obstacleMap == null)
-			{
-				Debug.LogError($"[MapTestSpawner] 맵 프리팹에서 Floor/Obstacle Tilemap을 찾지 못함: {MapAddress}");
-				return;
-			}
-
-			tilemapGrid.Setup(grid, groundMap, obstacleMap);
 		}
 
 		async UniTask SpawnAllAsync(CancellationToken ct)

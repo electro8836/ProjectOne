@@ -1,6 +1,7 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Flow;
+using ProjectOne.Battle;
 
 namespace ProjectOne.UI
 {
@@ -17,6 +18,11 @@ namespace ProjectOne.UI
 		[SerializeField] private UIButton _inventoryButton;
 		[SerializeField] private UIButton _shopButton;
 		[SerializeField] private UIButton _dungeonEnterButton;
+
+		[Header("임시 전투 진입 파라미터 (던전 선택 UI 구현 전까지)")]
+		[SerializeField] private int _testDungeonId = 1;
+		[SerializeField] private int _testStep = 1;
+		[SerializeField] private int[] _testPartyCharacterIds;
 
 		private void Awake()
 		{
@@ -62,7 +68,13 @@ namespace ProjectOne.UI
 
 		private void onBattleEnterClicked()
 		{
-			GameFlow.Instance.ChangeStateAsync(new BattleState()).Forget();
+			BattleContext ctx = new BattleContext();
+			ctx.Mode = BattleMode.NormalDungeon;
+			ctx.DungeonId = _testDungeonId;
+			ctx.Step = _testStep;
+			ctx.PartyCharacterIds = _testPartyCharacterIds;
+
+			GameFlow.Instance.ChangeStateAsync(new BattleState(ctx)).Forget();
 		}
 	}
 }

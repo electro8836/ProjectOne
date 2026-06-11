@@ -73,9 +73,9 @@ namespace ProjectOne.Unit.AI
 
 			// 접근 방향 — 플로우필드 우선, 타겟 근처(flow 0)나 맵 없음이면 직선
 			Vector2 approach = Vector2.zero;
-			if (TilemapGrid.Instance != null)
+			if (MapManager.HasInstance == true)
 			{
-				approach = TilemapGrid.Instance.GetFlowDirection(selfPos);
+				approach = MapManager.Instance.GetFlowDirection(selfPos);
 			}
 
 			if (approach.sqrMagnitude < 1e-6f)
