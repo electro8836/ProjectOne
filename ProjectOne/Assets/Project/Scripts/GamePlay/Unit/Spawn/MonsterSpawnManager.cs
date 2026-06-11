@@ -27,7 +27,7 @@ namespace ProjectOne.Unit
 		[SerializeField]
 		private float _returnDelay = 1.5f;
 
-		[Tooltip("개발용: 체크하면 몬스터 스킬 발동 시 범위 인디케이터(주황) 표시")]
+		[Tooltip("개발용: 체크하면 몬스터가 캐스팅 외 전체 스킬도 인디케이터(주황) 표시. 기본(false)은 캐스팅 스킬만 항시 표시")]
 		[SerializeField]
 		private bool _showSkillIndicators = false;
 
@@ -124,10 +124,12 @@ namespace ProjectOne.Unit
 			{
 				_active[monster.GetID()] = new ActiveEntry(monster, data);
 
-				if (_showSkillIndicators && monster.GetComponent<SkillIndicator>() == null)
+				// 몬스터는 항상 인디케이터 추가 — 기본은 캐스팅 스킬만 항시 표시(설정 무관), dev 플래그면 전체 스킬도 표시
+				if (monster.GetComponent<SkillIndicator>() == null)
 				{
 					SkillIndicator ind = monster.gameObject.AddComponent<SkillIndicator>();
 					ind.SetDevColor(new Color(1f, 0.65f, 0.1f, 0.5f));
+					ind.ConfigureForMonster(_showSkillIndicators);
 					ind.SetSkills(monster.SkillContainer.GetAll());
 				}
 			}

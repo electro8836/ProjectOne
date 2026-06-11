@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using EDT;
 using ProjectOne.Event;
+using ProjectOne.Settings;
 
 namespace ProjectOne.Unit
 {
@@ -46,6 +47,10 @@ namespace ProjectOne.Unit
 		[SerializeField] private int _sortingOrder = -1;
 		[SerializeField] private float _ringThickness = 0.05f;
 		[SerializeField] private int _segments = 32;
+		[Tooltip("체크 시 캐스팅(Casting) 스킬만 인디케이터 표시 — 몬스터용")]
+		[SerializeField] private bool _castingOnly = false;
+		[Tooltip("체크 시 플레이어 인디케이터 토글(SkillIndicatorSettings)에 종속 — 플레이어 캐릭터용")]
+		[SerializeField] private bool _obeyPlayerSetting = true;
 
 		private UnitBase _owner;
 		private UnitMover _mover;
@@ -73,12 +78,35 @@ namespace ProjectOne.Unit
 		{
 			EventManager.Instance.Subscribe<SkillCastEvent>(OnSkillCast);
 			EventManager.Instance.Subscribe<SkillProcAtTargetEvent>(OnProcAtTarget);
+			SettingsManager.Instance.PlayerSkillIndicatorChanged += OnPlayerIndicatorToggled;
 		}
 
 		private void OnDisable()
 		{
 			EventManager.Instance.Unsubscribe<SkillCastEvent>(OnSkillCast);
 			EventManager.Instance.Unsubscribe<SkillProcAtTargetEvent>(OnProcAtTarget);
+			SettingsManager.Instance.PlayerSkillIndicatorChanged -= OnPlayerIndicatorToggled;
+		}
+
+		// 몬스터용 설정 — SetSkills 호출 전에 적용해야 TryAddItem 의 캐스팅 필터가 반영된다.
+		public void ConfigureForMonster(bool showAllSkills)
+		{
+			_castingOnly = (showAllSkills == false);
+			_obeyPlayerSetting = false;
+		}
+
+		// 플레이어 인디케이터 토글 — 종속하는 경우에만 반응. OFF 면 표시 중인 것 즉시 숨김.
+		private void OnPlayerIndicatorToggled(bool enabled)
+		{
+			if (_obeyPlayerSetting == false)
+			{
+				return;
+			}
+
+			if (enabled == false)
+			{
+				HideAllActive();
+			}
 		}
 
 		private void OnDestroy()
@@ -156,6 +184,12 @@ namespace ProjectOne.Unit
 				return;
 			}
 
+			// 몬스터(캐스팅 전용)는 Casting 스킬만 인디케이터 생성
+			if (_castingOnly == true && row.CastingType != SkillCastingTypes.Casting)
+			{
+				return;
+			}
+
 			IndicatorMeshBuilder builder = IndicatorMeshBuilder.Get(row.ScanType);
 			if (builder == null)
 			{
@@ -216,6 +250,11 @@ namespace ProjectOne.Unit
 				return;
 			}
 
+			if (_obeyPlayerSetting == true && SettingsManager.Instance.ShowPlayerSkillIndicator == false)
+			{
+				return;
+			}
+
 			Item item;
 			if (_byId.TryGetValue(evt.SkillId, out item) == false)
 			{
@@ -255,6 +294,11 @@ namespace ProjectOne.Unit
 		private void OnProcAtTarget(SkillProcAtTargetEvent evt)
 		{
 			if (evt.Caster != _owner)
+			{
+				return;
+			}
+
+			if (_obeyPlayerSetting == true && SettingsManager.Instance.ShowPlayerSkillIndicator == false)
 			{
 				return;
 			}

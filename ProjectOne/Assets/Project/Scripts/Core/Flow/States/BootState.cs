@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Audio;
+using ProjectOne.Settings;
 
 namespace ProjectOne.Flow
 {
@@ -13,13 +14,22 @@ namespace ProjectOne.Flow
 	{
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
+			// 0) 로컬 설정 로드 (가벼움, 타이틀 전 적용)
+			SettingsManager.Instance.Load();
+
 			// 1) 정적 테이블 일괄 로드 (Addressables 라벨 "Tables")
 			bool cancelled = await TableLoader.LoadAllAsync(ct).SuppressCancellationThrow();
-			if (cancelled) { return; }
+			if (cancelled) 
+			{
+				return;
+			}
 
 			// 2) SFX 클립 일괄 프리로드 (Addressables 라벨 "SFX") — 첫 재생 끊김 방지
 			cancelled = await AudioManager.Instance.PreloadSFXByLabelAsync("SFX", ct).SuppressCancellationThrow();
-			if (cancelled) { return; }
+			if (cancelled) 
+			{ 
+				return;
+			}
 
 			Debug.Log("부트 완료 — Character:" + Table_Character.All().Count
 				+ " Monster:" + Table_Monster.All().Count
