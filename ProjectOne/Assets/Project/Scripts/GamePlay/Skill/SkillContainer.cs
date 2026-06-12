@@ -43,6 +43,10 @@ namespace ProjectOne.Skill
 		SkillInfo _castingId = SkillInfo.None;
 		public SkillInfo CastingSkillId => _castingId;
 
+		// 활성 코드 스킬(behavior) 슬롯 — 매 프레임 Tick 으로 진행, 종료/취소 시 비움 (없으면 null)
+		ISkillBehavior _activeBehavior;
+		public bool IsRunningBehavior => _activeBehavior != null;
+
 		public SkillContainer(UnitBase owner)
 		{
 			_owner = owner;
@@ -223,6 +227,12 @@ namespace ProjectOne.Skill
 
 		public void Tick(float dt)
 		{
+			// 활성 코드 스킬 진행 — 자체 종료 조건(거리 도달·막힘 등) 충족 시 OnEnd 후 슬롯 비움
+			if (_activeBehavior != null && _activeBehavior.Tick(dt) == true)
+			{
+				EndBehavior();
+			}
+
 			for (int i = 0; i < _ordered.Count; i++)
 			{
 				_ordered[i].Tick(dt);
@@ -251,6 +261,49 @@ namespace ProjectOne.Skill
 		public void CancelPendingEffects()
 		{
 			_pending.Clear();
+		}
+
+		// 코드 스킬(behavior) 시작 — SkillExecutor 가 리플렉션으로 생성한 behavior 를 슬롯에 얹고 구동 시작.
+		// 이동/스킬 차단은 behavior 가 스스로 BlockMove/BlockSkill 로 제어 (대시 등), 컨테이너는 슬롯·Tick·취소만 담당.
+		public void BeginBehavior(SkillInfo id, ISkillBehavior behavior)
+		{
+			if (behavior == null)
+			{
+				return;
+			}
+
+			// 진행 중이던 코드 스킬이 있으면 먼저 정리 (정상적으로는 차단으로 막히지만 안전망)
+			if (_activeBehavior != null)
+			{
+				EndBehavior();
+			}
+
+			_activeBehavior = behavior;
+			behavior.SetContext(_owner, id);
+			behavior.OnStart();
+		}
+
+		// 넉백/스턴 등으로 코드 스킬 취소 — OnEnd 로 차단/override 해제 후 슬롯 비움
+		public void CancelBehavior()
+		{
+			if (_activeBehavior == null)
+			{
+				return;
+			}
+
+			EndBehavior();
+		}
+
+		void EndBehavior()
+		{
+			if (_activeBehavior == null)
+			{
+				return;
+			}
+
+			ISkillBehavior behavior = _activeBehavior;
+			_activeBehavior = null;
+			behavior.OnEnd();
 		}
 
 		// 캐스팅 시작 — 시전 시간(castTime) 동안 이동/스킬을 차단.

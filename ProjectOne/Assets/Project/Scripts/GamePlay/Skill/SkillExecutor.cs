@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EDT;
@@ -34,8 +35,20 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			// 스킬 실행 시작 알림 — 모든 실행 경로(Instant/OnHit/Casting/None) 단일 지점
+			// 스킬 실행 시작 알림 — 모든 실행 경로(Instant/OnHit/Casting/None/코드) 단일 지점
 			EventManager.Instance.Publish(new SkillCastEvent(caster, id));
+
+			// 코드 스킬(behavior) 우선 — 스킬 ID 와 동일한 이름의 클래스가 있으면 SkillContainer 에 위임.
+			// 코드 스킬은 테이블 효과 칼럼을 읽지 않고 자체 로직으로 동작한다 (필요 시 내부에서 SkillEffectApplier 직접 호출).
+			if (caster.SkillContainer != null)
+			{
+				ISkillBehavior behavior = CreateBehavior(id);
+				if (behavior != null)
+				{
+					caster.SkillContainer.BeginBehavior(id, behavior);
+					return;
+				}
+			}
 
 			switch (row.CastingType)
 			{
@@ -236,6 +249,19 @@ namespace ProjectOne.Skill
 			}
 
 			SkillEffectApplier.Apply(effectId, caster, skillId, scanned);
+		}
+
+		// 스킬 ID 와 동일한 이름의 코드 스킬 클래스(ProjectOne.Skill.SKILL_XXX)를 리플렉션으로 찾아 생성.
+		// 없으면 null (= 데이터 스킬 경로). 컨텍스트(caster/skillId)는 SkillContainer.BeginBehavior 의 SetContext 로 주입된다.
+		static ISkillBehavior CreateBehavior(SkillInfo id)
+		{
+			Type behaviorType = Type.GetType(string.Format("ProjectOne.Skill.{0}", id.ToString()));
+			if (behaviorType == null)
+			{
+				return null;
+			}
+
+			return Activator.CreateInstance(behaviorType) as ISkillBehavior;
 		}
 
 		// MotionNames[index] 모션 재생 — 인덱스 범위 밖이거나 비어있으면 모션 없음

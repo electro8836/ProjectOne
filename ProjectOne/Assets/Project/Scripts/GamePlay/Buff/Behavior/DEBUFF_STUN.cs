@@ -24,8 +24,9 @@ namespace ProjectOne.Buff
 			_owner.BlockMove(nameof(BUFF_STUN));
 			_owner.BlockSkill(nameof(BUFF_STUN));
 
-			// 스턴 시 진행 중인 캐스팅 취소
+			// 스턴 시 진행 중인 캐스팅 / 코드 스킬(대시 등) 취소
 			_owner.SkillContainer?.CancelCasting();
+			_owner.SkillContainer?.CancelBehavior();
 		}
 
 		public void OnDeactivate()
