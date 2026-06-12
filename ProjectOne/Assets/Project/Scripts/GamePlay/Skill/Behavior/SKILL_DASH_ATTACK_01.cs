@@ -6,19 +6,17 @@ using ProjectOne.Unit;
 namespace ProjectOne.Skill
 {
 	// 대시 공격 — 시전자가 바라보는 방향(Facing)으로 벽은 막되 적은 관통하며 발동 스킬의 ScanParam1 거리만큼 직진.
-	// 속도 = 거리 / 지속시간(등속). 경로상의 적은 한 번씩만 피격(_pathDamageEffect 효과 적용).
-	// (구 BUFF_DASH_ATTACK → SKILL_DASH_ATTACK_01 을 다시 ISkillAction 빌딩블록으로 분해 — SkillSequence 가 조합)
-	public sealed class DashAttackAction : ISkillAction
+	// 속도 = 거리 / 지속시간(등속). 경로상의 적은 한 번씩만 피격하며, 행의 효과 칼럼(StartEffect~FinishEffect)을 적용한다.
+	// 효과 ID는 테이블에서 참조(하드코딩 없음). 클래스명 = SkillInfo enum 값명.
+	public sealed class SKILL_DASH_ATTACK_01 : ISkillBehavior
 	{
 		private const float _fallbackDistance = 6f;        // 발동 스킬 Row 가 없을 때 폴백 거리
 		private const float _fallbackHitWidth = 0.6f;      // ScanParam2 미설정 시 폴백 피격 반경
-		private const float _attackDuration = 0.15f;
-		// 경로 데미지 효과: 구 BUFF_DASH_ATTACK 은 버프 테이블 Effect 칼럼(SE_DASH_ATTACK_DAMAGE_01)을 참조했다.
-		// 스킬 직결로 옮기며 그 소스가 사라져 코드 상수로 고정 — 추후 스킬 테이블 칼럼화는 후속 과제.
-		private const SkillEffect _pathDamageEffect = SkillEffect.SE_DASH_ATTACK_DAMAGE_01;
+		private const float _attackDuration = 0.15f;       // 거리 주파 시간 (속도 = 거리 / 이 값)
 
 		private UnitBase _caster;
 		private SkillInfo _skillId;
+		private Table_SkillInfo.Row _row;
 
 		private bool _finished;
 		private float _distance;
@@ -30,10 +28,14 @@ namespace ProjectOne.Skill
 		private readonly List<UnitBase> _queryBuffer = new List<UnitBase>(16);
 		private readonly List<UnitBase> _hitList = new List<UnitBase>(8);
 
-		public void OnStart(UnitBase caster, SkillInfo skillId)
+		public void SetContext(UnitBase caster, SkillInfo skillId)
 		{
 			_caster = caster;
 			_skillId = skillId;
+		}
+
+		public void OnStart()
+		{
 			if (_caster == null || _caster.Mover == null)
 			{
 				_finished = true;
@@ -41,15 +43,15 @@ namespace ProjectOne.Skill
 			}
 
 			// 발동 스킬 데이터에서 거리(ScanParam1)/너비(ScanParam2) 확보 (없으면 폴백)
+			_row = Table_SkillInfo.Get(_skillId);
 			_distance = _fallbackDistance;
 			_hitWidth = _fallbackHitWidth;
-			Table_SkillInfo.Row skillRow = Table_SkillInfo.Get(skillId);
-			if (skillRow != null)
+			if (_row != null)
 			{
-				_distance = skillRow.ScanParam1;
-				if (skillRow.ScanParam2 > 0f)
+				_distance = _row.ScanParam1;
+				if (_row.ScanParam2 > 0f)
 				{
-					_hitWidth = skillRow.ScanParam2;
+					_hitWidth = _row.ScanParam2;
 				}
 			}
 
@@ -65,8 +67,8 @@ namespace ProjectOne.Skill
 			_startPos = _caster.transform.position;
 			_caster.Mover.SetFacing(dir);
 			_caster.Mover.SetOverride(dir * speed, pierceUnits: true);
-			_caster.BlockMove(nameof(DashAttackAction));   // 대시 중 이동 입력(플레이어/자동전투) 무시
-			_caster.BlockSkill(nameof(DashAttackAction));
+			_caster.BlockMove(nameof(SKILL_DASH_ATTACK_01));   // 대시 중 이동 입력(플레이어/자동전투) 무시
+			_caster.BlockSkill(nameof(SKILL_DASH_ATTACK_01));
 
 			// 대시 직전 진행 중이던 스킬(평타 등)의 예약 효과 취소 — 대시 중 공격 발동 방지
 			if (_caster.SkillContainer != null)
@@ -103,7 +105,7 @@ namespace ProjectOne.Skill
 
 		private void DamagePathEnemies()
 		{
-			if (UnitContainer.Instance == null || _pathDamageEffect == SkillEffect.None)
+			if (UnitContainer.Instance == null || _row == null)
 			{
 				return;
 			}
@@ -138,10 +140,10 @@ namespace ProjectOne.Skill
 				_hitList.Add(u);
 			}
 
-			// 경로 데미지 효과 적용 — skillID 귀속은 발동 스킬로.
+			// 경로 적에게 행 전체 효과(StartEffect~FinishEffect) 적용 — 효과 ID는 테이블에서 참조. skillID 귀속은 발동 스킬로.
 			if (_hitList.Count > 0)
 			{
-				SkillEffectApplier.Apply(_pathDamageEffect, _caster, _skillId, _hitList);
+				SkillExecutor.ApplyAllEffects(_row, _skillId, _caster, _hitList);
 			}
 		}
 
@@ -157,8 +159,8 @@ namespace ProjectOne.Skill
 				_caster.Mover.ClearOverride();
 			}
 
-			_caster.UnblockMove(nameof(DashAttackAction));
-			_caster.UnblockSkill(nameof(DashAttackAction));
+			_caster.UnblockMove(nameof(SKILL_DASH_ATTACK_01));
+			_caster.UnblockSkill(nameof(SKILL_DASH_ATTACK_01));
 		}
 	}
 }

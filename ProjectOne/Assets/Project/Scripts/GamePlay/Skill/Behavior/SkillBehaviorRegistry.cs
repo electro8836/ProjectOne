@@ -12,8 +12,8 @@ namespace ProjectOne.Skill
 		// registry 표는 "콜백 등록"이 아니라 "데이터 선언"이며 액션 조합은 메서드 그룹화가 불가능 → 인라인 델리게이트 사용.
 		static readonly Dictionary<SkillInfo, Func<ISkillBehavior>> _factories = new Dictionary<SkillInfo, Func<ISkillBehavior>>
 		{
-			{ SkillInfo.SKILL_DASH_01,        () => new SkillSequence(new DashAction()) },
-			{ SkillInfo.SKILL_DASH_ATTACK_01, () => new SkillSequence(new DashAttackAction()) },
+			{ SkillInfo.SKILL_DASH_01,        () => new SKILL_DASH_01() },
+			{ SkillInfo.SKILL_DASH_ATTACK_01, () => new SKILL_DASH_ATTACK_01() },
 		};
 
 		public static ISkillBehavior Create(SkillInfo id)

@@ -3,12 +3,12 @@ using ProjectOne.Unit;
 namespace ProjectOne.Buff
 {
 	// 이동불가(속박) — 지속 동안 이동만 차단 (스킬은 가능)
-	public sealed class BUFF_BINDING : IBuffBehavior
+	public sealed class DEBUFF_BINDING : IBuffBehavior
 	{
 		private readonly UnitBase _owner;
 		private readonly UnitBase _caster;
 
-		public BUFF_BINDING(UnitBase owner, UnitBase caster)
+		public DEBUFF_BINDING(UnitBase owner, UnitBase caster)
 		{
 			_owner = owner;
 			_caster = caster;
@@ -21,7 +21,7 @@ namespace ProjectOne.Buff
 				return;
 			}
 
-			_owner.BlockMove(nameof(BUFF_BINDING));
+			_owner.BlockMove(nameof(DEBUFF_BINDING));
 		}
 
 		public void OnDeactivate()
@@ -31,7 +31,7 @@ namespace ProjectOne.Buff
 				return;
 			}
 
-			_owner.UnblockMove(nameof(BUFF_BINDING));
+			_owner.UnblockMove(nameof(DEBUFF_BINDING));
 		}
 	}
 }

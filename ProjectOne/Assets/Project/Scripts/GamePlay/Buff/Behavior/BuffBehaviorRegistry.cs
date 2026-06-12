@@ -14,9 +14,9 @@ namespace ProjectOne.Buff
 		// registry 표는 "콜백 등록"이 아니라 "데이터 선언" → 인라인 델리게이트 사용.
 		static readonly Dictionary<BuffInfo, Func<UnitBase, UnitBase, IBuffBehavior>> _factories = new Dictionary<BuffInfo, Func<UnitBase, UnitBase, IBuffBehavior>>
 		{
-			{ BuffInfo.DEBUFF_STUN,    (o, s) => new BUFF_STUN(o, s) },
-			{ BuffInfo.DEBUFF_SILENCE, (o, s) => new BUFF_SILENCE(o, s) },
-			{ BuffInfo.DEBUFF_BINDING, (o, s) => new BUFF_BINDING(o, s) },
+			{ BuffInfo.DEBUFF_STUN,    (o, s) => new DEBUFF_STUN(o, s) },
+			{ BuffInfo.DEBUFF_SILENCE, (o, s) => new DEBUFF_SILENCE(o, s) },
+			{ BuffInfo.DEBUFF_BINDING, (o, s) => new DEBUFF_BINDING(o, s) },
 		};
 
 		public static IBuffBehavior Create(BuffInfo id, UnitBase owner, UnitBase source)

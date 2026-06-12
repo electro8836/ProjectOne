@@ -39,7 +39,9 @@ namespace ProjectOne.Skill
 
 			// 코드 스킬(behavior) 우선 — registry 에 등록된 스킬이면 SkillContainer 에 위임.
 			// 코드 스킬은 테이블 효과 칼럼을 읽지 않고 자체 로직으로 동작한다 (필요 시 내부에서 SkillEffectApplier 직접 호출).
-			if (caster.SkillContainer != null)
+			// 단 캐스팅형 코드 스킬은 즉시 시작하지 않고 캐스팅 흐름(선딜·인디케이터·취소)을 거친 뒤
+			// 캐스팅 종료 시점(RunApplyEffects)에 behavior 를 시작한다 — 아래 switch 의 Casting 케이스로 넘긴다.
+			if (caster.SkillContainer != null && row.CastingType != SkillCastingTypes.Casting)
 			{
 				ISkillBehavior behavior = SkillBehaviorRegistry.Create(id);
 				if (behavior != null)
@@ -115,6 +117,18 @@ namespace ProjectOne.Skill
 			if (row == null)
 			{
 				return;
+			}
+
+			// 캐스팅형 코드 스킬: 캐스팅 종료 시점에 테이블 효과 대신 behavior(시퀀스)를 시작한다.
+			// 캐스팅이 넉백 등으로 취소되면 이 콜백 자체가 호출되지 않아 behavior 도 발동하지 않는다.
+			if (caster.SkillContainer != null)
+			{
+				ISkillBehavior behavior = SkillBehaviorRegistry.Create(id);
+				if (behavior != null)
+				{
+					caster.SkillContainer.BeginBehavior(id, behavior);
+					return;
+				}
 			}
 
 			ApplyEffects(row, id, caster);
@@ -228,8 +242,9 @@ namespace ProjectOne.Skill
 			ApplyAllEffects(row, id, caster, scanned);
 		}
 
-		// StartEffect → Effect_0..4 → FinishEffect 순 적용 — scanned 후보에 각 효과의 ApplyTarget 필터링은 내부에서 수행
-		static void ApplyAllEffects(Table_SkillInfo.Row row, SkillInfo id, UnitBase caster, List<UnitBase> scanned)
+		// StartEffect → Effect_0..4 → FinishEffect 순 적용 — scanned 후보에 각 효과의 ApplyTarget 필터링은 내부에서 수행.
+		// 코드 스킬(ISkillBehavior)이 경로 적 등에 행 효과를 적용할 때도 재사용 (효과 ID 하드코딩 회피).
+		public static void ApplyAllEffects(Table_SkillInfo.Row row, SkillInfo id, UnitBase caster, List<UnitBase> scanned)
 		{
 			ApplyIfSet(row.StartEffect,  caster, id, scanned);
 			ApplyIfSet(row.Effect_0,     caster, id, scanned);
