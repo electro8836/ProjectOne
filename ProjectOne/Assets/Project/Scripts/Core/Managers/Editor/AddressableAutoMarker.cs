@@ -35,6 +35,7 @@ namespace ProjectOne.Editor
 			new Rule { folder = "Assets/Project/Prefabs/Effects", ext = ".prefab",     group = "Prefabs_Effects", flattenAddress = true },
 			new Rule { folder = "Assets/Project/Prefabs/UI",      ext = ".prefab",     group = "Prefabs_UI",      flattenAddress = true },
 			new Rule { folder = "Assets/Project/Prefabs/Maps",    ext = ".prefab",     group = "Prefabs_Maps",    flattenAddress = true },
+			new Rule { folder = "Assets/Project/Prefabs/Projectile", ext = ".prefab",  group = "Prefabs_Projectile", flattenAddress = true },
 		};
 
 		// PatchConfig.asset 위치 — Addressables에 올리지 않음 (AssetBundleLoader가 인스펙터로 보유)

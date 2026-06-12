@@ -131,6 +131,7 @@ namespace EDT {
         DeactivateBuff,
         IncreaseAttribute,
         DecreaseAttribute,
+        SpawnProjectile,
         ActivateAura,
     }
 
@@ -204,6 +205,7 @@ namespace EDT {
         SKILL_CASTING_ATTACK_02,
         SKILL_CASTING_ATTACK_03,
         SKILL_DAMAGE_IMMUNITY,
+        SKILL_PROJECTILE_ATTACK_01,
     }
 
     public enum SkillEffect {
@@ -233,6 +235,8 @@ namespace EDT {
         SE_CASTING_DAMAGE_02,
         SE_CASTING_DAMAGE_03,
         SE_ACTIVATE_BUFF_DAMAGE_IMMUNITY,
+        SE_SPAWNPOJECTILE_01,
+        SE_PROJECTILE_DAMAGE_01,
     }
 
     public enum BuffInfo {

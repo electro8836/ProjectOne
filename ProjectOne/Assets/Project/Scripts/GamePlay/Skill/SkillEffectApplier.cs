@@ -8,6 +8,7 @@ using ProjectOne.Combat;
 using ProjectOne.Buff;
 using ProjectOne.Utils;
 using ProjectOne.Event;
+using ProjectOne.Projectile;
 
 namespace ProjectOne.Skill
 {
@@ -57,8 +58,12 @@ namespace ProjectOne.Skill
 
 			List<UnitBase> targets = TargetResolver.FilterByApplyTarget(scanned, row.ApplyTarget, caster);
 
+			// SpawnProjectile 은 EffectVFX/EffectSFX 를 "대상"이 아니라 발사체 소멸 연출로 사용한다(ApplySpawnProjectile 에서 발사체에 전달).
+			// 따라서 발사 순간 대상에 출력하는 아래 루프는 건너뛴다.
+			bool isProjectile = (row.EffectType == SkillEffectTypes.SpawnProjectile);
+
 			// 효과가 적용되는 각 대상 유닛의 공격자 방향 외곽에 효과 VFX 1회 월드 소환
-			if (string.IsNullOrEmpty(row.EffectVFX) == false)
+			if (isProjectile == false && string.IsNullOrEmpty(row.EffectVFX) == false)
 			{
 				for (int i = 0; i < targets.Count; i++)
 				{
@@ -71,7 +76,7 @@ namespace ProjectOne.Skill
 
 			// 효과 SFX(피격음) — 대상별로 요청하되 AudioManager throttle 이 윈도우당 상한에서 컷.
 			// 100명이 동시 피격돼도 사운드는 _sfxThrottleMaxPerWindow 개까지만 재생된다.
-			if (string.IsNullOrEmpty(row.EffectSFX) == false)
+			if (isProjectile == false && string.IsNullOrEmpty(row.EffectSFX) == false)
 			{
 				for (int i = 0; i < targets.Count; i++)
 				{
@@ -102,6 +107,10 @@ namespace ProjectOne.Skill
 				case SkillEffectTypes.ActivateAura:
 					// TODO: 오라 시스템 미구현
 					Debug.Log($"[SkillEffectApplier] ActivateAura stub — Effect:{effectId}");
+					break;
+				case SkillEffectTypes.SpawnProjectile:
+					// 발사체 발사 — targets(가장 가까운 적)를 방향 기준으로, caster 위치에서 N발 부채꼴 발사
+					ApplySpawnProjectile(row, caster, skillId, targets);
 					break;
 				default:
 					break;
@@ -455,6 +464,82 @@ namespace ProjectOne.Skill
 
 				// hostBuff == null 이면 영구 적용 (제거 핸들 없음) — Skill 직접 슬롯의 패시브 용도
 			}
+		}
+
+		// 발사체 발사 — caster 위치에서 타겟 방향을 중심으로 Count 발을 AngleStep 간격 좌우 대칭 부채꼴로 발사.
+		// 각 발사체에 (caster/skillId/HitEffect/타겟)을 실어 보내 적중 시 효과가 적용된다. 이동/속도는 발사체 프리팹이 결정.
+		static void ApplySpawnProjectile(Table_SkillEffect.Row row, UnitBase caster, SkillInfo skillId, List<UnitBase> targets)
+		{
+			SpawnProjectileParams p;
+			if (SkillEffectParams.TryParseSpawnProjectile(row, out p) == false)
+			{
+				return;
+			}
+
+			// 순환 가드 — 적중 효과가 또 SpawnProjectile 이면 무한 발사
+			Table_SkillEffect.Row hitRow = Table_SkillEffect.Get(p.HitEffect);
+			if (hitRow != null && hitRow.EffectType == SkillEffectTypes.SpawnProjectile)
+			{
+				Debug.LogError($"[SkillEffectApplier] SpawnProjectile 순환 — Effect:{row.ID}, HitEffect:{p.HitEffect}");
+				return;
+			}
+
+			if (caster == null || ProjectileManager.Instance == null)
+			{
+				return;
+			}
+
+			// 발사 방향 중심 = 가장 가까운 적(targets[0]). 없으면 캐스터 facing.
+			Vector2 origin = caster.HitCenter;
+			UnitBase target = (targets != null && targets.Count > 0) ? targets[0] : null;
+			Vector2 baseDir;
+			if (target != null)
+			{
+				Vector2 to = (Vector2)target.HitCenter - origin;
+				baseDir = (to.sqrMagnitude > 1E-06f) ? to.normalized : CasterFacing(caster);
+			}
+			else
+			{
+				baseDir = CasterFacing(caster);
+			}
+
+			// Count 발 좌우 대칭 부채꼴 — 중심 기준 ±(Count-1)*AngleStep/2 범위 균등 분산
+			float baseAngle = Mathf.Atan2(baseDir.y, baseDir.x) * Mathf.Rad2Deg;
+			float startOffset = -(p.Count - 1) * 0.5f * p.AngleStep;
+			float z = caster.transform.position.z;
+			for (int i = 0; i < p.Count; i++)
+			{
+				float angRad = (baseAngle + startOffset + i * p.AngleStep) * Mathf.Deg2Rad;
+				Vector3 dir = new Vector3(Mathf.Cos(angRad), Mathf.Sin(angRad), 0f);
+
+				ProjectileData data = new ProjectileData
+				{
+					direction = dir,
+					startPos = new Vector3(origin.x, origin.y, z),
+					caster = caster,
+					skillId = skillId,
+					hitEffect = p.HitEffect,
+					target = target,
+					expireVFX = row.EffectVFX,   // 소멸 연출 — 효과 행의 EffectVFX/EffectSFX 를 발사체에 전달
+					expireSFX = row.EffectSFX,
+				};
+				ProjectileManager.Instance.Launch(p.Prefab, data);
+			}
+		}
+
+		// 캐스터 이동 방향(없으면 +X) — 발사 타겟이 없을 때 발사 기준 방향
+		static Vector2 CasterFacing(UnitBase caster)
+		{
+			if (caster.Mover != null)
+			{
+				Vector2 f = caster.Mover.Facing;
+				if (f.sqrMagnitude > 1E-06f)
+				{
+					return f.normalized;
+				}
+			}
+
+			return Vector2.right;
 		}
 	}
 }

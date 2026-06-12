@@ -41,6 +41,14 @@ namespace ProjectOne.Skill
 		public float Value;
 	}
 
+	public struct SpawnProjectileParams
+	{
+		public int Count;            // 발사체 개수 (>=1)
+		public float AngleStep;      // 이웃 발 사이 간격(도) — 타겟 방향 중심 좌우 대칭 분산
+		public string Prefab;        // 발사체 프리팹 주소
+		public SkillEffect HitEffect; // 적중 시 적용할 효과
+	}
+
 	public static class SkillEffectParams
 	{
 		public static bool TryParseDamage(Table_SkillEffect.Row row, out DamageParams p)
@@ -195,6 +203,57 @@ namespace ProjectOne.Skill
 			}
 
 			p.Value = v;
+			return true;
+		}
+
+		// SpawnProjectile : P1=개수(int, 기본 1), P2=각도 간격(float, 기본 0), P3=발사체 프리팹 주소(필수), P4=적중 효과 SkillEffect(필수)
+		public static bool TryParseSpawnProjectile(Table_SkillEffect.Row row, out SpawnProjectileParams p)
+		{
+			p = new SpawnProjectileParams();
+
+			// P1 개수 — 선택(기본 1), 1 미만 불가
+			int count = 1;
+			if (string.IsNullOrEmpty(row.EffectParam_1) == false && row.EffectParam_1 != "None")
+			{
+				if (int.TryParse(row.EffectParam_1, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) == false || count < 1)
+				{
+					LogParseError(row, 1, "SpawnProjectile.Count");
+					return false;
+				}
+			}
+
+			p.Count = count;
+
+			// P2 각도 간격 — 선택(기본 0 = 전부 같은 방향)
+			p.AngleStep = 0f;
+			if (string.IsNullOrEmpty(row.EffectParam_2) == false && row.EffectParam_2 != "None")
+			{
+				if (TryParseFloat(row.EffectParam_2, out float step) == false)
+				{
+					LogParseError(row, 2, "SpawnProjectile.AngleStep");
+					return false;
+				}
+
+				p.AngleStep = step;
+			}
+
+			// P3 발사체 프리팹 주소 — 필수
+			if (string.IsNullOrEmpty(row.EffectParam_3) == true || row.EffectParam_3 == "None")
+			{
+				LogParseError(row, 3, "SpawnProjectile.Prefab");
+				return false;
+			}
+
+			p.Prefab = row.EffectParam_3;
+
+			// P4 적중 효과 — 필수
+			if (Enum.TryParse(row.EffectParam_4, out SkillEffect hitEffect) == false)
+			{
+				LogParseError(row, 4, "SpawnProjectile.HitEffect (SkillEffect)");
+				return false;
+			}
+
+			p.HitEffect = hitEffect;
 			return true;
 		}
 
