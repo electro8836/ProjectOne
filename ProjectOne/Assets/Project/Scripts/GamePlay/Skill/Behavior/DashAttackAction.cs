@@ -7,8 +7,8 @@ namespace ProjectOne.Skill
 {
 	// 대시 공격 — 시전자가 바라보는 방향(Facing)으로 벽은 막되 적은 관통하며 발동 스킬의 ScanParam1 거리만큼 직진.
 	// 속도 = 거리 / 지속시간(등속). 경로상의 적은 한 번씩만 피격(_pathDamageEffect 효과 적용).
-	// (구 BUFF_DASH_ATTACK 를 코드 스킬로 이전 — 매 프레임 진행 훅이 스킬에 생겨 더 이상 버프를 우회하지 않는다)
-	public sealed class SKILL_DASH_ATTACK_01 : ISkillBehavior
+	// (구 BUFF_DASH_ATTACK → SKILL_DASH_ATTACK_01 을 다시 ISkillAction 빌딩블록으로 분해 — SkillSequence 가 조합)
+	public sealed class DashAttackAction : ISkillAction
 	{
 		private const float _fallbackDistance = 6f;        // 발동 스킬 Row 가 없을 때 폴백 거리
 		private const float _fallbackHitWidth = 0.6f;      // ScanParam2 미설정 시 폴백 피격 반경
@@ -30,14 +30,10 @@ namespace ProjectOne.Skill
 		private readonly List<UnitBase> _queryBuffer = new List<UnitBase>(16);
 		private readonly List<UnitBase> _hitList = new List<UnitBase>(8);
 
-		public void SetContext(UnitBase caster, SkillInfo skillId)
+		public void OnStart(UnitBase caster, SkillInfo skillId)
 		{
 			_caster = caster;
 			_skillId = skillId;
-		}
-
-		public void OnStart()
-		{
 			if (_caster == null || _caster.Mover == null)
 			{
 				_finished = true;
@@ -47,7 +43,7 @@ namespace ProjectOne.Skill
 			// 발동 스킬 데이터에서 거리(ScanParam1)/너비(ScanParam2) 확보 (없으면 폴백)
 			_distance = _fallbackDistance;
 			_hitWidth = _fallbackHitWidth;
-			Table_SkillInfo.Row skillRow = Table_SkillInfo.Get(_skillId);
+			Table_SkillInfo.Row skillRow = Table_SkillInfo.Get(skillId);
 			if (skillRow != null)
 			{
 				_distance = skillRow.ScanParam1;
@@ -69,8 +65,8 @@ namespace ProjectOne.Skill
 			_startPos = _caster.transform.position;
 			_caster.Mover.SetFacing(dir);
 			_caster.Mover.SetOverride(dir * speed, pierceUnits: true);
-			_caster.BlockMove(nameof(SKILL_DASH_ATTACK_01));   // 대시 중 이동 입력(플레이어/자동전투) 무시
-			_caster.BlockSkill(nameof(SKILL_DASH_ATTACK_01));
+			_caster.BlockMove(nameof(DashAttackAction));   // 대시 중 이동 입력(플레이어/자동전투) 무시
+			_caster.BlockSkill(nameof(DashAttackAction));
 
 			// 대시 직전 진행 중이던 스킬(평타 등)의 예약 효과 취소 — 대시 중 공격 발동 방지
 			if (_caster.SkillContainer != null)
@@ -161,8 +157,8 @@ namespace ProjectOne.Skill
 				_caster.Mover.ClearOverride();
 			}
 
-			_caster.UnblockMove(nameof(SKILL_DASH_ATTACK_01));
-			_caster.UnblockSkill(nameof(SKILL_DASH_ATTACK_01));
+			_caster.UnblockMove(nameof(DashAttackAction));
+			_caster.UnblockSkill(nameof(DashAttackAction));
 		}
 	}
 }

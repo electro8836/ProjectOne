@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EDT;
@@ -77,21 +76,17 @@ namespace ProjectOne.Buff
 				}
 			}
 
-			// 코드로 정의된 버프(버프 ID 와 동일한 이름의 클래스)가 있으면 활성화 — 없으면 데이터 동작만 수행
-			Type behaviorType = Type.GetType(string.Format("ProjectOne.Buff.{0}", id.ToString()));
-			if (behaviorType != null)
+			// 코드로 정의된 버프가 registry 에 있으면 활성화 — 없으면 데이터 동작만 수행
+			_behavior = BuffBehaviorRegistry.Create(id, owner, source);
+			if (_behavior != null)
 			{
-				_behavior = Activator.CreateInstance(behaviorType, owner, source) as IBuffBehavior;
-				if (_behavior != null)
+				_tickable = _behavior as ITickableBuff;
+				if (_tickable != null)
 				{
-					_tickable = _behavior as ITickableBuff;
-					if (_tickable != null)
-					{
-						_tickable.SetHost(this);
-					}
-
-					_behavior.OnActivate();
+					_tickable.SetHost(this);
 				}
+
+				_behavior.OnActivate();
 			}
 		}
 
