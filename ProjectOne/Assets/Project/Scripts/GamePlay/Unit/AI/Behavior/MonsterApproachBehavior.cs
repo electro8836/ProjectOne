@@ -23,6 +23,10 @@ namespace ProjectOne.Unit.AI
 		// 인스턴스별 상태 — 몬스터마다 behavior 1개라 히스테리시스 상태를 안전하게 보관
 		private bool _approaching = true;
 
+		// 기본공격 정보 캐시 — 사거리/발사체여부 모두 불변이라 최초 1회만 테이블 조회
+		private float _cachedRange = -1f;
+		private bool _basicIsProjectile;
+
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
 			UnitBase target = FindNearestEnemyHero(self);
@@ -36,25 +40,35 @@ namespace ProjectOne.Unit.AI
 			Vector2 selfPos = self.CachedPos;
 			Vector2 dirToTarget = target.CachedPos - selfPos;
 
-			// 히스테리시스 정지 판정
-			float range = GetAttackRange(self);
+			// 기본공격 사거리·발사체여부는 불변 — 최초 1회만 테이블 조회해 캐시 (100마리 매 틱 조회 방지)
+			if (_cachedRange < 0f)
+			{
+				Table_SkillInfo.Row basicRow = GetBasicAttackRow(self);
+				_cachedRange = GetAttackRange(basicRow);
+				_basicIsProjectile = (basicRow != null && SkillSelector.IsProjectileSkill(basicRow) == true);
+			}
+
+			float range = _cachedRange;
 			float dist = dirToTarget.magnitude;
 
 			// 물리 접촉 거리와 공격 사거리 중 더 큰 값으로 정지 — ScanParam1 이 작아도 닿으면 정지
 			float stoppingDist = Mathf.Max(range, self.Radius + target.Radius);
 
+			// LoS(HasClearShot)는 정지 판단이 필요한 순간에만 계산한다 — 접근 중(사거리 밖) 대다수는 스킵해 100마리 부하를 줄인다.
+			// 발사체 기본공격이 벽에 가려져 있으면 정지해도 헛스킬이므로, 그때만 접근을 계속해 시야가 트일 위치로 이동한다.
 			if (_approaching == true)
 			{
 				bool inRange = dist <= stoppingDist;
 				bool inQueue = inRange == false && IsQueuedBehindAlly(self, selfPos, target, stoppingDist);
-				if (inRange || inQueue)
+				if ((inRange || inQueue) && HasClearShot(self, target) == true)
 				{
 					_approaching = false;
 				}
 			}
 			else
 			{
-				if (dist > range * _hysteresis)
+				// 거리 히스테리시스로 재접근하거나, 시야가 막히면(LoS) 즉시 재접근
+				if (dist > range * _hysteresis || HasClearShot(self, target) == false)
 				{
 					_approaching = true;
 				}
@@ -124,28 +138,50 @@ namespace ProjectOne.Unit.AI
 			return nearest;
 		}
 
-		// 기본공격 스킬의 ScanParam1 을 정지 사거리로 사용 (없으면 폴백)
-		private static float GetAttackRange(UnitBase self)
+		// 기본공격 스킬 행 — 없으면 null
+		private static Table_SkillInfo.Row GetBasicAttackRow(UnitBase self)
 		{
 			SkillContainer sc = self.SkillContainer;
 			if (sc == null)
 			{
-				return _fallbackRange;
+				return null;
 			}
 
 			SkillInfo basic = sc.GetBasicAttack();
 			if (basic == SkillInfo.None)
 			{
-				return _fallbackRange;
+				return null;
 			}
 
-			Table_SkillInfo.Row row = Table_SkillInfo.Get(basic);
-			if (row == null || row.ScanParam1 <= 0f)
+			return Table_SkillInfo.Get(basic);
+		}
+
+		// 기본공격 스킬의 ScanParam1 을 정지 사거리로 사용 (없으면 폴백)
+		private static float GetAttackRange(Table_SkillInfo.Row basicRow)
+		{
+			if (basicRow == null || basicRow.ScanParam1 <= 0f)
 			{
 				return _fallbackRange;
 			}
 
-			return row.ScanParam1;
+			return basicRow.ScanParam1;
+		}
+
+		// 발사체 기본공격일 때만 시야(LoS)를 따진다 — 근접/비발사체나 맵 없음이면 항상 사격 가능으로 본다.
+		// 호출자(Tick)가 정지 판단이 필요한 순간에만 부르므로 접근 중 몬스터는 LoS 계산을 타지 않는다.
+		private bool HasClearShot(UnitBase self, UnitBase target)
+		{
+			if (_basicIsProjectile == false)
+			{
+				return true;
+			}
+
+			if (MapManager.HasInstance == false)
+			{
+				return true;
+			}
+
+			return MapManager.Instance.HasLineOfSight(self.HitCenter, target.HitCenter);
 		}
 
 		// 자신과 인접한 아군이 이미 히어로 정지 거리 내에 있으면 true — 뒷줄 몬스터 대기 정지

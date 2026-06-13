@@ -9,12 +9,16 @@ namespace ProjectOne.Map
 		[SerializeField] private Grid _grid;
 		[SerializeField] private Tilemap _groundMap;
 		[SerializeField] private Tilemap _obstacleMap;
+		// 발사체 차단 전용 타일맵 — 이 타일이 칠해진 셀은 발사체(직선/유도/포물선)도 막힌다.
+		// obstacleMap(물 등)은 유닛만 막고 발사체는 통과. blockMap 은 유닛+발사체 모두 차단.
+		[SerializeField] private Tilemap _blockMap;
 
 		private FlowField _flowField = new FlowField();
 		private Vector3Int _boundsMin;
 
 		// 충돌 핫 루프(ResolveWallCollision)용 캐시 — 네이티브 Grid/Tilemap 호출을 산술/배열 조회로 대체.
 		private bool[]  _walkable;       // 셀 통행 가능 여부(InitializeFlowField 에서 1회 구축)
+		private bool[]  _blocked;        // 셀 발사체 차단 여부(blockMap 타일 유무, 1회 구축)
 		private int     _fieldWidth;
 		private int     _fieldHeight;
 		private Vector2 _cellSize;       // 셀 크기
@@ -35,6 +39,7 @@ namespace ProjectOne.Map
 			int width  = bounds.size.x;
 			int height = bounds.size.y;
 			bool[] walkable = new bool[width * height];
+			bool[] blocked  = new bool[width * height];
 
 			for (int y = 0; y < height; y++)
 			{
@@ -42,6 +47,7 @@ namespace ProjectOne.Map
 				{
 					Vector3Int cell = new Vector3Int(_boundsMin.x + x, _boundsMin.y + y, 0);
 					walkable[y * width + x] = IsCellWalkable(cell);
+					blocked[y * width + x]  = (_blockMap != null && _blockMap.GetTile(cell) != null);
 				}
 			}
 
@@ -49,6 +55,7 @@ namespace ProjectOne.Map
 
 			// 충돌 핫 루프 캐시 — 동일 walkable 배열과 셀 좌표 변환 상수를 보관
 			_walkable    = walkable;
+			_blocked     = blocked;
 			_fieldWidth  = width;
 			_fieldHeight = height;
 			_cellSize    = (Vector2)_grid.cellSize;
@@ -93,12 +100,65 @@ namespace ProjectOne.Map
 
 		public bool IsCellWalkable(Vector3Int cellPos)
 		{
-			if (_obstacleMap == null)
+			// 물(obstacleMap)·벽(blockMap) 어느 쪽이든 타일이 있으면 유닛 이동 불가.
+			// 벽은 blockMap 에만 칠해도 유닛이 막히므로 중복 페인팅이 필요 없다.
+			bool obstacle = (_obstacleMap != null && _obstacleMap.GetTile(cellPos) != null);
+			bool block    = (_blockMap != null && _blockMap.GetTile(cellPos) != null);
+			return obstacle == false && block == false;
+		}
+
+		// 발사체 차단 여부 — 해당 월드 위치 셀에 blockMap 타일이 있으면 true. 캐시 O(1) 조회.
+		public bool IsProjectileBlocked(Vector2 worldPos)
+		{
+			if (_blocked == null)
+			{
+				return false;
+			}
+
+			int lx = LocalCellX(worldPos.x);
+			int ly = LocalCellY(worldPos.y);
+			if (lx < 0 || lx >= _fieldWidth || ly < 0 || ly >= _fieldHeight)
+			{
+				return false;
+			}
+
+			return _blocked[ly * _fieldWidth + lx];
+		}
+
+		// 두 월드점 사이 시야(발사체 경로) 확보 여부 — 셀 크기 간격으로 샘플링하다 차단 셀을 만나면 false.
+		public bool HasLineOfSight(Vector2 from, Vector2 to)
+		{
+			if (_blocked == null)
 			{
 				return true;
 			}
 
-			return _obstacleMap.GetTile(cellPos) == null;
+			Vector2 delta = to - from;
+			float dist = delta.magnitude;
+			if (dist <= 1E-04f)
+			{
+				return IsProjectileBlocked(from) == false;
+			}
+
+			// 셀 절반 간격으로 샘플링 — 얇은 벽도 놓치지 않도록 촘촘하게
+			float stepLen = Mathf.Max(_cellSize.x, _cellSize.y) * 0.5f;
+			if (stepLen <= 1E-04f)
+			{
+				stepLen = 0.5f;
+			}
+
+			int steps = Mathf.CeilToInt(dist / stepLen);
+			Vector2 dir = delta / dist;
+			for (int i = 0; i <= steps; i++)
+			{
+				Vector2 p = from + dir * Mathf.Min(i * stepLen, dist);
+				if (IsProjectileBlocked(p) == true)
+				{
+					return false;
+				}
+			}
+
+			return true;
 		}
 
 		// 셀 통행 가능 여부 — 캐시 배열 O(1) 조회. 범위 밖은 walkable 취급(기존 GetTile 동작과 동일).

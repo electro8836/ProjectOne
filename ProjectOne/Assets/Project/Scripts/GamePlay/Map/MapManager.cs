@@ -78,5 +78,17 @@ namespace ProjectOne.Map
 		{
 			return _current != null ? _current.WorldToCell(worldPos) : default;
 		}
+
+		// 해당 월드 위치가 발사체 차단 셀인지 (맵 없으면 차단 없음)
+		public bool IsProjectileBlocked(Vector2 worldPos)
+		{
+			return _current != null ? _current.IsProjectileBlocked(worldPos) : false;
+		}
+
+		// 두 월드점 사이 발사체 경로 시야 확보 여부 (맵 없으면 항상 확보)
+		public bool HasLineOfSight(Vector2 from, Vector2 to)
+		{
+			return _current != null ? _current.HasLineOfSight(from, to) : true;
+		}
 	}
 }

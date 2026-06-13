@@ -5,6 +5,7 @@ using ProjectOne.Utils;
 using ProjectOne.Unit;
 using ProjectOne.Skill;
 using ProjectOne.Audio;
+using ProjectOne.Map;
 
 namespace ProjectOne.Projectile
 {
@@ -60,6 +61,13 @@ namespace ProjectOne.Projectile
 			float step = _trajectory.Tick(Time.deltaTime, ref pos, out facing);
 			transform.position = pos;
 			_traveledDistance += step;
+
+			// 발사체 차단 타일(벽)에 진입하면 소멸 — 직선/유도/포물선 모두 동일. 소멸 연출은 returnToPool 에서 출력.
+			if (MapManager.HasInstance == true && MapManager.Instance.IsProjectileBlocked(pos) == true)
+			{
+				returnToPool("blocked");
+				return;
+			}
 
 			// 이동 방향으로 머리를 향하게 — 스프라이트 기준축(_spriteForwardAngle)만큼 보정
 			if (facing.sqrMagnitude > 1E-06f)

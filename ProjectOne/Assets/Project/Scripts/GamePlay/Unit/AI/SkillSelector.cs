@@ -1,6 +1,8 @@
 using System.Collections.Generic;
+using UnityEngine;
 using EDT;
 using ProjectOne.Skill;
+using ProjectOne.Map;
 
 namespace ProjectOne.Unit.AI
 {
@@ -79,12 +81,57 @@ namespace ProjectOne.Unit.AI
 			}
 		}
 
-		// 스킬의 실제 ScanType 범위(caster.Facing 기준) 안에 적이 1명 이상 있는지 — SkillExecutor 와 동일 경로
+		// 스킬의 실제 ScanType 범위(caster.Facing 기준) 안에 시전 가능한 적이 1명 이상 있는지 — SkillExecutor 와 동일 경로.
+		// 발사체 스킬이면 경로상 차단 벽이 없는(시야 확보된) 적이 1명이라도 있어야 한다(벽에 대고 헛스킬 방지).
 		private static bool HasEnemyInRange(UnitBase self, Table_SkillInfo.Row row)
 		{
 			List<UnitBase> scanned = TargetResolver.ScanByType(row.ScanType, row.ScanParam1, row.ScanParam2, self);
 			List<UnitBase> enemies = TargetResolver.FilterByApplyTarget(scanned, SkillApplyTarget.Enemy, self);
-			return enemies.Count > 0;
+			if (enemies.Count == 0)
+			{
+				return false;
+			}
+
+			// 발사체 스킬이 아니거나 맵이 없으면 범위 내 적 존재만으로 시전 가능
+			if (IsProjectileSkill(row) == false || MapManager.HasInstance == false)
+			{
+				return true;
+			}
+
+			// enemies 는 TargetResolver 내부 버퍼 직참조 — 이 루프 중 다른 ScanByType/Filter 호출 없음(HasLineOfSight 는 맵 질의)
+			Vector2 from = self.HitCenter;
+			for (int i = 0; i < enemies.Count; i++)
+			{
+				if (MapManager.Instance.HasLineOfSight(from, enemies[i].HitCenter) == true)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		// 스킬의 효과 슬롯 중 하나라도 SpawnProjectile 이면 발사체 스킬 (MonsterApproachBehavior 의 정지/접근 판정에서도 사용)
+		internal static bool IsProjectileSkill(Table_SkillInfo.Row row)
+		{
+			return IsSpawnProjectile(row.StartEffect)
+				|| IsSpawnProjectile(row.Effect_0)
+				|| IsSpawnProjectile(row.Effect_1)
+				|| IsSpawnProjectile(row.Effect_2)
+				|| IsSpawnProjectile(row.Effect_3)
+				|| IsSpawnProjectile(row.Effect_4)
+				|| IsSpawnProjectile(row.FinishEffect);
+		}
+
+		private static bool IsSpawnProjectile(SkillEffect id)
+		{
+			if (id == SkillEffect.None)
+			{
+				return false;
+			}
+
+			Table_SkillEffect.Row row = Table_SkillEffect.Get(id);
+			return row != null && row.EffectType == SkillEffectTypes.SpawnProjectile;
 		}
 	}
 }
