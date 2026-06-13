@@ -28,6 +28,19 @@ namespace ProjectOne.Skill
 			ApplyInternal(effectId, caster, caster, skillId, hostBuff: null, scanned: scanned);
 		}
 
+		// 위치 기반 AoE 적용 — center 주변 radius 원형 범위를 스캔해 효과를 적용한다(발사체 임팩트/마지막 위치 등).
+		// radius<=0 이면 범위공격이 아니므로 아무것도 적용하지 않는다.
+		public static void ApplyAtPosition(SkillEffect effectId, UnitBase caster, SkillInfo skillId, Vector2 center, float radius)
+		{
+			if (effectId == SkillEffect.None || caster == null || radius <= 0f)
+			{
+				return;
+			}
+
+			List<UnitBase> scanned = TargetResolver.ScanByType(SkillScanType.Circle, radius, 0f, caster, useOverride: true, centerOverride: center);
+			ApplyInternal(effectId, caster, caster, skillId, hostBuff: null, scanned: scanned);
+		}
+
 		public static void ApplyOnBuff(SkillEffect effectId, UnitBase owner, UnitBase source, BuffRuntime hostBuff)
 		{
 			// 버프 컨텍스트: Self 효과는 버프 소유자(owner)에 적용
@@ -520,6 +533,7 @@ namespace ProjectOne.Skill
 					skillId = skillId,
 					hitEffect = p.HitEffect,
 					target = target,
+					hitRadius = p.HitRadius,     // 임팩트 AoE 반경 (0=단일 타겟)
 					expireVFX = row.EffectVFX,   // 소멸 연출 — 효과 행의 EffectVFX/EffectSFX 를 발사체에 전달
 					expireSFX = row.EffectSFX,
 				};

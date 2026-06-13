@@ -8,8 +8,8 @@ using ProjectOne.Audio;
 
 namespace ProjectOne.Projectile
 {
-	// 발사체 — 직선 이동(속도/수명/사거리는 프리팹 설정)하다 적에 적중하면 발동 스킬의 hitEffect 를 적용한다.
-	// 유도/포물선 등 변형 궤적은 후속(Trajectory 컴포넌트)에서 direction 을 조정하는 방식으로 확장.
+	// 발사체 — 이동 방식은 같은 GameObject 의 궤적 컴포넌트(ITrajectory)에 위임한다(직선/유도/포물선).
+	// 적에 적중하면 발동 스킬의 hitEffect 를 적용한다. 속도/수명/사거리는 프리팹(이 컴포넌트)이 소유한다.
 	public class Projectile : MonoBehaviour, IPoolable
 	{
 		// 이동 파라미터는 프리팹이 소유 (발사 측이 아니라 발사체 종류가 결정)
@@ -26,14 +26,55 @@ namespace ProjectOne.Projectile
 		private bool _isReleased;
 		private float _traveledDistance;
 
+		// 이동 방식 위임 — Awake 에서 GetComponent 로 캐시. 궤적별 전용 분기를 위해 Homing/Parabolic 캐스팅도 캐시.
+		private ITrajectory _trajectory;
+		private Trajectory_Homing _homing;
+		private Trajectory_Parabolic _parabolic;
+
 		// 적중 효과 적용용 재사용 버퍼 (할당 방지)
 		private readonly List<UnitBase> _hitBuffer = new List<UnitBase>(1);
 
+		private void Awake()
+		{
+			_trajectory = GetComponent<ITrajectory>();
+			if (_trajectory == null)
+			{
+				// 궤적 미부착 프리팹은 직진으로 폴백 — 프리팹에 명시적으로 궤적 컴포넌트를 부착해야 한다.
+				Debug.LogError($"[Projectile] 궤적 컴포넌트(ITrajectory) 없음 — Direct 로 폴백: {name}");
+				_trajectory = gameObject.AddComponent<Trajectory_Direct>();
+			}
+
+			_homing = _trajectory as Trajectory_Homing;
+			_parabolic = _trajectory as Trajectory_Parabolic;
+		}
+
 		private void Update()
 		{
-			float step = _speed * Time.deltaTime;
-			transform.position += _data.direction * step;
+			if (_trajectory == null)
+			{
+				return;
+			}
+
+			Vector3 pos = transform.position;
+			Vector2 facing;
+			float step = _trajectory.Tick(Time.deltaTime, ref pos, out facing);
+			transform.position = pos;
 			_traveledDistance += step;
+
+			// 이동 방향으로 머리를 향하게 — 스프라이트 기준축(_spriteForwardAngle)만큼 보정
+			if (facing.sqrMagnitude > 1E-06f)
+			{
+				float angle = Mathf.Atan2(facing.y, facing.x) * Mathf.Rad2Deg - _spriteForwardAngle;
+				transform.rotation = Quaternion.Euler(0f, 0f, angle);
+			}
+
+			// 궤적 종료(유도=타겟 소실 후 마지막 위치 / 포물선=타겟 지점 도달) — 그 지점에서 피격판정 후 소멸
+			if (_trajectory.IsFinished == true)
+			{
+				applyHitOnFinish();
+				returnToPool("finish");
+				return;
+			}
 
 			if (_maxDistance > 0f && _traveledDistance >= _maxDistance)
 			{
@@ -41,21 +82,68 @@ namespace ProjectOne.Projectile
 			}
 		}
 
+		// 궤적 종료 지점 피격판정. hitRadius>0 이면 그 위치 원형 범위에, 아니면 잠금된 타겟에 단일 적용.
+		// - 포물선 착지: 타겟 생존 → 단일(또는 AoE)
+		// - 유도 종료(타겟 소실): 타겟 사망/없음 → 단일 폴백 무효 → AoE(hitRadius>0)일 때만 적용
+		private void applyHitOnFinish()
+		{
+			if (_data.caster == null)
+			{
+				return;
+			}
+
+			if (_data.hitRadius > 0f)
+			{
+				SkillEffectApplier.ApplyAtPosition(_data.hitEffect, _data.caster, _data.skillId, transform.position, _data.hitRadius);
+				return;
+			}
+
+			if (_data.target != null && _data.target.IsDead == false)
+			{
+				_hitBuffer.Clear();
+				_hitBuffer.Add(_data.target);
+				SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer);
+			}
+		}
+
 		private void OnTriggerEnter2D(Collider2D other)
 		{
+			// 포물선은 비행 중 접촉 판정을 하지 않는다 — 타겟 지점 도달(IsFinished) 시에만 판정한다.
+			if (_parabolic != null)
+			{
+				return;
+			}
+
 			UnitBase unit = other.GetComponentInParent<UnitBase>();
 			if (unit != null)
 			{
+				// 유도 발사체는 비행 중 타겟만 판정 — 타겟 외 유닛은 통과, 타겟 소실 비행 중엔 모두 통과(AoE는 종료 시 처리)
+				if (_homing != null)
+				{
+					if (_homing.IsTargetLost == true || unit != _homing.Target)
+					{
+						return;
+					}
+				}
+
 				// 적이 아니면(아군/캐스터 자신/사망) 무시하고 통과
 				if (_data.caster == null || unit.IsDead == true || TargetResolver.IsEnemy(_data.caster.Faction, unit.Faction) == false)
 				{
 					return;
 				}
 
-				// 적중 — 발동 스킬 효과를 적중 대상에 적용 후 반환 (단일 hit, 관통은 후속)
-				_hitBuffer.Clear();
-				_hitBuffer.Add(unit);
-				SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer);
+				// 적중 — 범위공격(hitRadius>0)이면 적중 위치 원형 범위에, 아니면 적중 대상 단일에 효과 적용 후 반환
+				if (_data.hitRadius > 0f)
+				{
+					SkillEffectApplier.ApplyAtPosition(_data.hitEffect, _data.caster, _data.skillId, transform.position, _data.hitRadius);
+				}
+				else
+				{
+					_hitBuffer.Clear();
+					_hitBuffer.Add(unit);
+					SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer);
+				}
+
 				returnToPool("hit");
 				return;
 			}
@@ -72,10 +160,12 @@ namespace ProjectOne.Projectile
 			_isReleased = false;
 			_traveledDistance = 0f;
 			transform.position = data.startPos;
-			// 이동 방향으로 머리를 향하게 — 스프라이트 기준축(_spriteForwardAngle)만큼 보정.
-			// 직선 비행이라 발사 순간 1회로 충분(유도/포물선은 후속에서 Update 회전).
-			float angle = Mathf.Atan2(data.direction.y, data.direction.x) * Mathf.Rad2Deg - _spriteForwardAngle;
-			transform.rotation = Quaternion.Euler(0f, 0f, angle);
+
+			// 이동 방식 초기화 — 회전은 Update 에서 궤적이 제공하는 facing 으로 매 프레임 갱신
+			if (_trajectory != null)
+			{
+				_trajectory.OnLaunch(data, _speed, _maxDistance, _lifeTime);
+			}
 		}
 
 		public void OnActivate()

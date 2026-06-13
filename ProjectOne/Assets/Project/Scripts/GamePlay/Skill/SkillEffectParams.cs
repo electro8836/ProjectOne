@@ -47,6 +47,7 @@ namespace ProjectOne.Skill
 		public float AngleStep;      // 이웃 발 사이 간격(도) — 타겟 방향 중심 좌우 대칭 분산
 		public string Prefab;        // 발사체 프리팹 주소
 		public SkillEffect HitEffect; // 적중 시 적용할 효과
+		public float HitRadius;      // 임팩트 AoE 반경 (0=단일 타겟, >0=적중/마지막 위치 원형 범위)
 	}
 
 	public static class SkillEffectParams
@@ -206,7 +207,7 @@ namespace ProjectOne.Skill
 			return true;
 		}
 
-		// SpawnProjectile : P1=개수(int, 기본 1), P2=각도 간격(float, 기본 0), P3=발사체 프리팹 주소(필수), P4=적중 효과 SkillEffect(필수)
+		// SpawnProjectile : P1=개수(int, 기본 1), P2=각도 간격(float, 기본 0), P3=발사체 프리팹 주소(필수), P4=적중 효과 SkillEffect(필수), P5=임팩트 AoE 반경(float, 기본 0=단일)
 		public static bool TryParseSpawnProjectile(Table_SkillEffect.Row row, out SpawnProjectileParams p)
 		{
 			p = new SpawnProjectileParams();
@@ -254,6 +255,20 @@ namespace ProjectOne.Skill
 			}
 
 			p.HitEffect = hitEffect;
+
+			// P5 임팩트 AoE 반경 — 선택(기본 0 = 단일 타겟). >0 이면 적중/마지막 위치 원형 범위 적용
+			p.HitRadius = 0f;
+			if (string.IsNullOrEmpty(row.EffectParam_5) == false && row.EffectParam_5 != "None")
+			{
+				if (TryParseFloat(row.EffectParam_5, out float radius) == false)
+				{
+					LogParseError(row, 5, "SpawnProjectile.HitRadius");
+					return false;
+				}
+
+				p.HitRadius = radius;
+			}
+
 			return true;
 		}
 

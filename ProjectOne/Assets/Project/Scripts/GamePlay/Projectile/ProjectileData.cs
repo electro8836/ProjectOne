@@ -15,6 +15,7 @@ namespace ProjectOne.Projectile
 		public SkillInfo skillId;     // 발동 스킬 — 효과 귀속
 		public SkillEffect hitEffect; // 적중 시 적용할 효과
 		public UnitBase target;       // 유도 궤적용 타겟 (직선이면 미사용)
+		public float hitRadius;       // 임팩트 AoE 반경 (0=단일 타겟, >0=원형 범위 적용)
 
 		public string expireVFX;      // 소멸(수명/사거리 만료) 시 출력 VFX 주소 (없으면 빈 문자열)
 		public string expireSFX;      // 소멸(수명/사거리 만료) 시 출력 SFX 주소 (없으면 빈 문자열)
