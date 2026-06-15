@@ -10,6 +10,9 @@ namespace ProjectOne.Unit
 {
 	public class MonsterSpawnManager : MonoSingleton<MonsterSpawnManager>
 	{
+		// 전투 전용 — 전투씬 수명에만 존재(로비 등으로 따라가지 않음)
+		protected override bool Persistent => false;
+
 		private readonly struct ActiveEntry
 		{
 			public readonly Monster monster;
@@ -36,6 +39,12 @@ namespace ProjectOne.Unit
 		private List<SpawnData> _spawnList = new List<SpawnData>();
 
 		private readonly Dictionary<int, ActiveEntry> _active = new Dictionary<int, ActiveEntry>();
+
+		// 1회성(웨이브/레이드) 스폰으로 현재 살아있는 몬스터 수 — SpawnOneShot 시 즉시 증가, 사망 시 감소
+		private int _oneShotAlive;
+
+		// 1회성 스폰 몬스터의 생존 수 (웨이브 클리어 판정용)
+		public int ActiveCount => _oneShotAlive;
 
 		protected override void Awake()
 		{
@@ -72,6 +81,43 @@ namespace ProjectOne.Unit
 		public void Clear()
 		{
 			_spawnList.Clear();
+			_active.Clear();
+			_oneShotAlive = 0;
+		}
+
+		// 1회성 소환 — 충원(sustain) 없이 한 마리만 즉시 스폰한다. 웨이브/레이드 모드용.
+		// 활성 수는 호출 즉시 증가하므로, 소환이 아직 끝나기 전에도 ActiveCount 에 반영된다.
+		public void SpawnOneShot(int monsterId, Vector3 pos)
+		{
+			if (monsterId <= 0)
+			{
+				return;
+			}
+
+			_oneShotAlive++;
+			spawnOneShot(monsterId, pos).Forget();
+		}
+
+		private async UniTaskVoid spawnOneShot(int monsterId, Vector3 pos)
+		{
+			CancellationToken cancellationTokenOnDestroy = this.GetCancellationTokenOnDestroy();
+			Monster monster = await UnitFactory.Instance.CreateMonsterAsync(monsterId, pos, Faction.Enemy, cancellationTokenOnDestroy);
+			if (monster == null)
+			{
+				_oneShotAlive--;
+				return;
+			}
+
+			_active[monster.GetID()] = new ActiveEntry(monster, null);
+
+			// 몬스터는 항상 인디케이터 추가 — 기본은 캐스팅 스킬만 항시 표시(설정 무관), dev 플래그면 전체 스킬도 표시
+			if (monster.GetComponent<SkillIndicator>() == null)
+			{
+				SkillIndicator ind = monster.gameObject.AddComponent<SkillIndicator>();
+				ind.SetDevColor(new Color(1f, 0.65f, 0.1f, 0.5f));
+				ind.ConfigureForMonster(_showSkillIndicators);
+				ind.SetSkills(monster.SkillContainer.GetAll());
+			}
 		}
 
 		private void Update()
@@ -140,6 +186,13 @@ namespace ProjectOne.Unit
 			if (e.UnitType == UnitType.Monster && _active.TryGetValue(e.InstanceID, out var value))
 			{
 				_active.Remove(e.InstanceID);
+
+				// 1회성 스폰(owner == null)은 사망 즉시 생존 수에서 제외 (웨이브 클리어 판정 반영)
+				if (value.owner == null)
+				{
+					_oneShotAlive--;
+				}
+
 				returnAfterDelay(value).Forget();
 			}
 		}

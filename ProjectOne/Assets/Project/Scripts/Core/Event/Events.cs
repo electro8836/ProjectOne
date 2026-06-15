@@ -142,4 +142,35 @@ namespace ProjectOne.Event
 						this.StateType = stateType;
 				}
 		}
+
+		// 웨이브 상태 전이 알림 (웨이브 모드). 메인HUD의 스킵 버튼/웨이브 표시 등에서 구독.
+		// IsWaiting=true: 다음 웨이브 대기 중(스킵 버튼 노출), WaitSeconds: 대기 총 시간(초)
+		public readonly struct WaveStateChangedEvent
+		{
+				public readonly int CurrentWave;   // 1-based 현재 웨이브
+				public readonly int TotalWaves;
+				public readonly bool IsWaiting;
+				public readonly float WaitSeconds;
+
+				public WaveStateChangedEvent(int currentWave, int totalWaves, bool isWaiting, float waitSeconds)
+				{
+						this.CurrentWave = currentWave;
+						this.TotalWaves = totalWaves;
+						this.IsWaiting = isWaiting;
+						this.WaitSeconds = waitSeconds;
+				}
+		}
+
+		// 전투 종료 알림 (BattleDirector가 승패 확정 시 발행). 결과창/보상 수령 UI 등에서 구독.
+		public readonly struct BattleEndedEvent
+		{
+				public readonly bool IsVictory;
+				public readonly int ClearRewardId;   // Table_MapInfo.ClearRewardID
+
+				public BattleEndedEvent(bool isVictory, int clearRewardId)
+				{
+						this.IsVictory = isVictory;
+						this.ClearRewardId = clearRewardId;
+				}
+		}
 }

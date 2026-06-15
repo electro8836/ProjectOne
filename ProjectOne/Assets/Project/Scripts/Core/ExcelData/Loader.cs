@@ -73,33 +73,22 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - StageInfo
+            #region Table - MapInfo
             {
-                CurrentFile = Table_StageInfo.Filename;
+                CurrentFile = Table_MapInfo.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_StageInfo._parser ) == false ) {
+                if( Load( reader, Table_MapInfo._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - DungeonList
+            #region Table - MonsterSpawnInfo
             {
-                CurrentFile = Table_DungeonList.Filename;
+                CurrentFile = Table_MonsterSpawnInfo.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_DungeonList._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - DungeonStage
-            {
-                CurrentFile = Table_DungeonStage.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_DungeonStage._parser ) == false ) {
+                if( Load( reader, Table_MonsterSpawnInfo._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

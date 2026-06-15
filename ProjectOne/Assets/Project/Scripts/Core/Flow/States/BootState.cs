@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Audio;
+using ProjectOne.Data;
 using ProjectOne.Settings;
 
 namespace ProjectOne.Flow
@@ -17,9 +18,13 @@ namespace ProjectOne.Flow
 			// 0) 로컬 설정 로드 (가벼움, 타이틀 전 적용)
 			SettingsManager.Instance.Load();
 
-			// 1) 정적 테이블 일괄 로드 (Addressables 라벨 "Tables")
-			bool cancelled = await TableLoader.LoadAllAsync(ct).SuppressCancellationThrow();
-			if (cancelled) 
+			// 1) 정적 테이블 일괄 로드 (Addressables 라벨 "Tables" → 자동생성 EDT.Loader)
+			var (cancelled, ok) = await TableBootLoader.LoadAllAsync(ct).SuppressCancellationThrow();
+			if (cancelled)
+			{
+				return;
+			}
+			if (ok == false)
 			{
 				return;
 			}

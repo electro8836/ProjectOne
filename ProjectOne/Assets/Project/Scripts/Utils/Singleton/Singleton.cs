@@ -52,6 +52,10 @@ namespace ProjectOne.Utils
 		// OnDisable/OnDestroy 등 종료 흐름에서 Instance 접근 전에 사용한다.
 		public static bool HasInstance => _instance != null && _isQuitting == false;
 
+		// 씬 전환에도 살아남길지 여부. 기본은 영속(DontDestroyOnLoad).
+		// 전투 전용 매니저 등은 false 로 오버라이드해 현재 씬 수명에만 존재하게 한다.
+		protected virtual bool Persistent => true;
+
 		public static T Instance
 		{
 			get
@@ -77,7 +81,11 @@ namespace ProjectOne.Utils
 				// 씬에 없으면 런타임 생성
 				GameObject go = new GameObject(typeof(T).Name);
 				_instance = go.AddComponent<T>();
-				DontDestroyOnLoad(go);
+				if (_instance.Persistent == true)
+				{
+					DontDestroyOnLoad(go);
+				}
+
 				return _instance;
 			}
 		}
@@ -91,7 +99,10 @@ namespace ProjectOne.Utils
 			}
 
 			_instance = (T)this;
-			DontDestroyOnLoad(gameObject);
+			if (Persistent == true)
+			{
+				DontDestroyOnLoad(gameObject);
+			}
 		}
 
 		// 종료 진입을 가장 먼저 포착 (OnApplicationQuit → OnDisable → OnDestroy 순서).

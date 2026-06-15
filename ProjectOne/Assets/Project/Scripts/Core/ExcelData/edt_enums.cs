@@ -64,16 +64,9 @@ namespace EDT {
         Mythic,
     }
 
-    public enum MapType {
+    public enum BattleType {
         None,
-        Stage,
-        Dungeon,
-    }
-
-    public enum DungeonType {
-        None,
-        Gold,
-        Exp,
+        Wave,
         Raid,
     }
 
@@ -389,9 +382,8 @@ namespace EDT {
         TableCurrencyInfo,
         TableEquipment,
         TableItemInfo,
-        TableStageInfo,
-        TableDungeonList,
-        TableDungeonStage,
+        TableMapInfo,
+        TableMonsterSpawnInfo,
         TableMaterial,
         TableMonster,
         TableMonsterPhase,

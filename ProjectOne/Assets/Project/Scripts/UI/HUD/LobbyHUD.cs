@@ -20,8 +20,7 @@ namespace ProjectOne.UI
 		[SerializeField] private UIButton _dungeonEnterButton;
 
 		[Header("임시 전투 진입 파라미터 (던전 선택 UI 구현 전까지)")]
-		[SerializeField] private int _testDungeonId = 1;
-		[SerializeField] private int _testStep = 1;
+		[SerializeField] private int _testMapId = 1;
 		[SerializeField] private int[] _testPartyCharacterIds;
 
 		private void Awake()
@@ -69,9 +68,7 @@ namespace ProjectOne.UI
 		private void onBattleEnterClicked()
 		{
 			BattleContext ctx = new BattleContext();
-			ctx.Mode = BattleMode.NormalDungeon;
-			ctx.DungeonId = _testDungeonId;
-			ctx.Step = _testStep;
+			ctx.MapId = _testMapId;
 			ctx.PartyCharacterIds = _testPartyCharacterIds;
 
 			GameFlow.Instance.ChangeStateAsync(new BattleState(ctx)).Forget();

@@ -15,12 +15,6 @@ MonoBehaviour:
   m_GroupName: Data_Tables
   m_GUID: 88287288cd5ded24a84cae653a803aa0
   m_SerializeEntries:
-  - m_GUID: 18f4b3ebe2cefa54897d0f5fa2cf7d8b
-    m_Address: edt_dungeonstage.bytes
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - Tables
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2371d1e5918bcfa46a92cad4fb3a6083
     m_Address: edt_monster.bytes
     m_ReadOnly: 0
@@ -99,12 +93,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - Tables
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: bd0b0e99edb08b7498a6ba0c33ebff16
-    m_Address: edt_dungeonlist.bytes
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - Tables
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: bd3c643de6e5dac42817ab3f4b39feb1
     m_Address: edt_reward.bytes
     m_ReadOnly: 0
@@ -123,8 +111,20 @@ MonoBehaviour:
     m_SerializedLabels:
     - Tables
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: f4e7fa8b278039e4c8890d4e5a5aae90
-    m_Address: edt_stageinfo.bytes
+  - m_GUID: e1b2fd8acda84eb408cee73d6e8c61b6
+    m_Address: edt_monsterphase.bytes
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Tables
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: eaafa039951ab674c81c25002e223c2e
+    m_Address: edt_mapinfo.bytes
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Tables
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f05290991d44b0c4f9242d7e7d4ce56e
+    m_Address: edt_monsterspawninfo.bytes
     m_ReadOnly: 0
     m_SerializedLabels:
     - Tables

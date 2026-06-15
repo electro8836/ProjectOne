@@ -1,21 +1,27 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using EDT;
 
 namespace ProjectOne.Battle
 {
-	// 레이드 모드 — 자리만 확보(stub). 보스 페이즈/제한시간/협동 규칙은 추후 구현.
-	public sealed class RaidMode : IBattleMode
+	// 레이드형 모드 — 보통 SpawnCount=1, SpawnInfo_01 에 보스 1마리를 설정한다(쌍둥이 보스 등은 한 행에 다중 테이블).
+	// 보스를 모두 처치하면 승리. 웨이브 대기 없음.
+	public sealed class RaidMode : MapBattleModeBase
 	{
-		public UniTask SetupAsync(BattleContext ctx, BattleDirector dir, CancellationToken ct)
+		protected override async UniTaskVoid RunAsync(Table_MapInfo.Row map, CancellationToken ct)
 		{
-			Debug.LogWarning("[RaidMode] 미구현 — 일반 던전 모드로 대체 권장");
-			return UniTask.CompletedTask;
-		}
+			Table_MonsterSpawnInfo.Row spawnInfo = Table_MonsterSpawnInfo.Get(map.SpawnInfo_01);
+			if (spawnInfo == null)
+			{
+				Debug.LogError($"[RaidMode] SpawnInfo 없음: id={map.SpawnInfo_01}");
+				return;
+			}
 
-		public BattleResult CheckResult()
-		{
-			return BattleResult.InProgress;
+			await SpawnInfoRunner.SpawnAsync(spawnInfo, MonsterSpawnCenter, MonsterSpawnRadius, ct);
+			await UniTask.WaitUntil(AreMonstersCleared, PlayerLoopTiming.Update, ct);
+
+			_result = BattleResult.Victory;
 		}
 	}
 }

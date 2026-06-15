@@ -14,6 +14,9 @@ namespace ProjectOne.Unit
 	[DefaultExecutionOrder(-100)]
 	public class UnitContainer : MonoSingleton<UnitContainer>
 	{
+		// 전투 전용 — 전투씬 수명에만 존재(로비 등으로 따라가지 않음)
+		protected override bool Persistent => false;
+
 		readonly List<UnitBase> _units = new List<UnitBase>(256);
 
 		// 유닛 일괄 구동 로직 (순수 클래스) — 컨테이너가 소유하고 직접 호출

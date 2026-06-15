@@ -74,6 +74,25 @@ namespace ProjectOne.Unit
 			return value;
 		}
 
+		// 전투 종료 시 호출 — 풀 GameObject 는 UnitContainer(전투씬 수명) 자식이라 씬과 함께 파괴된다.
+		// 영속 허브의 캐시에 죽은 풀 참조가 남으면 다음 전투에서 재사용해 스폰이 조용히 실패하므로,
+		// 캐시를 비우고 풀별 프리팹 Addressable 핸들을 해제(GetOrCreatePoolAsync 의 Acquire 와 짝)한다.
+		public void Clear()
+		{
+			Dictionary<int, MonsterPool>.KeyCollection.Enumerator e = _pools.Keys.GetEnumerator();
+			while (e.MoveNext())
+			{
+				Table_Monster.Row row = Table_Monster.Get(e.Current);
+				if (row != null && string.IsNullOrEmpty(row.Path) == false)
+				{
+					ResourceManager.Instance.Release(row.Path);
+				}
+			}
+
+			_pools.Clear();
+			_loading.Clear();
+		}
+
 		private MonsterPool createPool(GameObject prefab, int monsterId)
 		{
 			GameObject val = new GameObject($"MonsterPool_{monsterId}");

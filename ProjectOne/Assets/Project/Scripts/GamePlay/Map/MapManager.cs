@@ -10,6 +10,9 @@ namespace ProjectOne.Map
 	// 플로우필드 계산(좌표/통행/BFS)만 담당 — "누구를 향해 베이크할지"는 호출자(전투 규칙)가 정한다.
 	public class MapManager : MonoSingleton<MapManager>
 	{
+		// 전투 전용 — 전투씬 수명에만 존재(로비 등으로 따라가지 않음)
+		protected override bool Persistent => false;
+
 		private GameObject _mapInstance;
 		private TilemapGrid _current;
 
