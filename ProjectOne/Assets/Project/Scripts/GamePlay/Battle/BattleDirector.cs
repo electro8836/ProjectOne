@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -16,6 +17,9 @@ namespace ProjectOne.Battle
 		private bool _setupDone;
 		private bool _ending;
 		private int _clearRewardId;
+
+		// 메인HUD 스킵 버튼이 발행하는 WaveSkipRequestedEvent 구독 캐시
+		private Action<WaveSkipRequestedEvent> _onSkipRequested;
 
 		// 전투 수명 토큰 — 전투 종료(승/패/강제퇴장) 시 즉시 취소해 모드 루프를 결정적으로 중단한다.
 		private CancellationTokenSource _cts;
@@ -57,6 +61,22 @@ namespace ProjectOne.Battle
 			{
 				wave.RequestSkipWait();
 			}
+		}
+
+		private void OnEnable()
+		{
+			_onSkipRequested = OnSkipRequested;
+			EventManager.Instance.Subscribe<WaveSkipRequestedEvent>(_onSkipRequested);
+		}
+
+		private void OnDisable()
+		{
+			EventManager.Instance.Unsubscribe<WaveSkipRequestedEvent>(_onSkipRequested);
+		}
+
+		private void OnSkipRequested(WaveSkipRequestedEvent evt)
+		{
+			RequestSkipWaveWait();
 		}
 
 		private async UniTaskVoid BeginAsync(BattleContext ctx)

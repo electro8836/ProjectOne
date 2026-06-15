@@ -15,7 +15,10 @@ namespace ProjectOne.Settings
 		// 플레이어(내 캐릭터) 스킬 인디케이터 표시 여부 변경 알림
 		public event System.Action<bool> PlayerSkillIndicatorChanged;
 
-		protected SettingsManager()
+		// 조이스틱 유동성(floating) 사용 여부 변경 알림
+		public event System.Action<bool> FloatingJoystickChanged;
+
+		public SettingsManager()
 		{
 		}
 
@@ -43,6 +46,31 @@ namespace ProjectOne.Settings
 			if (PlayerSkillIndicatorChanged != null)
 			{
 				PlayerSkillIndicatorChanged(enabled);
+			}
+		}
+
+		public bool UseFloatingJoystick
+		{
+			get
+			{
+				EnsureLoaded();
+				return _data.useFloatingJoystick;
+			}
+		}
+
+		public void SetUseFloatingJoystick(bool enabled)
+		{
+			EnsureLoaded();
+			if (_data.useFloatingJoystick == enabled)
+			{
+				return;
+			}
+
+			_data.useFloatingJoystick = enabled;
+			Save();
+			if (FloatingJoystickChanged != null)
+			{
+				FloatingJoystickChanged(enabled);
 			}
 		}
 

@@ -6,5 +6,7 @@ namespace ProjectOne.Settings
 	public class GameSettingsData
 	{
 		public bool showPlayerSkillIndicator = true;
+		// 조이스틱 유동성(floating) 사용 여부 — true 면 누른 위치로 배경이 이동, false 면 고정
+		public bool useFloatingJoystick = true;
 	}
 }

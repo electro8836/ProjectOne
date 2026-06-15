@@ -2,27 +2,40 @@ using UnityEngine;
 
 namespace ProjectOne.UI
 {
-	// 던전 씬(5.Dungeon) HUD.
-	// 영웅 HP/MP, 스킬 슬롯, 던전 진행 상황 + 나가기 버튼
+	// 4.Battle 전투 HUD 매니저.
+	// 전투 위젯(웨이브 정보/보스/몬스터 수/조이스틱)을 보유하며, 각 위젯은
+	// 자체적으로 전투 이벤트를 구독해 표시/갱신을 처리한다. 여기서는 참조 보유와
+	// 공통 버튼(나가기) 처리만 담당한다.
 	public class BattleHUD : UIScreen
 	{
-		[SerializeField] private UIButton _exitButton;
+		[Header("위젯")]
+		[SerializeField] private WaveInfoTitle _waveInfoTitle;
+		[SerializeField] private BossUI _bossUI;
+		[SerializeField] private MonsterCount _monsterCount;
+		[SerializeField] private JoystickController _joystick;
 
-		// TODO: HeroHPBar, SkillSlot 등 하위 컴포넌트는 각자 이벤트 구독
+		[Header("공통")]
+		[SerializeField] private UIButton _exitButton;
 
 		private void Awake()
 		{
-			_exitButton.OnClickEvent += onExitClicked;
+			if (_exitButton != null)
+			{
+				_exitButton.OnClickEvent += onExitClicked;
+			}
 		}
 
 		private void OnDestroy()
 		{
-			_exitButton.OnClickEvent -= onExitClicked;
+			if (_exitButton != null)
+			{
+				_exitButton.OnClickEvent -= onExitClicked;
+			}
 		}
 
 		private void onExitClicked()
 		{
-			// TODO: 던전 퇴장 시 전이할 상태 결정 (로비 복귀 등)
+			// TODO: 전투 퇴장 시 전이할 상태 결정 (로비 복귀 등)
 		}
 	}
 }
