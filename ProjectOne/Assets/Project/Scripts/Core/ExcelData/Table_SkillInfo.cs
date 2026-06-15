@@ -11,6 +11,7 @@ namespace EDT {
             public string Name { get; set; } = string.Empty;
             public float CooltimeSec { get; set; } = 0f;
             public bool IsBasicAttack { get; set; } = false;
+            public int StaminaCost { get; set; } = 0;
             public SkillCastingTypes CastingType { get; set; } = SkillCastingTypes.None;
             public int CastingParam { get; set; } = 0;
             public SkillScanType ScanType { get; set; } = SkillScanType.None;
@@ -56,6 +57,7 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.CooltimeSec = reader.ReadSingle();
                 row.IsBasicAttack = reader.ReadBoolean();
+                row.StaminaCost = reader.ReadInt32();
                 row.CastingType = (SkillCastingTypes)reader.ReadInt32();
                 row.CastingParam = reader.ReadInt32();
                 row.ScanType = (SkillScanType)reader.ReadInt32();

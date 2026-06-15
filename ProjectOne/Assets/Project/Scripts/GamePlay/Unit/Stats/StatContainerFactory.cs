@@ -31,6 +31,9 @@ namespace ProjectOne.Unit.Stats
 			c.SetBase(StatInfo.BreakRecovery_Base,   row.BreakRecovery_Base);
 			c.SetBase(StatInfo.KnockBack_Base,       row.KnockBack_Base);
 			c.SetBase(StatInfo.KnockBackResist_Base, row.KnockBackResist_Base);
+			c.SetBase(StatInfo.MaxStamina_Base,      row.MaxStamina_Base);
+			c.SetBase(StatInfo.StaminaRegen_Base,    row.StaminaRegen_Base);
+			c.SetBase(StatInfo.StaminaSteal_Base,    row.StaminaSteal_Base);
 			c.SetBase(StatInfo.Evasion_Base,         row.Evasion_Base);
 
 			return c;

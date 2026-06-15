@@ -151,7 +151,25 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
+			// 스테미나 비용 게이트 — MaxStamina 를 가진 유닛(영웅)만 제약, 부족하면 쿨타임 소모 없이 실패
+			Table_SkillInfo.Row row = Table_SkillInfo.Get(id);
+			int staminaCost = (row != null) ? row.StaminaCost : 0;
+			if (staminaCost > 0 && _owner.Stats != null && _owner.Vitals != null)
+			{
+				if (_owner.Stats.GetStat(StatInfo.MaxStamina) > 0f && _owner.Vitals.Stamina < staminaCost)
+				{
+					return false;
+				}
+			}
+
 			SkillExecutor.Execute(id, _owner);
+
+			// 발동 성공 — 스테미나 차감 (MaxStamina 0 이면 Clamp 로 0 유지, 무해)
+			if (staminaCost > 0 && _owner.Vitals != null)
+			{
+				_owner.Vitals.ModifyStamina(-staminaCost);
+			}
+
 			if (rt.IsBasicAttack && _owner.Stats != null)
 			{
 				float atkSpeed = _owner.Stats.GetStat(StatInfo.AtkSpeed);

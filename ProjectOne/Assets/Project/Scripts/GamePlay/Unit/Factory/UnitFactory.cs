@@ -144,6 +144,7 @@ namespace ProjectOne.Unit
 			Vitals vitals = new Vitals(stats);
 			vitals.InitHp();
 			vitals.InitBreakGage();
+			vitals.InitStamina();
 			unit.SetVitals(vitals);
 			BuffContainer buffContainer = new BuffContainer(unit);
 			unit.SetBuffContainer(buffContainer);

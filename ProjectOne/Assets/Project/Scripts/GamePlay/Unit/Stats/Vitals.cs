@@ -12,6 +12,7 @@ namespace ProjectOne.Unit.Stats
 
 		public float Hp;
 		public float BreakGage;
+		public float Stamina;
 
 		// 브레이크 상태(게이지 0) 여부 — true이면 내부 회복 풀로만 회복
 		public bool IsBreak { get; private set; }
@@ -39,6 +40,16 @@ namespace ProjectOne.Unit.Stats
 		public void ModifyHp(float delta)
 		{
 			Hp = Mathf.Clamp(Hp + delta, 0f, _stats.GetStat(StatInfo.MaxHP));
+		}
+
+		public void InitStamina()
+		{
+			Stamina = _stats.GetStat(StatInfo.MaxStamina);
+		}
+
+		public void ModifyStamina(float delta)
+		{
+			Stamina = Mathf.Clamp(Stamina + delta, 0f, _stats.GetStat(StatInfo.MaxStamina));
 		}
 
 		public void ModifyBreakGage(float delta)

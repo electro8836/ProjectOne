@@ -266,6 +266,13 @@ namespace ProjectOne.Unit
 								_vitals.ModifyBreakGage(rec);
 							}
 						}
+
+						// 스테미나 회복 — 1초마다 StaminaRegen 스탯만큼 (MaxStamina 0 이면 무해)
+						float staminaRegen = _stats.GetStat(StatInfo.StaminaRegen);
+						if (staminaRegen > 0f)
+						{
+							_vitals.ModifyStamina(staminaRegen);
+						}
 					}
 
 					// 넉백 면역 상태(브레이크 게이지 보유 중) 변화 시 외곽선 토글
@@ -309,6 +316,17 @@ namespace ProjectOne.Unit
 			if (!IsDead)
 			{
 				EventManager.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID, info.IsCritical, info.IsSuperCritical));
+
+				// 피격 시 공격자가 자신의 StaminaSteal 만큼 스테미나 회복 (MaxStamina 0 이면 무해)
+				if (info.Damage > 0 && info.Attacker != null && info.Attacker.Stats != null && info.Attacker.Vitals != null)
+				{
+					float steal = info.Attacker.Stats.GetStat(StatInfo.StaminaSteal);
+					if (steal > 0f)
+					{
+						info.Attacker.Vitals.ModifyStamina(steal);
+					}
+				}
+
 				if (_animator != null && !IsKnockbackImmune)
 				{
 					_animator.PlayHit();
@@ -357,6 +375,7 @@ namespace ProjectOne.Unit
 			{
 				_vitals.InitHp();
 				_vitals.InitBreakGage();
+				_vitals.InitStamina();
 			}
 
 			if (_animator != null)
