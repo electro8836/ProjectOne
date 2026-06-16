@@ -134,15 +134,13 @@ namespace ProjectOne.Unit
 				if (spawnData.aliveCount < spawnData.minCount)
 				{
 					requestSpawns(spawnData, spawnData.minCount - spawnData.aliveCount);
-					spawnData.timer = 0f;
+					spawnData.spawnTimer.Reset();
 				}
 				else if (spawnData.aliveCount < spawnData.maxCount)
 				{
-					spawnData.timer += deltaTime;
-					if (spawnData.timer >= spawnData.spawnInterval)
+					if (spawnData.spawnTimer.Tick(deltaTime, spawnData.spawnInterval) > 0)
 					{
 						requestSpawns(spawnData, spawnData.maxCount - spawnData.aliveCount);
-						spawnData.timer = 0f;
 					}
 				}
 			}

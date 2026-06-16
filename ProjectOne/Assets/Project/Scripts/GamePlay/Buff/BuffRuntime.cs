@@ -26,7 +26,7 @@ namespace ProjectOne.Buff
 		public SkillEffect Effect { get; private set; }     // 부착 시 1회 적용되는 효과 — 코드 버프(대시 공격)가 경로 데미지 소스로도 참조
 		public SkillInfo SourceSkill { get; private set; }  // 이 버프를 발동시킨 스킬 — 코드 버프가 ScanType/ScanParam 등을 읽는 데 사용
 
-		float _intervalAccum;
+		IntervalTimer _intervalTimer;
 		readonly List<StatModifier> _modHandles = new List<StatModifier>(2);
 		IBuffBehavior _behavior;   // 코드로 정의된 버프 동작 (없으면 null — 데이터 버프)
 		ITickableBuff _tickable;   // 매 프레임 갱신이 필요한 코드 버프 (없으면 null)
@@ -96,7 +96,7 @@ namespace ProjectOne.Buff
 			IsInfinite = duration <= 0f;
 			RemainingDuration = IsInfinite ? 0f : duration;
 			IntervalSec = intervalSec;
-			_intervalAccum = 0f;
+			_intervalTimer.Reset();
 			_expired = false;
 		}
 
@@ -117,10 +117,9 @@ namespace ProjectOne.Buff
 			// 주기 효과
 			if (IntervalEffect != SkillEffect.None && IntervalSec > 0f)
 			{
-				_intervalAccum += dt;
-				while (_intervalAccum >= IntervalSec)
+				int n = _intervalTimer.Tick(dt, IntervalSec);
+				for (int i = 0; i < n; i++)
 				{
-					_intervalAccum -= IntervalSec;
 					SkillEffectApplier.ApplyOnBuff(IntervalEffect, Owner, Source, this);
 				}
 			}

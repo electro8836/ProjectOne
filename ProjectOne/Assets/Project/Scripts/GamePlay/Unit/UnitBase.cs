@@ -107,8 +107,8 @@ namespace ProjectOne.Unit
 
 		private readonly HashSet<string> _skillBlockKeys = new HashSet<string>();
 
-		// 브레이크 게이지 자동 회복 1초 주기 누적기
-		private float _breakRecoveryAccum;
+		// 1초 주기 자동 회복 타이머 (브레이크 게이지 / 스테미너 / HP)
+		private IntervalTimer _secondTimer;
 
 		private bool _wasKnockbackImmune;
 
@@ -252,33 +252,12 @@ namespace ProjectOne.Unit
 					_brain.Tick(deltaTime);
 				}
 
-				// 브레이크 게이지 회복 — 1초마다 BreakRecovery 스탯만큼
-				// 브레이크 상태면 내부 풀에 누적(최대치 도달 시 해제), 아니면 게이지 직접 회복
+				// 1초 주기 자동 회복 (브레이크 게이지 / 스테미너 / HP)
 				if (_vitals != null && _stats != null)
 				{
-					_breakRecoveryAccum += deltaTime;
-					if (_breakRecoveryAccum >= 1f)
+					if (_secondTimer.Tick(deltaTime, 1f) > 0)
 					{
-						_breakRecoveryAccum -= 1f;
-						float rec = _stats.GetStat(StatInfo.BreakRecovery);
-						if (rec > 0f)
-						{
-							if (_vitals.IsBreak)
-							{
-								_vitals.TickBreakRecover(rec);
-							}
-							else
-							{
-								_vitals.ModifyBreakGage(rec);
-							}
-						}
-
-						// 스테미나 회복 — 1초마다 StaminaRegen 스탯만큼 (MaxStamina 0 이면 무해)
-						float staminaRegen = _stats.GetStat(StatInfo.StaminaRegen);
-						if (staminaRegen > 0f)
-						{
-							_vitals.ModifyStamina(staminaRegen);
-						}
+						regenTick();
 					}
 
 					// 넉백 면역 상태(브레이크 게이지 보유 중) 변화 시 외곽선 토글
@@ -289,6 +268,36 @@ namespace ProjectOne.Unit
 						_animator?.SetOutlineEnabled(isImmune);
 					}
 				}
+			}
+		}
+
+		// 1초 주기 자동 회복 — 브레이크 게이지 / 스테미너 / HP (호출부에서 _stats·_vitals null 보장)
+		private void regenTick()
+		{
+			float breakRecovery = _stats.GetStat(StatInfo.BreakRecovery);
+			if (breakRecovery > 0f)
+			{
+				if (_vitals.IsBreak)
+				{
+					_vitals.TickBreakRecover(breakRecovery);
+				}
+				else
+				{
+					_vitals.ModifyBreakGage(breakRecovery);
+				}
+			}
+
+			float staminaRegen = _stats.GetStat(StatInfo.StaminaRegen);
+			if (staminaRegen > 0f)
+			{
+				_vitals.ModifyStamina(staminaRegen);
+			}
+
+			// 체력 회복 — 이미 풀피면 ModifyHp 내부 Clamp 로 무해
+			float hpRecovery = _stats.GetStat(StatInfo.HpRecovery);
+			if (hpRecovery > 0f)
+			{
+				_vitals.ModifyHp(hpRecovery);
 			}
 		}
 

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using ProjectOne.Utils;
 
 namespace ProjectOne.Unit
 {
@@ -28,7 +29,7 @@ namespace ProjectOne.Unit
 		public int aliveCount;
 
 		[NonSerialized]
-		public float timer;
+		public IntervalTimer spawnTimer;
 
 		public Vector3 RandomPosition()
 		{
