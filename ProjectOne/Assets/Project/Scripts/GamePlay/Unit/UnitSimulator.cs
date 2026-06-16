@@ -50,6 +50,13 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 분리 인지 반경 배수 — 콜라이더 반경합의 이 배수 거리부터 미리 반발해, 부딪히기 전에 간격을 벌린다.
+		// 몬스터 0.3×1.6≈0.48, 보스 포함 0.4×1.6≈0.64 — 셀(1.0) 미만이라 공간 해시 3×3 조회로 그대로 커버.
+		private const float _separationRangeMul = 1.6f;
+
+		// 분리 벡터 시간 평활화 계수(EMA) — 프레임 간 분리 변동을 흡수해 뒷줄 떨림을 억제. 작을수록 더 부드럽다.
+		private const float _separationSmoothing = 0.3f;
+
 		// 인접 후보 조회 버퍼 — 분리 계산용(GC 회피로 재사용)
 		private readonly List<UnitBase> _separationBuffer = new List<UnitBase>(32);
 
@@ -78,7 +85,7 @@ namespace ProjectOne.Unit
 				float   aRad = a.CachedRadius;
 				Vector2 sum  = Vector2.zero;
 
-				// 인접 셀 후보만 조회 — 셀(1.0) ≫ 반발 반경(반경합 ~0.6)이라 3×3 으로 커버
+				// 인접 셀 후보만 조회 — 셀(1.0) > 반발 반경(반경합×1.6 ~0.64)이라 3×3 으로 커버
 				hash.Query(aPos, _separationBuffer);
 				for (int j = 0; j < _separationBuffer.Count; j++)
 				{
@@ -90,7 +97,7 @@ namespace ProjectOne.Unit
 
 					Vector2 away = aPos - b.CachedPos;
 					float distSqr = away.sqrMagnitude;
-					float r = aRad + b.CachedRadius;
+					float r = (aRad + b.CachedRadius) * _separationRangeMul;
 					if (distSqr < 1e-6f || distSqr > r * r)
 					{
 						continue;
@@ -100,7 +107,7 @@ namespace ProjectOne.Unit
 					sum += away / dist * (1f - dist / r);
 				}
 
-				a.CachedSeparation = sum;
+				a.CachedSeparation = Vector2.Lerp(a.CachedSeparation, sum, _separationSmoothing);
 			}
 		}
 	}

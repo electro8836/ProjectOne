@@ -243,6 +243,41 @@ namespace ProjectOne.Skill
 			return SkillInfo.None;
 		}
 
+		// 보유 스킬 중 자동 시전 대상(Passive/OnHit/Special 제외)이며 사거리가 있는(ScanParam1>0) 스킬의 최소 사거리.
+		// AI 정지 거리 기준 — 가장 짧은 사거리까지 접근해야 보유 스킬 전부가 사거리 안에 들어 시전 가능해진다. 없으면 -1.
+		public float GetMinSkillRange()
+		{
+			float min = -1f;
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				SkillRuntime rt = _ordered[i];
+				if (rt.CastingType == SkillCastingTypes.Passive
+					|| rt.CastingType == SkillCastingTypes.OnHitCaster
+					|| rt.CastingType == SkillCastingTypes.OnHitTarget)
+				{
+					continue;
+				}
+
+				if (rt.Source == "Special")
+				{
+					continue;
+				}
+
+				Table_SkillInfo.Row row = Table_SkillInfo.Get(rt.Id);
+				if (row == null || row.ScanParam1 <= 0f)
+				{
+					continue;
+				}
+
+				if (min < 0f || row.ScanParam1 < min)
+				{
+					min = row.ScanParam1;
+				}
+			}
+
+			return min;
+		}
+
 		public void Tick(float dt)
 		{
 			// 활성 코드 스킬 진행 — 자체 종료 조건(거리 도달·막힘 등) 충족 시 OnEnd 후 슬롯 비움
