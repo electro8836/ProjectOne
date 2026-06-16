@@ -215,6 +215,12 @@ namespace ProjectOne.Unit
 		// (애니메이션/CC/Buff/Skill/AI/브레이크게이지 갱신)
 		public virtual void ManualTick(float dt)
 		{
+			// 발밑 Y 기준 sortingOrder 갱신 — 개별 UnitAnimator.LateUpdate 콜백 N개를 중앙 일괄 구동으로 대체
+			if (_animator != null)
+			{
+				_animator.UpdateSorting();
+			}
+
 			if (!IsDead)
 			{
 				if (_animator != null && _mover != null)

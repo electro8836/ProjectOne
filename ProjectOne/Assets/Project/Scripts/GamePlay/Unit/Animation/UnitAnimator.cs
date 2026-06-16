@@ -77,7 +77,8 @@ namespace ProjectOne.Unit
 		}
 
 		// 발밑(피벗 하단) Y좌표를 정수 sortingOrder로 변환해 유닛 간 앞뒤 정렬을 결정한다.
-		private void LateUpdate()
+		// UnitBase.ManualTick 이 프레임당 1회 호출 — 개별 MonoBehaviour.LateUpdate 콜백 오버헤드 제거.
+		public void UpdateSorting()
 		{
 			float sortY = transform.position.y + _yOffset;
 			int order = -Mathf.RoundToInt(sortY * _precision); // Y가 클수록(위) 뒤로 → 음수
