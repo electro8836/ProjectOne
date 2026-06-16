@@ -100,6 +100,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2103023155136363376}
   - component: {fileID: 2473761243239867303}
+  - component: {fileID: 2826617095932732209}
   m_Layer: 0
   m_Name: UI_EnemyHPBar
   m_TagString: Untagged
@@ -116,7 +117,7 @@ RectTransform:
   m_GameObject: {fileID: 2826617095932732208}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.35, y: 0.35, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2388935366981682775}
@@ -129,6 +130,19 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 17}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2826617095932732209
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2826617095932732208}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 38f41ae04b638634eb68a42bd16a52df, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _hpSlider: {fileID: 2473761243239867303}
 --- !u!114 &2473761243239867303
 MonoBehaviour:
   m_ObjectHideFlags: 0

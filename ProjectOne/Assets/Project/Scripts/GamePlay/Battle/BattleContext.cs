@@ -12,7 +12,7 @@ namespace ProjectOne.Battle
 	// 진행 규칙(웨이브/레이드)은 Table_MapInfo.BattleType 으로 결정한다.
 	public sealed class BattleContext
 	{
-		public int MapId;                // Table_MapInfo ID
-		public int[] PartyCharacterIds;  // Table_Character ID 목록
+		public int MapId;       // Table_MapInfo ID
+		public int CharacterId; // Table_Character ID (단일 — 동료 없음)
 	}
 }

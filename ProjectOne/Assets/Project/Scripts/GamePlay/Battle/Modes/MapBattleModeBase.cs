@@ -12,9 +12,8 @@ namespace ProjectOne.Battle
 	// 진행 규칙(웨이브 루프, 레이드 단일전)은 하위 클래스가 RunAsync 에서 구현한다.
 	public abstract class MapBattleModeBase : IBattleMode
 	{
-		// 파티 배치 기준 위치(맵 좌측)와 세로 간격
+		// 히어로 배치 기준 위치(맵 좌측)
 		protected static readonly Vector3 PartyBasePos = new Vector3(-4f, 0f, 0f);
-		protected const float PartySpacing = 1.5f;
 
 		// 몬스터 스폰 영역(맵 우측)
 		protected static readonly Vector3 MonsterSpawnCenter = new Vector3(4f, 0f, 0f);
@@ -62,25 +61,14 @@ namespace ProjectOne.Battle
 
 		private static async UniTask SpawnPartyAsync(BattleContext ctx, CancellationToken ct)
 		{
-			if (ctx.PartyCharacterIds == null)
+			if (ctx.CharacterId <= 0)
 			{
 				return;
 			}
 
-			float centerOffset = (ctx.PartyCharacterIds.Length - 1) * 0.5f;
-			for (int i = 0; i < ctx.PartyCharacterIds.Length; i++)
-			{
-				int characterId = ctx.PartyCharacterIds[i];
-				if (characterId <= 0)
-				{
-					continue;
-				}
-
-				Vector3 pos = PartyBasePos + new Vector3(0f, (i - centerOffset) * PartySpacing, 0f);
-
-				bool autoControl = true; // 일단 자동스킬모드로 설정
-				await UnitFactory.Instance.CreateHeroAsync(characterId, pos, Faction.Player, autoControl, ct);
-			}
+			// 동료 없이 플레이어 조작 히어로 1명만 소환
+			bool autoControl = true; // 일단 자동스킬모드로 설정
+			await UnitFactory.Instance.CreateHeroAsync(ctx.CharacterId, PartyBasePos, Faction.Player, autoControl, ct);
 		}
 
 		// 현재 살아있는 몬스터(1회성 스폰)가 모두 정리됐는지 — WaitUntil 메서드 그룹용
