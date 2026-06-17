@@ -23,19 +23,24 @@ namespace ProjectOne.Editor
 		{
 			public string folder;          // 감시 폴더
 			public string ext;             // 허용 확장자 (소문자, 점 포함)
-			public string group;           // 마킹할 그룹 이름 (= Addressables label로도 사용)
+			public string group;           // 마킹할 그룹 이름
+			public string label;           // 부여할 Addressables label (보통 group과 동일)
 			public bool flattenAddress;    // true 면 address = 파일명만, false 면 폴더 상대경로
+			public bool keepExtension;     // true 면 address 에 확장자 유지 (예: edt_xxx.bytes)
+			public bool inDownloadLabels;  // true 면 PatchConfig._downloadLabels 에 포함
 		}
 
 		private static readonly Rule[] Rules = new Rule[]
 		{
-			new Rule { folder = "Assets/Project/Prefabs/Units",   ext = ".prefab",     group = "Prefabs_Units",   flattenAddress = true },
-			new Rule { folder = "Assets/Project/Prefabs/Units",   ext = ".controller", group = "Animators_Units", flattenAddress = true },
-			new Rule { folder = "Assets/Project/Prefabs/Units",   ext = ".overrideController", group = "Animators_Units", flattenAddress = true },
-			new Rule { folder = "Assets/Project/Prefabs/Effects", ext = ".prefab",     group = "Prefabs_Effects", flattenAddress = true },
-			new Rule { folder = "Assets/Project/Prefabs/UI",      ext = ".prefab",     group = "Prefabs_UI",      flattenAddress = true },
-			new Rule { folder = "Assets/Project/Prefabs/Maps",    ext = ".prefab",     group = "Prefabs_Maps",    flattenAddress = true },
-			new Rule { folder = "Assets/Project/Prefabs/Projectile", ext = ".prefab",  group = "Prefabs_Projectile", flattenAddress = true },
+			new Rule { folder = "Assets/Project/Prefabs/Units",   ext = ".prefab",     group = "Prefabs_Units",   label = "Prefabs_Units",   flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			new Rule { folder = "Assets/Project/Prefabs/Units",   ext = ".controller", group = "Animators_Units", label = "Animators_Units", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			new Rule { folder = "Assets/Project/Prefabs/Units",   ext = ".overrideController", group = "Animators_Units", label = "Animators_Units", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			new Rule { folder = "Assets/Project/Prefabs/Effects", ext = ".prefab",     group = "Prefabs_Effects", label = "Prefabs_Effects", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			new Rule { folder = "Assets/Project/Prefabs/UI",      ext = ".prefab",     group = "Prefabs_UI",      label = "Prefabs_UI",      flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			new Rule { folder = "Assets/Project/Prefabs/Maps",    ext = ".prefab",     group = "Prefabs_Maps",    label = "Prefabs_Maps",    flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			new Rule { folder = "Assets/Project/Prefabs/Projectile", ext = ".prefab",  group = "Prefabs_Projectile", label = "Prefabs_Projectile", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			// EDT 테이블 — 그룹 Data_Tables / 라벨 Tables 로 자동 등록. 부트 로더가 라벨 "Tables" 로 로드.
+			new Rule { folder = "Assets/Project/Data/Tables",     ext = ".bytes",      group = "Data_Tables",     label = "Tables",          flattenAddress = true, keepExtension = true,  inDownloadLabels = false },
 		};
 
 		// PatchConfig.asset 위치 — Addressables에 올리지 않음 (AssetBundleLoader가 인스펙터로 보유)
@@ -191,7 +196,7 @@ namespace ProjectOne.Editor
 
 		private static bool tryMark(AddressableAssetSettings settings, string assetPath)
 		{
-			if (!matchRule(assetPath, out string groupName, out string address))
+			if (!matchRule(assetPath, out string groupName, out string address, out string label))
 			{
 				return false;
 			}
@@ -207,7 +212,7 @@ namespace ProjectOne.Editor
 
 			// 이미 같은 그룹 + 같은 주소 + label이 있으면 스킵
 			if (existing != null && existing.parentGroup == group && existing.address == address
-				&& existing.labels.Contains(groupName))
+				&& existing.labels.Contains(label))
 			{
 				return false;
 			}
@@ -215,11 +220,11 @@ namespace ProjectOne.Editor
 			AddressableAssetEntry entry = settings.CreateOrMoveEntry(guid, group, false, false);
 			entry.address = address;
 
-			// group명을 Addressables label로 자동 부여 (GetDownloadSizeAsync에서 label로 사용)
-			settings.AddLabel(groupName);
-			entry.SetLabel(groupName, true);
+			// label 자동 부여 (GetDownloadSizeAsync / 부트 로더에서 label로 사용)
+			settings.AddLabel(label);
+			entry.SetLabel(label, true);
 
-			Debug.Log($"[Addressables] 마킹: {address} → 그룹/라벨: {groupName}");
+			Debug.Log($"[Addressables] 마킹: {address} → 그룹: {groupName} / 라벨: {label}");
 			return true;
 		}
 
@@ -238,21 +243,22 @@ namespace ProjectOne.Editor
 			}
 
 			// 자동 마킹 규칙에 해당하는 경로만 제거 (수동 마킹 보호)
-			if (!matchRule(assetPath, out string groupName, out _))
+			if (!matchRule(assetPath, out _, out _, out string label))
 			{
 				return false;
 			}
 
-			entry.SetLabel(groupName, false);
+			entry.SetLabel(label, false);
 			settings.RemoveAssetEntry(guid, false);
 			return true;
 		}
 
-		// assetPath가 감시 규칙에 해당하면 groupName, address를 채우고 true 반환
-		private static bool matchRule(string assetPath, out string groupName, out string address)
+		// assetPath가 감시 규칙에 해당하면 groupName, address, label을 채우고 true 반환
+		private static bool matchRule(string assetPath, out string groupName, out string address, out string label)
 		{
 			groupName = null;
 			address = null;
+			label = null;
 			string ext = Path.GetExtension(assetPath).ToLower();
 
 			for (int i = 0; i < Rules.Length; i++)
@@ -272,9 +278,10 @@ namespace ProjectOne.Editor
 				}
 
 				groupName = r.group;
+				label = r.label;
 				if (r.flattenAddress == true)
 				{
-					address = Path.GetFileNameWithoutExtension(assetPath);
+					address = r.keepExtension ? Path.GetFileName(assetPath) : Path.GetFileNameWithoutExtension(assetPath);
 				}
 				else
 				{
@@ -318,14 +325,19 @@ namespace ProjectOne.Editor
 		// PatchConfig는 Addressables에 올리지 않음 (AssetBundleLoader가 인스펙터로 보유)
 		private static void refreshPatchConfig()
 		{
-			// Rules에서 중복 없는 group 목록 추출 (순서 유지)
+			// Rules에서 중복 없는 label 목록 추출 (순서 유지) — 패치 다운로드 대상 규칙만
 			var seen = new HashSet<string>();
 			var labelList = new List<string>();
 			for (int i = 0; i < Rules.Length; i++)
 			{
-				if (seen.Add(Rules[i].group))
+				if (Rules[i].inDownloadLabels == false)
 				{
-					labelList.Add(Rules[i].group);
+					continue;
+				}
+
+				if (seen.Add(Rules[i].label))
+				{
+					labelList.Add(Rules[i].label);
 				}
 			}
 

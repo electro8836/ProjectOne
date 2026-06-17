@@ -91,7 +91,7 @@ namespace ProjectOne.UserData
 
 		// ── 장착 (캐릭터별) ───────────────────────────────────────────
 
-		public int GetSlot(int characterId, EquipmentType slot)
+		public int GetSlot(int characterId, EquipmentTypes slot)
 		{
 			OwnedCharacter oc = GetOwned(characterId);
 			if (oc == null)
@@ -101,15 +101,15 @@ namespace ProjectOne.UserData
 
 			switch (slot)
 			{
-				case EquipmentType.Weapon:    return oc.preset.weaponItemId;
-				case EquipmentType.Armor:     return oc.preset.armorItemId;
-				case EquipmentType.Accessory: return oc.preset.accessoryItemId;
+				case EquipmentTypes.Weapon:    return oc.preset.weaponItemId;
+				case EquipmentTypes.Armor:     return oc.preset.armorItemId;
+				case EquipmentTypes.Accessory: return oc.preset.accessoryItemId;
 				default: return 0;
 			}
 		}
 
 		// 슬롯에 아이템 장착 — 타입 일치 + 보유 검증 후 설정
-		public bool TrySetSlot(int characterId, EquipmentType slot, int itemId)
+		public bool TrySetSlot(int characterId, EquipmentTypes slot, int itemId)
 		{
 			OwnedCharacter oc = GetOwned(characterId);
 			if (oc == null)
@@ -132,7 +132,7 @@ namespace ProjectOne.UserData
 			return true;
 		}
 
-		public void ClearSlot(int characterId, EquipmentType slot)
+		public void ClearSlot(int characterId, EquipmentTypes slot)
 		{
 			OwnedCharacter oc = GetOwned(characterId);
 			if (oc == null)
@@ -178,19 +178,49 @@ namespace ProjectOne.UserData
 			return oc;
 		}
 
-		private void setSlotValue(OwnedCharacter oc, EquipmentType slot, int itemId)
+		private void setSlotValue(OwnedCharacter oc, EquipmentTypes slot, int itemId)
 		{
 			switch (slot)
 			{
-				case EquipmentType.Weapon:    oc.preset.weaponItemId = itemId; break;
-				case EquipmentType.Armor:     oc.preset.armorItemId = itemId; break;
-				case EquipmentType.Accessory: oc.preset.accessoryItemId = itemId; break;
+				case EquipmentTypes.Weapon:    oc.preset.weaponItemId = itemId; break;
+				case EquipmentTypes.Armor:     oc.preset.armorItemId = itemId; break;
+				case EquipmentTypes.Accessory: oc.preset.accessoryItemId = itemId; break;
 				default: return;
 			}
 
 			save();
 			EventManager.Instance.Publish(new PresetChangeEvent(oc.characterId, slot, itemId));
 			reapplyHero(oc.characterId);
+		}
+
+		// 해당 아이템을 장착 중인 활성 Hero 의 장비 Aspect 즉시 갱신 (강화 등 아이템 수치 변경 반영)
+		public void ReapplyEquipped(int itemId)
+		{
+			if (itemId <= 0)
+			{
+				return;
+			}
+
+			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
+			{
+				Hero hero = heroes[i] as Hero;
+				if (hero == null)
+				{
+					continue;
+				}
+
+				OwnedCharacter oc = GetOwned(hero.GetTableID());
+				if (oc == null)
+				{
+					continue;
+				}
+
+				if (oc.preset.weaponItemId == itemId || oc.preset.armorItemId == itemId || oc.preset.accessoryItemId == itemId)
+				{
+					HeroAspectRegistry.Instance.Reapply(hero, EquipmentSource);
+				}
+			}
 		}
 
 		// 해당 캐릭터가 현재 활성 Hero 면 장비 Aspect 즉시 갱신 (아니면 다음 스폰 시 ApplyAll 반영)

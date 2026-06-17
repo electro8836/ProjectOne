@@ -65,16 +65,47 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			// TODO: 강화 수치(Inventory.GetEnhanceLevel) 반영 — 현재 범위 외(수치 보관만)
 			applyStat(hero, row.StatOptionType_1, row.StatOptionValue_1);
 			applyStat(hero, row.StatOptionType_2, row.StatOptionValue_2);
+			applyStat(hero, row.StatOptionType_3, row.StatOptionValue_3);
 			applySkill(hero, row.SkillOption_1);
 			applySkill(hero, row.SkillOption_2);
+
+			applyEnchant(hero, row);
 		}
 
-		private void applyStat(Hero hero, StatInfo type, int value)
+		// 강화 수치(Inventory.GetEnhanceLevel) 반영 — StepStat × 강화레벨, UnlockLv 도달 시 UnlockSkill 부여
+		private void applyEnchant(Hero hero, Table_Equipment.Row equip)
 		{
-			if (type == StatInfo.None || value == 0 || hero.Stats == null)
+			if (equip.EnchantInfo <= 0)
+			{
+				return;
+			}
+
+			Table_Enchant.Row enchant = Table_Enchant.Get(equip.EnchantInfo);
+			if (enchant == null)
+			{
+				return;
+			}
+
+			int level = Account.Instance.Inventory.GetEnhanceLevel(equip.ID);
+			if (level <= 0)
+			{
+				return;
+			}
+
+			applyStat(hero, enchant.StepStatOptionType_1, enchant.StepStatOptionValue_1 * level);
+			applyStat(hero, enchant.StepStatOptionType_2, enchant.StepStatOptionValue_2 * level);
+
+			if (enchant.UnlockLv > 0 && level >= enchant.UnlockLv)
+			{
+				applySkill(hero, enchant.UnlockSkill);
+			}
+		}
+
+		private void applyStat(Hero hero, StatInfo type, float value)
+		{
+			if (type == StatInfo.None || value == 0f || hero.Stats == null)
 			{
 				return;
 			}

@@ -2,6 +2,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Flow;
 using ProjectOne.Battle;
+using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
@@ -21,7 +22,6 @@ namespace ProjectOne.UI
 
 		[Header("임시 전투 진입 파라미터 (던전 선택 UI 구현 전까지)")]
 		[SerializeField] private int _testMapId = 1;
-		[SerializeField] private int _testCharacterId = 1;
 
 		private void Awake()
 		{
@@ -69,7 +69,7 @@ namespace ProjectOne.UI
 		{
 			BattleContext ctx = new BattleContext();
 			ctx.MapId = _testMapId;
-			ctx.CharacterId = _testCharacterId;
+			ctx.CharacterId = Account.Instance.Loadout.Selected;
 
 			GameFlow.Instance.ChangeStateAsync(new BattleState(ctx)).Forget();
 		}

@@ -198,10 +198,10 @@ namespace ProjectOne.Event
 		public readonly struct PresetChangeEvent
 		{
 				public readonly int CharacterId;
-				public readonly EquipmentType Slot;
+				public readonly EquipmentTypes Slot;
 				public readonly int ItemId;
 
-				public PresetChangeEvent(int characterId, EquipmentType slot, int itemId)
+				public PresetChangeEvent(int characterId, EquipmentTypes slot, int itemId)
 				{
 						this.CharacterId = characterId;
 						this.Slot = slot;

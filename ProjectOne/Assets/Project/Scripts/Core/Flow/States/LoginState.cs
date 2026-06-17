@@ -12,7 +12,7 @@ namespace ProjectOne.Flow
 			// TODO: 서버 인증/로그인 (백엔드 준비 후 구현)
 			await UniTask.CompletedTask;
 
-			GameFlow.Instance.ChangeStateAsync(new LobbyState()).Forget();
+			GameFlow.Instance.ChangeStateAsync(new DataLoadState()).Forget();
 		}
 
 		public UniTask ExitAsync()

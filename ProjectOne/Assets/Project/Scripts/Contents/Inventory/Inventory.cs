@@ -78,6 +78,26 @@ namespace ProjectOne.UserData
 			publishChange(item);
 		}
 
+		// 아이템 소모 — 보유 수량이 충분하면 차감 후 true (제작 재료/재화성 소모용)
+		public bool TrySpend(int itemId, int amount = 1)
+		{
+			if (itemId <= 0 || amount <= 0)
+			{
+				return false;
+			}
+
+			OwnedItem item;
+			if (_index.TryGetValue(itemId, out item) == false || item.count < amount)
+			{
+				return false;
+			}
+
+			item.count -= amount;
+			save();
+			publishChange(item);
+			return true;
+		}
+
 		// 합성 가능 여부.
 		// TODO(테이블 컬럼 추가 후): Table_ItemInfo 의 NextGradeItemId / CombineCount 로 판정.
 		public bool CanCombine(int itemId)
