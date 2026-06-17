@@ -7,6 +7,7 @@ using ProjectOne.Event;
 using ProjectOne.Flow;
 using ProjectOne.Map;
 using ProjectOne.Unit;
+using ProjectOne.UserData;
 
 namespace ProjectOne.Battle
 {
@@ -16,7 +17,8 @@ namespace ProjectOne.Battle
 		private IBattleMode _mode;
 		private bool _setupDone;
 		private bool _ending;
-		private int _clearRewardId;
+		private int[] _clearRewardIds;
+		private int _characterId;
 
 		// 메인HUD 스킵 버튼이 발행하는 WaveSkipRequestedEvent 구독 캐시
 		private Action<WaveSkipRequestedEvent> _onSkipRequested;
@@ -43,7 +45,8 @@ namespace ProjectOne.Battle
 				return;
 			}
 
-			_clearRewardId = map.ClearRewardID;
+			_clearRewardIds = map.ClearRewardIDs;
+			_characterId = ctx.CharacterId;
 			_mode = BattleModeFactory.Create(map.BattleType);
 			BeginAsync(ctx).Forget();
 		}
@@ -152,10 +155,17 @@ namespace ProjectOne.Battle
 
 			Debug.Log($"[BattleDirector] 전투 종료: {result}");
 
-			// 승패 확정 시에만 결과/보상 알림 발행 (강제 종료=InProgress 는 제외)
+			// 승패 확정 시에만 결과/보상 처리 (강제 종료=InProgress 는 제외)
 			if (result != BattleResult.InProgress)
 			{
-				EventManager.Instance.Publish(new BattleEndedEvent(result == BattleResult.Victory, _clearRewardId));
+				bool victory = result == BattleResult.Victory;
+				if (victory == true)
+				{
+					// 클리어 보상 지급(경험치/골드/재료/장비) — 로비 전환 전이라 결과가 즉시 반영됨
+					RewardService.GrantClearRewards(_clearRewardIds, _characterId);
+				}
+
+				EventManager.Instance.Publish(new BattleEndedEvent(victory, _clearRewardIds));
 			}
 
 			Cleanup();

@@ -29,6 +29,12 @@ namespace ProjectOne.UserData
 			return _index.ContainsKey(characterId);
 		}
 
+		// 전체 보유 캐릭터 조회 (읽기 전용) — 디버그/조회용
+		public IReadOnlyList<OwnedCharacter> GetAll()
+		{
+			return _data.characters;
+		}
+
 		public OwnedCharacter GetOwned(int characterId)
 		{
 			OwnedCharacter oc;
@@ -62,6 +68,47 @@ namespace ProjectOne.UserData
 
 			save();
 			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
+		}
+
+		// ── 경험치 / 레벨업 ───────────────────────────────────────────
+
+		// 경험치 누적 → 누적량 기준으로 레벨 재계산(다중 레벨업·이월 자동). 변경 시 저장 + 알림.
+		public void AddExp(int characterId, int amount)
+		{
+			if (amount <= 0)
+			{
+				return;
+			}
+
+			OwnedCharacter oc = GetOwned(characterId);
+			if (oc == null)
+			{
+				return;
+			}
+
+			oc.exp += amount;
+			oc.level = levelFromExp(oc.exp);
+			save();
+			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
+		}
+
+		// Table_LevelExp: ID=레벨, TotalExperience=그 레벨 도달에 필요한 누적 경험치.
+		// 누적 exp 로 도달 가능한 가장 높은 레벨 반환(최소 1, 최대레벨에서 멈춤). ID는 1부터 연속 가정.
+		private static int levelFromExp(int totalExp)
+		{
+			int level = 1;
+			while (true)
+			{
+				Table_LevelExp.Row next = Table_LevelExp.Get(level + 1);
+				if (next == null || next.TotalExperience > totalExp)
+				{
+					break;
+				}
+
+				level++;
+			}
+
+			return level;
 		}
 
 		// ── 선택 ──────────────────────────────────────────────────────

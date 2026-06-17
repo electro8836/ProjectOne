@@ -280,7 +280,7 @@ GameObject:
   - component: {fileID: 1860655698}
   - component: {fileID: 1860655697}
   m_Layer: 0
-  m_Name: DevDataInjector
+  m_Name: DevTester
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -299,17 +299,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Boot.DevDataInjector
   _disabled: 0
-  _characterId: 0
+  _characterId: 101
   _characterLevel: 1
   _weapon:
-    itemId: 0
+    itemId: 100001
     enhanceLevel: 0
   _armor:
     itemId: 0
     enhanceLevel: 0
   _accessory:
-    itemId: 0
-    enhanceLevel: 0
+    itemId: 300015
+    enhanceLevel: 15
+  _viewRefreshInterval: 0.5
+  _viewCharacters: []
+  _viewCurrencies: []
+  _viewItems: []
+  _viewMaterials: []
 --- !u!4 &1860655698
 Transform:
   m_ObjectHideFlags: 0

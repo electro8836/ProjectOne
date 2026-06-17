@@ -43,7 +43,6 @@ namespace EDT {
         None,
         Enchant,
         Craft,
-        Rune,
     }
 
     public enum MonsterTypes {
@@ -51,6 +50,14 @@ namespace EDT {
         Normal,
         Elite,
         Boss,
+    }
+
+    public enum RewardTypes {
+        None,
+        Material,
+        Equipment,
+        Experience,
+        Gold,
     }
 
     public enum SkillCastingTypes {
@@ -134,7 +141,6 @@ namespace EDT {
         None,
         Gold,
         Dia,
-        Ruby,
         GoldDungeonTicket,
         ExpDungeonTicket,
         RaidTicket,
@@ -362,6 +368,7 @@ namespace EDT {
     public enum TableType {
         None,
         TableCharacter,
+        TableLevelExp,
         TableConsumable,
         TableCurrencyInfo,
         TableEquipment,
@@ -380,6 +387,7 @@ namespace EDT {
         TableSkinInfo,
         TableStatInfo,
         TableBaseStat,
+        TableLevelupStat,
         TableUIWidgetPath,
     }
 

@@ -170,12 +170,12 @@ namespace ProjectOne.Event
 		public readonly struct BattleEndedEvent
 		{
 				public readonly bool IsVictory;
-				public readonly int ClearRewardId;   // Table_MapInfo.ClearRewardID
+				public readonly int[] ClearRewardIds;   // Table_MapInfo.ClearRewardIDs
 
-				public BattleEndedEvent(bool isVictory, int clearRewardId)
+				public BattleEndedEvent(bool isVictory, int[] clearRewardIds)
 				{
 						this.IsVictory = isVictory;
-						this.ClearRewardId = clearRewardId;
+						this.ClearRewardIds = clearRewardIds;
 				}
 		}
 

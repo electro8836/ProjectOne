@@ -9,13 +9,17 @@ namespace EDT {
         public class Row {
             public int ID { get; set; } = 0;
             public CharacterTypes CharacterType { get; set; } = CharacterTypes.None;
-            public int ClassGrade { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public string Path { get; set; } = string.Empty;
             public int SkinID { get; set; } = 0;
             public int BaseStatID { get; set; } = 0;
             public int BaseSkillSet { get; set; } = 0;
+            public int LevelupStatID { get; set; } = 0;
+            public int Class1_ReqLv { get; set; } = 0;
+            public int Class1_SkillSet { get; set; } = 0;
+            public int Class2_ReqLv { get; set; } = 0;
+            public int Class2_SkillSet { get; set; } = 0;
         }
 
         public const string Filename = "edt_character.bytes";
@@ -40,13 +44,17 @@ namespace EDT {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
                 row.CharacterType = (CharacterTypes)reader.ReadInt32();
-                row.ClassGrade = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.Path = reader.ReadString();
                 row.SkinID = reader.ReadInt32();
                 row.BaseStatID = reader.ReadInt32();
                 row.BaseSkillSet = reader.ReadInt32();
+                row.LevelupStatID = reader.ReadInt32();
+                row.Class1_ReqLv = reader.ReadInt32();
+                row.Class1_SkillSet = reader.ReadInt32();
+                row.Class2_ReqLv = reader.ReadInt32();
+                row.Class2_SkillSet = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

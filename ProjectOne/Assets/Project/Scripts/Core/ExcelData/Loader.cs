@@ -29,6 +29,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - LevelExp
+            {
+                CurrentFile = Table_LevelExp.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_LevelExp._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Consumable
             {
                 CurrentFile = Table_Consumable.Filename;
@@ -221,6 +232,17 @@ namespace EDT {
                 CurrentFile = Table_BaseStat.Filename;
                 reader = open_file_functor( CurrentFile );
                 if( Load( reader, Table_BaseStat._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - LevelupStat
+            {
+                CurrentFile = Table_LevelupStat.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_LevelupStat._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

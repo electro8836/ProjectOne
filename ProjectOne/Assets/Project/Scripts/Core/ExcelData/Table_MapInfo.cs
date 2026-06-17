@@ -19,7 +19,7 @@ namespace EDT {
             public int SpawnInfo_03 { get; set; } = 0;
             public int SpawnInfo_04 { get; set; } = 0;
             public int SpawnInfo_05 { get; set; } = 0;
-            public int ClearRewardID { get; set; } = 0;
+            public int[] ClearRewardIDs { get; set; } = Array.Empty<int>();
         }
 
         public const string Filename = "edt_mapinfo.bytes";
@@ -54,7 +54,7 @@ namespace EDT {
                 row.SpawnInfo_03 = reader.ReadInt32();
                 row.SpawnInfo_04 = reader.ReadInt32();
                 row.SpawnInfo_05 = reader.ReadInt32();
-                row.ClearRewardID = reader.ReadInt32();
+                { int _n = reader.ReadInt32(); row.ClearRewardIDs = new int[_n]; for(int _i=0;_i<_n;_i++) row.ClearRewardIDs[_i] = reader.ReadInt32(); }
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

@@ -9,6 +9,8 @@ using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
 using ProjectOne.Buff;
 using ProjectOne.Unit.AI;
+using ProjectOne.UserData;
+using ProjectOne.ServerData;
 
 namespace ProjectOne.Unit
 {
@@ -175,10 +177,23 @@ namespace ProjectOne.Unit
 		private void ComposeHero(UnitBase unit, Table_Character.Row row, Faction faction, bool autoControl)
 		{
 			ComposeBase(unit, row.ID, row.BaseStatID, faction);
-			SkillContainer sc = unit.SkillContainer;
-			if (row.BaseSkillSet > 0)
+
+			// 캐릭터 레벨 산출 (미보유/AI 등은 1) — 실시간 아님, 스폰 시 확정
+			int level = 1;
+			OwnedCharacter oc = Account.Instance.Loadout.GetOwned(row.ID);
+			if (oc != null)
 			{
-				Table_SkillSet.Row skillSetRow = Table_SkillSet.Get(row.BaseSkillSet);
+				level = oc.level;
+			}
+
+			// 레벨업 스탯 영구 가산
+			applyLevelupStats(unit, row, level);
+
+			SkillContainer sc = unit.SkillContainer;
+			int skillSetId = resolveSkillSet(row, level);
+			if (skillSetId > 0)
+			{
+				Table_SkillSet.Row skillSetRow = Table_SkillSet.Get(skillSetId);
 				if (skillSetRow != null)
 				{
 					sc.Register(skillSetRow.BaseAttackSkill, SourceBase);
@@ -210,6 +225,54 @@ namespace ProjectOne.Unit
 			{
 				skillIndicator.SetSkills(unit.SkillContainer.GetAll());
 			}
+		}
+
+		// 레벨에 맞는 유효 스킬셋 결정 — 도달한 최상위 클래스로 교체(Class2 → Class1 → Base)
+		private static int resolveSkillSet(Table_Character.Row row, int level)
+		{
+			if (row.Class2_ReqLv > 0 && level >= row.Class2_ReqLv && row.Class2_SkillSet > 0)
+			{
+				return row.Class2_SkillSet;
+			}
+
+			if (row.Class1_ReqLv > 0 && level >= row.Class1_ReqLv && row.Class1_SkillSet > 0)
+			{
+				return row.Class1_SkillSet;
+			}
+
+			return row.BaseSkillSet;
+		}
+
+		// 레벨업 스탯 영구 가산 — 레벨업당 LevelupStat 만큼, 총 (level-1)배
+		private static void applyLevelupStats(UnitBase unit, Table_Character.Row row, int level)
+		{
+			if (row.LevelupStatID <= 0 || level <= 1)
+			{
+				return;
+			}
+
+			Table_LevelupStat.Row lv = Table_LevelupStat.Get(row.LevelupStatID);
+			if (lv == null)
+			{
+				return;
+			}
+
+			int times = level - 1;
+			addLevelupStat(unit.Stats, lv.StatID_1, lv.StatValue_1 * times);
+			addLevelupStat(unit.Stats, lv.StatID_2, lv.StatValue_2 * times);
+			addLevelupStat(unit.Stats, lv.StatID_3, lv.StatValue_3 * times);
+			addLevelupStat(unit.Stats, lv.StatID_4, lv.StatValue_4 * times);
+			addLevelupStat(unit.Stats, lv.StatID_5, lv.StatValue_5 * times);
+		}
+
+		private static void addLevelupStat(StatContainer stats, StatInfo type, float total)
+		{
+			if (type == StatInfo.None || total == 0f)
+			{
+				return;
+			}
+
+			stats.AddBase(type, total);
 		}
 
 		private static void RegisterBaseSkills(SkillContainer sc, int skillSetId)

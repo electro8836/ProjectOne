@@ -4,18 +4,15 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_Material
+    public static class Table_LevelExp
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public string Name { get; set; } = string.Empty;
-            public string Desc { get; set; } = string.Empty;
-            public MaterialType MaterialType { get; set; } = MaterialType.None;
-            public string Navigation { get; set; } = string.Empty;
+            public int TotalExperience { get; set; } = 0;
         }
 
-        public const string Filename = "edt_material.bytes";
-        public const TableType Type = TableType.TableMaterial;
+        public const string Filename = "edt_levelexp.bytes";
+        public const TableType Type = TableType.TableLevelExp;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -35,10 +32,7 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.Name = reader.ReadString();
-                row.Desc = reader.ReadString();
-                row.MaterialType = (MaterialType)reader.ReadInt32();
-                row.Navigation = reader.ReadString();
+                row.TotalExperience = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

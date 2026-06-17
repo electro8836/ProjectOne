@@ -57,6 +57,12 @@ namespace ProjectOne.UserData
 			return 0;
 		}
 
+		// 전체 보유 아이템 조회 (읽기 전용) — 디버그/조회용
+		public IReadOnlyList<OwnedItem> GetAll()
+		{
+			return _data.items;
+		}
+
 		// 아이템 획득 — 없으면 생성, 있으면 count 증가
 		public void Add(int itemId, int amount = 1)
 		{
