@@ -19,14 +19,13 @@ namespace EDT {
             public int AtkSpeed_Base { get; set; } = 0;
             public int MoveSpeed_Base { get; set; } = 0;
             public int Accuracy_Base { get; set; } = 0;
-            public int BreakGage_Base { get; set; } = 0;
             public int BreakDamage_Base { get; set; } = 0;
+            public int BreakGage_Base { get; set; } = 0;
             public int BreakRecovery_Base { get; set; } = 0;
             public int KnockBack_Base { get; set; } = 0;
             public int KnockBackResist_Base { get; set; } = 0;
             public int MaxStamina_Base { get; set; } = 0;
             public int StaminaRegen_Base { get; set; } = 0;
-            public int StaminaSteal_Base { get; set; } = 0;
             public int Evasion_Base { get; set; } = 0;
             public int Block_Base { get; set; } = 0;
         }
@@ -63,14 +62,13 @@ namespace EDT {
                 row.AtkSpeed_Base = reader.ReadInt32();
                 row.MoveSpeed_Base = reader.ReadInt32();
                 row.Accuracy_Base = reader.ReadInt32();
-                row.BreakGage_Base = reader.ReadInt32();
                 row.BreakDamage_Base = reader.ReadInt32();
+                row.BreakGage_Base = reader.ReadInt32();
                 row.BreakRecovery_Base = reader.ReadInt32();
                 row.KnockBack_Base = reader.ReadInt32();
                 row.KnockBackResist_Base = reader.ReadInt32();
                 row.MaxStamina_Base = reader.ReadInt32();
                 row.StaminaRegen_Base = reader.ReadInt32();
-                row.StaminaSteal_Base = reader.ReadInt32();
                 row.Evasion_Base = reader.ReadInt32();
                 row.Block_Base = reader.ReadInt32();
                 _all.Add( row.ID, row );

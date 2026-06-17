@@ -62,11 +62,22 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - ItemInfo
+            #region Table - Enchant
             {
-                CurrentFile = Table_ItemInfo.Filename;
+                CurrentFile = Table_Enchant.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_ItemInfo._parser ) == false ) {
+                if( Load( reader, Table_Enchant._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Craft
+            {
+                CurrentFile = Table_Craft.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Craft._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

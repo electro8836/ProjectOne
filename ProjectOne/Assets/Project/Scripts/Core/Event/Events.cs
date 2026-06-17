@@ -178,4 +178,45 @@ namespace ProjectOne.Event
 						this.ClearRewardId = clearRewardId;
 				}
 		}
+
+		// 인벤토리 변경 알림 (획득/합성/강화수치 변경). 인벤토리 UI 등에서 구독.
+		public readonly struct InventoryChangeEvent
+		{
+				public readonly int ItemId;
+				public readonly int Count;
+				public readonly int EnhanceLevel;
+
+				public InventoryChangeEvent(int itemId, int count, int enhanceLevel)
+				{
+						this.ItemId = itemId;
+						this.Count = count;
+						this.EnhanceLevel = enhanceLevel;
+				}
+		}
+
+		// 장착 프리셋 슬롯 변경 알림 (ItemId=0 은 해제). 캐릭터별 장착이므로 CharacterId 포함. 장비 UI 등에서 구독.
+		public readonly struct PresetChangeEvent
+		{
+				public readonly int CharacterId;
+				public readonly EquipmentType Slot;
+				public readonly int ItemId;
+
+				public PresetChangeEvent(int characterId, EquipmentType slot, int itemId)
+				{
+						this.CharacterId = characterId;
+						this.Slot = slot;
+						this.ItemId = itemId;
+				}
+		}
+
+		// 캐릭터 변경 알림 (획득/선택/등급 변경). 캐릭터 목록/선택 UI 등에서 구독.
+		public readonly struct CharacterChangeEvent
+		{
+				public readonly int CharacterId;
+
+				public CharacterChangeEvent(int characterId)
+				{
+						this.CharacterId = characterId;
+				}
+		}
 }

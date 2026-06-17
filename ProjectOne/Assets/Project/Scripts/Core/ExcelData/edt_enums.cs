@@ -5,10 +5,9 @@ namespace EDT {
 
     public enum CharacterTypes {
         None,
-        Class_Basic,
-        Class_Knight,
-        Class_Berserker,
-        Class_RuneBlader,
+        Class_Melee,
+        Class_Ranged,
+        Class_Mage,
     }
 
     public enum ConsumableType {
@@ -18,50 +17,20 @@ namespace EDT {
         ItemBox,
     }
 
-    public enum EquipmentType {
+    public enum EquipmentTypes {
         None,
         Weapon,
         Armor,
         Accessory,
-        Artifact,
     }
 
-    public enum ItemMainCategory {
+    public enum GradeTypes {
         None,
-        Currency,
-        Equipment,
-        Material,
-        Consumable,
-    }
-
-    public enum ItemSubCategory {
-        None,
-        Gold,
-        Dia,
-        DungeonTicket,
-        PvpToken,
-        EventToken,
-        Weapon,
-        Armor,
-        Accessory,
-        Artifact,
-        EnhanceStone,
-        EvolveStone,
-        CraftMaterial,
-        Rune,
-        Potion,
-        Scroll,
-        Box,
-    }
-
-    public enum ItemRarity {
-        None,
-        Common,
+        Normal,
         Magic,
         Rare,
         Epic,
         Legendary,
-        Mythic,
     }
 
     public enum BattleType {
@@ -165,6 +134,7 @@ namespace EDT {
         None,
         Gold,
         Dia,
+        Ruby,
         GoldDungeonTicket,
         ExpDungeonTicket,
         RaidTicket,
@@ -303,6 +273,7 @@ namespace EDT {
         AtkSpeed_Ratio,
         MoveSpeed,
         MoveSpeed_Base,
+        MoveSpeed_Add,
         MoveSpeed_Ratio,
         Accuracy,
         Accuracy_Base,
@@ -394,7 +365,8 @@ namespace EDT {
         TableConsumable,
         TableCurrencyInfo,
         TableEquipment,
-        TableItemInfo,
+        TableEnchant,
+        TableCraft,
         TableMapInfo,
         TableMonsterSpawnInfo,
         TableMaterial,

@@ -20,6 +20,9 @@ namespace ProjectOne.Unit
 
 		private const float DefaultMass = 1f;
 
+		// 장비 장착 Aspect — 무상태이므로 단일 인스턴스 재사용 (Register 는 중복 방지됨)
+		private readonly EquipmentAspect _equipmentAspect = new EquipmentAspect();
+
 		private static int _nextInstanceId = 1;
 
 		public static int PeekNextInstanceId => _nextInstanceId;
@@ -68,6 +71,7 @@ namespace ProjectOne.Unit
 				return null;
 			}
 
+			HeroAspectRegistry.Instance.Register(_equipmentAspect);
 			HeroAspectRegistry.Instance.ApplyAll(hero);
 			hero.RefreshAnimationStats();
 			EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), characterId));

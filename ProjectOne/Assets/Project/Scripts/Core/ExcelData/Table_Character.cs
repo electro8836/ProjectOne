@@ -8,7 +8,7 @@ namespace EDT {
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public CharacterTypes CharacterClass { get; set; } = CharacterTypes.None;
+            public CharacterTypes CharacterType { get; set; } = CharacterTypes.None;
             public int ClassGrade { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
@@ -39,7 +39,7 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.CharacterClass = (CharacterTypes)reader.ReadInt32();
+                row.CharacterType = (CharacterTypes)reader.ReadInt32();
                 row.ClassGrade = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
