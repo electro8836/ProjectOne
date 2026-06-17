@@ -17,10 +17,13 @@ namespace ProjectOne.Flow
 			ServerDataSystem.Repository.TryLoad(ServerDataSystem.KeyInventory, out inv);
 			SkillData sk;
 			ServerDataSystem.Repository.TryLoad(ServerDataSystem.KeySkill, out sk);
+			CurrencyData cur;
+			ServerDataSystem.Repository.TryLoad(ServerDataSystem.KeyCurrency, out cur);
 
 			Account.Instance.SetCharacter(ch);
 			Account.Instance.SetInventory(inv);
 			Account.Instance.SetSkill(sk);
+			Account.Instance.SetCurrency(cur);
 
 			GameFlow.Instance.ChangeStateAsync(new LobbyState()).Forget();
 			return UniTask.CompletedTask;

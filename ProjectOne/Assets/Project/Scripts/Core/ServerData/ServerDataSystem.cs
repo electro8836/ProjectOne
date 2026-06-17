@@ -7,6 +7,7 @@ namespace ProjectOne.ServerData
 		public const string KeyCharacter = "character";
 		public const string KeyInventory = "inventory";
 		public const string KeySkill = "skill";
+		public const string KeyCurrency = "currency";
 
 		static IServerDataRepository _repository = new LocalJsonRepository();
 

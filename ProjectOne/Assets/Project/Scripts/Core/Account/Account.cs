@@ -10,6 +10,7 @@ namespace ProjectOne.UserData
 		public Inventory Inventory { get; private set; }
 		public Loadout Loadout { get; private set; }
 		public SkillBook SkillBook { get; private set; }
+		public Wallet Wallet { get; private set; }
 
 		private Account()
 		{
@@ -17,6 +18,7 @@ namespace ProjectOne.UserData
 			Inventory = new Inventory(null);
 			Loadout = new Loadout(null);
 			SkillBook = new SkillBook(null);
+			Wallet = new Wallet(null);
 		}
 
 		// 도메인별 개별 셋팅 — 추후 도메인 추가 시 Set 메서드만 늘리면 됨
@@ -33,6 +35,11 @@ namespace ProjectOne.UserData
 		public void SetSkill(SkillData data)
 		{
 			SkillBook = new SkillBook(data);
+		}
+
+		public void SetCurrency(CurrencyData data)
+		{
+			Wallet = new Wallet(data);
 		}
 	}
 }
