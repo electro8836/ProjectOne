@@ -6,19 +6,23 @@ using EDT;
 using ProjectOne.Event;
 using ProjectOne.Flow;
 using ProjectOne.Map;
+using ProjectOne.ServerData;
 using ProjectOne.Unit;
-using ProjectOne.UserData;
 
 namespace ProjectOne.Battle
 {
 	// 전투 한 판의 오케스트레이터(씬 배치). 모드 셋업 → 플로우필드 베이크 트리거 → 승패 폴링 → 정리.
 	public sealed class BattleDirector : MonoBehaviour
 	{
+		// 임시: 캐릭터 미보유(CharacterId<=0) 시 사용할 기본 캐릭터 ID. 추후 신규계정 시작데이터로 대체.
+		private const int TempFallbackCharacterId = 101;
+
 		private IBattleMode _mode;
 		private bool _setupDone;
 		private bool _ending;
 		private int[] _clearRewardIds;
 		private int _characterId;
+		private int _mapId;
 
 		// 메인HUD 스킵 버튼이 발행하는 WaveSkipRequestedEvent 구독 캐시
 		private Action<WaveSkipRequestedEvent> _onSkipRequested;
@@ -45,8 +49,16 @@ namespace ProjectOne.Battle
 				return;
 			}
 
+			// 임시: 캐릭터 미보유(0) 보정. 같은 ctx 가 SpawnHeroAsync 로 전달돼 스폰·보상 모두 적용됨.
+			if (ctx.CharacterId <= 0)
+			{
+				Debug.LogWarning($"[BattleDirector] CharacterId 미설정 → 임시 기본값 {TempFallbackCharacterId} 사용");
+				ctx.CharacterId = TempFallbackCharacterId;
+			}
+
 			_clearRewardIds = map.ClearRewardIDs;
 			_characterId = ctx.CharacterId;
+			_mapId = ctx.MapId;
 			_mode = BattleModeFactory.Create(map.BattleType);
 			BeginAsync(ctx).Forget();
 		}
@@ -161,8 +173,15 @@ namespace ProjectOne.Battle
 				bool victory = result == BattleResult.Victory;
 				if (victory == true)
 				{
-					// 클리어 보상 지급(경험치/골드/재료/장비) — 로비 전환 전이라 결과가 즉시 반영됨
-					RewardService.GrantClearRewards(_clearRewardIds, _characterId);
+					// (테스트) 서버 권위 던전클리어 — 서버가 exp+1000/gold+100 가산 저장 후 반환.
+					DungeonClearResponse clearResp = await ServerCommandSystem.Command
+						.ExecuteAsync<DungeonClearRequest, DungeonClearResponse>(
+							ServerCommandSystem.ActionDungeonClear, new DungeonClearRequest { mapId = _mapId }, default);
+
+					if (clearResp != null && clearResp.success == true)
+					{
+						Debug.Log($"[테스트] DungeonClear 결과 → exp={clearResp.exp}, gold={clearResp.gold}");
+					}
 				}
 
 				EventManager.Instance.Publish(new BattleEndedEvent(victory, _clearRewardIds));

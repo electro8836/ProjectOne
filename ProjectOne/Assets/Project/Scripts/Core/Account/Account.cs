@@ -41,5 +41,35 @@ namespace ProjectOne.UserData
 		{
 			Wallet = new Wallet(data);
 		}
+
+		// 서버 응답의 갱신 도메인 데이터 일괄 반영 — non-null 인 도메인만 교체한다.
+		// 로컬 구현은 sync 가 null 이라 no-op(이미 Account 를 직접 변경했음).
+		public void ApplySync(AccountSyncData sync)
+		{
+			if (sync == null)
+			{
+				return;
+			}
+
+			if (sync.character != null)
+			{
+				SetCharacter(sync.character);
+			}
+
+			if (sync.inventory != null)
+			{
+				SetInventory(sync.inventory);
+			}
+
+			if (sync.skill != null)
+			{
+				SetSkill(sync.skill);
+			}
+
+			if (sync.currency != null)
+			{
+				SetCurrency(sync.currency);
+			}
+		}
 	}
 }

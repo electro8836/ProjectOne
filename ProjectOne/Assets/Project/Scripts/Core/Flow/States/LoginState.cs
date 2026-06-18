@@ -3,13 +3,12 @@ using Cysharp.Threading.Tasks;
 
 namespace ProjectOne.Flow
 {
-	// 로그인 상태 — 씬 로드 없이 서버 인증만 수행하는 논리 단계.
-	// 씬 로드는 다음 LobbyState 한 곳에서만 한다.
+	// 로그인 상태 — 씬 로드 없이 진행하는 논리 단계.
+	// 실제 로그인은 타이틀 화면(TitleLoginController)에서 수행되므로 여기선 데이터 로드로 넘어간다.
 	public class LoginState : IGameState
 	{
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
-			// TODO: 서버 인증/로그인 (백엔드 준비 후 구현)
 			await UniTask.CompletedTask;
 
 			GameFlow.Instance.ChangeStateAsync(new DataLoadState()).Forget();

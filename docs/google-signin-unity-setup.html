@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Google Sign-In 플러그인 설치 & 설정 (Unity + Backnd)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+    header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; padding: 36px 48px; }
+    header h1 { font-size: 1.7rem; font-weight: 700; }
+    header p  { margin-top: 6px; color: #a0aec0; font-size: 0.95rem; }
+    main { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+
+    .flow {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      background: #fff; border-radius: 12px; padding: 18px 22px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 28px; font-size: 0.86rem;
+    }
+    .flow .node { background: #ebf4ff; color: #2b6cb0; font-weight: 600; padding: 8px 12px; border-radius: 6px; }
+    .flow .arrow { color: #a0aec0; font-weight: 700; }
+    .flow .node.backnd { background: #e6fffa; color: #234e52; }
+    .flow .node.google { background: #e8f0fe; color: #1a73e8; }
+
+    .section { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 28px; overflow: hidden; }
+    .section-header { display: flex; align-items: center; gap: 14px; padding: 20px 24px; border-bottom: 1px solid #e2e8f0; }
+    .section-num { width: 36px; height: 36px; border-radius: 50%; background: #4285f4; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+    .section-title { font-size: 1.05rem; font-weight: 700; }
+    .section-sub { font-size: 0.82rem; color: #718096; margin-top: 2px; }
+    .section-body { padding: 20px 24px; }
+
+    .checklist { list-style: none; }
+    .checklist li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f7fafc; font-size: 0.9rem; line-height: 1.6; }
+    .checklist li:last-child { border-bottom: none; }
+    .checklist li::before { content: '☐'; font-size: 1rem; color: #4285f4; flex-shrink: 0; margin-top: 1px; }
+
+    code { background: #edf2f7; color: #2d3748; border-radius: 4px; padding: 2px 6px; font-family: 'Consolas', monospace; font-size: 0.83rem; }
+    pre { background: #1a202c; color: #e2e8f0; border-radius: 8px; padding: 16px; font-family: 'Consolas', monospace; font-size: 0.82rem; line-height: 1.6; overflow-x: auto; margin-top: 12px; }
+    pre .c { color: #68d391; }
+    pre .k { color: #63b3ed; }
+    pre .s { color: #fbd38d; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin-top: 6px; }
+    th { background: #ebf4ff; padding: 10px 14px; text-align: left; font-weight: 600; color: #2b6cb0; border-bottom: 2px solid #bee3f8; }
+    td { padding: 9px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+
+    .notice { border-left: 4px solid #3182ce; background: #ebf8ff; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 0.88rem; color: #2a4a6b; margin-top: 14px; }
+    .notice.warn { border-color: #e53e3e; background: #fff5f5; color: #742a2a; }
+    .notice.tip { border-color: #38a169; background: #f0fff4; color: #1c4532; }
+    footer { text-align: center; color: #a0aec0; font-size: 0.82rem; padding: 32px 0 48px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Google Sign-In 플러그인 설치 &amp; 설정</h1>
+  <p>Unity + Backnd 페데레이션 로그인 · 웹 클라이언트 ID 준비 완료 기준 · 2026-06-18</p>
+</header>
+
+<main>
+
+  <div class="flow">
+    <span class="node google">Google Sign-In 플러그인</span>
+    <span class="arrow">→</span>
+    <span class="node">idToken 획득</span>
+    <span class="arrow">→</span>
+    <span class="node backnd">Backend.BMember.AuthorizeFederation</span>
+    <span class="arrow">→</span>
+    <span class="node backnd">뒤끝 로그인</span>
+  </div>
+
+  <div class="notice">
+    <strong>전제:</strong> 구글 클라우드에 <strong>웹 클라이언트 ID</strong>(완료) + <strong>Android 클라이언트 ID</strong>(패키지명+SHA-1)가 같은 프로젝트에 존재해야 합니다.
+    웹 ID는 Backnd 콘솔 등록 + 아래 <code>WebClientId</code> 에, Android ID는 "존재만" 하면 됩니다.
+  </div>
+
+
+  <!-- 1 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div>
+        <div class="section-title">플러그인 설치</div>
+        <div class="section-sub">Google Sign-In Plugin for Unity</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li><strong>google-signin-unity</strong> 릴리스에서 <code>GoogleSignIn-*.unitypackage</code> 다운로드 (github.com/googlesamples/google-signin-unity)</li>
+        <li>Unity → Assets → Import Package → Custom Package 로 임포트</li>
+        <li>함께 들어오는 <strong>External Dependency Manager (EDM4U)</strong> 도 같이 임포트 (이미 있으면 최신 유지)</li>
+      </ul>
+      <div class="notice tip">
+        이 플러그인이 Android 의 <code>play-services-auth</code>, iOS 의 GoogleSignIn 네이티브를 끌어와 idToken 발급을 담당합니다.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 2 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div>
+        <div class="section-title">의존성 Resolve (Android)</div>
+        <div class="section-sub">EDM4U Android Resolver</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <ul class="checklist">
+        <li>Assets → <strong>External Dependency Manager → Android Resolver → Resolve</strong> 실행</li>
+        <li><code>Plugins/Android</code> 에 play-services-auth 관련 aar 들이 받아지는지 확인</li>
+        <li>Player Settings → <strong>Custom Main Gradle Template / Custom Gradle Properties</strong> 활성화 권장</li>
+      </ul>
+      <div class="notice warn">
+        Resolve 가 실패하면 대부분 <strong>JDK/Android SDK 경로</strong> 또는 <strong>Gradle</strong> 문제입니다. Unity → Preferences → External Tools 경로 확인.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 3 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div>
+        <div class="section-title">플랫폼 설정</div>
+        <div class="section-sub">패키지명 / SHA-1 / iOS URL Scheme</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <table>
+        <thead><tr><th>플랫폼</th><th>설정</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Android</strong></td>
+            <td>Player Settings 의 <strong>패키지명</strong> = 구글 콘솔 Android 클라이언트의 패키지명 일치. 빌드 키스토어의 <strong>SHA-1</strong> 이 구글 콘솔에 등록돼 있어야 함(디버그/릴리스 둘 다).</td>
+          </tr>
+          <tr>
+            <td><strong>iOS</strong></td>
+            <td>iOS 클라이언트 ID 필요. Info.plist 에 <strong>역방향 클라이언트 ID</strong>(REVERSED_CLIENT_ID)를 URL Scheme 으로 추가.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="notice">
+        디버그 SHA-1: <code>keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android</code><br>
+        출시 시엔 <strong>Play 앱 서명 SHA-1</strong>(Play Console 발급)도 추가 등록.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 4 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div>
+        <div class="section-title">코드 설정값 (참고)</div>
+        <div class="section-sub">유니티 코드는 이쪽에서 작성 — 웹 클라이언트 ID 만 넣으면 됨</div>
+      </div>
+    </div>
+    <div class="section-body">
+      <p style="font-size:0.88rem; color:#4a5568">
+        플러그인 설치/Resolve 가 끝나면, 페데레이션 로그인 코드는 제가 작성합니다. 핵심은 <strong>WebClientId 에 웹 클라이언트 ID</strong> 를 넣고 <strong>RequestIdToken = true</strong> 로 idToken 을 받는 것:
+      </p>
+      <pre><span class="c">// 설정 — 웹 클라이언트 ID 사용 (Android/iOS 클라이언트 ID 아님!)</span>
+GoogleSignIn.Configuration = <span class="k">new</span> GoogleSignInConfiguration {
+    <span class="s">WebClientId</span> = <span class="s">"627792620661-...apps.googleusercontent.com"</span>,
+    <span class="s">RequestIdToken</span> = <span class="k">true</span>,
+    <span class="s">UseGameSignIn</span> = <span class="k">false</span>
+};
+
+<span class="c">// 로그인 → idToken 획득 → 뒤끝으로 전달</span>
+<span class="c">// GoogleSignIn.DefaultInstance.SignIn() → user.IdToken</span>
+<span class="c">// Backend.BMember.AuthorizeFederation(idToken, FederationType.Google, ...)</span></pre>
+      <div class="notice warn">
+        반드시 <strong>WebClientId</strong> 에 "웹 애플리케이션" 타입 ID 를 넣습니다. Android/iOS 타입 ID 를 넣으면 idToken audience 가 안 맞아 Backnd 검증이 실패합니다.
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 순서 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num" style="background:#38a169">✓</div>
+      <div>
+        <div class="section-title">진행 순서</div>
+        <div class="section-sub"></div>
+      </div>
+    </div>
+    <div class="section-body">
+      <ol style="padding-left:20px; font-size:0.9rem; line-height:2.2">
+        <li>Backnd 콘솔 → 소셜 로그인 Google 에 <strong>웹 클라이언트 ID</strong> 등록</li>
+        <li>구글 콘솔에 <strong>Android 클라이언트 ID</strong>(패키지명+SHA-1) 추가</li>
+        <li>Google Sign-In 플러그인 임포트 + EDM Resolve</li>
+        <li>패키지명/SHA-1/iOS URL Scheme 설정</li>
+        <li>(코드) 페데레이션 로그인 작성 — <code>BackndInitializer</code> 에 구글 로그인 추가</li>
+      </ol>
+      <div class="notice tip">
+        1~4 가 끝나면 알려주세요. <code>BackndInitializer</code> 에 <strong>구글 로그인 메서드 + idToken→AuthorizeFederation</strong> 코드를 바로 작성합니다.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer>ProjectOne · Google Sign-In + Backnd 페데레이션 설정 · 2026-06-18</footer>
+
+</body>
+</html>

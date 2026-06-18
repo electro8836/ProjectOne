@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.ServerData;
@@ -7,8 +6,8 @@ using ProjectOne.Unit;
 
 namespace ProjectOne.UserData
 {
-	// 캐릭터 도메인 모델 — 보유 캐릭터 목록 + 선택 + 캐릭터별 장착(아이템 3슬롯).
-	// 캐릭터와 아이템 세트를 저장·관리한다. CharacterData(직렬화 원본)와 _index(빠른 조회)를 동기 유지하며, 변경 시 자체 저장.
+	// 캐릭터 도메인 모델 — 보유 캐릭터 목록 + 선택 + 캐릭터별 장착(아이템 3슬롯)(인메모리).
+	// CharacterData(직렬화 원본)와 _index(빠른 조회)를 동기 유지. 영속은 서버(Backnd 함수)가 담당, 변경 시 알림만 발행.
 	public sealed class Loadout
 	{
 		// EquipmentAspect 와 동일한 source 태그
@@ -67,7 +66,6 @@ namespace ProjectOne.UserData
 				oc.dupCount += 1;
 			}
 
-			save();
 			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
 		}
 
@@ -89,7 +87,6 @@ namespace ProjectOne.UserData
 
 			oc.exp += amount;
 			oc.level = levelFromExp(oc.exp);
-			save();
 			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
 		}
 
@@ -132,7 +129,6 @@ namespace ProjectOne.UserData
 			}
 
 			_data.selectedCharacterId = characterId;
-			save();
 			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
 			return true;
 		}
@@ -236,7 +232,6 @@ namespace ProjectOne.UserData
 				default: return;
 			}
 
-			save();
 			EventManager.Instance.Publish(new PresetChangeEvent(oc.characterId, slot, itemId));
 			reapplyHero(oc.characterId);
 		}
@@ -285,9 +280,5 @@ namespace ProjectOne.UserData
 			}
 		}
 
-		private void save()
-		{
-			ServerDataSystem.Repository.SaveAsync(ServerDataSystem.KeyCharacter, _data).Forget();
-		}
 	}
 }

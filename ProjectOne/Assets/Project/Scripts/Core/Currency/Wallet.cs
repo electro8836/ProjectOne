@@ -1,13 +1,12 @@
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.ServerData;
 
 namespace ProjectOne.UserData
 {
-	// 재화 도메인 모델 — 보유 재화 수량을 보관/변경한다.
-	// CurrencyData(직렬화 원본)와 _index(빠른 조회)를 동기 유지하며, 변경 시 자체 저장한다.
+	// 재화 도메인 모델 — 보유 재화 수량을 보관/변경한다(인메모리).
+	// 서버 권위: 영속은 서버(Backnd 함수)가 담당하고, 클라는 변경 시 변경 알림만 발행한다.
 	public sealed class Wallet
 	{
 		private readonly CurrencyData _data;
@@ -33,7 +32,7 @@ namespace ProjectOne.UserData
 			return 0;
 		}
 
-		// 수량 설정 — 이전값과 같으면 무시, 변경 시 저장 + 변경 알림
+		// 수량 설정 — 이전값과 같으면 무시, 변경 시 변경 알림
 		public void SetAmount(CurrencyInfo type, int amount)
 		{
 			int prev = GetAmount(type);
@@ -43,7 +42,6 @@ namespace ProjectOne.UserData
 			}
 
 			setEntry(type, amount);
-			save();
 			EventManager.Instance.Publish(new ResourceChangeEvent(type, prev, amount));
 		}
 
@@ -83,11 +81,6 @@ namespace ProjectOne.UserData
 			added.currencyId = id;
 			added.amount = amount;
 			_data.amounts.Add(added);
-		}
-
-		private void save()
-		{
-			ServerDataSystem.Repository.SaveAsync(ServerDataSystem.KeyCurrency, _data).Forget();
 		}
 	}
 }

@@ -13,7 +13,7 @@ namespace ProjectOne.Battle
 	public abstract class MapBattleModeBase : IBattleMode
 	{
 		// 히어로 배치 기준 위치(맵 좌측)
-		protected static readonly Vector3 PartyBasePos = new Vector3(-4f, 0f, 0f);
+		protected static readonly Vector3 HeroBasePos = new Vector3(-4f, 0f, 0f);
 
 		// 몬스터 스폰 영역(맵 우측)
 		protected static readonly Vector3 MonsterSpawnCenter = new Vector3(4f, 0f, 0f);
@@ -37,7 +37,7 @@ namespace ProjectOne.Battle
 				return;
 			}
 
-			await SpawnPartyAsync(ctx, ct);
+			await SpawnHeroAsync(ctx, ct);
 			RunAsync(map, ct).Forget();
 		}
 
@@ -59,16 +59,17 @@ namespace ProjectOne.Battle
 			return BattleResult.InProgress;
 		}
 
-		private static async UniTask SpawnPartyAsync(BattleContext ctx, CancellationToken ct)
+		private static async UniTask SpawnHeroAsync(BattleContext ctx, CancellationToken ct)
 		{
 			if (ctx.CharacterId <= 0)
 			{
+				Debug.LogError("캐릭터 로드 실패!");
 				return;
 			}
 
 			// 동료 없이 플레이어 조작 히어로 1명만 소환
 			bool autoControl = true; // 일단 자동스킬모드로 설정
-			await UnitFactory.Instance.CreateHeroAsync(ctx.CharacterId, PartyBasePos, Faction.Player, autoControl, ct);
+			await UnitFactory.Instance.CreateHeroAsync(ctx.CharacterId, HeroBasePos, Faction.Player, autoControl, ct);
 		}
 
 		// 현재 살아있는 몬스터(1회성 스폰)가 모두 정리됐는지 — WaitUntil 메서드 그룹용

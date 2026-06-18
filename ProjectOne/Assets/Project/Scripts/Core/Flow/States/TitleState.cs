@@ -1,11 +1,13 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
-using UnityEngine.InputSystem;
+using ProjectOne.ServerData;
 
 namespace ProjectOne.Flow
 {
-	// 타이틀 상태 — 2.Title 씬 로드 후 "터치하여 시작" 입력 대기.
+	// 타이틀 상태 — 2.Title 씬 로드 후 로그인 대기.
+	// 로그인(게스트/구글)은 씬의 TitleLoginController 가 버튼으로 수행하고,
+	// 여기서는 BackndInitializer.IsLoggedIn 이 true 가 되면 다음 상태로 전이한다.
 	public class TitleState : IGameState
 	{
 		private const string SceneName = "2.Title";
@@ -14,8 +16,8 @@ namespace ProjectOne.Flow
 		{
 			await SceneManager.LoadSceneAsync(SceneName).ToUniTask(cancellationToken: ct);
 
-			// 터치/클릭 대기
-			await UniTask.WaitUntil(isStartTriggered, cancellationToken: ct);
+			// 로그인 성공 대기 (Button_Guest / Button_Google → BackndInitializer)
+			await UniTask.WaitUntil(isLoggedIn, cancellationToken: ct);
 
 			GameFlow.Instance.ChangeStateAsync(new PatchState()).Forget();
 		}
@@ -25,16 +27,9 @@ namespace ProjectOne.Flow
 			return UniTask.CompletedTask;
 		}
 
-		// 마우스/터치 등 포인터 입력 감지 (새 Input System)
-		private bool isStartTriggered()
+		private bool isLoggedIn()
 		{
-			Pointer pointer = Pointer.current;
-			if (pointer == null)
-			{
-				return false;
-			}
-
-			return pointer.press.wasPressedThisFrame;
+			return BackndInitializer.IsLoggedIn;
 		}
 	}
 }

@@ -3,6 +3,7 @@ using UnityEngine;
 using EDT;
 using ProjectOne.Utils;
 using ProjectOne.Currency;
+using ProjectOne.Event;
 using ProjectOne.ServerData;
 using ProjectOne.UserData;
 
@@ -69,6 +70,7 @@ namespace ProjectOne.Boot
 
 		private CurrencyInfo[] _currencyTypes;
 		private float _viewTimer;
+		private System.Action<DataLoadedEvent> _onDataLoaded;
 
 		protected override void Awake()
 		{
@@ -79,7 +81,21 @@ namespace ProjectOne.Boot
 			}
 
 			_currencyTypes = (CurrencyInfo[])System.Enum.GetValues(typeof(CurrencyInfo));
-			injectDevData();
+
+			// 서버 없이 실행할 때 개발 데이터를 넣는 용도. 데이터 로드 완료(DataLoadedEvent) 후
+			// Account 를 직접 오버라이드한다(인메모리, 비영속).
+			_onDataLoaded = onDataLoaded;
+			EventManager.Instance.Subscribe<DataLoadedEvent>(_onDataLoaded);
+		}
+
+		protected override void OnDestroy()
+		{
+			if (this == Instance && _onDataLoaded != null)
+			{
+				EventManager.Instance.Unsubscribe<DataLoadedEvent>(_onDataLoaded);
+			}
+
+			base.OnDestroy();
 		}
 
 		private void Update()
@@ -94,9 +110,11 @@ namespace ProjectOne.Boot
 			rebuildViews();
 		}
 
-		// ── 개발 데이터 주입 (최초 1회) ───────────────────────────────
+		// ── 개발 데이터 주입 (데이터 로드 후 Account 오버라이드) ───────
 
-		private void injectDevData()
+		// DataLoadState 가 로드/시작데이터 보정을 마친 뒤 호출된다.
+		// 켜져 있으면 인스펙터 구성 데이터로 Account 를 덮어쓴다(메모리만 — save 미호출, Backnd 비오염).
+		private void onDataLoaded(DataLoadedEvent evt)
 		{
 			if (_disabled == true)
 			{
@@ -109,12 +127,10 @@ namespace ProjectOne.Boot
 				return;
 			}
 
-			InventoryData inventory = buildInventory();
-			CharacterData character = buildCharacter();
-			SkillData skill = new SkillData();
-
-			ServerDataSystem.SetRepository(new DevDataRepository(character, inventory, skill));
-			Debug.Log("[DevTester] 개발 데이터 주입 활성 — Character:" + _characterId + ", Level:" + _characterLevel);
+			Account.Instance.SetInventory(buildInventory());
+			Account.Instance.SetCharacter(buildCharacter());
+			Account.Instance.SetSkill(new SkillData());
+			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Character:" + _characterId + ", Level:" + _characterLevel);
 		}
 
 		private InventoryData buildInventory()

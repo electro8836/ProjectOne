@@ -131,6 +131,12 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 유저데이터 로드 완료 알림 (DataLoadState가 Account 주입 + 시작데이터 보정 후 발행).
+		// DevTester 등 로드 후 후처리(개발 데이터 오버라이드)에서 구독.
+		public readonly struct DataLoadedEvent
+		{
+		}
+
 		// 게임 흐름 상태 전이 완료 알림 (GameFlow가 EnterAsync 성공 후 발행).
 		// StateType: 새로 진입한 상태의 구체 타입 (예: typeof(BootState))
 		public readonly struct GameStateChangedEvent

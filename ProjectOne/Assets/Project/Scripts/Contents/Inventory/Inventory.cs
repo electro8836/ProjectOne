@@ -1,13 +1,12 @@
 using System.Collections.Generic;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.ServerData;
 
 namespace ProjectOne.UserData
 {
-	// 보유 아이템(아이템정보 도메인) 모델 — 획득/합성/강화수치 보관.
-	// InventoryData(직렬화 원본)와 _index(빠른 조회)를 동기 유지하며, 변경 시 자체 저장한다.
+	// 보유 아이템(아이템정보 도메인) 모델 — 획득/합성/강화수치 보관(인메모리).
+	// InventoryData(직렬화 원본)와 _index(빠른 조회)를 동기 유지. 영속은 서버(Backnd 함수)가 담당, 변경 시 알림만 발행.
 	public sealed class Inventory
 	{
 		// 강화 최대 수치 (강화 실행 로직은 범위 외 — 수치만 보관)
@@ -81,7 +80,6 @@ namespace ProjectOne.UserData
 			}
 
 			item.count += amount;
-			save();
 			publishChange(item);
 		}
 
@@ -100,7 +98,6 @@ namespace ProjectOne.UserData
 			}
 
 			item.count -= amount;
-			save();
 			publishChange(item);
 			return true;
 		}
@@ -140,7 +137,6 @@ namespace ProjectOne.UserData
 			}
 
 			item.enhanceLevel = clamped;
-			save();
 			publishChange(item);
 		}
 
@@ -168,11 +164,6 @@ namespace ProjectOne.UserData
 			item.count = 0;
 			item.enhanceLevel = 0;
 			return item;
-		}
-
-		private void save()
-		{
-			ServerDataSystem.Repository.SaveAsync(ServerDataSystem.KeyInventory, _data).Forget();
 		}
 
 		private void publishChange(OwnedItem item)
