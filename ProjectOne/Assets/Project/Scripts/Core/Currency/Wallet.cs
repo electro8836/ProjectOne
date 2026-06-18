@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.ServerData;
@@ -86,7 +87,7 @@ namespace ProjectOne.UserData
 
 		private void save()
 		{
-			ServerDataSystem.Repository.Save(ServerDataSystem.KeyCurrency, _data);
+			ServerDataSystem.Repository.SaveAsync(ServerDataSystem.KeyCurrency, _data).Forget();
 		}
 	}
 }

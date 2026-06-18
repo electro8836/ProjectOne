@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 
 namespace ProjectOne.ServerData
 {
@@ -15,23 +17,23 @@ namespace ProjectOne.ServerData
 			_store[ServerDataSystem.KeySkill] = skill;
 		}
 
-		public bool TryLoad<T>(string key, out T data) where T : class
+		public UniTask<(bool found, T data)> LoadAsync<T>(string key, CancellationToken ct) where T : class
 		{
 			object value;
 			if (_store.TryGetValue(key, out value) == true)
 			{
-				data = value as T;
-				return data != null;
+				T data = value as T;
+				return UniTask.FromResult((data != null, data));
 			}
 
-			data = null;
-			return false;
+			return UniTask.FromResult<(bool, T)>((false, null));
 		}
 
 		// 플레이 중 변경은 메모리에만 반영(디스크 미기록) → 세션 내 유지, 재실행 시 초기화
-		public void Save<T>(string key, T data) where T : class
+		public UniTask SaveAsync<T>(string key, T data) where T : class
 		{
 			_store[key] = data;
+			return UniTask.CompletedTask;
 		}
 	}
 }

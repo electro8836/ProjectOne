@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.ServerData;
@@ -171,7 +172,7 @@ namespace ProjectOne.UserData
 
 		private void save()
 		{
-			ServerDataSystem.Repository.Save(ServerDataSystem.KeyInventory, _data);
+			ServerDataSystem.Repository.SaveAsync(ServerDataSystem.KeyInventory, _data).Forget();
 		}
 
 		private void publishChange(OwnedItem item)

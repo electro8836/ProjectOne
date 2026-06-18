@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.ServerData;
@@ -286,7 +287,7 @@ namespace ProjectOne.UserData
 
 		private void save()
 		{
-			ServerDataSystem.Repository.Save(ServerDataSystem.KeyCharacter, _data);
+			ServerDataSystem.Repository.SaveAsync(ServerDataSystem.KeyCharacter, _data).Forget();
 		}
 	}
 }
