@@ -3,12 +3,14 @@ using System.IO;
 using Amazon.Lambda.Core;
 using BackEnd;
 using LitJson;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using ProjectOne.Shared;
 
 namespace BackendFunction
 {
 	public class Auth
 	{
+		// getUserData â€” ë¡œê·¸ì¸ í›„ ê³„ì • ë°ì´í„° ë¡œë“œ. ì‹ ê·œ ê³„ì •ì´ë©´ ê¸°ë³¸ ë°ì´í„°ë¥¼ ìƒì„±í•´ ë°˜í™˜í•œë‹¤.
 		public Stream InitUserAfterLogin(Stream stream, ILambdaContext context)
 		{
 			try
@@ -24,7 +26,7 @@ namespace BackendFunction
 
 			try
 			{
-				// 1. ÇöÀç ·Î±×ÀÎÇÑ À¯ÀúÀÇ ÇàÀÌ ÀÌ¹Ì Á¸ÀçÇÏ´ÂÁö Á¶È¸
+				// 1. í˜„ì¬ ë¡œê·¸ì¸í•œ ìœ ì €ì˜ í–‰ì´ ì´ë¯¸ ì¡´ì¬í•˜ëŠ”ì§€ ì¡°íšŒ
 				var getResult = Backend.GameData.GetMyData(tableName, new Where());
 
 				if (!getResult.IsSuccess())
@@ -33,16 +35,15 @@ namespace BackendFunction
 				}
 
 				JsonData rows = getResult.FlattenRows();
-				JObject responseJson = new JObject();
+				GetUserDataResponse response = new GetUserDataResponse();
+				response.success = true;
 
-				// 2. ÇàÀÌ ¾ø´Ù = ¿À´Ã Ã³À½ °¡ÀÔÇØ¼­ ·Î±×ÀÎÇÑ ½Å±Ô À¯Àú´Ù!
+				// 2. í–‰ì´ ì—†ìœ¼ë©´ ì‹ ê·œ ìœ ì € â†’ ê¸°ë³¸ ë°ì´í„°ë¡œ í–‰ ìƒì„±
 				if (rows.Count == 0)
 				{
-					// ¼­¹ö°¡ ÁÖµµÇØ¼­ ÃÊ±â µ¥ÀÌÅÍ¸¦ ¼³Á¤ (ÇØÅ· ºÒ°¡´É)
 					Param defaultParam = new Param();
 					defaultParam.Add("Exp", 0);
 
-					// ¼­¹ö°¡ Á÷Á¢ DB¿¡ Çà »ı¼º
 					var insertResult = Backend.GameData.Insert(tableName, defaultParam);
 
 					if (!insertResult.IsSuccess())
@@ -50,19 +51,15 @@ namespace BackendFunction
 						return Common.ReturnErrorObject("Data Insert Failed: " + insertResult.GetErrorCode());
 					}
 
-					responseJson.Add("status", "new_user_initialized");
-					responseJson.Add("message", "½Å±Ô À¯Àú ÃÊ±âÈ­ ¿Ï·á");
-					responseJson.Add("Exp", 0);
+					response.exp = 0;
 				}
 				else
 				{
-					// 3. ÇàÀÌ ÀÌ¹Ì ÀÖ´Ù = ±âÁ¸¿¡ ÇÏ´ø À¯Àú´Ù!
-					responseJson.Add("status", "existing_user");
-					responseJson.Add("message", "±âÁ¸ À¯Àú µ¥ÀÌÅÍ ·Îµå ¿Ï·á");
-					responseJson.Add("Exp", int.Parse(rows[0]["Exp"].ToString()));
+					// 3. ê¸°ì¡´ ìœ ì € â†’ ì €ì¥ëœ ë°ì´í„° ë¡œë“œ
+					response.exp = int.Parse(rows[0]["Exp"].ToString());
 				}
 
-				return Backend.JsonToStream(responseJson.ToString());
+				return Backend.JsonToStream(JsonConvert.SerializeObject(response));
 			}
 			catch (Exception ex)
 			{

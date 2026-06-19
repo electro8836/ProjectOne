@@ -34,6 +34,12 @@
       <PackageReference Include="System.Text.Json" Version="9.0.0" />
   </ItemGroup>
 
+  <!-- 클라/서버 공유 DTO — Unity 프로젝트의 Shared 폴더를 링크 컴파일해 단일 소스로 사용 -->
+  <ItemGroup>
+    <Compile Include="..\..\..\ProjectOne\Assets\Project\Scripts\Core\Network\Shared\**\*.cs"
+             Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
     
 <Target Name="MyCustomDebug" AfterTargets="Build" Condition="'$(Configuration)'=='Debug'">
     <Message Text="Build Debug Object" Importance="high"></Message>

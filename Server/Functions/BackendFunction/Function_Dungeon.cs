@@ -1,14 +1,10 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Amazon.Lambda.Core;
 using BackEnd;
 using LitJson;
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using ProjectOne.Shared;
 
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 
@@ -16,11 +12,12 @@ namespace BackendFunction
 {
 	public class Dungeon
 	{
+		// DungeonClear â€” (í…ŒìŠ¤íŠ¸) ì„œë²„ê°€ exp+1000 ê°€ì‚° ì €ì¥ í›„ ë°˜í™˜(ì„œë²„ ê¶Œìœ„).
 		public Stream DungeonClear(Stream stream, ILambdaContext context)
 		{
 			try
 			{
-				// 1. µÚ³¡ Æã¼Ç ÃÊ±âÈ­
+				// 1. ë’¤ë SDK ì´ˆê¸°í™”
 				Backend.Initialize(ref stream);
 			}
 			catch (Exception e)
@@ -28,14 +25,13 @@ namespace BackendFunction
 				return Common.ReturnErrorObject("Initialize Failed: " + e.ToString());
 			}
 
-			// [¼³Á¤] À¯Àú Á¤º¸°¡ ÀúÀåµÈ µÚ³¡ ÄÜ¼ÖÀÇ Å×ÀÌºí ÀÌ¸§
+			// [í…ŒìŠ¤íŠ¸] ìœ ì € ë°ì´í„°ê°€ ì €ì¥ëœ ë’¤ë ì½˜ì†”ì˜ í…Œì´ë¸” ì´ë¦„
 			string tableName = "USER_INFO";
 			int rewardExp = 1000;
 
 			try
 			{
-				// 2. ÇöÀç À¯ÀúÀÇ ±âÁ¸ µ¥ÀÌÅÍ(°æÇèÄ¡ µî)¸¦ ¸ÕÀú Á¶È¸ÇÕ´Ï´Ù.
-				// À¯Àú´ç µ¥ÀÌÅÍ°¡ 1°³¸¸ ÀÖ´Ù°í °¡Á¤ÇÏ°í GetMyData¸¦ »ç¿ëÇÕ´Ï´Ù.
+				// 2. í˜„ì¬ ìœ ì €ì˜ ê²Œì„ ë°ì´í„°(ê²½í—˜ì¹˜ ë“±)ë¥¼ ë¨¼ì € ì¡°íšŒí•œë‹¤(í–‰ 1ê°œ ê°€ì •).
 				var getResult = Backend.GameData.GetMyData(tableName, new Where());
 
 				if (!getResult.IsSuccess())
@@ -43,7 +39,7 @@ namespace BackendFunction
 					return Common.ReturnErrorObject("Failed to get user data: " + getResult.GetErrorCode());
 				}
 
-				// ±âÁ¸ À¯Àú µ¥ÀÌÅÍ¿¡¼­ indate(µ¥ÀÌÅÍ °íÀ¯ Å°)¿Í ÇöÀç °æÇèÄ¡(Exp)¸¦ ÃßÃâÇÕ´Ï´Ù.
+				// ì¡°íšŒí•œ ë°ì´í„°ì—ì„œ indate(í–‰ ì‹ë³„ í‚¤)ì™€ í˜„ì¬ ê²½í—˜ì¹˜(Exp)ë¥¼ ì½ëŠ”ë‹¤.
 				JsonData rows = getResult.FlattenRows();
 				if (rows.Count == 0)
 				{
@@ -53,14 +49,14 @@ namespace BackendFunction
 				string inDate = rows[0]["inDate"].ToString();
 				int currentExp = int.Parse(rows[0]["Exp"].ToString());
 
-				// 3. °æÇèÄ¡¸¦ 1000 ´õÇÕ´Ï´Ù.
-				int headerExp = currentExp + rewardExp;
+				// 3. ê²½í—˜ì¹˜ì— ë³´ìƒì¹˜ë¥¼ ê°€ì‚°í•œë‹¤.
+				int updatedExp = currentExp + rewardExp;
 
-				// 4. DB¿¡ ¾÷µ¥ÀÌÆ®ÇÒ Param °´Ã¼¸¦ »ı¼ºÇÕ´Ï´Ù.
+				// 4. ì—…ë°ì´íŠ¸í•  Param êµ¬ì„±.
 				Param updateParam = new Param();
-				updateParam.Add("Exp", headerExp);
+				updateParam.Add("Exp", updatedExp);
 
-				// 5. ¼­¹ö¿¡¼­ µÚ³¡ DB¸¦ Á÷Á¢ ¾÷µ¥ÀÌÆ®ÇÕ´Ï´Ù.
+				// 5. ì„œë²„ ê¶Œìœ„ë¡œ ë’¤ë DBì— ì €ì¥.
 				var updateResult = Backend.GameData.UpdateV2(tableName, inDate, Backend.UserInDate, updateParam);
 
 				if (!updateResult.IsSuccess())
@@ -68,18 +64,17 @@ namespace BackendFunction
 					return Common.ReturnErrorObject("Failed to update Exp: " + updateResult.GetErrorCode());
 				}
 
-				// 6. ¾÷µ¥ÀÌÆ® ¼º°ø ½Ã Å¬¶óÀÌ¾ğÆ®¿¡ µ¹·ÁÁÙ ÀÀ´ä°ª(JSON)À» ¸¸µì´Ï´Ù.
-				JObject responseJson = new JObject();
-				responseJson.Add("status", "success");
-				responseJson.Add("message", $"´øÀü Å¬¸®¾î! °æÇèÄ¡ {rewardExp}À» È¹µæÇß½À´Ï´Ù.");
-				responseJson.Add("currentExp", headerExp); // ÇöÀç ÃÑ °æÇèÄ¡µµ ÇÔ²² ¸®ÅÏ
+				// 6. ê°±ì‹ ëœ ê²°ê³¼ë¥¼ ê³µìœ  DTO ë¡œ ë°˜í™˜(í´ë¼ JsonUtility ì™€ í‚¤ ì¼ì¹˜).
+				DungeonClearResponse response = new DungeonClearResponse();
+				response.success = true;
+				response.exp = updatedExp;
 
-				return Backend.JsonToStream(responseJson.ToString());
+				return Backend.JsonToStream(JsonConvert.SerializeObject(response));
 			}
 			catch (Exception ex)
 			{
 				return Common.ReturnErrorObject("Server Error: " + ex.ToString());
 			}
 		}
-    }
+	}
 }

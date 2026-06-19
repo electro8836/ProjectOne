@@ -2,7 +2,8 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Event;
-using ProjectOne.ServerData;
+using ProjectOne.Network;
+using ProjectOne.Shared;
 using ProjectOne.UserData;
 
 namespace ProjectOne.Flow
@@ -12,21 +13,25 @@ namespace ProjectOne.Flow
 	// 신규 계정의 기본 데이터 생성은 서버(Backnd 함수)가 담당. 서버 없을 땐 DevTester 가 Account 를 설정한다.
 	public class DataLoadState : IGameState
 	{
-		public async UniTask EnterAsync(CancellationToken ct)
+		public UniTask EnterAsync(CancellationToken ct)
 		{
-			GetUserDataResponse resp = await ServerCommandSystem.Command
-				.ExecuteAsync<GetUserDataRequest, GetUserDataResponse>(ServerCommandSystem.ActionGetUserData, new GetUserDataRequest(), ct);
+			NetworkManager.Instance.RequestGetUserData(onUserDataLoaded);
+			return UniTask.CompletedTask;
+		}
 
-			if (resp != null && resp.success == true)
+		// getUserData 응답 — Account 반영 후 로드 완료 이벤트 발행 + 로비 전이.
+		private void onUserDataLoaded(bool isSuccess, GetUserDataResponse data, string errorMsg)
+		{
+			if (isSuccess == true && data != null)
 			{
-				Account.Instance.Loadout.AddExp(101, resp.exp);
+				Account.Instance.Loadout.AddExp(101, data.exp);
 
-				// (테스트) 서버 저장 exp/gold 수신 확인 — 재로그인 시 유지되는지 로그로 검증.
-				Debug.Log($"[테스트] getUserData 수신 → exp={resp.exp}");
+				// (테스트) 서버 저장 exp 수신 확인 — 재로그인 시 유지되는지 로그로 검증.
+				Debug.Log($"[테스트] getUserData 수신 → exp={data.exp}");
 			}
 			else
 			{
-				Debug.LogError("[DataLoadState] getUserData 실패 — 빈 계정으로 진행");
+				Debug.LogError($"[DataLoadState] getUserData 실패 — 빈 계정으로 진행: {errorMsg}");
 			}
 
 			// 로드 완료 — DevTester 등 후처리가 이 시점에 Account 를 오버라이드할 수 있다.
