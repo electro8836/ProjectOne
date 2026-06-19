@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <AWSProjectType>Lambda</AWSProjectType>
+    <AssemblyName>BackendFunction</AssemblyName>
+    <RootNamespace>BackendFunction</RootNamespace>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+  
+    <ItemGroup>
+    <Reference Include="Backend">
+      <HintPath>dll\Backend.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json" Version="12.0.3.23909">
+      <ReferencePath>dll\Newtonsoft.Json.dll</ReferencePath>
+    </Reference>
+    <Reference Include="LitJson">
+      <HintPath>dll\LitJSON.dll</HintPath>
+    </Reference>
+        <Reference Include="Amazon.Lambda.APIGatewayEvents">
+      <HintPath>dll\Amazon.Lambda.APIGatewayEvents.dll</HintPath>
+    </Reference>
+        <Reference Include="Amazon.Lambda.Core">
+      <HintPath>dll\Amazon.Lambda.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Amazon.Lambda.Serialization.Json">
+      <HintPath>dll\Amazon.Lambda.Serialization.Json.dll</HintPath>
+    </Reference>
+      <PackageReference Include="System.Text.Json" Version="9.0.0" />
+  </ItemGroup>
+
+    
+<Target Name="MyCustomDebug" AfterTargets="Build" Condition="'$(Configuration)'=='Debug'">
+    <Message Text="Build Debug Object" Importance="high"></Message>
+    <ItemGroup>
+        <_CopyItems Include="$(TargetDir)\*.*" />
+    </ItemGroup>
+
+    <!-- Windows-specific items -->
+    <Copy Condition="'$(OS)' == 'Windows_NT'" SourceFiles="@(_CopyItems)" DestinationFolder="$(AppData)\AFI\BFunc\Debugger\" />
+
+    <!-- macOS-specific items -->
+    <Copy Condition="'$(OS)' != 'Windows_NT'" SourceFiles="@(_CopyItems)" DestinationFolder="/Library/Application Support/AFI/BFunc/Debugger/" />
+</Target>
+
+
+  <Target Name="MyCustomTarget" AfterTargets="Publish">
+    <Message Text="Makeing publish.Zip" Importance="high"></Message>
+
+    <ZipDirectory SourceDirectory="$(OutputPath)\publish" DestinationFile="$(OutputPath)\publish.zip" Overwrite="true" />
+  </Target>
+</Project>

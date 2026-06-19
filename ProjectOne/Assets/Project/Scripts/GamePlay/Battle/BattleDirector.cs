@@ -180,7 +180,7 @@ namespace ProjectOne.Battle
 
 					if (clearResp != null && clearResp.success == true)
 					{
-						Debug.Log($"[테스트] DungeonClear 결과 → exp={clearResp.exp}, gold={clearResp.gold}");
+						Debug.Log($"[테스트] DungeonClear 결과 → exp={clearResp.exp}");
 					}
 				}
 

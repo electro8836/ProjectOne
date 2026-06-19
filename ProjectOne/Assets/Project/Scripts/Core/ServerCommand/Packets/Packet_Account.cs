@@ -15,6 +15,5 @@ namespace ProjectOne.ServerData
 	public class GetUserDataResponse : ServerResponse
 	{
 		public int exp;
-		public int gold;
 	}
 }
