@@ -9,7 +9,7 @@ using ProjectOne.UserData;
 namespace ProjectOne.Flow
 {
 	// 유저 데이터 로드 상태 — Login 씬 위 오버레이(별도 씬 없음).
-	// 서버 권위: getUserData 함수로 계정 전체를 받아 Account 에 반영한다(클라가 테이블 직접 읽지 않음).
+	// 서버 권위: GetUserData 함수로 계정 전체를 받아 Account 에 반영한다(클라가 테이블 직접 읽지 않음).
 	// 신규 계정의 기본 데이터 생성은 서버(Backnd 함수)가 담당. 서버 없을 땐 DevTester 가 Account 를 설정한다.
 	public class DataLoadState : IGameState
 	{
@@ -19,7 +19,7 @@ namespace ProjectOne.Flow
 			return UniTask.CompletedTask;
 		}
 
-		// getUserData 응답 — Account 반영 후 로드 완료 이벤트 발행 + 로비 전이.
+		// GetUserData 응답 — Account 반영 후 로드 완료 이벤트 발행 + 로비 전이.
 		private void onUserDataLoaded(bool isSuccess, GetUserDataResponse data, string errorMsg)
 		{
 			if (isSuccess == true && data != null)
@@ -27,11 +27,11 @@ namespace ProjectOne.Flow
 				Account.Instance.Loadout.AddExp(101, data.exp);
 
 				// (테스트) 서버 저장 exp 수신 확인 — 재로그인 시 유지되는지 로그로 검증.
-				Debug.Log($"[테스트] getUserData 수신 → exp={data.exp}");
+				Debug.Log($"[테스트] GetUserData 수신 → exp={data.exp}");
 			}
 			else
 			{
-				Debug.LogError($"[DataLoadState] getUserData 실패 — 빈 계정으로 진행: {errorMsg}");
+				Debug.LogError($"[DataLoadState] GetUserData 실패 — 빈 계정으로 진행: {errorMsg}");
 			}
 
 			// 로드 완료 — DevTester 등 후처리가 이 시점에 Account 를 오버라이드할 수 있다.

@@ -1,27 +1,16 @@
 using System;
 using System.IO;
-using Amazon.Lambda.Core;
 using BackEnd;
 using LitJson;
-using Newtonsoft.Json;
 using ProjectOne.Shared;
 
 namespace BackendFunction
 {
 	public class Auth
 	{
-		// getUserData — 로그인 후 계정 데이터 로드. 신규 계정이면 기본 데이터를 생성해 반환한다.
-		public Stream InitUserAfterLogin(Stream stream, ILambdaContext context)
+		// GetUserData — 로그인 후 계정 데이터 로드. 신규 계정이면 기본 데이터를 생성해 반환한다.
+		public Stream GetUserData()
 		{
-			try
-			{
-				Backend.Initialize(ref stream);
-			}
-			catch (Exception e)
-			{
-				return Common.ReturnErrorObject("Initialize Failed: " + e.ToString());
-			}
-
 			string tableName = "USER_INFO";
 
 			try
@@ -31,7 +20,7 @@ namespace BackendFunction
 
 				if (!getResult.IsSuccess())
 				{
-					return Common.ReturnErrorObject("Data Get Failed: " + getResult.GetErrorCode());
+					return FuncResult.Error("Data Get Failed: " + getResult.GetErrorCode());
 				}
 
 				JsonData rows = getResult.FlattenRows();
@@ -48,7 +37,7 @@ namespace BackendFunction
 
 					if (!insertResult.IsSuccess())
 					{
-						return Common.ReturnErrorObject("Data Insert Failed: " + insertResult.GetErrorCode());
+						return FuncResult.Error("Data Insert Failed: " + insertResult.GetErrorCode());
 					}
 
 					response.exp = 0;
@@ -59,11 +48,11 @@ namespace BackendFunction
 					response.exp = int.Parse(rows[0]["Exp"].ToString());
 				}
 
-				return Backend.JsonToStream(JsonConvert.SerializeObject(response));
+				return FuncResult.Json(response);
 			}
 			catch (Exception ex)
 			{
-				return Common.ReturnErrorObject("Server Error: " + ex.ToString());
+				return FuncResult.Error("Server Error: " + ex.ToString());
 			}
 		}
 	}

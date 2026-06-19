@@ -12,7 +12,14 @@ namespace ProjectOne.Network
 			BackendReturnObject bro = Backend.BMember.GuestLogin();
 			if (bro.IsSuccess() == false)
 			{
-				return UniTask.FromResult((false, bro.GetMessage()));
+				// 로컬에 캐시된 게스트 자격증명이 서버 계정과 어긋난 경우(예: 서버에서 계정 삭제 → bad customId).
+				// 로컬 게스트 정보를 비우고 새 게스트 계정으로 1회 재시도한다.
+				Backend.BMember.DeleteGuestInfo();
+				bro = Backend.BMember.GuestLogin();
+				if (bro.IsSuccess() == false)
+				{
+					return UniTask.FromResult((false, bro.GetMessage()));
+				}
 			}
 
 			return UniTask.FromResult((true, (string)null));

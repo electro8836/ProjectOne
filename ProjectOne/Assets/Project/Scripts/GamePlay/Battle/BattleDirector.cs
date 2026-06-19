@@ -192,6 +192,10 @@ namespace ProjectOne.Battle
 			{
 				Debug.Log($"[테스트] DungeonClear 결과 → exp={data.exp}");
 			}
+			else
+			{
+				Debug.LogError($"[테스트] DungeonClear 실패 → {errorMsg}");
+			}
 		}
 
 		private void OnDestroy()
