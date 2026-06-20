@@ -34,8 +34,8 @@ namespace ProjectOne.Battle
 		// 플로우필드 재베이크 임계값 — 기준 히어로가 다른 셀로 이동했을 때만 재계산
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
-		// 진입점 — BattleState 가 씬 로드 후 호출한다.
-		public void Begin(BattleContext ctx)
+		// 진입점 — BattleState 가 씬 로드 후 호출한다. 전투 셋업 완료까지 await 가능.
+		public async UniTask Begin(BattleContext ctx)
 		{
 			if (ctx == null)
 			{
@@ -61,7 +61,11 @@ namespace ProjectOne.Battle
 			_characterId = ctx.CharacterId;
 			_mapId = ctx.MapId;
 			_mode = BattleModeFactory.Create(map.BattleType);
-			BeginAsync(ctx).Forget();
+
+			// 파괴 토큰에 연결한 전투용 CTS — EndBattle 에서 명시 취소(파괴 전이라도 즉시 중단)
+			_cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+			await _mode.SetupAsync(ctx, this, _cts.Token);
+			_setupDone = true;
 		}
 
 		// 승패 무관 강제 종료 (HUD ExitButton 등에서 호출 가능)
@@ -93,14 +97,6 @@ namespace ProjectOne.Battle
 		private void OnSkipRequested(WaveSkipRequestedEvent evt)
 		{
 			RequestSkipWaveWait();
-		}
-
-		private async UniTaskVoid BeginAsync(BattleContext ctx)
-		{
-			// 파괴 토큰에 연결한 전투용 CTS — EndBattle 에서 명시 취소(파괴 전이라도 즉시 중단)
-			_cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
-			await _mode.SetupAsync(ctx, this, _cts.Token);
-			_setupDone = true;
 		}
 
 		private void Update()

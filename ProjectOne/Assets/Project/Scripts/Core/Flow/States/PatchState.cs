@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using ProjectOne.Loading;
 using ProjectOne.Resources;
 using UnityEngine;
 
@@ -20,10 +21,14 @@ namespace ProjectOne.Flow
 	{
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
+			// 로딩 화면 표시 — 여기부터 로비 진입까지 여러 State 를 가로질러 유지된다(ToLobby 흐름).
+			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToLobby, ct);
+
 			PatchConfig config = AssetBundleLoader.Instance.Config;
 			if (config == null || config.DownloadLabels.Count == 0)
 			{
 				Debug.LogWarning("[PatchState] PatchConfig 미연결 또는 label 없음. 패치 건너뜀. (부트 씬 AssetBundleLoader에 PatchConfig 연결 필요)");
+				LoadingManager.Instance.SetPhaseProgress(LoadingPhase.Patch, 1f);
 				GameFlow.Instance.ChangeStateAsync(new LoginState()).Forget();
 				return;
 			}
@@ -65,6 +70,7 @@ namespace ProjectOne.Flow
 			if (!check.hasUpdate)
 			{
 				Debug.Log("[PatchState] 다운로드할 번들 없음. 패치 완료.");
+				LoadingManager.Instance.SetPhaseProgress(LoadingPhase.Patch, 1f);
 				GameFlow.Instance.ChangeStateAsync(new LoginState()).Forget();
 				return;
 			}
@@ -87,6 +93,7 @@ namespace ProjectOne.Flow
 			await AssetBundleLoader.Instance.DownloadAsync(labels, progressReporter, maxRetry: 3, ct);
 
 			Debug.Log("[PatchState] 다운로드 완료.");
+			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.Patch, 1f);
 			GameFlow.Instance.ChangeStateAsync(new LoginState()).Forget();
 		}
 
@@ -97,6 +104,9 @@ namespace ProjectOne.Flow
 
 		private void onPatchProgress(BundleDownloadProgress prog)
 		{
+			// 패치 단계 로컬 비율 보고 (System.Progress 콜백이라 메인스레드로 마샬됨 → UI 갱신 안전)
+			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.Patch, prog.ratio);
+
 			float pct = prog.ratio * 100f;
 			long dlMB = prog.downloadedBytes / 1024 / 1024;
 			long totalMB = prog.totalBytes / 1024 / 1024;

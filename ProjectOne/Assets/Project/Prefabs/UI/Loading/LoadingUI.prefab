@@ -146,6 +146,8 @@ GameObject:
   - component: {fileID: 2962797617156691717}
   - component: {fileID: 8844541114316809590}
   - component: {fileID: 4480565771275257259}
+  - component: {fileID: 2756372749203756714}
+  - component: {fileID: 1549709462128835005}
   m_Layer: 5
   m_Name: LoadingUI
   m_TagString: Untagged
@@ -240,6 +242,36 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!225 &2756372749203756714
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3735718661530121740}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!114 &1549709462128835005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3735718661530121740}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f6bd127974542a45b949b3728a0bb2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.LoadingUI
+  _canvasGroup: {fileID: 2756372749203756714}
+  _progressBar: {fileID: 3831010888189670507}
+  _progressText: {fileID: 624072669601718095}
+  _loadingText: {fileID: 5040346617023356829}
+  _fadeDuration: 0.25
+  _fillSpeed: 1.5
 --- !u!1 &3746130263773281681
 GameObject:
   m_ObjectHideFlags: 0
