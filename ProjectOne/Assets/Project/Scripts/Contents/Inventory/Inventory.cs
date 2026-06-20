@@ -1,24 +1,25 @@
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectOne.Event;
-using ProjectOne.ServerData;
+using ProjectOne.Shared;
 
 namespace ProjectOne.UserData
 {
 	// 보유 아이템(아이템정보 도메인) 모델 — 획득/합성/강화수치 보관(인메모리).
-	// InventoryData(직렬화 원본)와 _index(빠른 조회)를 동기 유지. 영속은 서버(Backnd 함수)가 담당, 변경 시 알림만 발행.
+	// 공유 DTO(InventoryDto)를 받아 런타임 OwnedItem 으로 변환 보유하고, 저장/전송 시 ToDto() 로 역변환한다.
+	// 영속은 서버(Backnd 함수)가 담당, 변경 시 알림만 발행.
 	public sealed class Inventory
 	{
 		// 강화 최대 수치 (강화 실행 로직은 범위 외 — 수치만 보관)
 		public const int MaxEnhanceLevel = 15;
 
-		private readonly InventoryData _data;
+		// 순서 보존용 목록 + 빠른 조회용 인덱스(동일 OwnedItem 참조 공유)
+		private readonly List<OwnedItem> _items = new List<OwnedItem>();
 		private readonly Dictionary<int, OwnedItem> _index = new Dictionary<int, OwnedItem>();
 
-		public Inventory(InventoryData data)
+		public Inventory(InventoryDto dto)
 		{
-			_data = (data != null) ? data : new InventoryData();
-			buildIndex();
+			buildFromDto(dto);
 		}
 
 		// ── 공개 API ──────────────────────────────────────────────────
@@ -60,7 +61,7 @@ namespace ProjectOne.UserData
 		// 전체 보유 아이템 조회 (읽기 전용) — 디버그/조회용
 		public IReadOnlyList<OwnedItem> GetAll()
 		{
-			return _data.items;
+			return _items;
 		}
 
 		// 아이템 획득 — 없으면 생성, 있으면 count 증가
@@ -75,7 +76,7 @@ namespace ProjectOne.UserData
 			if (_index.TryGetValue(itemId, out item) == false)
 			{
 				item = makeItem(itemId);
-				_data.items.Add(item);
+				_items.Add(item);
 				_index.Add(itemId, item);
 			}
 
@@ -140,19 +141,48 @@ namespace ProjectOne.UserData
 			publishChange(item);
 		}
 
+		// 직렬화 DTO 로 변환 — 저장/전송 시 사용
+		public InventoryDto ToDto()
+		{
+			InventoryDto dto = new InventoryDto();
+			for (int i = 0; i < _items.Count; i++)
+			{
+				OwnedItem src = _items[i];
+				OwnedItemDto entry = new OwnedItemDto();
+				entry.itemId = src.itemId;
+				entry.count = src.count;
+				entry.enhanceLevel = src.enhanceLevel;
+				dto.items.Add(entry);
+			}
+
+			return dto;
+		}
+
 		// ── 내부 ──────────────────────────────────────────────────────
 
-		private void buildIndex()
+		// 공유 DTO → 런타임 OwnedItem 변환
+		private void buildFromDto(InventoryDto dto)
 		{
+			_items.Clear();
 			_index.Clear();
-			for (int i = 0; i < _data.items.Count; i++)
+			if (dto == null)
 			{
-				OwnedItem item = _data.items[i];
-				if (item == null || item.itemId <= 0)
+				return;
+			}
+
+			for (int i = 0; i < dto.items.Count; i++)
+			{
+				OwnedItemDto src = dto.items[i];
+				if (src == null || src.itemId <= 0)
 				{
 					continue;
 				}
 
+				OwnedItem item = new OwnedItem();
+				item.itemId = src.itemId;
+				item.count = src.count;
+				item.enhanceLevel = src.enhanceLevel;
+				_items.Add(item);
 				_index[item.itemId] = item;
 			}
 		}

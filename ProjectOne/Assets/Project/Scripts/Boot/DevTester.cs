@@ -4,7 +4,7 @@ using EDT;
 using ProjectOne.Utils;
 using ProjectOne.Currency;
 using ProjectOne.Event;
-using ProjectOne.ServerData;
+using ProjectOne.Shared;
 using ProjectOne.UserData;
 
 namespace ProjectOne.Boot
@@ -129,41 +129,41 @@ namespace ProjectOne.Boot
 
 			Account.Instance.SetInventory(buildInventory());
 			Account.Instance.SetCharacter(buildCharacter());
-			Account.Instance.SetSkill(new SkillData());
+			Account.Instance.SetSkill(new SkillDto());
 			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Character:" + _characterId + ", Level:" + _characterLevel);
 		}
 
-		private InventoryData buildInventory()
+		private InventoryDto buildInventory()
 		{
-			InventoryData inventory = new InventoryData();
+			InventoryDto inventory = new InventoryDto();
 			addOwnedItem(inventory, _weapon);
 			addOwnedItem(inventory, _armor);
 			addOwnedItem(inventory, _accessory);
 			return inventory;
 		}
 
-		private static void addOwnedItem(InventoryData inventory, DevSlot slot)
+		private static void addOwnedItem(InventoryDto inventory, DevSlot slot)
 		{
 			if (slot.itemId <= 0)
 			{
 				return;
 			}
 
-			OwnedItem item = new OwnedItem();
+			OwnedItemDto item = new OwnedItemDto();
 			item.itemId = slot.itemId;
 			item.count = 1;
 			item.enhanceLevel = slot.enhanceLevel;
 			inventory.items.Add(item);
 		}
 
-		private CharacterData buildCharacter()
+		private CharacterDto buildCharacter()
 		{
-			EquipPreset preset = new EquipPreset();
+			EquipPresetDto preset = new EquipPresetDto();
 			preset.weaponItemId = _weapon.itemId;
 			preset.armorItemId = _armor.itemId;
 			preset.accessoryItemId = _accessory.itemId;
 
-			OwnedCharacter oc = new OwnedCharacter();
+			OwnedCharacterDto oc = new OwnedCharacterDto();
 			oc.characterId = _characterId;
 			oc.grade = 1;
 			oc.level = _characterLevel;
@@ -172,7 +172,7 @@ namespace ProjectOne.Boot
 			oc.dupCount = 0;
 			oc.preset = preset;
 
-			CharacterData character = new CharacterData();
+			CharacterDto character = new CharacterDto();
 			character.characters.Add(oc);
 			character.selectedCharacterId = _characterId;
 			return character;

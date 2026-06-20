@@ -55,9 +55,9 @@ namespace BackendFunction
 				int rewardExp = -1;
 				for (int i = 0; i < chartRows.Count; i++)
 				{
-					if (int.Parse(chartRows[i]["mapId"].ToString()) == req.mapId)
+					if (int.Parse(chartRows[i]["MapID"].ToString()) == req.mapId)
 					{
-						rewardExp = int.Parse(chartRows[i]["rewardExp"].ToString());
+						rewardExp = int.Parse(chartRows[i]["RewardExp"].ToString());
 						break;
 					}
 				}

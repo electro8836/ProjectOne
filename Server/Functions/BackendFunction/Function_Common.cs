@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.IO;
 using BackEnd;
+using LitJson;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -21,6 +23,47 @@ namespace BackendFunction
 		public static Stream Json(object payload)
 		{
 			return Backend.StringToStream(JsonConvert.SerializeObject(payload));
+		}
+	}
+
+	// 차트 조회 공용 헬퍼 — 차트 "이름"으로 파일 ID 를 해석한다.
+	// 차트 파일 ID 는 재업로드 시마다 바뀌므로 고정인 이름으로 조회하고, 해석 결과를 캐시한다(워밍 컨테이너 재사용, 콜드스타트 시에만 재조회).
+	public static class ChartUtil
+	{
+		private static readonly Dictionary<string, string> _chartFileIdCache = new Dictionary<string, string>();
+
+		// chartName 에 해당하는 차트 파일 ID 를 반환한다. 성공 시 캐시에 저장.
+		public static bool ResolveChartFileId(string chartName, out string fileId, out string err)
+		{
+			if (_chartFileIdCache.TryGetValue(chartName, out fileId))
+			{
+				err = null;
+				return true;
+			}
+
+			var listBro = Backend.Chart.GetChartListV2();
+			if (!listBro.IsSuccess())
+			{
+				fileId = null;
+				err = "Failed to get chart list: " + listBro.GetErrorCode();
+				return false;
+			}
+
+			JsonData rows = listBro.FlattenRows();
+			for (int i = 0; i < rows.Count; i++)
+			{
+				if (rows[i]["chartName"].ToString() == chartName)
+				{
+					fileId = rows[i]["selectedChartFileId"].ToString();
+					_chartFileIdCache[chartName] = fileId;
+					err = null;
+					return true;
+				}
+			}
+
+			fileId = null;
+			err = "chart not found: " + chartName;
+			return false;
 		}
 	}
 }

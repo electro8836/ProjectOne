@@ -40,6 +40,10 @@ namespace BackendFunction
 					return new Auth().GetUserData();
 				case FunctionName.DungeonClear:
 					return new Dungeon().DungeonClear();
+				case FunctionName.EquipmentGachaDraw:
+					return new Gacha().EquipmentGachaDraw();
+				case FunctionName.SkillGachaDraw:
+					return new Gacha().SkillGachaDraw();
 				default:
 					return FuncResult.Error("unknown action: " + action);
 			}

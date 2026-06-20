@@ -10,7 +10,6 @@ using ProjectOne.Skill;
 using ProjectOne.Buff;
 using ProjectOne.Unit.AI;
 using ProjectOne.UserData;
-using ProjectOne.ServerData;
 
 namespace ProjectOne.Unit
 {

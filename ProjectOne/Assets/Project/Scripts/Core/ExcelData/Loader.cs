@@ -95,6 +95,28 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - GachaInfo
+            {
+                CurrentFile = Table_GachaInfo.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_GachaInfo._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Gacha_Equipment
+            {
+                CurrentFile = Table_Gacha_Equipment.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Gacha_Equipment._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - MapInfo
             {
                 CurrentFile = Table_MapInfo.Filename;

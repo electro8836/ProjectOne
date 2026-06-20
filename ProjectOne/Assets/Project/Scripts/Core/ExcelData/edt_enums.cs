@@ -24,13 +24,19 @@ namespace EDT {
         Accessory,
     }
 
-    public enum GradeTypes {
+    public enum ItemGradeTypes {
         None,
         Normal,
         Magic,
         Rare,
         Epic,
         Legendary,
+    }
+
+    public enum GachaTypes {
+        None,
+        Equipment,
+        Skill,
     }
 
     public enum BattleType {
@@ -374,6 +380,8 @@ namespace EDT {
         TableEquipment,
         TableEnchant,
         TableCraft,
+        TableGachaInfo,
+        TableGacha_Equipment,
         TableMapInfo,
         TableMonsterSpawnInfo,
         TableMaterial,

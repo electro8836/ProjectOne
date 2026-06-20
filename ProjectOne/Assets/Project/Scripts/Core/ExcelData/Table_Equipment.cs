@@ -12,7 +12,7 @@ namespace EDT {
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
             public EquipmentTypes EquipmentType { get; set; } = EquipmentTypes.None;
-            public GradeTypes Grade { get; set; } = GradeTypes.None;
+            public ItemGradeTypes Grade { get; set; } = ItemGradeTypes.None;
             public CharacterTypes BindCharacter { get; set; } = CharacterTypes.None;
             public int EnchantInfo { get; set; } = 0;
             public StatInfo StatOptionType_1 { get; set; } = StatInfo.None;
@@ -50,7 +50,7 @@ namespace EDT {
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
                 row.EquipmentType = (EquipmentTypes)reader.ReadInt32();
-                row.Grade = (GradeTypes)reader.ReadInt32();
+                row.Grade = (ItemGradeTypes)reader.ReadInt32();
                 row.BindCharacter = (CharacterTypes)reader.ReadInt32();
                 row.EnchantInfo = reader.ReadInt32();
                 row.StatOptionType_1 = (StatInfo)reader.ReadInt32();

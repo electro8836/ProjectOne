@@ -1,6 +1,5 @@
 using EDT;
 using UnityEngine;
-using ProjectOne.ServerData;
 using ProjectOne.UserData;
 
 namespace ProjectOne.Unit

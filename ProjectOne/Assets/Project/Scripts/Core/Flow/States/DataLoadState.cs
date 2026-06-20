@@ -24,6 +24,17 @@ namespace ProjectOne.Flow
 		{
 			if (isSuccess == true && data != null)
 			{
+				// 로그인 스냅샷 반영 — 서버 권위 데이터를 Account 도메인에 주입(DTO → 도메인 변환은 Set* 내부에서).
+				if (data.currency != null)
+				{
+					Account.Instance.SetCurrency(data.currency);
+				}
+
+				if (data.inventory != null)
+				{
+					Account.Instance.SetInventory(data.inventory);
+				}
+
 				Account.Instance.Loadout.AddExp(101, data.exp);
 
 				// (테스트) 서버 저장 exp 수신 확인 — 재로그인 시 유지되는지 로그로 검증.
