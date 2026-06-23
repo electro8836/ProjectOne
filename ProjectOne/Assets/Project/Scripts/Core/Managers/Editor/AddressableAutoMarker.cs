@@ -41,6 +41,7 @@ namespace ProjectOne.Editor
 			new Rule { folder = "Assets/Project/Prefabs/Projectile", ext = ".prefab",  group = "Prefabs_Projectile", label = "Prefabs_Projectile", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			// UI 아이콘 스프라이트 — SpriteAtlas로 묶이지만 로드 키는 파일명(주소)
 			new Rule { folder = "Assets/Project/Art/UI/Atlas_OutGame", ext = ".png", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			new Rule { folder = "Assets/Project/Art/UI/Atlas_Common", ext = ".png", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			// EDT 테이블 — 그룹 Data_Tables / 라벨 Tables 로 자동 등록. 부트 로더가 라벨 "Tables" 로 로드.
 			new Rule { folder = "Assets/Project/Data/Tables",     ext = ".bytes",      group = "Data_Tables",     label = "Tables",          flattenAddress = true, keepExtension = true,  inDownloadLabels = false },
 		};

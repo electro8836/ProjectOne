@@ -40,10 +40,13 @@ namespace ProjectOne.UI
 			EventManager.Instance.Unsubscribe<ResourceChangeEvent>(_onResourceChanged);
 			_navigationButton.OnClickEvent -= onNavigationClicked;
 
-			Table_CurrencyInfo.Row row = Table_CurrencyInfo.Get(_targetCurrency);
-			if (row != null && !string.IsNullOrEmpty(row.Icon))
+			if (ResourceManager.HasInstance)
 			{
-				ResourceManager.Instance.Release(row.Icon);
+				Table_CurrencyInfo.Row row = Table_CurrencyInfo.Get(_targetCurrency);
+				if (row != null && !string.IsNullOrEmpty(row.Icon))
+				{
+					ResourceManager.Instance.Release(row.Icon);
+				}
 			}
 		}
 

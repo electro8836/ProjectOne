@@ -17,5 +17,6 @@ namespace ProjectOne.Shared
 		public int exp;
 		public CurrencyDto currency;
 		public InventoryDto inventory;
+		public CharacterDto character;
 	}
 }

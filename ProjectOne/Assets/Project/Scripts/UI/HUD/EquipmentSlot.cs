@@ -92,7 +92,8 @@ namespace ProjectOne.UI
 
 		private void releaseIcon()
 		{
-			if (!string.IsNullOrEmpty(_iconAddress))
+			// 앱/플레이 종료 시엔 ResourceManager 가 먼저 파괴됐을 수 있어 null 가드.
+			if (!string.IsNullOrEmpty(_iconAddress) && ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(_iconAddress);
 				_iconAddress = null;

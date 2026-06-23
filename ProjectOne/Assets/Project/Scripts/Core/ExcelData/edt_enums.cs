@@ -10,6 +10,21 @@ namespace EDT {
         Class_Mage,
     }
 
+    public enum CharacterUnlockState {
+        None,
+        Free,
+        Currency,
+    }
+
+    public enum CharacterGrade {
+        None,
+        Star_01,
+        Star_02,
+        Star_03,
+        Star_04,
+        Star_05,
+    }
+
     public enum ConsumableType {
         None,
         Potion,
@@ -375,6 +390,7 @@ namespace EDT {
         None,
         TableCharacter,
         TableLevelExp,
+        TableUnlockCondition,
         TableConsumable,
         TableCurrencyInfo,
         TableEquipment,

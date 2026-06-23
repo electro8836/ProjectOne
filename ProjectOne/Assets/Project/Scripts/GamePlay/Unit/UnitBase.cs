@@ -182,7 +182,11 @@ namespace ProjectOne.Unit
 
 		protected virtual void OnDisable()
 		{
-			UnitContainer.Instance.Unregister(this);
+			// 앱/씬 종료 시엔 UnitContainer 가 먼저 파괴됐을 수 있어 null 가드.
+			if (UnitContainer.HasInstance)
+			{
+				UnitContainer.Instance.Unregister(this);
+			}
 		}
 
 		public void SetStats(StatContainer stats)

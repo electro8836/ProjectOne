@@ -59,6 +59,11 @@ namespace ProjectOne.Flow
 					Account.Instance.SetInventory(data.inventory);
 				}
 
+				if (data.character != null)
+				{
+					Account.Instance.SetCharacter(data.character);
+				}
+
 				Account.Instance.Loadout.AddExp(101, data.exp);
 
 				// (테스트) 서버 저장 exp 수신 확인 — 재로그인 시 유지되는지 로그로 검증.

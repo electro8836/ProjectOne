@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using BackEnd;
 using LitJson;
@@ -66,6 +67,14 @@ namespace BackendFunction
 
 				response.inventory = JsonConvert.DeserializeObject<InventoryDto>(inventoryJson);
 
+				// 4. USER_CHARACTER — 없으면 무료 캐릭터(차트 UnlockState=Free)로 생성, 있으면 기존 보유 유지.
+				if (ensureCharacterRow(out string characterJson, out string characterErr) == false)
+				{
+					return FuncResult.Error(characterErr);
+				}
+
+				response.character = JsonConvert.DeserializeObject<CharacterDto>(characterJson);
+
 				return FuncResult.Json(response);
 			}
 			catch (Exception ex)
@@ -105,6 +114,132 @@ namespace BackendFunction
 			}
 
 			dataJson = defaultDataJson;
+			err = null;
+			return true;
+		}
+
+		// USER_CHARACTER 행 ensure — 없으면 무료 캐릭터 목록으로 생성(있으면 기존 보유 그대로 둔다).
+		// 기존 유저는 차트 조인 비용을 피하려 행이 있으면 곧장 반환한다(신규 계정일 때만 차트 조회).
+		private bool ensureCharacterRow(out string dataJson, out string err)
+		{
+			var getResult = Backend.GameData.GetMyData("USER_CHARACTER", new Where());
+			if (!getResult.IsSuccess())
+			{
+				dataJson = null;
+				err = "USER_CHARACTER Get Failed: " + getResult.GetErrorCode();
+				return false;
+			}
+
+			JsonData rows = getResult.FlattenRows();
+			if (rows.Count > 0)
+			{
+				// 이미 존재 — 기존 데이터 보존(덮지 않음)
+				dataJson = rows[0]["Data"].ToString();
+				err = null;
+				return true;
+			}
+
+			// 신규 — 무료 캐릭터 목록을 차트에서 만들어 생성
+			if (buildStarterCharacterJson(out string starterJson, out string buildErr) == false)
+			{
+				dataJson = null;
+				err = buildErr;
+				return false;
+			}
+
+			Param param = new Param();
+			param.Add("Data", starterJson);
+			var insertResult = Backend.GameData.Insert("USER_CHARACTER", param);
+			if (!insertResult.IsSuccess())
+			{
+				dataJson = null;
+				err = "USER_CHARACTER Insert Failed: " + insertResult.GetErrorCode();
+				return false;
+			}
+
+			dataJson = starterJson;
+			err = null;
+			return true;
+		}
+
+		// 무료 캐릭터 스타터 목록 JSON 생성 — UnlockCondition / Character 두 차트를 조인한다(서버 권위).
+		// UnlockCondition 차트에서 UnlockState=Free 인 UnlockConditionID 를 모으고,
+		// Character 차트에서 그 조건을 참조하는 CharacterID 를 무료 캐릭터로 지급한다.
+		// 차트 컬럼명: 뒤끝 차트는 'ID' 가 예약어라 키 컬럼을 'CharacterID' / 'UnlockConditionID' 로 둔다.
+		private bool buildStarterCharacterJson(out string dataJson, out string err)
+		{
+			// 1. UnlockCondition 차트 — Free 조건 ID 수집
+			if (ChartUtil.ResolveChartFileId("UnlockCondition", out string unlockFileId, out err) == false)
+			{
+				dataJson = null;
+				return false;
+			}
+
+			var unlockResult = Backend.Chart.GetChartContents(unlockFileId);
+			if (!unlockResult.IsSuccess())
+			{
+				dataJson = null;
+				err = "Failed to get UnlockCondition chart: " + unlockResult.GetErrorCode();
+				return false;
+			}
+
+			HashSet<int> freeConditionIds = new HashSet<int>();
+			JsonData unlockRows = unlockResult.FlattenRows();
+			for (int i = 0; i < unlockRows.Count; i++)
+			{
+				// 차트는 정수(1) 또는 문자열("Free")로 올라올 수 있어 둘 다 Free 로 인식한다(CharacterUnlockState.Free = 1).
+				string unlockState = unlockRows[i]["UnlockState"].ToString();
+				if (unlockState == "Free" || unlockState == "1")
+				{
+					freeConditionIds.Add(int.Parse(unlockRows[i]["UnlockConditionID"].ToString()));
+				}
+			}
+
+			// 2. Character 차트 — Free 조건을 참조하는 캐릭터 수집
+			if (ChartUtil.ResolveChartFileId("Character", out string charFileId, out err) == false)
+			{
+				dataJson = null;
+				return false;
+			}
+
+			var charResult = Backend.Chart.GetChartContents(charFileId);
+			if (!charResult.IsSuccess())
+			{
+				dataJson = null;
+				err = "Failed to get Character chart: " + charResult.GetErrorCode();
+				return false;
+			}
+
+			CharacterDto dto = new CharacterDto();
+			int minCharacterId = 0;
+			JsonData charRows = charResult.FlattenRows();
+			for (int i = 0; i < charRows.Count; i++)
+			{
+				int unlockConditionId = int.Parse(charRows[i]["UnlockConditionID"].ToString());
+				if (freeConditionIds.Contains(unlockConditionId) == false)
+				{
+					continue;
+				}
+
+				int characterId = int.Parse(charRows[i]["CharacterID"].ToString());
+				OwnedCharacterDto owned = new OwnedCharacterDto();
+				owned.characterId = characterId;
+				owned.grade = 1;
+				owned.level = 1;
+				owned.exp = 0;
+				owned.awakenLevel = 0;
+				owned.dupCount = 0;
+				dto.characters.Add(owned);
+
+				// 선택 캐릭터 기본값 — 가장 작은 캐릭터 ID
+				if (minCharacterId == 0 || characterId < minCharacterId)
+				{
+					minCharacterId = characterId;
+				}
+			}
+
+			dto.selectedCharacterId = minCharacterId;
+			dataJson = JsonConvert.SerializeObject(dto);
 			err = null;
 			return true;
 		}

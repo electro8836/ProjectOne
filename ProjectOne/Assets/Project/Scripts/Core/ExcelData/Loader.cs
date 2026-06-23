@@ -40,6 +40,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - UnlockCondition
+            {
+                CurrentFile = Table_UnlockCondition.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_UnlockCondition._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Consumable
             {
                 CurrentFile = Table_Consumable.Filename;

@@ -11,8 +11,11 @@ namespace EDT {
             public CharacterTypes CharacterType { get; set; } = CharacterTypes.None;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
+            public CharacterGrade Grade { get; set; } = CharacterGrade.None;
             public string Path { get; set; } = string.Empty;
             public int SkinID { get; set; } = 0;
+            public int UnlockConditionID { get; set; } = 0;
             public int BaseStatID { get; set; } = 0;
             public int BaseSkillSet { get; set; } = 0;
             public int LevelupStatID { get; set; } = 0;
@@ -46,8 +49,11 @@ namespace EDT {
                 row.CharacterType = (CharacterTypes)reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
+                row.Icon = reader.ReadString();
+                row.Grade = (CharacterGrade)reader.ReadInt32();
                 row.Path = reader.ReadString();
                 row.SkinID = reader.ReadInt32();
+                row.UnlockConditionID = reader.ReadInt32();
                 row.BaseStatID = reader.ReadInt32();
                 row.BaseSkillSet = reader.ReadInt32();
                 row.LevelupStatID = reader.ReadInt32();

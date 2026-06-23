@@ -302,7 +302,6 @@ MonoBehaviour:
   _alertObject: {fileID: 0}
   _badge: 0
   _themeData: {fileID: 11400000, guid: 7f206603713bbc14b8268253dbb7f386, type: 2}
-  _targetGraphic: {fileID: 5115237490920567451}
 --- !u!1 &227252949642140573
 GameObject:
   m_ObjectHideFlags: 0
@@ -1939,7 +1938,6 @@ MonoBehaviour:
   _alertObject: {fileID: 0}
   _badge: 0
   _themeData: {fileID: 11400000, guid: 7f206603713bbc14b8268253dbb7f386, type: 2}
-  _targetGraphic: {fileID: 4074011271986459969}
 --- !u!1 &2999588371410361498
 GameObject:
   m_ObjectHideFlags: 0
@@ -4160,7 +4158,6 @@ MonoBehaviour:
   _alertObject: {fileID: 0}
   _badge: 0
   _themeData: {fileID: 11400000, guid: 7f206603713bbc14b8268253dbb7f386, type: 2}
-  _targetGraphic: {fileID: 8954403531603621954}
 --- !u!1 &6423672632214363352
 GameObject:
   m_ObjectHideFlags: 0
@@ -4621,7 +4618,7 @@ GameObject:
   - component: {fileID: 1524042195155103418}
   - component: {fileID: 6341845232669533307}
   m_Layer: 0
-  m_Name: ResourceBar_01-Group
+  m_Name: ResourceBar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4645,9 +4642,9 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 551.1, y: -55.099976}
-  m_SizeDelta: {x: 1022.86743, y: 56}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 30, y: -30}
+  m_SizeDelta: {x: 900, y: 56}
+  m_Pivot: {x: 0, y: 1}
 --- !u!114 &6341845232669533307
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4665,7 +4662,7 @@ MonoBehaviour:
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
-  m_ChildAlignment: 3
+  m_ChildAlignment: 0
   m_Spacing: 30
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 0

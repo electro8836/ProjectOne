@@ -20,6 +20,7 @@ namespace ProjectOne.UI
 		[SerializeField] private int _testMapId = 1;
 
 		// 탭이 열 화면의 Addressable 주소 (탭→화면 매핑은 코드에서 관리)
+		private const string CHARACTER_ADDRESS = "UI_Character";
 		private const string EQUIPMENT_ADDRESS = "UI_Equipment";
 
 		private void Awake()
@@ -53,6 +54,10 @@ namespace ProjectOne.UI
 
 			switch (tab)
 			{
+				case LobbyMenuTab.Character:
+					await UIManager.Instance.OpenOverlayAsync<CharacterUI>(CHARACTER_ADDRESS, this.GetCancellationTokenOnDestroy());
+					break;
+
 				case LobbyMenuTab.Equipment:
 					await UIManager.Instance.OpenOverlayAsync<EquipmentUI>(EQUIPMENT_ADDRESS, this.GetCancellationTokenOnDestroy());
 					break;
