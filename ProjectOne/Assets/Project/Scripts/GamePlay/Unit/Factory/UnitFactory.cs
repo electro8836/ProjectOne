@@ -74,6 +74,12 @@ namespace ProjectOne.Unit
 
 			HeroAspectRegistry.Instance.Register(_equipmentAspect);
 			HeroAspectRegistry.Instance.ApplyAll(hero);
+
+			// 장비/레벨업 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전
+			hero.Vitals.InitHp();
+			hero.Vitals.InitBreakGage();
+			hero.Vitals.InitStamina();
+
 			hero.RefreshAnimationStats();
 			EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), characterId));
 			return hero;
