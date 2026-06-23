@@ -19,6 +19,9 @@ namespace ProjectOne.UserData
 		private readonly Dictionary<int, OwnedCharacter> _index = new Dictionary<int, OwnedCharacter>();
 		private int _selectedCharacterId;
 
+		// 장착 변경(프리셋) 누적 플래그 — 클릭마다 서버 전송하지 않고, flush 시점에 dirty 면 1회만 저장한다.
+		private bool _dirty;
+
 		public Loadout(CharacterDto dto)
 		{
 			buildFromDto(dto);
@@ -116,6 +119,18 @@ namespace ProjectOne.UserData
 		public int Selected
 		{
 			get { return _selectedCharacterId; }
+		}
+
+		// 장착 변경이 서버에 미반영(dirty)인지 — flush 코디네이터가 확인한다.
+		public bool IsDirty
+		{
+			get { return _dirty; }
+		}
+
+		// 서버 저장 성공 후 호출 — dirty 해제.
+		public void MarkSynced()
+		{
+			_dirty = false;
 		}
 
 		public bool TrySelect(int characterId)
@@ -276,6 +291,7 @@ namespace ProjectOne.UserData
 				default: return;
 			}
 
+			_dirty = true;
 			EventManager.Instance.Publish(new PresetChangeEvent(oc.characterId, slot, itemId));
 			reapplyHero(oc.characterId);
 		}

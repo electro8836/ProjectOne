@@ -1,16 +1,18 @@
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using EDT;
-using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
-	// 아이템 정보 팝업. UIManager.ShowItemInfoPopupAsync가 ShowAsync로 닫힘을 기다린다.
-	// 정보 표시 + 현재 선택 캐릭터의 장착/해제를 담당한다.
-	public class ItemInfoPopup : UIScreen
+	// 아이템 정보 팝업의 View(MVP). UIManager.ShowItemInfoPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
+	// 정보/옵션 표시와 입력 전달만 담당하고, 장착/해제 결정은 ItemInfoPresenter 가 한다.
+	// (클래스명을 ItemInfoPopup 으로 유지 — 프리펩이 이 스크립트 GUID 를 참조.)
+	public class ItemInfoPopup : UIScreen, IView
 	{
 		[Header("정보 텍스트")]
 		[SerializeField] private TMP_Text _nameText;	// NameText
@@ -36,51 +38,93 @@ namespace ProjectOne.UI
 		[SerializeField] private EquipmentOptionSlot _skillSlotPrefab;	// Prefab_EquipmentSkillSlot
 		[SerializeField] private GradeColorTable _gradeColors;
 
-		private int _itemId;
-		private EquipmentTypes _type = EquipmentTypes.None;
+		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
+		public event Action OnEquipToggleClicked;
+		public event Action OnExitClicked;
+
+		private readonly ItemInfoPresenter _presenter = new ItemInfoPresenter();
 		private UniTaskCompletionSource<bool> _tcs;
 
 		private void Awake()
 		{
 			_equipButton.OnClickEvent += onEquipClicked;
 			_exitButton.OnClickEvent += onExitClicked;
+
+			_presenter.Initialize(this);
 		}
 
 		private void OnDestroy()
 		{
+			_presenter.Dispose();
+
 			_equipButton.OnClickEvent -= onEquipClicked;
 			_exitButton.OnClickEvent -= onExitClicked;
 		}
 
-		// UIManager가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
-		public async UniTask ShowAsync(int itemId, CancellationToken ct)
+		// UIManager 가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
+		public UniTask ShowAsync(int itemId, CancellationToken ct)
 		{
-			Table_Equipment.Row row = Table_Equipment.Get(itemId);
-			if (row == null)
-			{
-				return;
-			}
+			return _presenter.ShowAsync(itemId, ct);
+		}
 
-			_itemId = itemId;
-			_type = row.EquipmentType;
+		// ── Presenter 가 호출하는 표시 API ─────────────────────────────────
 
+		public void SetInfo(Table_Equipment.Row row)
+		{
 			applyGradeColor(row.Grade);
 			_nameText.text = row.Name;
 			_gradeText.text = row.Grade.ToString();
 			_descText.text = row.Desc;
+		}
 
-			Inventory inventory = Account.Instance.Inventory;
-			bool owned = inventory.Has(itemId);
+		// ItemSlotRoot 에 인벤토리 슬롯을 생성해 등급/아이콘/레벨/개수를 표시하되,
+		// 미보유(Unlock)·장착(Focus) 표시는 숨긴다.
+		public async UniTask BindItemSlotAsync(Table_Equipment.Row row, bool owned, int count, int level, CancellationToken ct)
+		{
+			EquipmentSlot slot = Instantiate(_inventorySlotPrefab, _itemSlotRoot);
+			await slot.Bind(row, owned, count, level, false, _gradeColors, ct);
+			slot.HideStatusObjects();
+		}
 
-			await bindItemSlot(row, owned, inventory, ct);
-			buildOptions(row);
+		// 옵션 슬롯을 GridLayout 에 추가한다 (스탯/스킬 프리펩은 isSkill 로 구분).
+		public void BuildOptions(IReadOnlyList<ItemOptionEntry> entries)
+		{
+			for (int i = 0; i < entries.Count; i++)
+			{
+				ItemOptionEntry entry = entries[i];
+				EquipmentOptionSlot prefab = entry.isSkill ? _skillSlotPrefab : _statSlotPrefab;
+				EquipmentOptionSlot slot = Instantiate(prefab, _gridParent);
+				slot.Set(entry.title, entry.text);
+			}
+		}
 
-			_equipButton.interactable = owned;	// 미보유면 장착 불가
-			refreshEquipButton();
+		public void SetEquipInteractable(bool interactable)
+		{
+			_equipButton.interactable = interactable;
+		}
 
+		public void SetEquipLabel(string label)
+		{
+			_equipButtonLabel.text = label;
+		}
+
+		// 닫힘 대기 — Presenter 의 ShowAsync 가 마지막에 await 한다.
+		public async UniTask WaitForCloseAsync(CancellationToken ct)
+		{
 			_tcs = new UniTaskCompletionSource<bool>();
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
+
+		// 입력(Exit)으로 닫힘을 확정한다.
+		public void CloseFromInput()
+		{
+			if (_tcs != null)
+			{
+				_tcs.TrySetResult(true);
+			}
+		}
+
+		// ── 내부 ──────────────────────────────────────────────────────────
 
 		private void applyGradeColor(ItemGradeTypes grade)
 		{
@@ -89,92 +133,14 @@ namespace ProjectOne.UI
 			_deco2.color = gc.gradient;	// 진한 색
 		}
 
-		// ItemSlotRoot 에 인벤토리 슬롯을 생성해 등급/아이콘/레벨/개수를 표시하되,
-		// 미보유(Unlock)·장착(Focus) 표시는 숨긴다.
-		private async UniTask bindItemSlot(Table_Equipment.Row row, bool owned, Inventory inventory, CancellationToken ct)
-		{
-			EquipmentSlot slot = Instantiate(_inventorySlotPrefab, _itemSlotRoot);
-			int count = inventory.GetCount(row.ID);
-			int level = inventory.GetEnhanceLevel(row.ID);
-			await slot.Bind(row, owned, count, level, false, _gradeColors, ct);
-			slot.HideStatusObjects();
-		}
-
-		// 스탯 옵션 1~3, 스킬 옵션 1~2 순서대로 GridLayout 에 슬롯을 추가한다.
-		private void buildOptions(Table_Equipment.Row row)
-		{
-			addStatOption(row.StatOptionType_1, row.StatOptionValue_1);
-			addStatOption(row.StatOptionType_2, row.StatOptionValue_2);
-			addStatOption(row.StatOptionType_3, row.StatOptionValue_3);
-
-			addSkillOption(row.SkillOption_1);
-			addSkillOption(row.SkillOption_2);
-		}
-
-		private void addStatOption(StatInfo type, float value)
-		{
-			if (type == StatInfo.None)
-			{
-				return;
-			}
-
-			Table_StatInfo.Row info = Table_StatInfo.Get(type);
-			string title = info != null ? info.Name : type.ToString();
-			string text = info != null && info.IsRatio ? value.ToString("0.##") + "%" : value.ToString("0.##");
-
-			EquipmentOptionSlot slot = Instantiate(_statSlotPrefab, _gridParent);
-			slot.Set(title, text);
-		}
-
-		private void addSkillOption(int skillOption)
-		{
-			if (skillOption == 0)
-			{
-				return;
-			}
-
-			Table_SkillInfo.Row info = Table_SkillInfo.Get((SkillInfo)skillOption);
-			string skillName = info != null ? info.Name : string.Empty;
-
-			EquipmentOptionSlot slot = Instantiate(_skillSlotPrefab, _gridParent);
-			slot.Set(null, skillName);	// 스킬은 제목 없이 이름만
-		}
-
-		// 현재 장착 여부에 따라 라벨을 Equip/Unequip 으로 갱신한다.
-		private void refreshEquipButton()
-		{
-			_equipButtonLabel.text = isEquipped() ? "Unequip" : "Equip";
-		}
-
-		private bool isEquipped()
-		{
-			Loadout loadout = Account.Instance.Loadout;
-			return loadout.GetSlot(loadout.Selected, _type) == _itemId;
-		}
-
 		private void onEquipClicked()
 		{
-			Loadout loadout = Account.Instance.Loadout;
-			int selected = loadout.Selected;
-
-			if (isEquipped())
-			{
-				loadout.ClearSlot(selected, _type);
-			}
-			else
-			{
-				loadout.TrySetSlot(selected, _type, _itemId);
-			}
-
-			refreshEquipButton();
+			if (OnEquipToggleClicked != null) { OnEquipToggleClicked.Invoke(); }
 		}
 
 		private void onExitClicked()
 		{
-			if (_tcs != null)
-			{
-				_tcs.TrySetResult(true);
-			}
+			if (OnExitClicked != null) { OnExitClicked.Invoke(); }
 		}
 	}
 }

@@ -12,5 +12,6 @@ namespace ProjectOne.Shared
 		public const string DungeonClear = "DungeonClear";
 		public const string EquipmentGachaDraw = "EquipmentGachaDraw";
 		public const string SkillGachaDraw = "SkillGachaDraw";
+		public const string SaveLoadout = "SaveLoadout";
 	}
 }

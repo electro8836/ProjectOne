@@ -44,6 +44,8 @@ namespace BackendFunction
 					return new Gacha().EquipmentGachaDraw();
 				case FunctionName.SkillGachaDraw:
 					return new Gacha().SkillGachaDraw();
+				case FunctionName.SaveLoadout:
+					return new Loadout().SaveLoadout();
 				default:
 					return FuncResult.Error("unknown action: " + action);
 			}

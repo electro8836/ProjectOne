@@ -1,7 +1,9 @@
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using BackEnd;
+using EDT;
 using ProjectOne.Shared;
+using ProjectOne.UserData;
 using ProjectOne.Utils;
 
 namespace ProjectOne.Network
@@ -13,6 +15,9 @@ namespace ProjectOne.Network
 		private readonly BackndFunctionCaller _caller = new BackndFunctionCaller();
 
 		private bool _initialized;
+
+		// 장착 저장 전송 진행 중 가드 — 중복 flush(닫기+pause 동시 등) 방지.
+		private bool _loadoutFlushing;
 
 		// 현재 로그인 성공 상태 — 실패해도 게임은 로컬 데이터로 진행 가능.
 		public bool IsLoggedIn { get; private set; }
@@ -133,6 +138,64 @@ namespace ProjectOne.Network
 			}
 
 			_caller.Invoke<GachaDrawRequest, GachaDrawResponse>(FunctionName.SkillGachaDraw, request, callback);
+		}
+
+		// 장착 저장 — 선택 캐릭터의 프리셋을 서버가 보유 검증 후 USER_CHARACTER 에 갱신.
+		public void RequestSaveLoadout(SaveLoadoutRequest request, ResponseCallback<SaveLoadoutResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<SaveLoadoutRequest, SaveLoadoutResponse>(FunctionName.SaveLoadout, request, callback);
+		}
+
+		// ── 장착 flush 코디네이터 ─────────────────────────────────────────
+
+		// dirty(미저장 장착 변경)면 선택 캐릭터 프리셋을 1회 전송한다(화면 닫기·앱 일시정지/종료 트리거).
+		// 클릭은 이미 로컬에 낙관적 반영돼 있으므로, 여기선 묶인 변경을 한 번에 보낸다(패킷 절약).
+		public void FlushLoadoutIfDirty()
+		{
+			if (IsLoggedIn == false)
+			{
+				return;	// 미로그인(Dev/오프라인) — 조용히 무시
+			}
+
+			if (_loadoutFlushing == true)
+			{
+				return;	// 전송 진행 중 — 응답 후 dirty 면 다음 트리거가 재시도
+			}
+
+			Loadout loadout = Account.Instance.Loadout;
+			if (loadout.IsDirty == false)
+			{
+				return;	// 변경 없음 — 패킷 0
+			}
+
+			int characterId = loadout.Selected;
+			SaveLoadoutRequest request = new SaveLoadoutRequest();
+			request.characterId = characterId;
+			request.weaponItemId = loadout.GetSlot(characterId, EquipmentTypes.Weapon);
+			request.armorItemId = loadout.GetSlot(characterId, EquipmentTypes.Armor);
+			request.accessoryItemId = loadout.GetSlot(characterId, EquipmentTypes.Accessory);
+
+			_loadoutFlushing = true;
+			RequestSaveLoadout(request, onLoadoutFlushed);
+		}
+
+		// flush 응답 — 성공 시 dirty 해제, 실패 시 dirty 유지(다음 트리거에서 재시도).
+		private void onLoadoutFlushed(bool success, SaveLoadoutResponse data, string error)
+		{
+			_loadoutFlushing = false;
+			if (success == true)
+			{
+				Account.Instance.Loadout.MarkSynced();
+			}
+			else
+			{
+				Debug.LogWarning($"[NetworkManager] 장착 저장 실패 — dirty 유지: {error}");
+			}
 		}
 
 		// 미로그인 상태면 즉시 실패 콜백 — 오프라인/Dev 경로(DevTester 는 Account 직접 설정이라 무관).
