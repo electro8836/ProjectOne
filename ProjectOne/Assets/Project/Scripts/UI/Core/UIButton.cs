@@ -12,16 +12,14 @@ namespace ProjectOne.UI
 	{
 		[Header("Theme & Feedback")]
 		[SerializeField] private ButtonThemeData _themeData;
-		[SerializeField] private RectTransform _targetGraphic;
+		[SerializeField] private RectTransform _targetGraphic;	// 스케일 연출 대상. 미지정 시 루트(transform) 사용
 
-		private Vector2 _originalPosition;
+		private Vector3 _originalScale = Vector3.one;
 
 		private void Awake()
 		{
-			if (_targetGraphic != null)
-			{
-				_originalPosition = _targetGraphic.anchoredPosition;
-			}
+			Transform target = _targetGraphic != null ? _targetGraphic : transform;
+			_originalScale = target.localScale;
 
 			OnPointerDownEvent += playDownFeedback;
 			OnPointerUpEvent += playUpFeedback;
@@ -30,6 +28,10 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
+			// 진행 중인 스케일 트윈이 파괴된 RectTransform에 접근하지 않도록 정리
+			Transform target = _targetGraphic != null ? _targetGraphic : transform;
+			target.DOKill();
+
 			OnPointerDownEvent -= playDownFeedback;
 			OnPointerUpEvent -= playUpFeedback;
 			OnClickEvent -= playClickFeedback;
@@ -37,18 +39,21 @@ namespace ProjectOne.UI
 
 		private void playDownFeedback()
 		{
-			if (_themeData == null || _targetGraphic == null) { return; }
+			if (_themeData == null) { return; }
 
-			_targetGraphic.DOKill();
-			_targetGraphic.DOAnchorPos(_originalPosition + _themeData.pressedOffset, _themeData.animationDuration).SetEase(Ease.OutQuad);
+			Transform target = _targetGraphic != null ? _targetGraphic : transform;
+			Vector3 pressed = new Vector3(_originalScale.x * _themeData.pressedScale.x, _originalScale.y * _themeData.pressedScale.y, _originalScale.z);
+			target.DOKill();
+			target.DOScale(pressed, _themeData.animationDuration).SetEase(Ease.OutQuad);
 		}
 
 		private void playUpFeedback()
 		{
-			if (_themeData == null || _targetGraphic == null) { return; }
+			if (_themeData == null) { return; }
 
-			_targetGraphic.DOKill();
-			_targetGraphic.DOAnchorPos(_originalPosition, _themeData.animationDuration).SetEase(Ease.OutBack);
+			Transform target = _targetGraphic != null ? _targetGraphic : transform;
+			target.DOKill();
+			target.DOScale(_originalScale, _themeData.animationDuration).SetEase(Ease.OutBack);
 		}
 
 		private void playClickFeedback()

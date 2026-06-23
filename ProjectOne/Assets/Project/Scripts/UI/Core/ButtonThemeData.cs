@@ -7,8 +7,8 @@ namespace ProjectOne.UI
 	[CreateAssetMenu(menuName = "Custom UI/Button Theme Data", fileName = "NewButtonTheme")]
 	public class ButtonThemeData : ScriptableObject
 	{
-		[Header("Animation (Offset)")]
-		public Vector2 pressedOffset = new Vector2(0f, -5f);
+		[Header("Animation (Scale)")]
+		public Vector2 pressedScale = new Vector2(1f, 0.95f);	// 누름 시 곱할 스케일 (x,y 개별 — 가로 유지하려면 x=1)
 		public float animationDuration = 0.1f;
 
 		[Header("Audio (Addressable 주소)")]

@@ -225,4 +225,10 @@ namespace ProjectOne.Event
 						this.CharacterId = characterId;
 				}
 		}
+
+		// 오버레이 스택이 비었을 때 알림 (UIManager가 마지막 오버레이를 닫은 직후 발행).
+		// 로비 탭 그룹 등에서 구독해 탭 선택을 해제한다.
+		public readonly struct OverlayClosedEvent
+		{
+		}
 }

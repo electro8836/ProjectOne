@@ -2,6 +2,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Flow;
 using ProjectOne.Battle;
+using ProjectOne.Event;
 using ProjectOne.UserData;
 
 namespace ProjectOne.UI
@@ -12,57 +13,56 @@ namespace ProjectOne.UI
 	{
 		[SerializeField] private UIButton _testButton;
 
-		[SerializeField] private UITabButton _testTabButton1;
-		[SerializeField] private UITabButton _testTabButton2;
-
-		[SerializeField] private UIButton _characterButton;
-		[SerializeField] private UIButton _inventoryButton;
-		[SerializeField] private UIButton _shopButton;
-		[SerializeField] private UIButton _dungeonEnterButton;
+		[Header("하단 탭")]
+		[SerializeField] private TabGroup _tabGroup;
 
 		[Header("임시 전투 진입 파라미터 (던전 선택 UI 구현 전까지)")]
 		[SerializeField] private int _testMapId = 1;
 
+		// 탭이 열 화면의 Addressable 주소 (탭→화면 매핑은 코드에서 관리)
+		private const string EQUIPMENT_ADDRESS = "UI_Equipment";
+
 		private void Awake()
 		{
-			//_characterButton.OnClickEvent += onCharacterClicked;
-			//_inventoryButton.OnClickEvent += onInventoryClicked;
-			//_shopButton.OnClickEvent += onShopClicked;
-			//_dungeonEnterButton.OnClickEvent += onBattleEnterClicked;
-
 			_testButton.OnClickEvent += onBattleEnterClicked;
-			_testTabButton1.OnClickEvent += onInventoryClicked;
-			_testTabButton2.OnClickEvent += onShopClicked;
+
+			// 배타 선택은 TabGroup이 담당하고, 여기선 선택된 탭의 화면 처리만 한다.
+			_tabGroup.OnTabChanged += onTabChanged;
+			EventManager.Instance.Subscribe<OverlayClosedEvent>(onOverlayClosed);
 
 			Debug.Log("로비씬UI 로드!");
 		}
 
 		private void OnDestroy()
 		{
-			//_characterButton.OnClickEvent -= onCharacterClicked;
-			//_inventoryButton.OnClickEvent -= onInventoryClicked;
-			//_shopButton.OnClickEvent -= onShopClicked;
-			//_dungeonEnterButton.OnClickEvent -= onBattleEnterClicked;
-
 			_testButton.OnClickEvent -= onBattleEnterClicked;
-			_testTabButton1.OnClickEvent -= onInventoryClicked;
-			_testTabButton2.OnClickEvent -= onShopClicked;
+
+			_tabGroup.OnTabChanged -= onTabChanged;
+			EventManager.Instance.Unsubscribe<OverlayClosedEvent>(onOverlayClosed);
 		}
 
-		private void onCharacterClicked()
+		private void onTabChanged(int index)
 		{
-			// TODO: 캐릭터 화면 팝업 열기
-			Debug.Log("캐릭터 버튼 누름!");
+			tabFlowAsync((LobbyMenuTab)index).Forget();
 		}
 
-		private void onInventoryClicked()
+		// 열린 오버레이를 조용히 닫고(선택 유지), 선택된 탭에 연결된 화면을 연다.
+		private async UniTask tabFlowAsync(LobbyMenuTab tab)
 		{
-			// TODO: 인벤토리 팝업 열기
+			await UIManager.Instance.CloseAllOverlaysAsync();
+
+			switch (tab)
+			{
+				case LobbyMenuTab.Equipment:
+					await UIManager.Instance.OpenOverlayAsync<EquipmentUI>(EQUIPMENT_ADDRESS, this.GetCancellationTokenOnDestroy());
+					break;
+			}
 		}
 
-		private void onShopClicked()
+		// 사용자가 화면을 닫아 오버레이 스택이 비면 탭 선택을 해제한다.
+		private void onOverlayClosed(OverlayClosedEvent e)
 		{
-			// TODO: 상점 팝업 열기
+			_tabGroup.ClearSelection();
 		}
 
 		private void onBattleEnterClicked()

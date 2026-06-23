@@ -62,7 +62,9 @@ namespace ProjectOne.UI
 		}
 
 		// 스택 최상단 오버레이를 닫는다.
-		public async UniTask CloseOverlayAsync()
+		// publishWhenEmpty: 스택이 비었을 때 OverlayClosedEvent를 발행할지.
+		// 사용자 닫기(닫기 버튼)는 true(기본), 탭 전환·씬 전환의 일괄 닫기는 false로 조용히 닫는다.
+		public async UniTask CloseOverlayAsync(bool publishWhenEmpty = true)
 		{
 			if (_overlayStack.Count == 0)
 			{
@@ -72,14 +74,20 @@ namespace ProjectOne.UI
 			UIScreen screen = _overlayStack.Pop();
 			await screen.OnCloseAsync();
 			Destroy(screen.gameObject);
+
+			// 마지막 오버레이가 닫혀 스택이 비면 통지 (탭 그룹 등이 선택 해제).
+			if (publishWhenEmpty && _overlayStack.Count == 0)
+			{
+				EventManager.Instance.Publish(new OverlayClosedEvent());
+			}
 		}
 
-		// 모든 오버레이를 닫는다 (씬 전환 시 호출).
+		// 모든 오버레이를 닫는다 (탭 전환·씬 전환 시 호출 — 조용히 닫음).
 		public async UniTask CloseAllOverlaysAsync()
 		{
 			while (_overlayStack.Count > 0)
 			{
-				await CloseOverlayAsync();
+				await CloseOverlayAsync(false);
 			}
 		}
 
