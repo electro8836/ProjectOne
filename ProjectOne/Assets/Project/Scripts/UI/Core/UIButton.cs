@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using DG.Tweening;
 using ProjectOne.Audio;
 using ProjectOne.Utils;
@@ -14,12 +15,30 @@ namespace ProjectOne.UI
 		[SerializeField] private ButtonThemeData _themeData;
 		[SerializeField] private RectTransform _targetGraphic;	// 스케일 연출 대상. 미지정 시 루트(transform) 사용
 
+		[Header("Disabled Tint")]
+		[SerializeField] private Graphic[] _disabledTintTargets;	// 비활성 시 어둡게 칠할 그래픽(본체 이미지 + Deco)
+		[SerializeField] private Color _disabledColor = new Color(0.35f, 0.35f, 0.35f, 1f);
+
 		private Vector3 _originalScale = Vector3.one;
+		private Color[] _originalColors;
+
+		public override bool interactable
+		{
+			get { return base.interactable; }
+			set
+			{
+				base.interactable = value;
+				refreshDisabledTint();
+			}
+		}
 
 		private void Awake()
 		{
 			Transform target = _targetGraphic != null ? _targetGraphic : transform;
 			_originalScale = target.localScale;
+
+			cacheDisabledTint();
+			refreshDisabledTint();
 
 			OnPointerDownEvent += playDownFeedback;
 			OnPointerUpEvent += playUpFeedback;
@@ -68,6 +87,32 @@ namespace ProjectOne.UI
 			if (!string.IsNullOrEmpty(_themeData.vfxAddress) && VFXManager.HasInstance)
 			{
 				VFXManager.Instance.PlayOneShot(_themeData.vfxAddress, transform);
+			}
+		}
+
+		private void cacheDisabledTint()
+		{
+			if (_disabledTintTargets == null) { return; }
+
+			_originalColors = new Color[_disabledTintTargets.Length];
+			for (int i = 0; i < _disabledTintTargets.Length; i++)
+			{
+				if (_disabledTintTargets[i] != null)
+				{
+					_originalColors[i] = _disabledTintTargets[i].color;
+				}
+			}
+		}
+
+		private void refreshDisabledTint()
+		{
+			if (_disabledTintTargets == null || _originalColors == null) { return; }
+
+			for (int i = 0; i < _disabledTintTargets.Length; i++)
+			{
+				if (_disabledTintTargets[i] == null) { continue; }
+
+				_disabledTintTargets[i].color = interactable ? _originalColors[i] : _disabledColor;
 			}
 		}
 	}

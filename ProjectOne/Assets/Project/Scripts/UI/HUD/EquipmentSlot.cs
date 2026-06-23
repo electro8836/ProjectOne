@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -11,6 +12,9 @@ namespace ProjectOne.UI
 	// 장비 그리드의 슬롯 1칸. 등급 색상 + 아이콘 + 레벨/개수 + 미보유(Unlock)/장착(Focus)을 표시한다.
 	public class EquipmentSlot : MonoBehaviour
 	{
+		[Header("클릭")]
+		[SerializeField] private UIButton _button;	// 슬롯 클릭 입력
+
 		[Header("등급 색상 대상")]
 		[SerializeField] private Image _bgMask;
 		[SerializeField] private Image _gradient;
@@ -28,8 +32,19 @@ namespace ProjectOne.UI
 		// 현재 로드한 아이콘 주소 (Acquire/Release 짝 맞춤용)
 		private string _iconAddress;
 
+		// 클릭 시 전달할 아이템 ID와 구독 이벤트
+		private int _itemId;
+		public event Action<int> OnClicked;
+
+		private void Awake()
+		{
+			_button.OnClickEvent += onClicked;
+		}
+
 		public async UniTask Bind(Table_Equipment.Row row, bool owned, int count, int enhanceLevel, bool equipped, GradeColorTable colors, CancellationToken ct)
 		{
+			_itemId = row.ID;
+
 			GradeColorTable.GradeColor gc = colors.Get(row.Grade);
 			_bgMask.color = gc.bgMask;
 			_gradient.color = gc.gradient;
@@ -52,6 +67,21 @@ namespace ProjectOne.UI
 			}
 
 			await setIcon(row.Icon, ct);
+		}
+
+		// 미보유(Unlock)·장착(Focus) 표시를 숨긴다 (아이템 정보 팝업의 슬롯용).
+		public void HideStatusObjects()
+		{
+			_unlock.SetActive(false);
+			_focus.SetActive(false);
+		}
+
+		private void onClicked()
+		{
+			if (OnClicked != null)
+			{
+				OnClicked.Invoke(_itemId);
+			}
 		}
 
 		// 아이콘 주소가 바뀐 경우에만 이전 것을 해제하고 새로 로드한다.
@@ -102,6 +132,7 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
+			_button.OnClickEvent -= onClicked;
 			releaseIcon();
 		}
 	}

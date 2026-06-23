@@ -121,6 +121,33 @@ namespace ProjectOne.UI
 			return result;
 		}
 
+		// 아이템 정보 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.
+		public async UniTask ShowItemInfoPopupAsync(string address, int itemId, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			ItemInfoPopup popup = go.GetComponent<ItemInfoPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return;
+			}
+
+			await popup.ShowAsync(itemId, _popupCts.Token);
+			Destroy(go);
+			ResourceManager.Instance.Release(address);
+		}
+
 		// ── 이벤트 핸들러 ───────────────────────────────────────────────
 
 		// 상태가 전이될 때 열려있는 오버레이를 모두 닫는다.

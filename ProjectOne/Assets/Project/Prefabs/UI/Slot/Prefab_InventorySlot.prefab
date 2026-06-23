@@ -637,6 +637,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8577635760879096311}
   - component: {fileID: 1102261044167934368}
+  - component: {fileID: 1102261044167934369}
   m_Layer: 0
   m_Name: Prefab_InventorySlot
   m_TagString: Untagged
@@ -680,8 +681,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 62965c2ff5b047b40ba69f6565c1c9f7, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.EquipmentSlot
+  _button: {fileID: 1102261044167934369}
   _bgMask: {fileID: 5573310029939632966}
   _gradient: {fileID: 7531800733935884013}
   _glow: {fileID: 1668675946786292701}
@@ -690,6 +692,24 @@ MonoBehaviour:
   _countText: {fileID: 7042733176966527395}
   _unlock: {fileID: 6990878156726571973}
   _focus: {fileID: 4139111151719749614}
+--- !u!114 &1102261044167934369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4832963020677488839}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4ea2048460bbd743934018f0341ff66, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _interactable: 1
+  _holdRepeat: 0
+  _holdDelay: 0.5
+  _holdInterval: 0.1
+  _themeData: {fileID: 0}
+  _targetGraphic: {fileID: 0}
 --- !u!1 &5144105052157600560
 GameObject:
   m_ObjectHideFlags: 0

@@ -22,7 +22,7 @@ namespace ProjectOne.UI
 		public event Action OnClickEvent;
 		public event Action OnHoldEvent;
 
-		public bool interactable { get => _interactable; set => _interactable = value; }
+		public virtual bool interactable { get => _interactable; set => _interactable = value; }
 
 		private bool _isPressed;
 		private Coroutine _holdRoutine;

@@ -14,6 +14,8 @@ namespace ProjectOne.UI
 	// 이 클래스는 자기 내부 콘텐츠(탭/정렬/슬롯 바인딩)만 책임진다.
 	public class EquipmentUI : UIScreen
 	{
+		private const string ITEM_INFO_POPUP_ADDRESS = "Prefab_ItemInfoPopup";
+
 		[SerializeField] private UIButton _closeButton;	// 닫기(뒤로가기) 버튼
 
 		[Header("탭 / 정렬 / 리스트")]
@@ -22,6 +24,19 @@ namespace ProjectOne.UI
 		[SerializeField] private RectTransform _gridParent;		// GridLayout_Equipment
 		[SerializeField] private EquipmentSlot _slotPrefab;		// 슬롯 프리펩
 		[SerializeField] private GradeColorTable _gradeColors;	// 등급 색상 SO
+
+		[Header("장착 슬롯")]
+		[SerializeField] private EquippedSlotView[] _equippedSlots;	// Weapon/Armor/Acc 장착 표시
+
+		[System.Serializable]
+		private class EquippedSlotView
+		{
+			public EquipmentTypes type;
+			public Transform root;          // Slot_Weapon/Armor/Acc 컨테이너
+			public GameObject emptyFrame;   // ItemFrame_Square_02_Empty (장착 중 숨김)
+			[System.NonSerialized] public EquipmentSlot instance;
+			[System.NonSerialized] public int itemId;
+		}
 
 		private EquipmentTypes _currentType = EquipmentTypes.Weapon;
 		private bool _descending = true;	// true=전설→노말 (기본)
@@ -175,6 +190,7 @@ namespace ProjectOne.UI
 			collectRows();
 			_rows.Sort(compareRows);
 			await applyToSlotsAsync(ct);
+			await refreshEquippedSlotsAsync(ct);
 		}
 
 		private void collectRows()
@@ -243,8 +259,95 @@ namespace ProjectOne.UI
 			}
 
 			EquipmentSlot slot = Instantiate(_slotPrefab, _gridParent);
+			slot.OnClicked += onSlotClicked;
 			_slots.Add(slot);
 			return slot;
+		}
+
+		// 슬롯 클릭 → 아이템 정보 팝업을 상위 캔버스에 연다.
+		private void onSlotClicked(int itemId)
+		{
+			UIManager.Instance.ShowItemInfoPopupAsync(ITEM_INFO_POPUP_ADDRESS, itemId, this.GetCancellationTokenOnDestroy()).Forget();
+		}
+
+		// 현재 선택 캐릭터의 장착 아이템을 Slot_Weapon/Armor/Acc 에 표시한다.
+		private async UniTask refreshEquippedSlotsAsync(CancellationToken ct)
+		{
+			if (_equippedSlots == null)
+			{
+				return;
+			}
+
+			Loadout loadout = Account.Instance.Loadout;
+			Inventory inventory = Account.Instance.Inventory;
+			int selected = loadout.Selected;
+
+			_bindTasks.Clear();
+			for (int i = 0; i < _equippedSlots.Length; i++)
+			{
+				EquippedSlotView view = _equippedSlots[i];
+				int itemId = loadout.GetSlot(selected, view.type);
+				_bindTasks.Add(updateEquippedSlot(view, itemId, inventory, ct));
+			}
+
+			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
+		}
+
+		private async UniTask updateEquippedSlot(EquippedSlotView view, int itemId, Inventory inventory, CancellationToken ct)
+		{
+			Table_Equipment.Row row = itemId > 0 ? Table_Equipment.Get(itemId) : null;
+			if (row == null || inventory.Has(itemId) == false)
+			{
+				clearEquippedSlot(view);
+				return;
+			}
+
+			if (view.emptyFrame != null)
+			{
+				view.emptyFrame.SetActive(false);
+			}
+
+			if (view.instance == null)
+			{
+				view.instance = Instantiate(_slotPrefab, view.root);
+				stretchToParent(view.instance.transform as RectTransform);
+				view.instance.OnClicked += onSlotClicked;
+			}
+
+			view.itemId = itemId;
+			int count = inventory.GetCount(itemId);
+			int level = inventory.GetEnhanceLevel(itemId);
+			await view.instance.Bind(row, true, count, level, false, _gradeColors, ct);
+			view.instance.HideStatusObjects();	// 장착 슬롯은 미보유/Focus 표시 숨김
+		}
+
+		private void clearEquippedSlot(EquippedSlotView view)
+		{
+			if (view.instance != null)
+			{
+				view.instance.OnClicked -= onSlotClicked;
+				Destroy(view.instance.gameObject);
+				view.instance = null;
+			}
+
+			view.itemId = 0;
+			if (view.emptyFrame != null)
+			{
+				view.emptyFrame.SetActive(true);
+			}
+		}
+
+		private void stretchToParent(RectTransform rt)
+		{
+			if (rt == null)
+			{
+				return;
+			}
+
+			rt.anchorMin = Vector2.zero;
+			rt.anchorMax = Vector2.one;
+			rt.offsetMin = Vector2.zero;
+			rt.offsetMax = Vector2.zero;
 		}
 	}
 }
