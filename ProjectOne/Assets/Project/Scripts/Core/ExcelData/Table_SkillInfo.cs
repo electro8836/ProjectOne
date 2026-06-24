@@ -9,6 +9,8 @@ namespace EDT {
         public class Row {
             public SkillInfo ID { get; set; } = SkillInfo.None;
             public string Name { get; set; } = string.Empty;
+            public string Desc { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
             public float CooltimeSec { get; set; } = 0f;
             public bool IsBasicAttack { get; set; } = false;
             public int StaminaCost { get; set; } = 0;
@@ -55,6 +57,8 @@ namespace EDT {
                 Row row = new Row();
                 row.ID = (SkillInfo)reader.ReadInt32();
                 row.Name = reader.ReadString();
+                row.Desc = reader.ReadString();
+                row.Icon = reader.ReadString();
                 row.CooltimeSec = reader.ReadSingle();
                 row.IsBasicAttack = reader.ReadBoolean();
                 row.StaminaCost = reader.ReadInt32();

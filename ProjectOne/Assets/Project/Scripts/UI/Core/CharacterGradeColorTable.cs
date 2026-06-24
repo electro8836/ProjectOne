@@ -5,18 +5,19 @@ using EDT;
 
 namespace ProjectOne.UI
 {
-	// 캐릭터 등급별 색상 묶음 (BgMask/Gradient). 인스펙터로 주입해 슬롯이 등급으로 조회한다.
+	// 캐릭터 등급별 색상 묶음 (BgMask/Gradient/Glow). 인스펙터로 주입해 슬롯이 등급으로 조회한다.
 	// 아이템 등급 색상(GradeColorTable)과는 별도 데이터로 분리한다.
 	[CreateAssetMenu(menuName = "Custom UI/Character Grade Color Table", fileName = "CharacterGradeColorTable")]
 	public class CharacterGradeColorTable : ScriptableObject
 	{
-		// 한 등급에 대한 두 요소 색상.
+		// 한 등급에 대한 세 요소 색상.
 		[Serializable]
 		public class GradeColor
 		{
 			public CharacterGrade grade = CharacterGrade.None;
 			public Color bgMask = Color.white;
 			public Color gradient = Color.white;
+			public Color glow = Color.white;
 		}
 
 		[SerializeField] private List<GradeColor> _colors = new List<GradeColor>();

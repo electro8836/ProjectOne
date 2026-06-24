@@ -13,8 +13,6 @@ namespace EDT {
             public SkillInfo Skill_2 { get; set; } = SkillInfo.None;
             public SkillInfo Skill_3 { get; set; } = SkillInfo.None;
             public SkillInfo Skill_4 { get; set; } = SkillInfo.None;
-            public SkillInfo SpecialSkill_1 { get; set; } = SkillInfo.None;
-            public SkillInfo SpecialSkill_2 { get; set; } = SkillInfo.None;
         }
 
         public const string Filename = "edt_skillset.bytes";
@@ -43,8 +41,6 @@ namespace EDT {
                 row.Skill_2 = (SkillInfo)reader.ReadInt32();
                 row.Skill_3 = (SkillInfo)reader.ReadInt32();
                 row.Skill_4 = (SkillInfo)reader.ReadInt32();
-                row.SpecialSkill_1 = (SkillInfo)reader.ReadInt32();
-                row.SpecialSkill_2 = (SkillInfo)reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

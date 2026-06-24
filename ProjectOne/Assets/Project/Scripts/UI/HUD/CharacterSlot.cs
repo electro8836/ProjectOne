@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -9,9 +10,12 @@ using ProjectOne.Resources;
 namespace ProjectOne.UI
 {
 	// 캐릭터 그리드의 슬롯 1칸. 등급 색상 + 아이콘 + 클래스/이름/등급별 + 잠김(Unlock)/레벨/선택(Select)을 표시한다.
-	// 표시 전용 — 클릭 인터랙션은 없다.
+	// 클릭하면 캐릭터 ID 를 OnClicked 로 통지한다(디테일 팝업 진입).
 	public class CharacterSlot : MonoBehaviour
 	{
+		[Header("클릭")]
+		[SerializeField] private UIButton _button;	// 슬롯 클릭 입력
+
 		[Header("등급 색상 대상")]
 		[SerializeField] private Image _bgMask;
 		[SerializeField] private Image _bgGradient;
@@ -31,8 +35,19 @@ namespace ProjectOne.UI
 		// 현재 로드한 아이콘 주소 (Acquire/Release 짝 맞춤용)
 		private string _iconAddress;
 
+		// 클릭 시 전달할 캐릭터 ID와 구독 이벤트
+		private int _characterId;
+		public event Action<int> OnClicked;
+
+		private void Awake()
+		{
+			_button.OnClickEvent += onClicked;
+		}
+
 		public async UniTask Bind(Table_Character.Row row, bool owned, int level, bool selected, CharacterGradeColorTable colors, Sprite classIcon, CancellationToken ct)
 		{
+			_characterId = row.ID;
+
 			CharacterGradeColorTable.GradeColor gc = colors.Get(row.Grade);
 			_bgMask.color = gc.bgMask;
 			_bgGradient.color = gc.gradient;
@@ -51,6 +66,14 @@ namespace ProjectOne.UI
 			applyStars(row.Grade);
 
 			await setIcon(row.Icon, ct);
+		}
+
+		private void onClicked()
+		{
+			if (OnClicked != null)
+			{
+				OnClicked.Invoke(_characterId);
+			}
 		}
 
 		// 등급만큼 별을 활성화한다.
@@ -111,6 +134,7 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
+			_button.OnClickEvent -= onClicked;
 			releaseIcon();
 		}
 	}

@@ -56,6 +56,12 @@ namespace BackendFunction
 				target.preset.armorItemId = req.armorItemId;
 				target.preset.accessoryItemId = req.accessoryItemId;
 
+				// 보유한 캐릭터일 때만 메인 선택 갱신 (서버 권위 검증)
+				if (req.selectedCharacterId > 0 && findCharacter(character, req.selectedCharacterId) != null)
+				{
+					character.selectedCharacterId = req.selectedCharacterId;
+				}
+
 				// 3. USER_CHARACTER Data 덮어쓰기. 펑션 컨텍스트는 owner 인자가 비어 UndefinedParameterException 나므로 new Where() 사용(Dungeon 과 동일).
 				Param param = new Param();
 				param.Add("Data", JsonConvert.SerializeObject(character));

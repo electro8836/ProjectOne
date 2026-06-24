@@ -10,6 +10,7 @@ namespace EDT {
             public int ID { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
             public MaterialType MaterialType { get; set; } = MaterialType.None;
             public string Navigation { get; set; } = string.Empty;
         }
@@ -37,6 +38,7 @@ namespace EDT {
                 row.ID = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
+                row.Icon = reader.ReadString();
                 row.MaterialType = (MaterialType)reader.ReadInt32();
                 row.Navigation = reader.ReadString();
                 _all.Add( row.ID, row );

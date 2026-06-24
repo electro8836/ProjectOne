@@ -31,7 +31,7 @@ namespace BackendFunction
 				GetUserDataResponse response = new GetUserDataResponse();
 				response.success = true;
 
-				// 2. USER_INFO — 신규면 생성, 기존이면 로드
+				// 2. USER_INFO — 유저 존재 앵커. 신규면 생성(계정 exp 는 더 이상 사용하지 않으므로 응답에 싣지 않는다).
 				if (rows.Count == 0)
 				{
 					Param defaultParam = new Param();
@@ -42,12 +42,6 @@ namespace BackendFunction
 					{
 						return FuncResult.Error("Data Insert Failed: " + insertResult.GetErrorCode());
 					}
-
-					response.exp = 0;
-				}
-				else
-				{
-					response.exp = int.Parse(rows[0]["Exp"].ToString());
 				}
 
 				// 3. 도메인 행 ensure(없으면 생성) + 그 데이터를 응답 번들에 실어 보낸다.

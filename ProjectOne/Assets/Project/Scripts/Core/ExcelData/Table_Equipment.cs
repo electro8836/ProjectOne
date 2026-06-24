@@ -23,6 +23,8 @@ namespace EDT {
             public float StatOptionValue_3 { get; set; } = 0f;
             public int SkillOption_1 { get; set; } = 0;
             public int SkillOption_2 { get; set; } = 0;
+            public int TraitSlotIndex { get; set; } = 0;
+            public int TraitSlotValue { get; set; } = 0;
         }
 
         public const string Filename = "edt_equipment.bytes";
@@ -61,6 +63,8 @@ namespace EDT {
                 row.StatOptionValue_3 = reader.ReadSingle();
                 row.SkillOption_1 = reader.ReadInt32();
                 row.SkillOption_2 = reader.ReadInt32();
+                row.TraitSlotIndex = reader.ReadInt32();
+                row.TraitSlotValue = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

@@ -5,6 +5,7 @@ using UnityEngine;
 using TMPro;
 using EDT;
 using ProjectOne.Event;
+using ProjectOne.Network;
 using ProjectOne.Resources;
 using ProjectOne.UserData;
 
@@ -15,6 +16,9 @@ namespace ProjectOne.UI
 	// 이 클래스는 자기 내부 콘텐츠(정렬/카운트/슬롯 바인딩)만 책임진다. 슬롯은 표시 전용.
 	public class CharacterUI : UIScreen
 	{
+		// 캐릭터 디테일 팝업 Addressable 주소.
+		private const string DETAIL_POPUP_ADDRESS = "Prefab_CharacterDetailPopup";
+
 		[SerializeField] private UIButton _closeButton;	// Button_Return
 		[SerializeField] private UIButton _sortButton;	// Button_Sorting (등급 정렬 토글)
 
@@ -78,6 +82,9 @@ namespace ProjectOne.UI
 		public override UniTask OnCloseAsync()
 		{
 			releasePreloadedIcons();
+
+			// 메인 선택/장착 변경이 있으면 서버에 1회 저장 (미로그인·비-dirty 는 내부에서 무시)
+			NetworkManager.Instance.FlushLoadoutIfDirty();
 			return UniTask.CompletedTask;
 		}
 
@@ -131,6 +138,12 @@ namespace ProjectOne.UI
 		private void onCharacterChanged(CharacterChangeEvent e)
 		{
 			rebuild();
+		}
+
+		// 슬롯 클릭 → 해당 캐릭터의 디테일 팝업을 연다.
+		private void onSlotClicked(int characterId)
+		{
+			UIManager.Instance.ShowCharacterDetailPopupAsync(DETAIL_POPUP_ADDRESS, characterId, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 
 		// 전체 캐릭터를 정렬해 슬롯에 바인딩한다.
@@ -260,6 +273,7 @@ namespace ProjectOne.UI
 			}
 
 			CharacterSlot slot = Instantiate(_slotPrefab, _gridParent);
+			slot.OnClicked += onSlotClicked;
 			_slots.Add(slot);
 			return slot;
 		}

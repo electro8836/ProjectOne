@@ -752,6 +752,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6049953362603880549}
   - component: {fileID: 8811111111111111111}
+  - component: {fileID: 624989001611483243}
   m_Layer: 0
   m_Name: Prefab_CharacterSlot
   m_TagString: Untagged
@@ -800,6 +801,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eae192f574c37b5469e9a88a531ef149, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _button: {fileID: 624989001611483243}
   _bgMask: {fileID: 5780966712652887494}
   _bgGradient: {fileID: 6837611230512633384}
   _characterIcon: {fileID: 3082518347615818006}
@@ -815,6 +817,26 @@ MonoBehaviour:
   _unlock: {fileID: 6802212682802459856}
   _levelRoot: {fileID: 6898123631403985540}
   _select: {fileID: 6782392507136456627}
+--- !u!114 &624989001611483243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5817190647652536304}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4ea2048460bbd743934018f0341ff66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.UIButton
+  _interactable: 1
+  _holdRepeat: 0
+  _holdDelay: 0.5
+  _holdInterval: 0.1
+  _themeData: {fileID: 0}
+  _targetGraphic: {fileID: 0}
+  _disabledTintTargets: []
+  _disabledColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
 --- !u!1 &5845226962061265913
 GameObject:
   m_ObjectHideFlags: 0

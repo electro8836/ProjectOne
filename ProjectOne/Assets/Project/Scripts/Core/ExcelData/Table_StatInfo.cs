@@ -10,6 +10,7 @@ namespace EDT {
             public StatInfo ID { get; set; } = StatInfo.None;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
             public int MinValue { get; set; } = 0;
             public int MaxValue { get; set; } = 0;
             public bool IsRatio { get; set; } = false;
@@ -38,6 +39,7 @@ namespace EDT {
                 row.ID = (StatInfo)reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
+                row.Icon = reader.ReadString();
                 row.MinValue = reader.ReadInt32();
                 row.MaxValue = reader.ReadInt32();
                 row.IsRatio = reader.ReadBoolean();

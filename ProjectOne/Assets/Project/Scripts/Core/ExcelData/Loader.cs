@@ -51,6 +51,28 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - LevelupCost
+            {
+                CurrentFile = Table_LevelupCost.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_LevelupCost._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - CharacterTrait
+            {
+                CurrentFile = Table_CharacterTrait.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_CharacterTrait._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Consumable
             {
                 CurrentFile = Table_Consumable.Filename;

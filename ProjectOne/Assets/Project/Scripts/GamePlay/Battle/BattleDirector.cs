@@ -9,6 +9,7 @@ using ProjectOne.Map;
 using ProjectOne.Network;
 using ProjectOne.Shared;
 using ProjectOne.Unit;
+using ProjectOne.UserData;
 
 namespace ProjectOne.Battle
 {
@@ -170,8 +171,8 @@ namespace ProjectOne.Battle
 				bool victory = result == BattleResult.Victory;
 				if (victory == true)
 				{
-					// (테스트) 서버 권위 던전클리어 — 서버가 exp 가산 저장 후 반환. 결과는 콜백에서 처리.
-					NetworkManager.Instance.RequestDungeonClear(new DungeonClearRequest { mapId = _mapId }, onDungeonClearResult);
+					// 서버 권위 던전클리어 — 전투한 캐릭터 exp 에 보상 가산 저장 후 반환. 결과는 콜백에서 처리.
+					NetworkManager.Instance.RequestDungeonClear(new DungeonClearRequest { mapId = _mapId, characterId = _characterId }, onDungeonClearResult);
 				}
 
 				EventManager.Instance.Publish(new BattleEndedEvent(victory, _clearRewardIds));
@@ -181,16 +182,16 @@ namespace ProjectOne.Battle
 			await GameFlow.Instance.ChangeStateAsync(new LobbyState());
 		}
 
-		// (테스트) 던전 클리어 서버 응답 — 서버 저장 exp 수신 확인.
+		// 던전 클리어 서버 응답 — 권위 캐릭터 exp 를 로컬 Loadout 에 반영(재로그인 없이 UI 갱신).
 		private void onDungeonClearResult(bool isSuccess, DungeonClearResponse data, string errorMsg)
 		{
 			if (isSuccess == true && data != null)
 			{
-				Debug.Log($"[테스트] DungeonClear 결과 → exp={data.exp}");
+				Account.Instance.Loadout.SetExp(_characterId, data.exp);
 			}
 			else
 			{
-				Debug.LogError($"[테스트] DungeonClear 실패 → {errorMsg}");
+				Debug.LogError($"[BattleDirector] DungeonClear 실패 → {errorMsg}");
 			}
 		}
 

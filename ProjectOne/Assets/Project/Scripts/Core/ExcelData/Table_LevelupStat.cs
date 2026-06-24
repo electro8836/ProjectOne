@@ -16,8 +16,6 @@ namespace EDT {
             public float StatValue_3 { get; set; } = 0f;
             public StatInfo StatID_4 { get; set; } = StatInfo.None;
             public float StatValue_4 { get; set; } = 0f;
-            public StatInfo StatID_5 { get; set; } = StatInfo.None;
-            public float StatValue_5 { get; set; } = 0f;
         }
 
         public const string Filename = "edt_levelupstat.bytes";
@@ -49,8 +47,6 @@ namespace EDT {
                 row.StatValue_3 = reader.ReadSingle();
                 row.StatID_4 = (StatInfo)reader.ReadInt32();
                 row.StatValue_4 = reader.ReadSingle();
-                row.StatID_5 = (StatInfo)reader.ReadInt32();
-                row.StatValue_5 = reader.ReadSingle();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

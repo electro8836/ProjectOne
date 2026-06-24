@@ -391,6 +391,8 @@ namespace EDT {
         TableCharacter,
         TableLevelExp,
         TableUnlockCondition,
+        TableLevelupCost,
+        TableCharacterTrait,
         TableConsumable,
         TableCurrencyInfo,
         TableEquipment,

@@ -76,7 +76,7 @@ namespace ProjectOne.UserData
 
 		// ── 경험치 / 레벨업 ───────────────────────────────────────────
 
-		// 경험치 누적 → 누적량 기준으로 레벨 재계산(다중 레벨업·이월 자동). 변경 시 저장 + 알림.
+		// 경험치 누적만 한다(레벨은 자동 상승하지 않음 — 레벨업은 레벨업 버튼/서버 함수로만 +1). 변경 시 알림.
 		public void AddExp(int characterId, int amount)
 		{
 			if (amount <= 0)
@@ -91,27 +91,72 @@ namespace ProjectOne.UserData
 			}
 
 			oc.exp += amount;
-			oc.level = levelFromExp(oc.exp);
 			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
 		}
 
-		// Table_LevelExp: ID=레벨, TotalExperience=그 레벨 도달에 필요한 누적 경험치.
-		// 누적 exp 로 도달 가능한 가장 높은 레벨 반환(최소 1, 최대레벨에서 멈춤). ID는 1부터 연속 가정.
-		private static int levelFromExp(int totalExp)
+		// 레벨업 적용 — 서버 응답(또는 오프라인 로컬 처리) 후 호출. 레벨/경험치를 권위값으로 갱신하고 알림.
+		public void ApplyLevelup(int characterId, int newLevel, int newExp)
 		{
-			int level = 1;
-			while (true)
+			OwnedCharacter oc = GetOwned(characterId);
+			if (oc == null)
 			{
-				Table_LevelExp.Row next = Table_LevelExp.Get(level + 1);
-				if (next == null || next.TotalExperience > totalExp)
-				{
-					break;
-				}
-
-				level++;
+				return;
 			}
 
+			oc.level = newLevel;
+			oc.exp = newExp;
+			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
+		}
+
+		// 경험치를 권위값으로 갱신(레벨 불변) — 던전 보상 등 서버 가산 결과를 로컬에 반영하고 알림.
+		public void SetExp(int characterId, int newExp)
+		{
+			OwnedCharacter oc = GetOwned(characterId);
+			if (oc == null)
+			{
+				return;
+			}
+
+			oc.exp = newExp;
+			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
+		}
+
+		// 특성슬롯(slotIndex 1~5)의 현재 레벨 — 기본 1 + 장착 아이템의 TraitSlotValue 합(최대 5).
+		public int GetTraitLevel(int characterId, int slotIndex)
+		{
+			OwnedCharacter oc = GetOwned(characterId);
+			if (oc == null)
+			{
+				return 1;
+			}
+
+			int bonus = traitBonus(oc.preset.weaponItemId, slotIndex)
+				+ traitBonus(oc.preset.armorItemId, slotIndex)
+				+ traitBonus(oc.preset.accessoryItemId, slotIndex);
+
+			int level = 1 + bonus;
+			if (level < 1) { level = 1; }
+
+			if (level > 5) { level = 5; }
+
 			return level;
+		}
+
+		// 아이템이 해당 슬롯(slotIndex)을 올리는 옵션을 가졌으면 그 증가량, 아니면 0.
+		private static int traitBonus(int itemId, int slotIndex)
+		{
+			if (itemId <= 0)
+			{
+				return 0;
+			}
+
+			Table_Equipment.Row row = Table_Equipment.Get(itemId);
+			if (row == null || row.TraitSlotIndex != slotIndex)
+			{
+				return 0;
+			}
+
+			return row.TraitSlotValue;
 		}
 
 		// ── 선택 ──────────────────────────────────────────────────────
@@ -146,6 +191,7 @@ namespace ProjectOne.UserData
 			}
 
 			_selectedCharacterId = characterId;
+			_dirty = true;
 			EventManager.Instance.Publish(new CharacterChangeEvent(characterId));
 			return true;
 		}
@@ -222,6 +268,7 @@ namespace ProjectOne.UserData
 				entry.preset.weaponItemId = src.preset.weaponItemId;
 				entry.preset.armorItemId = src.preset.armorItemId;
 				entry.preset.accessoryItemId = src.preset.accessoryItemId;
+
 				dto.characters.Add(entry);
 			}
 

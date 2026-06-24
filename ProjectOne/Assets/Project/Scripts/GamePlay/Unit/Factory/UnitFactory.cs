@@ -194,22 +194,7 @@ namespace ProjectOne.Unit
 			// 레벨업 스탯 영구 가산
 			applyLevelupStats(unit, row, level);
 
-			SkillContainer sc = unit.SkillContainer;
-			int skillSetId = resolveSkillSet(row, level);
-			if (skillSetId > 0)
-			{
-				Table_SkillSet.Row skillSetRow = Table_SkillSet.Get(skillSetId);
-				if (skillSetRow != null)
-				{
-					sc.Register(skillSetRow.BaseAttackSkill, SourceBase);
-					sc.Register(skillSetRow.Skill_1, SourceBase);
-					sc.Register(skillSetRow.Skill_2, SourceBase);
-					sc.Register(skillSetRow.Skill_3, SourceBase);
-					sc.Register(skillSetRow.Skill_4, SourceBase);
-					sc.Register(skillSetRow.SpecialSkill_1, SourceSpecial);
-					sc.Register(skillSetRow.SpecialSkill_2, SourceSpecial);
-				}
-			}
+			registerTraitSkills(unit.SkillContainer, row, level);
 			RefreshSkillIndicator(unit);
 
 			if (autoControl == true)
@@ -232,20 +217,33 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		// 레벨에 맞는 유효 스킬셋 결정 — 도달한 최상위 클래스로 교체(Class2 → Class1 → Base)
-		private static int resolveSkillSet(Table_Character.Row row, int level)
+		// 특성슬롯(TraitGroup_1~5) 기반 스킬 등록 — 캐릭터 레벨이 ReqLv 에 도달한 슬롯만, 슬롯 레벨에 맞는 SkillID_N.
+		// (기본공격은 Table_SkillInfo.IsBasicAttack 으로 식별되므로 슬롯 위치를 따로 구분하지 않는다.)
+		private static void registerTraitSkills(SkillContainer sc, Table_Character.Row row, int level)
 		{
-			if (row.Class2_ReqLv > 0 && level >= row.Class2_ReqLv && row.Class2_SkillSet > 0)
+			registerTraitSkill(sc, row.TraitGroup_1, 1, row.ID, level);
+			registerTraitSkill(sc, row.TraitGroup_2, 2, row.ID, level);
+			registerTraitSkill(sc, row.TraitGroup_3, 3, row.ID, level);
+			registerTraitSkill(sc, row.TraitGroup_4, 4, row.ID, level);
+			registerTraitSkill(sc, row.TraitGroup_5, 5, row.ID, level);
+		}
+
+		private static void registerTraitSkill(SkillContainer sc, int traitGroupId, int slotIndex, int characterId, int level)
+		{
+			if (traitGroupId <= 0)
 			{
-				return row.Class2_SkillSet;
+				return;
 			}
 
-			if (row.Class1_ReqLv > 0 && level >= row.Class1_ReqLv && row.Class1_SkillSet > 0)
+			Table_CharacterTrait.Row trait = Table_CharacterTrait.Get(traitGroupId);
+			if (trait == null || level < trait.ReqLv)
 			{
-				return row.Class1_SkillSet;
+				return;	// 미해금
 			}
 
-			return row.BaseSkillSet;
+			int slotLevel = Account.Instance.Loadout.GetTraitLevel(characterId, slotIndex);
+			SkillInfo skill = TraitSkillResolver.SkillForLevel(trait, slotLevel);
+			sc.Register(skill, SourceBase);
 		}
 
 		// 레벨업 스탯 영구 가산 — 레벨업당 LevelupStat 만큼, 총 (level-1)배
@@ -267,7 +265,6 @@ namespace ProjectOne.Unit
 			addLevelupStat(unit.Stats, lv.StatID_2, lv.StatValue_2 * times);
 			addLevelupStat(unit.Stats, lv.StatID_3, lv.StatValue_3 * times);
 			addLevelupStat(unit.Stats, lv.StatID_4, lv.StatValue_4 * times);
-			addLevelupStat(unit.Stats, lv.StatID_5, lv.StatValue_5 * times);
 		}
 
 		private static void addLevelupStat(StatContainer stats, StatInfo type, float total)
@@ -296,8 +293,6 @@ namespace ProjectOne.Unit
 			sc.Register(row.Skill_2, "Base");
 			sc.Register(row.Skill_3, "Base");
 			sc.Register(row.Skill_4, "Base");
-			sc.Register(row.SpecialSkill_1, "Base");
-			sc.Register(row.SpecialSkill_2, "Base");
 		}
 
 		private static async UniTask ApplySkinAsync(UnitBase unit, string skinAddress, CancellationToken ct)
