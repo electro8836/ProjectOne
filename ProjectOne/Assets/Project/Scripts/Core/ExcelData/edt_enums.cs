@@ -439,6 +439,7 @@ namespace EDT {
         TableSkillEffect,
         TableBuffInfo,
         TableSkillSet,
+        TableSkillGroup,
         TableSkillCard,
         TableSkillCardUpgrade,
         TableSkinInfo,

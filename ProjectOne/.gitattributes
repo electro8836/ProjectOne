@@ -7,9 +7,10 @@
 # and distributed under MIT License.
 
 # Define macros (only works in top-level gitattributes files)
-[attr]lfs               filter=lfs diff=lfs merge=lfs -text
-[attr]unity-json        eol=lf linguist-language=json
-[attr]unity-yaml        merge=unityyamlmerge eol=lf linguist-language=yaml
+# 매크로는 하위 폴더 .gitattributes 에서는 무시되므로 저장소 루트 .gitattributes 로 이동함.
+# [attr]lfs               filter=lfs diff=lfs merge=lfs -text
+# [attr]unity-json        eol=lf linguist-language=json
+# [attr]unity-yaml        merge=unityyamlmerge eol=lf linguist-language=yaml
 
 # Optionally collapse Unity YAML files on GitHub diffs
 # [attr]unity-yaml        merge=unityyamlmerge text linguist-language=yaml linguist-generated
@@ -169,3 +170,7 @@ Packages/packages-lock.json linguist-generated
 
 # Exceptions for .asset files such as lightning pre-baking
 LightingData.asset     binary
+
+# TextMesh Pro CJK 폰트 SDF 아틀라스(대용량)는 LFS로 (위 *.asset unity-yaml 보다 아래여야 우선 적용)
+# 폴더명 "TextMesh Pro"의 공백은 ?(임의 1글자)로 매칭
+Assets/ThirdParty/TextMesh?Pro/Fonts/*.asset lfs

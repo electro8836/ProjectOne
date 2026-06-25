@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using TMPro;
 using EDT;
 using ProjectOne.Resources;
+using ProjectOne.Skill;
 using ProjectOne.UserData;
 
 namespace ProjectOne.UI
@@ -99,7 +100,17 @@ namespace ProjectOne.UI
 				}
 
 				_infoTexts[i].gameObject.SetActive(true);
-				_infoTexts[i].text = skill.Desc;
+				// Desc(요약)와 데이터 기반 자동 생성 설명(상세)을 함께 표시한다. Desc 가 비어있으면 자동 생성만.
+				string generated = SkillDescriptionBuilder.Build(sid);
+				if (string.IsNullOrEmpty(skill.Desc) == false)
+				{
+					_infoTexts[i].text = string.IsNullOrEmpty(generated) ? skill.Desc : skill.Desc + "\n" + generated;
+				}
+				else
+				{
+					_infoTexts[i].text = generated;
+				}
+
 				_infoTexts[i].color = (i == slotLevel - 1) ? HighlightColor : Color.white;
 			}
 		}
