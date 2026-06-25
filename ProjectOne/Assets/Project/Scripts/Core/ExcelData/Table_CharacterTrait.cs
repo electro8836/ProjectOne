@@ -9,7 +9,6 @@ namespace EDT {
         public class Row {
             public int ID { get; set; } = 0;
             public int ReqLv { get; set; } = 0;
-            public int SkillGroupID { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public SkillInfo SkillID_1 { get; set; } = SkillInfo.None;
@@ -41,7 +40,6 @@ namespace EDT {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
                 row.ReqLv = reader.ReadInt32();
-                row.SkillGroupID = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.SkillID_1 = (SkillInfo)reader.ReadInt32();

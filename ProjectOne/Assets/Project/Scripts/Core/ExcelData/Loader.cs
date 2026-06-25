@@ -260,17 +260,6 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - SkillGroup
-            {
-                CurrentFile = Table_SkillGroup.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillGroup._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
             #region Table - SkillCard
             {
                 CurrentFile = Table_SkillCard.Filename;
