@@ -26,6 +26,7 @@ namespace ProjectOne.UI
 		public Table_CharacterTrait.Row trait;
 		public int charLevel;
 		public int skillId;
+		public int slotLevel;
 	}
 
 	// 레벨업 비용 1칸 렌더 데이터 (text 는 보유/필요 색상 포함 완성형).
@@ -41,8 +42,13 @@ namespace ProjectOne.UI
 		private const string ColorEnough = "#5af887";	// 보유 충분(녹)
 		private const string ColorLack = "#f85a5a";		// 보유 부족(빨)
 
+		private const string SKILL_DETAIL_ADDRESS = "Prefab_SkillDetailPopup";
+
 		private int _characterId;
 		private CancellationToken _ct;
+
+		// 마지막 렌더의 특성 슬롯 데이터 — 슬롯 클릭 시 traitGroupId 로 현재 레벨 스킬을 역조회한다.
+		private List<TraitSlotData> _traits;
 
 		protected override void OnInitialize()
 		{
@@ -103,10 +109,12 @@ namespace ProjectOne.UI
 			// 보유 + 미선택일 때만 선택 버튼 표시 (미보유면 숨김)
 			view.SetSelectVisible(oc != null && Account.Instance.Loadout.Selected != _characterId);
 
+			_traits = buildTraits(row, level);
+
 			// 모든 아이콘을 병렬로 로드 — 하나씩 순차 로드되어 천천히 채워지는 것을 막는다.
 			await UniTask.WhenAll(
 				view.BindStatsAsync(buildStats(row, level), ct),
-				view.BindTraitsAsync(buildTraits(row, level)),
+				view.BindTraitsAsync(_traits),
 				view.BindCostAsync(buildCost(level), ct),
 				view.SetCharacterIconAsync(row.Icon, ct));
 
@@ -184,6 +192,7 @@ namespace ProjectOne.UI
 			data.trait = trait;
 			data.charLevel = level;
 			data.skillId = (int)TraitSkillResolver.SkillForLevel(trait, slotLevel);
+			data.slotLevel = slotLevel;
 			list.Add(data);
 		}
 
@@ -391,10 +400,25 @@ namespace ProjectOne.UI
 			Account.Instance.Loadout.TrySelect(_characterId);
 		}
 
-		// 특성 선택 UI 는 이번 범위 제외 — 추후 특성 찍는 화면을 켜고 해당 그룹으로 스크롤할 자리.
+		// 특성 슬롯 클릭 — 해당 특성의 스킬 디테일 팝업을 캐릭터 디테일 위에 띄운다.
+		// 현재 레벨 스킬 ID 는 마지막 렌더에서 계산해 둔 _traits 에서 역조회한다.
 		private void onTraitSlotClicked(int traitGroupId)
 		{
-			Debug.Log("[CharacterDetail] 특성 슬롯 클릭 (group=" + traitGroupId + ") — 선택 UI 미구현");
+			if (_traits == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < _traits.Count; i++)
+			{
+				if (_traits[i].traitGroupId != traitGroupId)
+				{
+					continue;
+				}
+
+				UIManager.Instance.ShowSkillDetailPopupAsync(SKILL_DETAIL_ADDRESS, traitGroupId, _traits[i].slotLevel, _ct).Forget();
+				return;
+			}
 		}
 
 		// ── 이벤트 → 재렌더 ───────────────────────────────────────────

@@ -11,7 +11,6 @@ namespace EDT {
             public int ReqLv { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
-            public string Icon { get; set; } = string.Empty;
             public SkillInfo SkillID_1 { get; set; } = SkillInfo.None;
             public SkillInfo SkillID_2 { get; set; } = SkillInfo.None;
             public SkillInfo SkillID_3 { get; set; } = SkillInfo.None;
@@ -43,7 +42,6 @@ namespace EDT {
                 row.ReqLv = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
-                row.Icon = reader.ReadString();
                 row.SkillID_1 = (SkillInfo)reader.ReadInt32();
                 row.SkillID_2 = (SkillInfo)reader.ReadInt32();
                 row.SkillID_3 = (SkillInfo)reader.ReadInt32();

@@ -8,8 +8,8 @@ namespace EDT {
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public SkillGroupGrade SourceGrade { get; set; } = SkillGroupGrade.None;
-            public SkillGroupGrade TargetGrade { get; set; } = SkillGroupGrade.None;
+            public SkillCardGrade SourceGrade { get; set; } = SkillCardGrade.None;
+            public SkillCardGrade TargetGrade { get; set; } = SkillCardGrade.None;
             public int RequiredCount { get; set; } = 0;
         }
 
@@ -34,8 +34,8 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.SourceGrade = (SkillGroupGrade)reader.ReadInt32();
-                row.TargetGrade = (SkillGroupGrade)reader.ReadInt32();
+                row.SourceGrade = (SkillCardGrade)reader.ReadInt32();
+                row.TargetGrade = (SkillCardGrade)reader.ReadInt32();
                 row.RequiredCount = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

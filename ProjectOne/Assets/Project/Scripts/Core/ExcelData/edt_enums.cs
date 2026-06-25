@@ -131,7 +131,7 @@ namespace EDT {
         Center,
     }
 
-    public enum SkillGroupGrade {
+    public enum SkillCardGrade {
         None,
         Normal,
         Magic,
@@ -205,6 +205,16 @@ namespace EDT {
         SKILL_PROJECTILE_ATTACK_01,
         SKILL_PROJECTILE_ATTACK_02,
         SKILL_PROJECTILE_ATTACK_03,
+        SKILL_HERO_01_SLOT1_LV1,
+        SKILL_HERO_01_SLOT1_LV2,
+        SKILL_HERO_01_SLOT1_LV3,
+        SKILL_HERO_01_SLOT1_LV4,
+        SKILL_HERO_01_SLOT1_LV5,
+        SKILL_HERO_01_SLOT2_LV1,
+        SKILL_HERO_01_SLOT2_LV2,
+        SKILL_HERO_01_SLOT2_LV3,
+        SKILL_HERO_01_SLOT2_LV4,
+        SKILL_HERO_01_SLOT2_LV5,
     }
 
     public enum SkillEffect {
@@ -238,6 +248,16 @@ namespace EDT {
         SE_SPAWNPOJECTILE_02,
         SE_SPAWNPOJECTILE_03,
         SE_PROJECTILE_DAMAGE_01,
+        SE_HERO_01_SLOT1_DAMAGE_01,
+        SE_HERO_01_SLOT1_DAMAGE_02,
+        SE_HERO_01_SLOT1_DAMAGE_03,
+        SE_HERO_01_SLOT1_DAMAGE_04,
+        SE_HERO_01_SLOT1_DAMAGE_05,
+        SE_HERO_01_SLOT2_DAMAGE_01,
+        SE_HERO_01_SLOT2_DAMAGE_02,
+        SE_HERO_01_SLOT2_DAMAGE_03,
+        SE_HERO_01_SLOT2_DAMAGE_04,
+        SE_HERO_01_SLOT2_DAMAGE_05,
     }
 
     public enum BuffInfo {
