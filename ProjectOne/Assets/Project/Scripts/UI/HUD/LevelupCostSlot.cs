@@ -39,6 +39,15 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			// 아틀라스에 있으면 동기로 즉시 세팅(같은 프레임). refcount 대상이 아니므로 _iconAddress 를 비운다.
+			Sprite atlasSprite = IconAtlasCache.Instance.Get(address);
+			if (atlasSprite != null)
+			{
+				_icon.sprite = atlasSprite;
+				_iconAddress = null;
+				return;
+			}
+
 			(bool cancelled, Sprite icon) = await ResourceManager.Instance.AcquireAsync<Sprite>(address, ct).SuppressCancellationThrow();
 			if (cancelled)
 			{

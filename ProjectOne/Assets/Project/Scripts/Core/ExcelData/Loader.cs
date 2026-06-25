@@ -260,6 +260,28 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - SkillCard
+            {
+                CurrentFile = Table_SkillCard.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_SkillCard._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - SkillCardUpgrade
+            {
+                CurrentFile = Table_SkillCardUpgrade.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_SkillCardUpgrade._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - SkinInfo
             {
                 CurrentFile = Table_SkinInfo.Filename;

@@ -131,6 +131,15 @@ namespace EDT {
         Center,
     }
 
+    public enum SkillGroupGrade {
+        None,
+        Normal,
+        Magic,
+        Rare,
+        Epic,
+        Legendary,
+    }
+
     public enum UIZOrder {
         None,
         Background,
@@ -410,6 +419,8 @@ namespace EDT {
         TableSkillEffect,
         TableBuffInfo,
         TableSkillSet,
+        TableSkillCard,
+        TableSkillCardUpgrade,
         TableSkinInfo,
         TableStatInfo,
         TableBaseStat,

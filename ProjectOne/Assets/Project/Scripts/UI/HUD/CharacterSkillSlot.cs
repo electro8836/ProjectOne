@@ -10,8 +10,8 @@ using ProjectOne.Resources;
 namespace ProjectOne.UI
 {
 	// 캐릭터 디테일 팝업의 특성(트레잇) 슬롯 1칸. 특성그룹 하나를 표시한다.
-	// - 잠김(레벨 부족): Lock 활성 + LockCondition 에 "Lv {ReqLv}"
-	// - 해금: Skill 에 현재 슬롯 레벨의 스킬 아이콘 표시
+	// - 잠김/해금 무관하게 스킬 아이콘은 항상 표시한다.
+	// - 잠김(레벨 부족)일 때만 Lock 오브젝트를 활성하고 LockCondition 에 "Lv {ReqLv}" 표시.
 	public class CharacterSkillSlot : MonoBehaviour
 	{
 		[Header("클릭")]
@@ -42,13 +42,10 @@ namespace ProjectOne.UI
 			bool locked = charLevel < trait.ReqLv;
 
 			_lock.SetActive(locked);
-			_skill.gameObject.SetActive(!locked);
 
 			if (locked)
 			{
 				_lockCondition.text = "Lv " + trait.ReqLv;
-				await setIcon(null, ct);
-				return;
 			}
 
 			Table_SkillInfo.Row skill = Table_SkillInfo.Get((SkillInfo)skillId);
@@ -77,6 +74,15 @@ namespace ProjectOne.UI
 			if (string.IsNullOrEmpty(address))
 			{
 				_skill.sprite = null;
+				return;
+			}
+
+			// 아틀라스에 있으면 동기로 즉시 세팅(같은 프레임). refcount 대상이 아니므로 _iconAddress 를 비운다.
+			Sprite atlasSprite = IconAtlasCache.Instance.Get(address);
+			if (atlasSprite != null)
+			{
+				_skill.sprite = atlasSprite;
+				_iconAddress = null;
 				return;
 			}
 

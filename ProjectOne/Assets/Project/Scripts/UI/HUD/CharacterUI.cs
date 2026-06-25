@@ -6,7 +6,6 @@ using TMPro;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Network;
-using ProjectOne.Resources;
 using ProjectOne.UserData;
 
 namespace ProjectOne.UI
@@ -36,7 +35,6 @@ namespace ProjectOne.UI
 		private readonly List<CharacterSlot> _slots = new List<CharacterSlot>();
 		private readonly List<Table_Character.Row> _rows = new List<Table_Character.Row>();
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();		// applyToSlotsAsync 일괄 대기용
-		private readonly List<string> _preloadedIcons = new List<string>();	// 화면 동안 캐시 고정한 아이콘 주소
 
 		private CancellationTokenSource _rebuildCts;	// rebuild 단위 취소 (연속 호출 경합 방지)
 
@@ -57,71 +55,25 @@ namespace ProjectOne.UI
 				_rebuildCts = null;
 			}
 
-			if (ResourceManager.HasInstance)
-			{
-				releasePreloadedIcons();
-			}
-
 			_closeButton.OnClickEvent -= onCloseClicked;
 			_sortButton.OnClickEvent -= onSortClicked;
 
 			EventManager.Instance.Unsubscribe<CharacterChangeEvent>(onCharacterChanged);
 		}
 
-		public override async UniTask OnOpenAsync(CancellationToken ct)
+		public override UniTask OnOpenAsync(CancellationToken ct)
 		{
-			// 카운트는 아이콘 로드와 무관 — 화면이 보이는 즉시 채워 preload await 동안의 깜빡임을 막는다.
-			collectRows();
-			updateCollectionCount();
-
-			// 화면이 열린 동안 모든 캐릭터 아이콘을 캐시에 고정한다 (rebuild 시 캐시 히트로 즉시 갱신).
-			await preloadIconsAsync(ct);
+			// 아이콘은 부트에서 아틀라스(IconAtlasCache)로 상주하므로 프리로드 대기 없이 곧바로 슬롯을 만든다.
+			// → 슬롯이 즉시 생성되고 동기 아틀라스 조회로 아이콘까지 채워진다.
 			rebuild();
+			return UniTask.CompletedTask;
 		}
 
 		public override UniTask OnCloseAsync()
 		{
-			releasePreloadedIcons();
-
 			// 메인 선택/장착 변경이 있으면 서버에 1회 저장 (미로그인·비-dirty 는 내부에서 무시)
 			NetworkManager.Instance.FlushLoadoutIfDirty();
 			return UniTask.CompletedTask;
-		}
-
-		// 전체 캐릭터 아이콘을 한 번 Acquire 해 캐시에 고정 (참조카운트 +1 유지).
-		private async UniTask preloadIconsAsync(CancellationToken ct)
-		{
-			List<Table_Character.Row> all = new List<Table_Character.Row>(Table_Character.All().Values);
-			List<UniTask> tasks = new List<UniTask>();
-			for (int i = 0; i < all.Count; i++)
-			{
-				string address = all[i].Icon;
-				if (string.IsNullOrEmpty(address) || _preloadedIcons.Contains(address))
-				{
-					continue;
-				}
-
-				_preloadedIcons.Add(address);
-				tasks.Add(acquireIconAsync(address, ct));
-			}
-
-			await UniTask.WhenAll(tasks).SuppressCancellationThrow();
-		}
-
-		private async UniTask acquireIconAsync(string address, CancellationToken ct)
-		{
-			await ResourceManager.Instance.AcquireAsync<Sprite>(address, ct).SuppressCancellationThrow();
-		}
-
-		// 고정해 둔 아이콘들의 참조카운트 -1 (0이 되면 실제 해제)
-		private void releasePreloadedIcons()
-		{
-			for (int i = 0; i < _preloadedIcons.Count; i++)
-			{
-				ResourceManager.Instance.Release(_preloadedIcons[i]);
-			}
-
-			_preloadedIcons.Clear();
 		}
 
 		private void onCloseClicked()

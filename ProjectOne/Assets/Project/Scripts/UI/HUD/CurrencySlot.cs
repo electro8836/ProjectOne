@@ -89,6 +89,14 @@ namespace ProjectOne.UI
 			Table_CurrencyInfo.Row row = Table_CurrencyInfo.Get(_targetCurrency);
 			if (row == null || string.IsNullOrEmpty(row.Icon)) { return; }
 
+			// 아틀라스에 있으면 동기로 즉시 세팅 — 없으면 비동기 로드(OnDestroy 의 Release 와 짝).
+			Sprite atlasSprite = IconAtlasCache.Instance.Get(row.Icon);
+			if (atlasSprite != null)
+			{
+				_iconImage.sprite = atlasSprite;
+				return;
+			}
+
 			Sprite icon = await ResourceManager.Instance.AcquireAsync<Sprite>(row.Icon, ct);
 			if (icon != null)
 			{

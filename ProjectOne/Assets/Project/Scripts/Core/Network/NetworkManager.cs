@@ -103,7 +103,8 @@ namespace ProjectOne.Network
 				return;
 			}
 
-			_caller.Invoke<GetUserDataRequest, GetUserDataResponse>(FunctionName.GetUserData, new GetUserDataRequest(), callback);
+			// 로그인 후 데이터 로드는 이미 로딩 화면(LoadingManager) 흐름이라 네트워크 딤은 띄우지 않는다.
+			_caller.Invoke<GetUserDataRequest, GetUserDataResponse>(FunctionName.GetUserData, new GetUserDataRequest(), callback, false);
 		}
 
 		// 던전 클리어 — 서버가 보상(exp 등)을 가산 저장 후 반환.
@@ -148,7 +149,8 @@ namespace ProjectOne.Network
 				return;
 			}
 
-			_caller.Invoke<SaveLoadoutRequest, SaveLoadoutResponse>(FunctionName.SaveLoadout, request, callback);
+			// 장착 저장은 화면 닫기·일시정지 시점의 백그라운드 flush — 딤으로 입력을 막지 않는다.
+			_caller.Invoke<SaveLoadoutRequest, SaveLoadoutResponse>(FunctionName.SaveLoadout, request, callback, false);
 		}
 
 		// 레벨업 — 서버가 경험치 충족 + 비용 검증·차감 후 레벨 +1, 권위 레벨/경험치 반환.

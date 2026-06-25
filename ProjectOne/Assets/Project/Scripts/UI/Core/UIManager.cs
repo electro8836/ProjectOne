@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -17,12 +18,26 @@ namespace ProjectOne.UI
 		[Header("Canvas 계층")]
 		[SerializeField] private Canvas _overlayCanvas;	// Sort Order 200, DontDestroyOnLoad
 		[SerializeField] private Canvas _popupCanvas;	// Sort Order 300, DontDestroyOnLoad
+		[SerializeField] private Canvas _systemCanvas;	// Sort Order 400 — 네트워크 딤(최상위), DontDestroyOnLoad
+
+		[Header("네트워크 딤")]
+		[SerializeField] private GameObject _networkBlockerPrefab;
+
+		// 이 시간(초) 안에 응답이 오면 딤을 띄우지 않는다(빠른 응답에서 화면 깜빡임 방지).
+		private const float NetworkBlockerShowDelaySec = 0.2f;
 
 		// 오버레이 스택 (Back키 처리, 직렬 닫기용)
 		private readonly Stack<UIScreen> _overlayStack = new Stack<UIScreen>();
 
 		// 현재 진행 중인 팝업의 CancellationTokenSource
 		private CancellationTokenSource _popupCts;
+
+		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
+		private GameObject _networkBlocker;
+		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
+		private int _blockerRefCount;
+		// 지연 표시 코루틴 — 닫힘 시 중지
+		private Coroutine _blockerDelayCo;
 
 		protected override void Awake()
 		{
@@ -34,6 +49,76 @@ namespace ProjectOne.UI
 		{
 			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
 			base.OnDestroy();
+		}
+
+		// ── 네트워크 딤(블로커) ─────────────────────────────────────────
+		// 뒤끝 호출(BackndFunctionCaller)이 응답 대기 동안 입력을 막기 위해 호출한다.
+		// 참조카운트로 동시/연속 요청을 견디고, 지연 시간 내 응답이 오면 딤을 띄우지 않는다.
+
+		// 요청 시작 — 참조카운트를 올리고 첫 요청이면 지연 표시를 예약한다.
+		public void ShowNetworkBlocker()
+		{
+			_blockerRefCount++;
+			if (_blockerRefCount > 1)
+			{
+				return;	// 이미 표시(또는 지연 대기) 중
+			}
+
+			// 0→1: 지연 표시 시작. 직전 대기가 남아있지 않게 정리 후 재시작.
+			if (_blockerDelayCo != null)
+			{
+				StopCoroutine(_blockerDelayCo);
+			}
+
+			_blockerDelayCo = StartCoroutine(showBlockerDelayed());
+		}
+
+		// 요청 종료 — 참조카운트를 내리고 0이 되면 딤을 닫는다.
+		public void HideNetworkBlocker()
+		{
+			if (_blockerRefCount <= 0)
+			{
+				return;	// 짝이 맞지 않는 호출 방지
+			}
+
+			_blockerRefCount--;
+			if (_blockerRefCount > 0)
+			{
+				return;	// 아직 대기 중인 요청이 남음
+			}
+
+			// 0: 지연 대기 중이면 중지, 표시 중이면 닫는다.
+			if (_blockerDelayCo != null)
+			{
+				StopCoroutine(_blockerDelayCo);
+				_blockerDelayCo = null;
+			}
+
+			if (_networkBlocker != null)
+			{
+				_networkBlocker.SetActive(false);
+			}
+		}
+
+		// 지연 후 딤 표시 — 지연 동안 모든 요청이 끝나면(refCount 0) 표시하지 않는다.
+		private IEnumerator showBlockerDelayed()
+		{
+			yield return new WaitForSeconds(NetworkBlockerShowDelaySec);
+			_blockerDelayCo = null;
+
+			if (_blockerRefCount <= 0)
+			{
+				yield break;
+			}
+
+			// 딤은 최초 1회만 생성해 캐시하고, 이후 SetActive 로 재사용한다.
+			if (_networkBlocker == null)
+			{
+				Transform parent = (_systemCanvas != null) ? _systemCanvas.transform : _popupCanvas.transform;
+				_networkBlocker = Instantiate(_networkBlockerPrefab, parent);
+			}
+
+			_networkBlocker.SetActive(true);
 		}
 
 		// ── 오버레이 ────────────────────────────────────────────────────

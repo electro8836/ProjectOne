@@ -39,6 +39,7 @@ namespace ProjectOne.UI
 			Table_Equipment.Row row = Table_Equipment.Get(itemId);
 			if (row == null)
 			{
+				view.Reveal();	// 데이터 없음 — 숨김 상태로 갇히지 않도록 표시(닫기 가능)
 				return;
 			}
 
@@ -51,11 +52,13 @@ namespace ProjectOne.UI
 			int level = inventory.GetEnhanceLevel(itemId);
 
 			view.SetInfo(row);
-			await view.BindItemSlotAsync(row, owned, count, level, ct);
 			view.BuildOptions(buildOptions(row));
-
 			view.SetEquipInteractable(owned);	// 미보유면 장착 불가
 			view.SetEquipLabel(equipLabel());
+
+			// 아이콘 로드가 끝난 뒤 한 번에 표시
+			await view.BindItemSlotAsync(row, owned, count, level, ct);
+			view.Reveal();
 
 			await view.WaitForCloseAsync(ct);
 		}

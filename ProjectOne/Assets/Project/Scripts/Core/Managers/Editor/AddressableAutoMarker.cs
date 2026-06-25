@@ -39,7 +39,9 @@ namespace ProjectOne.Editor
 			new Rule { folder = "Assets/Project/Prefabs/UI",      ext = ".prefab",     group = "Prefabs_UI",      label = "Prefabs_UI",      flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			new Rule { folder = "Assets/Project/Prefabs/Maps",    ext = ".prefab",     group = "Prefabs_Maps",    label = "Prefabs_Maps",    flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			new Rule { folder = "Assets/Project/Prefabs/Projectile", ext = ".prefab",  group = "Prefabs_Projectile", label = "Prefabs_Projectile", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
-			// UI 아이콘 스프라이트 — SpriteAtlas로 묶이지만 로드 키는 파일명(주소)
+			// UI 아이콘 SpriteAtlas(V2) — 런타임은 이 아틀라스들을 로드(IconAtlasCache), 슬롯은 이름으로 GetSprite.
+			new Rule { folder = "Assets/Project/Art/UI", ext = ".spriteatlasv2", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			// UI 아이콘 스프라이트(개별) — 아틀라스에 포함되어 런타임 직접 로드는 하지 않음(빌드 중복 제거는 후속 과제).
 			new Rule { folder = "Assets/Project/Art/UI/Atlas_OutGame", ext = ".png", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			new Rule { folder = "Assets/Project/Art/UI/Atlas_Common", ext = ".png", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			// EDT 테이블 — 그룹 Data_Tables / 라벨 Tables 로 자동 등록. 부트 로더가 라벨 "Tables" 로 로드.

@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using UnityEngine;
 using BackEnd;
 using ProjectOne.Shared;
+using ProjectOne.UI;
 
 namespace ProjectOne.Network
 {
@@ -19,11 +21,29 @@ namespace ProjectOne.Network
 		private const string ActionKey = "action";
 		private const string BodyKey = "req";
 
+		// 진행 중 요청(action) 집합 — 응답 전 같은 요청 재전송을 막는다(중복 전송 방지).
+		private readonly HashSet<string> _inFlight = new HashSet<string>();
+
 		// 함수 호출 진입점 — 콜백 API. SendQueue 에 적재하고 결과를 콜백으로 돌려준다.
-		public void Invoke<TRequest, TResponse>(string action, TRequest request, ResponseCallback<TResponse> callback)
+		// showOverlay: 응답 대기 동안 네트워크 딤(UIManager)을 띄울지. 백그라운드 flush 등은 false.
+		public void Invoke<TRequest, TResponse>(string action, TRequest request, ResponseCallback<TResponse> callback, bool showOverlay = true)
 			where TRequest : class
 			where TResponse : ServerResponse
 		{
+			// 같은 요청이 아직 진행 중이면 무시한다(drop) — 응답 전 중복 전송 차단.
+			if (_inFlight.Contains(action) == true)
+			{
+				Debug.LogWarning($"[NetworkManager] 요청 진행 중 — 중복 호출 무시({action})");
+				return;
+			}
+
+			_inFlight.Add(action);
+
+			if (showOverlay == true && UIManager.HasInstance == true)
+			{
+				UIManager.Instance.ShowNetworkBlocker();
+			}
+
 			string reqJson = (request != null) ? JsonUtility.ToJson(request) : "{}";
 
 			Param body = new Param();
@@ -31,17 +51,25 @@ namespace ProjectOne.Network
 			body.Add(BodyKey, reqJson);
 
 			// 네트워크는 워커 스레드, 콜백은 SendQueueMgr.Poll() 시 메인스레드 실행.
-			// SendQueue 콜백은 Action<BackendReturnObject> 라 제네릭 컨텍스트(action/callback) 전달을 위해
+			// SendQueue 콜백은 Action<BackendReturnObject> 라 제네릭 컨텍스트(action/callback/showOverlay) 전달을 위해
 			// 어댑터 람다 1줄만 사용(람다 금지 규칙의 예외 케이스).
 			// funcName 은 항상 단일 진입점(ProjectOneFunction). 분기는 body 의 action 으로.
 			SendQueue.Enqueue(Backend.BFunc.InvokeFunction, FunctionName.Deployed, body,
-				bro => handleResponse(action, bro, callback));
+				bro => handleResponse(action, bro, callback, showOverlay));
 		}
 
 		// 응답 처리 — 성공/실패 분기 후 역직렬화하여 콜백 호출. (메인스레드에서 호출됨)
-		private void handleResponse<TResponse>(string action, BackendReturnObject bro, ResponseCallback<TResponse> callback)
+		private void handleResponse<TResponse>(string action, BackendReturnObject bro, ResponseCallback<TResponse> callback, bool showOverlay)
 			where TResponse : ServerResponse
 		{
+			// 응답 도착 — 콜백 내 재요청(재시도)을 막지 않도록 분기 전에 먼저 진행 상태/딤을 해제한다.
+			_inFlight.Remove(action);
+
+			if (showOverlay == true && UIManager.HasInstance == true)
+			{
+				UIManager.Instance.HideNetworkBlocker();
+			}
+
 			if (bro.IsSuccess() == false)
 			{
 				Debug.LogError($"[NetworkManager] 함수 실패({action}): {bro.GetMessage()}");

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 using EDT;
 using ProjectOne.Resources;
 
@@ -25,6 +27,12 @@ namespace ProjectOne.UI
 		[Header("장착 슬롯")]
 		[SerializeField] private EquippedSlotView[] _equippedSlots;	// Weapon/Armor/Acc 장착 표시
 
+		[Header("선택 캐릭터")]
+		[SerializeField] private Image _characterIcon;	// Character
+		[SerializeField] private TMP_Text _nameText;	// NameText
+		[SerializeField] private TMP_Text _levelText;	// LevelText
+		[SerializeField] private Image[] _stars;		// Grade_Stars/Star×5 (등급만큼 활성)
+
 		[System.Serializable]
 		private class EquippedSlotView
 		{
@@ -45,7 +53,9 @@ namespace ProjectOne.UI
 
 		private readonly List<EquipmentSlot> _slots = new List<EquipmentSlot>();
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();	// 렌더 일괄 대기용
-		private readonly List<string> _preloadedIcons = new List<string>();	// 화면 동안 캐시 고정한 아이콘 주소
+
+		// 선택 캐릭터 아이콘 주소 캐시 (Acquire/Release 짝 맞춤용)
+		private string _charIconAddr;
 
 		private void Awake()
 		{
@@ -60,14 +70,11 @@ namespace ProjectOne.UI
 		{
 			_presenter.Dispose();
 
-			if (ResourceManager.HasInstance)
-			{
-				releasePreloadedIcons();
-			}
-
 			_closeButton.OnClickEvent -= onCloseClicked;
 			_sortButton.OnClickEvent -= onSortClicked;
 			_tabGroup.OnTabChanged -= onTabChanged;
+
+			releaseCharacterIcon();
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
@@ -75,10 +82,9 @@ namespace ProjectOne.UI
 			return _presenter.OnOpenAsync(ct);
 		}
 
-		public override async UniTask OnCloseAsync()
+		public override UniTask OnCloseAsync()
 		{
-			await _presenter.OnCloseAsync();
-			releasePreloadedIcons();
+			return _presenter.OnCloseAsync();
 		}
 
 		// ── Presenter 가 호출하는 표시 API ─────────────────────────────────
@@ -93,19 +99,6 @@ namespace ProjectOne.UI
 		public void SelectTab(int index)
 		{
 			_tabGroup.Select(index);
-		}
-
-		// 전달받은 아이콘 주소들을 한 번 Acquire 해 캐시에 고정(참조카운트 +1 유지).
-		public async UniTask PreloadIconsAsync(IReadOnlyList<string> addresses, CancellationToken ct)
-		{
-			List<UniTask> tasks = new List<UniTask>();
-			for (int i = 0; i < addresses.Count; i++)
-			{
-				_preloadedIcons.Add(addresses[i]);
-				tasks.Add(acquireIconAsync(addresses[i], ct));
-			}
-
-			await UniTask.WhenAll(tasks).SuppressCancellationThrow();
 		}
 
 		// 그리드 슬롯 렌더 — 데이터 개수만큼 슬롯을 켜 바인딩, 남는 슬롯은 비활성화(풀 재사용).
@@ -153,6 +146,15 @@ namespace ProjectOne.UI
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
+		}
+
+		// 현재 선택(주캐릭터)된 캐릭터의 아이콘/이름/레벨/등급별을 상단에 표시한다.
+		public async UniTask RenderSelectedCharacterAsync(SelectedCharacterData data, CancellationToken ct)
+		{
+			_nameText.text = data.name;
+			_levelText.text = "LV." + data.level;
+			applyStars(data.grade);
+			await setCharacterIcon(data.iconAddress, ct);
 		}
 
 		// ── 내부: 입력 → 이벤트 ────────────────────────────────────────────
@@ -209,6 +211,7 @@ namespace ProjectOne.UI
 			slotView.itemId = d.row.ID;
 			await slotView.instance.Bind(d.row, true, d.count, d.level, false, _gradeColors, ct);
 			slotView.instance.HideStatusObjects();	// 장착 슬롯은 미보유/Focus 표시 숨김
+			slotView.instance.HideCount();			// 장착 슬롯은 수량 표시 숨김
 		}
 
 		private void clearEquippedSlot(EquippedSlotView slotView)
@@ -240,22 +243,6 @@ namespace ProjectOne.UI
 			return default;
 		}
 
-		private async UniTask acquireIconAsync(string address, CancellationToken ct)
-		{
-			await ResourceManager.Instance.AcquireAsync<Sprite>(address, ct).SuppressCancellationThrow();
-		}
-
-		// 고정해 둔 아이콘들의 참조카운트 -1 (0이 되면 실제 해제)
-		private void releasePreloadedIcons()
-		{
-			for (int i = 0; i < _preloadedIcons.Count; i++)
-			{
-				ResourceManager.Instance.Release(_preloadedIcons[i]);
-			}
-
-			_preloadedIcons.Clear();
-		}
-
 		private void stretchToParent(RectTransform rt)
 		{
 			if (rt == null)
@@ -267,6 +254,72 @@ namespace ProjectOne.UI
 			rt.anchorMax = Vector2.one;
 			rt.offsetMin = Vector2.zero;
 			rt.offsetMax = Vector2.zero;
+		}
+
+		// ── 내부: 선택 캐릭터 아이콘 / 별 ───────────────────────────────────
+
+		// 등급만큼 별을 활성화한다.
+		private void applyStars(CharacterGrade grade)
+		{
+			int count = (int)grade;
+			for (int i = 0; i < _stars.Length; i++)
+			{
+				_stars[i].gameObject.SetActive(i < count);
+			}
+		}
+
+		// 아이콘 주소가 바뀐 경우에만 이전 것을 해제하고 새로 로드한다.
+		private async UniTask setCharacterIcon(string address, CancellationToken ct)
+		{
+			if (_charIconAddr == address)
+			{
+				return;
+			}
+
+			releaseCharacterIcon();
+			_charIconAddr = address;
+
+			if (string.IsNullOrEmpty(address))
+			{
+				_characterIcon.sprite = null;
+				return;
+			}
+
+			// 아틀라스에 있으면 동기로 즉시 세팅(같은 프레임). refcount 대상이 아니므로 캐시를 비운다.
+			Sprite atlasSprite = IconAtlasCache.Instance.Get(address);
+			if (atlasSprite != null)
+			{
+				_characterIcon.sprite = atlasSprite;
+				_charIconAddr = null;
+				return;
+			}
+
+			(bool cancelled, Sprite icon) = await ResourceManager.Instance.AcquireAsync<Sprite>(address, ct).SuppressCancellationThrow();
+			if (cancelled)
+			{
+				return;
+			}
+
+			// 로드 중 다른 주소로 다시 렌더되었으면 덮어쓰지 않는다 (늦은 로드 방지)
+			if (_charIconAddr != address)
+			{
+				return;
+			}
+
+			if (icon != null)
+			{
+				_characterIcon.sprite = icon;
+			}
+		}
+
+		private void releaseCharacterIcon()
+		{
+			// 앱/플레이 종료 시엔 ResourceManager 가 먼저 파괴됐을 수 있어 null 가드.
+			if (!string.IsNullOrEmpty(_charIconAddr) && ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(_charIconAddr);
+				_charIconAddr = null;
+			}
 		}
 	}
 }

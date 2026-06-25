@@ -60,6 +60,9 @@ namespace ProjectOne.UI
 		private readonly CharacterDetailPresenter _presenter = new CharacterDetailPresenter();
 		private UniTaskCompletionSource<bool> _tcs;
 
+		// 첫 렌더(모든 아이콘 로드)가 끝날 때까지 숨겼다가 한 번에 보여주기 위한 그룹
+		private CanvasGroup _canvasGroup;
+
 		// 캐릭터 대형 아이콘 주소 캐시 (변경 시에만 Release/Acquire — refcount 누수 방지)
 		private readonly string[] _charIconAddr = new string[1];
 
@@ -68,6 +71,15 @@ namespace ProjectOne.UI
 
 		private void Awake()
 		{
+			_canvasGroup = GetComponent<CanvasGroup>();
+			if (_canvasGroup == null)
+			{
+				_canvasGroup = gameObject.AddComponent<CanvasGroup>();
+			}
+
+			// 로드 완료 전까지 숨김 — Reveal 에서 보여준다.
+			setVisible(false);
+
 			_levelupButton.OnClickEvent += onLevelupClicked;
 			_returnButton.OnClickEvent += onReturnClicked;
 			_selectButton.OnClickEvent += onSelectClicked;
@@ -90,6 +102,19 @@ namespace ProjectOne.UI
 		public UniTask ShowAsync(int characterId, CancellationToken ct)
 		{
 			return _presenter.ShowAsync(characterId, ct);
+		}
+
+		// Presenter 가 첫 렌더(모든 아이콘 로드)를 끝낸 뒤 호출 — 채워진 상태로 한 번에 표시.
+		public void Reveal()
+		{
+			setVisible(true);
+		}
+
+		private void setVisible(bool visible)
+		{
+			_canvasGroup.alpha = visible ? 1f : 0f;
+			_canvasGroup.interactable = visible;
+			_canvasGroup.blocksRaycasts = visible;
 		}
 
 		// ── Presenter 가 호출하는 표시 API ─────────────────────────────────
@@ -130,9 +155,10 @@ namespace ProjectOne.UI
 			_expSlider.value = Mathf.Clamp01((float)curExp / reqExp);
 		}
 
-		// 스탯 — 데이터 개수만큼 슬롯 활성, 나머지 비활성. 각 슬롯이 자기 아이콘/이름/값을 관리.
-		public async UniTask BindStatsAsync(IReadOnlyList<StatRowData> stats, CancellationToken ct)
+		// 스탯 — 데이터 개수만큼 슬롯 활성, 나머지 비활성. 각 슬롯 아이콘 로드를 병렬로 진행한다.
+		public UniTask BindStatsAsync(IReadOnlyList<StatRowData> stats, CancellationToken ct)
 		{
+			List<UniTask> tasks = new List<UniTask>();
 			for (int i = 0; i < _statSlots.Length; i++)
 			{
 				bool active = i < stats.Count;
@@ -143,12 +169,14 @@ namespace ProjectOne.UI
 				}
 
 				StatRowData data = stats[i];
-				await _statSlots[i].Bind(data.iconAddress, data.name, data.value, ct);
+				tasks.Add(_statSlots[i].Bind(data.iconAddress, data.name, data.value, ct));
 			}
+
+			return UniTask.WhenAll(tasks);
 		}
 
-		// 특성 — 매 렌더마다 슬롯을 새로 만든다(개수가 적어 풀링 불필요).
-		public void BindTraits(IReadOnlyList<TraitSlotData> traits)
+		// 특성 — 매 렌더마다 슬롯을 새로 만든다(개수가 적어 풀링 불필요). 아이콘 로드를 병렬로 진행한다.
+		public UniTask BindTraitsAsync(IReadOnlyList<TraitSlotData> traits)
 		{
 			for (int i = 0; i < _traitSlots.Count; i++)
 			{
@@ -159,19 +187,23 @@ namespace ProjectOne.UI
 			_traitSlots.Clear();
 
 			CancellationToken ct = this.GetCancellationTokenOnDestroy();
+			List<UniTask> tasks = new List<UniTask>();
 			for (int i = 0; i < traits.Count; i++)
 			{
 				TraitSlotData data = traits[i];
 				CharacterSkillSlot slot = Instantiate(_skillSlotPrefab, _skillGrid);
 				slot.OnClicked += onTraitSlotClicked;
 				_traitSlots.Add(slot);
-				slot.Bind(data.traitGroupId, data.trait, data.charLevel, data.skillId, ct).Forget();
+				tasks.Add(slot.Bind(data.traitGroupId, data.trait, data.charLevel, data.skillId, ct));
 			}
+
+			return UniTask.WhenAll(tasks);
 		}
 
-		// 레벨업 비용 — 데이터 개수만큼 슬롯 활성, 나머지 비활성. 각 슬롯이 자기 아이콘/비용을 관리.
-		public async UniTask BindCostAsync(IReadOnlyList<LevelupCostData> costs, CancellationToken ct)
+		// 레벨업 비용 — 데이터 개수만큼 슬롯 활성, 나머지 비활성. 각 슬롯 아이콘 로드를 병렬로 진행한다.
+		public UniTask BindCostAsync(IReadOnlyList<LevelupCostData> costs, CancellationToken ct)
 		{
+			List<UniTask> tasks = new List<UniTask>();
 			for (int i = 0; i < _costSlots.Length; i++)
 			{
 				bool active = i < costs.Count;
@@ -182,8 +214,10 @@ namespace ProjectOne.UI
 				}
 
 				LevelupCostData data = costs[i];
-				await _costSlots[i].Bind(data.iconAddress, data.text, ct);
+				tasks.Add(_costSlots[i].Bind(data.iconAddress, data.text, ct));
 			}
+
+			return UniTask.WhenAll(tasks);
 		}
 
 		public void SetLevelupInteractable(bool interactable)
@@ -259,6 +293,15 @@ namespace ProjectOne.UI
 			if (string.IsNullOrEmpty(address))
 			{
 				target.sprite = null;
+				return;
+			}
+
+			// 아틀라스에 있으면 동기로 즉시 세팅(같은 프레임). refcount 대상이 아니므로 캐시 슬롯을 비운다.
+			Sprite atlasSprite = IconAtlasCache.Instance.Get(address);
+			if (atlasSprite != null)
+			{
+				target.sprite = atlasSprite;
+				cache[index] = null;
 				return;
 			}
 

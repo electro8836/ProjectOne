@@ -45,8 +45,20 @@ namespace ProjectOne.UI
 		private readonly ItemInfoPresenter _presenter = new ItemInfoPresenter();
 		private UniTaskCompletionSource<bool> _tcs;
 
+		// 첫 렌더(아이콘 로드)가 끝날 때까지 숨겼다가 한 번에 보여주기 위한 그룹
+		private CanvasGroup _canvasGroup;
+
 		private void Awake()
 		{
+			_canvasGroup = GetComponent<CanvasGroup>();
+			if (_canvasGroup == null)
+			{
+				_canvasGroup = gameObject.AddComponent<CanvasGroup>();
+			}
+
+			// 로드 완료 전까지 숨김 — Reveal 에서 보여준다.
+			setVisible(false);
+
 			_equipButton.OnClickEvent += onEquipClicked;
 			_exitButton.OnClickEvent += onExitClicked;
 
@@ -65,6 +77,19 @@ namespace ProjectOne.UI
 		public UniTask ShowAsync(int itemId, CancellationToken ct)
 		{
 			return _presenter.ShowAsync(itemId, ct);
+		}
+
+		// Presenter 가 첫 렌더(아이콘 로드)를 끝낸 뒤 호출 — 채워진 상태로 한 번에 표시.
+		public void Reveal()
+		{
+			setVisible(true);
+		}
+
+		private void setVisible(bool visible)
+		{
+			_canvasGroup.alpha = visible ? 1f : 0f;
+			_canvasGroup.interactable = visible;
+			_canvasGroup.blocksRaycasts = visible;
 		}
 
 		// ── Presenter 가 호출하는 표시 API ─────────────────────────────────

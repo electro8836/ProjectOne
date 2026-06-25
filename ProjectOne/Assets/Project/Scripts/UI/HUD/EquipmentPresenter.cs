@@ -27,6 +27,15 @@ namespace ProjectOne.UI
 		public int level;
 	}
 
+	// 선택(주캐릭터) 캐릭터 헤더 렌더 데이터.
+	public struct SelectedCharacterData
+	{
+		public string iconAddress;
+		public string name;
+		public int level;
+		public CharacterGrade grade;
+	}
+
 	// 장비 화면 Presenter — 정렬/필터 상태와 Model(Account) 조회를 담당하고, View 에 렌더 데이터를 넘긴다.
 	// 화면 닫힘 시 장착 변경(dirty)을 서버에 1회 flush 한다.
 	public sealed class EquipmentPresenter : Presenter<EquipmentUI>
@@ -70,14 +79,35 @@ namespace ProjectOne.UI
 			EventManager.Instance.Unsubscribe<PresetChangeEvent>(onPresetChanged);
 		}
 
-		// 화면이 열린 동안 전체 장비 아이콘을 캐시에 고정한다(탭 전환 시 캐시 히트로 즉시 갱신).
-		public override async UniTask OnOpenAsync(CancellationToken ct)
+		// 아이콘은 부트에서 아틀라스(IconAtlasCache)로 상주하므로 프리로드 대기 없이 곧바로 슬롯을 만든다.
+		// → 슬롯 프리펩이 즉시 생성되고, 슬롯이 동기 아틀라스 조회로 아이콘까지 같은 프레임에 채운다.
+		public override UniTask OnOpenAsync(CancellationToken ct)
 		{
-			await view.PreloadIconsAsync(getAllIconAddresses(), ct);
-
 			_currentType = EquipmentTypes.Weapon;
 			view.SelectTab(0);	// Select 는 OnTabChanged 를 발행하지 않으므로 직접 rebuild
+			renderSelectedCharacter(ct);
 			rebuild();
+			return UniTask.CompletedTask;
+		}
+
+		// 현재 선택된 주캐릭터의 아이콘/이름/레벨/등급을 헤더에 1회 표시한다.
+		// (장비 화면에는 캐릭터 선택 UI 가 없어 열린 동안 선택은 고정이므로 탭/정렬 rebuild 와 분리.)
+		private void renderSelectedCharacter(CancellationToken ct)
+		{
+			int selected = Account.Instance.Loadout.Selected;
+			Table_Character.Row row = Table_Character.Get(selected);
+			if (row == null)
+			{
+				return;
+			}
+
+			SelectedCharacterData data;
+			data.iconAddress = row.Icon;
+			data.name = row.Name;
+			data.grade = row.Grade;
+			OwnedCharacter oc = Account.Instance.Loadout.GetOwned(selected);
+			data.level = oc != null ? oc.level : 0;
+			view.RenderSelectedCharacterAsync(data, ct).Forget();
 		}
 
 		// 화면 닫힘 — 장착 변경(dirty)이 있으면 서버에 1회 저장(패킷 절약).
@@ -214,25 +244,6 @@ namespace ProjectOne.UI
 			data.count = hasItem ? inventory.GetCount(itemId) : 0;
 			data.level = hasItem ? inventory.GetEnhanceLevel(itemId) : 0;
 			_equippedData.Add(data);
-		}
-
-		// 전체 장비 아이콘 주소(중복 제거) — View 가 화면 동안 캐시에 고정한다.
-		private List<string> getAllIconAddresses()
-		{
-			List<string> addresses = new List<string>();
-			List<Table_Equipment.Row> all = new List<Table_Equipment.Row>(Table_Equipment.All().Values);
-			for (int i = 0; i < all.Count; i++)
-			{
-				string address = all[i].Icon;
-				if (string.IsNullOrEmpty(address) || addresses.Contains(address))
-				{
-					continue;
-				}
-
-				addresses.Add(address);
-			}
-
-			return addresses;
 		}
 
 		// 탭 인덱스 → 장비 타입 (탭 자식 순서: Weapon/Armor/Acc)

@@ -85,6 +85,7 @@ namespace ProjectOne.UI
 			Table_Character.Row row = Table_Character.Get(_characterId);
 			if (row == null)
 			{
+				view.Reveal();	// 데이터 없음 — 숨김 상태로 갇히지 않도록 표시(닫기 가능)
 				return;
 			}
 
@@ -97,15 +98,20 @@ namespace ProjectOne.UI
 			int reqExp = requiredExpForNext(level);
 			view.SetLevelExp(level, exp, reqExp);
 
-			await view.BindStatsAsync(buildStats(row, level), ct);
-			view.BindTraits(buildTraits(row, level));
-			await view.BindCostAsync(buildCost(level), ct);
 			view.SetLevelupInteractable(canLevelup(level, exp));
 
 			// 보유 + 미선택일 때만 선택 버튼 표시 (미보유면 숨김)
 			view.SetSelectVisible(oc != null && Account.Instance.Loadout.Selected != _characterId);
 
-			await view.SetCharacterIconAsync(row.Icon, ct);
+			// 모든 아이콘을 병렬로 로드 — 하나씩 순차 로드되어 천천히 채워지는 것을 막는다.
+			await UniTask.WhenAll(
+				view.BindStatsAsync(buildStats(row, level), ct),
+				view.BindTraitsAsync(buildTraits(row, level)),
+				view.BindCostAsync(buildCost(level), ct),
+				view.SetCharacterIconAsync(row.Icon, ct));
+
+			// 로드가 끝난 뒤 한 번에 표시 (이미 보이는 재렌더에서는 무해)
+			view.Reveal();
 		}
 
 		// 레벨업 스탯 — Table_LevelupStat 의 StatID/Value 4쌍을 순회.

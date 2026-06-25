@@ -76,6 +76,12 @@ namespace ProjectOne.UI
 			_focus.SetActive(false);
 		}
 
+		// 아이템 수량 표시를 숨긴다 (장착 슬롯용 — 수량 불필요).
+		public void HideCount()
+		{
+			_countText.gameObject.SetActive(false);
+		}
+
 		private void onClicked()
 		{
 			if (OnClicked != null)
@@ -99,8 +105,23 @@ namespace ProjectOne.UI
 			if (string.IsNullOrEmpty(address))
 			{
 				_itemIcon.sprite = null;
+				_itemIcon.enabled = false;
 				return;
 			}
+
+			// 아틀라스에 있으면 await 없이 동기로 즉시 세팅 → 슬롯 생성과 같은 프레임에 표시(한 템포 늦음 방지).
+			// 아틀라스 스프라이트는 refcount 대상이 아니므로 _iconAddress 를 비워 releaseIcon 오작동을 막는다.
+			Sprite atlasSprite = IconAtlasCache.Instance.Get(address);
+			if (atlasSprite != null)
+			{
+				_itemIcon.sprite = atlasSprite;
+				_itemIcon.enabled = true;
+				_iconAddress = null;
+				return;
+			}
+
+			// 아틀라스 미포함 — 로드 완료 전까지 아이콘을 숨겨 프리펩에 박힌 기본 스프라이트 깜빡임을 막는다.
+			_itemIcon.enabled = false;
 
 			(bool cancelled, Sprite icon) = await ResourceManager.Instance.AcquireAsync<Sprite>(address, ct).SuppressCancellationThrow();
 			if (cancelled)
@@ -117,6 +138,7 @@ namespace ProjectOne.UI
 			if (icon != null)
 			{
 				_itemIcon.sprite = icon;
+				_itemIcon.enabled = true;
 			}
 		}
 
