@@ -56,6 +56,335 @@ namespace ProjectOne.Skill
 			return sb.ToString().TrimEnd();
 		}
 
+		// ─────────────────────────────────────────────────────────────
+		// 레벨별 요약 (특성 슬롯 LV1~5 = 별도 스킬 5개) — 효과 타입별로 필요한 데이터만 뽑아 압축 라인 생성.
+		// 한 줄에 모든 산문을 만드는 Build() 와 달리, 상황(효과 타입)별 소형 추출 함수를 조합한다.
+		// ─────────────────────────────────────────────────────────────
+
+		// 레벨 1~5 스킬을 받아 레벨별 압축 요약 5줄을 순서대로 반환한다.
+		// None 레벨은 빈 문자열. 첫 유효 레벨(L1) 기준으로 범위/타겟/투사체 증가분을 계산한다.
+		public static string[] BuildLevelSummaries(SkillInfo lv1, SkillInfo lv2, SkillInfo lv3, SkillInfo lv4, SkillInfo lv5)
+		{
+			SkillInfo[] ids = { lv1, lv2, lv3, lv4, lv5 };
+			Table_SkillInfo.Row[] rows = new Table_SkillInfo.Row[ids.Length];
+			Table_SkillInfo.Row baseRow = null;
+			for (int i = 0; i < ids.Length; i++)
+			{
+				rows[i] = ids[i] != SkillInfo.None ? Table_SkillInfo.Get(ids[i]) : null;
+				if (baseRow == null && rows[i] != null)
+				{
+					baseRow = rows[i];
+				}
+			}
+
+			string[] result = new string[ids.Length];
+			for (int i = 0; i < rows.Length; i++)
+			{
+				result[i] = rows[i] != null ? buildLevelLine(rows[i], baseRow) : string.Empty;
+			}
+
+			return result;
+		}
+
+		// 한 레벨 스킬의 단편들을 정해진 순서로 모아 ", " 로 join.
+		// 순서: 데미지 → 발동확률 → 속성/버프 → 쿨타임 → 범위증가 → 타겟증가 → 투사체증가.
+		private static string buildLevelLine(Table_SkillInfo.Row row, Table_SkillInfo.Row baseRow)
+		{
+			List<string> parts = new List<string>();
+
+			addIfNotEmpty(parts, damagePhrase(row));
+			addIfNotEmpty(parts, procChancePhrase(row));
+			attributePhrases(row, parts);
+			buffPhrases(row, parts);
+			addIfNotEmpty(parts, cooltimePhrase(row));
+			addIfNotEmpty(parts, scanRangeDeltaPhrase(row, baseRow));
+			addIfNotEmpty(parts, targetCountDeltaPhrase(row, baseRow));
+			addIfNotEmpty(parts, projectileCountDeltaPhrase(row, baseRow));
+
+			return string.Join(", ", parts);
+		}
+
+		private static void addIfNotEmpty(List<string> list, string s)
+		{
+			if (string.IsNullOrEmpty(s) == false)
+			{
+				list.Add(s);
+			}
+		}
+
+		// 스킬의 7개 효과 슬롯을 순서대로 순회한다 (StartEffect → Effect_0~4 → FinishEffect).
+		private static void forEachEffect(Table_SkillInfo.Row row, List<SkillEffect> outList)
+		{
+			outList.Add(row.StartEffect);
+			outList.Add(row.Effect_0);
+			outList.Add(row.Effect_1);
+			outList.Add(row.Effect_2);
+			outList.Add(row.Effect_3);
+			outList.Add(row.Effect_4);
+			outList.Add(row.FinishEffect);
+		}
+
+		// 지정 타입의 첫 효과 행을 반환 (없으면 null).
+		private static Table_SkillEffect.Row firstEffectOfType(Table_SkillInfo.Row row, SkillEffectTypes type)
+		{
+			List<SkillEffect> effects = new List<SkillEffect>(7);
+			forEachEffect(row, effects);
+			for (int i = 0; i < effects.Count; i++)
+			{
+				if (effects[i] == SkillEffect.None)
+				{
+					continue;
+				}
+
+				Table_SkillEffect.Row e = Table_SkillEffect.Get(effects[i]);
+				if (e != null && e.EffectType == type)
+				{
+					return e;
+				}
+			}
+
+			return null;
+		}
+
+		// 데미지: 계수 퍼센트(CoefValue*100). 타입 라벨 prefix, BaseDamage 는 "고정 데미지 N" 으로 덧붙임.
+		private static string damagePhrase(Table_SkillInfo.Row row)
+		{
+			Table_SkillEffect.Row e = firstEffectOfType(row, SkillEffectTypes.Damage);
+			if (e == null || SkillEffectParams.TryParseDamage(e, out DamageParams p) == false)
+			{
+				return string.Empty;
+			}
+
+			string typeLabel = SkillTextNames.DamageType(e.DamageType);
+			StringBuilder sb = new StringBuilder();
+			if (p.CoefStat != StatInfo.None && p.CoefValue != 0f)
+			{
+				if (string.IsNullOrEmpty(typeLabel) == false)
+				{
+					sb.Append(typeLabel).Append(" ");
+				}
+
+				sb.Append("데미지 ").Append(formatNum(p.CoefValue * 100f)).Append("%");
+			}
+
+			if (p.BaseDamage > 0f)
+			{
+				if (sb.Length > 0)
+				{
+					sb.Append(", ");
+				}
+
+				sb.Append("고정 데미지 ").Append(formatNum(p.BaseDamage));
+			}
+
+			return sb.ToString();
+		}
+
+		private static string cooltimePhrase(Table_SkillInfo.Row row)
+		{
+			if (row.CooltimeSec > 0f)
+			{
+				return "쿨타임 " + formatNum(row.CooltimeSec) + "초";
+			}
+
+			return string.Empty;
+		}
+
+		// 발동확률 — OnHit 계열(OnHitCaster/OnHitTarget) 일 때. 둘 다 CastingParam 을 확률 %로 사용.
+		private static string procChancePhrase(Table_SkillInfo.Row row)
+		{
+			if (row.CastingType == SkillCastingTypes.OnHitCaster || row.CastingType == SkillCastingTypes.OnHitTarget)
+			{
+				return "발동확률 " + row.CastingParam + "%";
+			}
+
+			return string.Empty;
+		}
+
+		// 스캔 범위 증가분 — 비-Target 스캔의 ScanParam1(반경/길이/외경) L1 대비 증가율.
+		private static string scanRangeDeltaPhrase(Table_SkillInfo.Row row, Table_SkillInfo.Row baseRow)
+		{
+			if (baseRow == null || row == baseRow || row.ScanType == SkillScanType.None || row.ScanType == SkillScanType.Target)
+			{
+				return string.Empty;
+			}
+
+			if (baseRow.ScanType != row.ScanType || baseRow.ScanParam1 <= 0f)
+			{
+				return string.Empty;
+			}
+
+			float delta = (row.ScanParam1 / baseRow.ScanParam1 - 1f) * 100f;
+			if (delta <= 0f)
+			{
+				return string.Empty;
+			}
+
+			return "공격 범위 +" + formatNum(delta) + "%";
+		}
+
+		// 타겟 수 증가분 — Target 스캔의 ScanParam2(대상 수) L1 대비 증가분.
+		private static string targetCountDeltaPhrase(Table_SkillInfo.Row row, Table_SkillInfo.Row baseRow)
+		{
+			if (baseRow == null || row == baseRow || row.ScanType != SkillScanType.Target)
+			{
+				return string.Empty;
+			}
+
+			float baseCount = baseRow.ScanType == SkillScanType.Target ? baseRow.ScanParam2 : 0f;
+			float delta = row.ScanParam2 - baseCount;
+			if (delta <= 0f)
+			{
+				return string.Empty;
+			}
+
+			return "대상 +" + formatNum(delta);
+		}
+
+		// 투사체 수 증가분 — 첫 SpawnProjectile 효과의 Count L1 대비 증가분.
+		private static string projectileCountDeltaPhrase(Table_SkillInfo.Row row, Table_SkillInfo.Row baseRow)
+		{
+			if (baseRow == null || row == baseRow)
+			{
+				return string.Empty;
+			}
+
+			int count = projectileCount(row);
+			int baseCount = projectileCount(baseRow);
+			int delta = count - baseCount;
+			if (delta <= 0)
+			{
+				return string.Empty;
+			}
+
+			return "투사체 +" + delta + "개";
+		}
+
+		private static int projectileCount(Table_SkillInfo.Row row)
+		{
+			Table_SkillEffect.Row e = firstEffectOfType(row, SkillEffectTypes.SpawnProjectile);
+			if (e == null || SkillEffectParams.TryParseSpawnProjectile(e, out SpawnProjectileParams p) == false)
+			{
+				return 0;
+			}
+
+			return p.Count;
+		}
+
+		// 속성 증감 — 모든 Increase/DecreaseAttribute 효과를 "스탯명 +값[%]" / "-값[%]" 로.
+		private static void attributePhrases(Table_SkillInfo.Row row, List<string> outList)
+		{
+			List<SkillEffect> effects = new List<SkillEffect>(7);
+			forEachEffect(row, effects);
+			for (int i = 0; i < effects.Count; i++)
+			{
+				if (effects[i] == SkillEffect.None)
+				{
+					continue;
+				}
+
+				Table_SkillEffect.Row e = Table_SkillEffect.Get(effects[i]);
+				if (e == null)
+				{
+					continue;
+				}
+
+				if (e.EffectType == SkillEffectTypes.IncreaseAttribute)
+				{
+					addIfNotEmpty(outList, attributePhrase(e, true));
+				}
+				else if (e.EffectType == SkillEffectTypes.DecreaseAttribute)
+				{
+					addIfNotEmpty(outList, attributePhrase(e, false));
+				}
+			}
+		}
+
+		private static string attributePhrase(Table_SkillEffect.Row e, bool isIncrease)
+		{
+			if (SkillEffectParams.TryParseAttribute(e, out AttributeParams p) == false)
+			{
+				return string.Empty;
+			}
+
+			string statName = SkillTextNames.Stat(p.AttrType);
+			string sign = isIncrease ? "+" : "-";
+			return statName + " " + sign + formatAttributeValue(p);
+		}
+
+		// 버프/디버프 — ActivateBuff 는 내부 효과가 속성 증감이면 그쪽을(레벨마다 수치 변화) 노출,
+		// 그 외(스턴 등)는 "버프명(지속시간초)". DeactivateBuff 는 "버프명 해제".
+		private static void buffPhrases(Table_SkillInfo.Row row, List<string> outList)
+		{
+			List<SkillEffect> effects = new List<SkillEffect>(7);
+			forEachEffect(row, effects);
+			for (int i = 0; i < effects.Count; i++)
+			{
+				if (effects[i] == SkillEffect.None)
+				{
+					continue;
+				}
+
+				Table_SkillEffect.Row e = Table_SkillEffect.Get(effects[i]);
+				if (e == null)
+				{
+					continue;
+				}
+
+				if (e.EffectType == SkillEffectTypes.ActivateBuff)
+				{
+					activateBuffPhrases(e, outList);
+				}
+				else if (e.EffectType == SkillEffectTypes.DeactivateBuff)
+				{
+					addIfNotEmpty(outList, deactivateBuffPhrase(e));
+				}
+			}
+		}
+
+		private static void activateBuffPhrases(Table_SkillEffect.Row e, List<string> outList)
+		{
+			if (SkillEffectParams.TryParseActivateBuff(e, out ActivateBuffParams p) == false)
+			{
+				return;
+			}
+
+			Table_BuffInfo.Row buff = Table_BuffInfo.Get(p.BuffID);
+
+			// 내부 효과가 속성 증감이면 레벨마다 수치가 바뀌므로 그 문구를 노출.
+			if (buff != null && buff.Effect != SkillEffect.None)
+			{
+				Table_SkillEffect.Row inner = Table_SkillEffect.Get(buff.Effect);
+				if (inner != null && inner.EffectType == SkillEffectTypes.IncreaseAttribute)
+				{
+					addIfNotEmpty(outList, attributePhrase(inner, true));
+					return;
+				}
+
+				if (inner != null && inner.EffectType == SkillEffectTypes.DecreaseAttribute)
+				{
+					addIfNotEmpty(outList, attributePhrase(inner, false));
+					return;
+				}
+			}
+
+			string buffName = buff != null && string.IsNullOrEmpty(buff.Name) == false ? buff.Name : p.BuffID.ToString();
+			string duration = p.Duration > 0f ? "(" + formatNum(p.Duration) + "초)" : "(지속)";
+			outList.Add(buffName + duration);
+		}
+
+		private static string deactivateBuffPhrase(Table_SkillEffect.Row e)
+		{
+			if (SkillEffectParams.TryParseDeactivateBuff(e, out DeactivateBuffParams p) == false)
+			{
+				return string.Empty;
+			}
+
+			Table_BuffInfo.Row buff = Table_BuffInfo.Get(p.BuffID);
+			string buffName = buff != null && string.IsNullOrEmpty(buff.Name) == false ? buff.Name : p.BuffID.ToString();
+			return buffName + " 해제";
+		}
+
 		private static void collectEffectSentence(SkillEffect effect, string rangePhrase, List<string> outList)
 		{
 			string s = describeEffect(effect, rangePhrase, 0);
@@ -260,7 +589,7 @@ namespace ProjectOne.Skill
 
 		private static string fallbackName(Table_SkillEffect.Row row)
 		{
-			return string.IsNullOrEmpty(row.Name) == false ? row.Name : string.Empty;
+			return string.Empty;
 		}
 
 		private static string buildStatLine(Table_SkillInfo.Row row)
@@ -286,8 +615,8 @@ namespace ProjectOne.Skill
 			{
 				case SkillCastingTypes.Passive: return "[상시] ";
 				case SkillCastingTypes.Casting: return castingParam + "초 캐스팅 후 ";
-				case SkillCastingTypes.OnHitCaster: return "타격 시 " + castingParam + "% 확률로 ";
-				case SkillCastingTypes.OnHitTarget: return "피격 시 " + castingParam + "% 확률로 ";
+				case SkillCastingTypes.OnHitCaster: return "공격 시 " + castingParam + "% 확률로 ";
+				case SkillCastingTypes.OnHitTarget: return "공격 시 " + castingParam + "% 확률로 ";
 				default: return string.Empty;
 			}
 		}

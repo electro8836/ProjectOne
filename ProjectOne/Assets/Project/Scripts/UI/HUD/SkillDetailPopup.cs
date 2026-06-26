@@ -22,13 +22,18 @@ namespace ProjectOne.UI
 		[SerializeField] private Image _skillIcon;		// SkillIcon
 
 		[Header("레벨별 스킬 정보")]
-		[SerializeField] private TMP_Text[] _infoTexts;	// Info1_Text ~ Info5_Text
+		[SerializeField] private StepInfoSlot[] _stepInfos;	// StepInfo1 ~ StepInfo5
 
 		[Header("버튼")]
 		[SerializeField] private UIButton _returnButton;	// Button_Return
 
-		// 현재 슬롯 레벨 줄을 강조하는 색(#00FF0E), 나머지는 흰색.
-		private static readonly Color HighlightColor = new Color(0f, 1f, 0.0574f);
+		// StepInfo 하위의 설명 텍스트(Info_Text)와 현재 레벨 강조 오브젝트(Focus) 쌍.
+		[System.Serializable]
+		private class StepInfoSlot
+		{
+			public TMP_Text infoText;	// Info_Text
+			public GameObject focus;	// Focus (현재 레벨일 때만 활성)
+		}
 
 		// 현재 로드한 아이콘 주소 (Acquire/Release 짝 맞춤용)
 		private string _iconAddress;
@@ -83,49 +88,36 @@ namespace ProjectOne.UI
 			await WaitForCloseAsync(ct);
 		}
 
-		// SkillID_1~5 에 해당하는 스킬의 Desc 를 Info 텍스트에 채운다.
-		// 스킬이 없으면 해당 텍스트 오브젝트를 비활성화해 개수를 맞추고,
-		// 현재 슬롯 레벨(slotLevel) 줄만 녹색으로 강조한다.
+		// 레벨별 요약을 각 StepInfo 의 Info_Text 에 채우고, 현재 슬롯 레벨(slotLevel) 의 Focus 만 활성화한다.
+		// 스킬이 없는 레벨은 Info_Text 를 비워 비활성화한다.
 		private void setInfoGrid(Table_CharacterTrait.Row trait, int slotLevel)
 		{
-			for (int i = 0; i < _infoTexts.Length; i++)
-			{
-				SkillInfo sid = skillIdAt(trait, i);
-				Table_SkillInfo.Row skill = sid != SkillInfo.None ? Table_SkillInfo.Get(sid) : null;
+			// 레벨 1~5 스킬을 한 번에 레벨별 압축 요약 5줄로 변환한다. 트레잇 개념 설명은 상단 _descText 가 담당.
+			string[] lines = SkillDescriptionBuilder.BuildLevelSummaries(trait.SkillID_1, trait.SkillID_2, trait.SkillID_3, trait.SkillID_4, trait.SkillID_5);
 
-				if (skill == null)
+			for (int i = 0; i < _stepInfos.Length; i++)
+			{
+				StepInfoSlot slot = _stepInfos[i];
+				string line = i < lines.Length ? lines[i] : string.Empty;
+
+				if (slot.focus != null)
 				{
-					_infoTexts[i].gameObject.SetActive(false);
+					slot.focus.SetActive(i == slotLevel - 1);
+				}
+
+				if (slot.infoText == null)
+				{
 					continue;
 				}
 
-				_infoTexts[i].gameObject.SetActive(true);
-				// Desc(요약)와 데이터 기반 자동 생성 설명(상세)을 함께 표시한다. Desc 가 비어있으면 자동 생성만.
-				string generated = SkillDescriptionBuilder.Build(sid);
-				if (string.IsNullOrEmpty(skill.Desc) == false)
+				if (string.IsNullOrEmpty(line))
 				{
-					_infoTexts[i].text = string.IsNullOrEmpty(generated) ? skill.Desc : skill.Desc + "\n" + generated;
-				}
-				else
-				{
-					_infoTexts[i].text = generated;
+					slot.infoText.gameObject.SetActive(false);
+					continue;
 				}
 
-				_infoTexts[i].color = (i == slotLevel - 1) ? HighlightColor : Color.white;
-			}
-		}
-
-		// 슬롯 인덱스(0~4) → 특성 행의 SkillID_1~5.
-		private static SkillInfo skillIdAt(Table_CharacterTrait.Row trait, int index)
-		{
-			switch (index)
-			{
-				case 0: return trait.SkillID_1;
-				case 1: return trait.SkillID_2;
-				case 2: return trait.SkillID_3;
-				case 3: return trait.SkillID_4;
-				case 4: return trait.SkillID_5;
-				default: return SkillInfo.None;
+				slot.infoText.gameObject.SetActive(true);
+				slot.infoText.text = line;
 			}
 		}
 
