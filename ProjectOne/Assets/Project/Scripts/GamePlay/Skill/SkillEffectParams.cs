@@ -272,11 +272,11 @@ namespace ProjectOne.Skill
 			return true;
 		}
 
-		// _Ratio/_Amp 파트는 퍼센트 입력 → 분수 변환 대상 (BuildPartMap 의 suffix 분류와 동일 규칙)
+		// 퍼센트 입력(100=100%) → 분수 변환 대상 여부 — 테이블 IsRatio 사용
 		static bool IsPercentInput(StatInfo stat)
 		{
-			string n = stat.ToString();
-			return n.EndsWith("_Ratio") == true || n.EndsWith("_Amp") == true;
+			Table_StatInfo.Row row = Table_StatInfo.Get(stat);
+			return row != null && row.IsRatio == true;
 		}
 
 		static bool TryParseFloat(string s, out float value)

@@ -25,7 +25,6 @@ namespace ProjectOne.Unit.Stats
 			c.SetBase(StatInfo.HpRecovery_Base,      row.HpRecovery_Base);
 			c.SetBase(StatInfo.AtkSpeed_Base,        row.AtkSpeed_Base);
 			c.SetBase(StatInfo.MoveSpeed_Base,       row.MoveSpeed_Base);
-			c.SetBase(StatInfo.Accuracy_Base,        row.Accuracy_Base);
 			c.SetBase(StatInfo.BreakGage_Base,       row.BreakGage_Base);
 			c.SetBase(StatInfo.BreakDamage_Base,     row.BreakDamage_Base);
 			c.SetBase(StatInfo.BreakRecovery_Base,   row.BreakRecovery_Base);
@@ -33,7 +32,6 @@ namespace ProjectOne.Unit.Stats
 			c.SetBase(StatInfo.KnockBackResist_Base, row.KnockBackResist_Base);
 			c.SetBase(StatInfo.MaxStamina_Base,      row.MaxStamina_Base);
 			c.SetBase(StatInfo.StaminaRegen_Base,    row.StaminaRegen_Base);
-			c.SetBase(StatInfo.Evasion_Base,         row.Evasion_Base);
 
 			return c;
 		}
