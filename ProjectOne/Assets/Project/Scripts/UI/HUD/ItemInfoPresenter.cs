@@ -6,12 +6,12 @@ using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
-	// 아이템 정보 팝업의 옵션 1줄 렌더 데이터 — isSkill 로 스탯/스킬 슬롯 프리펩을 구분한다.
+	// 아이템 정보 팝업의 옵션 1줄 렌더 데이터 — 아이콘 주소 + 제목 + 설명(스탯/스킬/특성 공용).
 	public struct ItemOptionEntry
 	{
+		public string iconAddress;
 		public string title;
-		public string text;
-		public bool isSkill;
+		public string desc;
 	}
 
 	// 아이템 정보 팝업 Presenter — 표시 데이터 계산과 장착/해제 결정(Loadout 조작)을 담당한다.
@@ -52,11 +52,11 @@ namespace ProjectOne.UI
 			int level = inventory.GetEnhanceLevel(itemId);
 
 			view.SetInfo(row);
-			view.BuildOptions(buildOptions(row));
 			view.SetEquipInteractable(owned);	// 미보유면 장착 불가
 			view.SetEquipLabel(equipLabel());
 
 			// 아이콘 로드가 끝난 뒤 한 번에 표시
+			await view.BuildOptionsAsync(buildOptions(row), ct);
 			await view.BindItemSlotAsync(row, owned, count, level, ct);
 			view.Reveal();
 
@@ -97,7 +97,7 @@ namespace ProjectOne.UI
 			return isEquipped() ? "Unequip" : "Equip";
 		}
 
-		// 스탯 옵션 1~3, 스킬 옵션 1~2 순서대로 렌더 데이터를 만든다.
+		// 스탯 옵션 1~3, 스킬 옵션 1~2, 특성 옵션 순서대로 렌더 데이터를 만든다.
 		private List<ItemOptionEntry> buildOptions(Table_Equipment.Row row)
 		{
 			List<ItemOptionEntry> entries = new List<ItemOptionEntry>();
@@ -107,9 +107,12 @@ namespace ProjectOne.UI
 
 			addSkillOption(entries, row.SkillOption_1);
 			addSkillOption(entries, row.SkillOption_2);
+
+			addTraitOption(entries, row);
 			return entries;
 		}
 
+		// 스탯: 아이콘 + 스탯 이름 + 값(비율이면 % 부착).
 		private void addStatOption(List<ItemOptionEntry> entries, StatInfo type, float value)
 		{
 			if (type == StatInfo.None)
@@ -119,15 +122,16 @@ namespace ProjectOne.UI
 
 			Table_StatInfo.Row info = Table_StatInfo.Get(type);
 			string title = info != null ? info.Name : type.ToString();
-			string text = info != null && info.IsRatio ? value.ToString("0.##") + "%" : value.ToString("0.##");
+			string desc = info != null && info.IsRatio ? value.ToString("0.##") + "%" : value.ToString("0.##");
 
 			ItemOptionEntry entry;
+			entry.iconAddress = info != null ? info.Icon : string.Empty;
 			entry.title = title;
-			entry.text = text;
-			entry.isSkill = false;
+			entry.desc = desc;
 			entries.Add(entry);
 		}
 
+		// 스킬: 아이콘 + 스킬 이름 + 스킬 테이블 Desc 원문.
 		private void addSkillOption(List<ItemOptionEntry> entries, int skillOption)
 		{
 			if (skillOption == 0)
@@ -136,13 +140,72 @@ namespace ProjectOne.UI
 			}
 
 			Table_SkillInfo.Row info = Table_SkillInfo.Get((SkillInfo)skillOption);
-			string skillName = info != null ? info.Name : string.Empty;
 
 			ItemOptionEntry entry;
-			entry.title = null;	// 스킬은 제목 없이 이름만
-			entry.text = skillName;
-			entry.isSkill = true;
+			entry.iconAddress = info != null ? info.Icon : string.Empty;
+			entry.title = info != null ? info.Name : string.Empty;
+			entry.desc = info != null ? info.Desc : string.Empty;
 			entries.Add(entry);
+		}
+
+		// 특성: Trait_Icon + "n번 특성 스킬 강화" + 설명(선택 캐릭터의 해당 특성 이름 포함).
+		private void addTraitOption(List<ItemOptionEntry> entries, Table_Equipment.Row row)
+		{
+			int index = row.TraitSlotIndex;
+			int value = row.TraitSlotValue;
+			if (index <= 0 || value == 0)
+			{
+				return;
+			}
+
+			ItemOptionEntry entry;
+			entry.iconAddress = "Trait_Icon";
+			entry.title = index + "번 특성 스킬 강화";
+			entry.desc = "캐릭터의 " + ordinal(index) + " 특성 스킬 레벨이 " + value + " 증가합니다\n[<color=#2ECC71>" + traitName(index) + "</color>]";
+			entries.Add(entry);
+		}
+
+		// 선택 캐릭터의 index번 특성그룹 이름. 없으면 빈 문자열.
+		private string traitName(int index)
+		{
+			int selected = Account.Instance.Loadout.Selected;
+			Table_Character.Row charRow = Table_Character.Get(selected);
+			if (charRow == null)
+			{
+				return string.Empty;
+			}
+
+			int groupId = traitGroupByIndex(charRow, index);
+			Table_CharacterTrait.Row trait = Table_CharacterTrait.Get(groupId);
+			return trait != null ? trait.Name : string.Empty;
+		}
+
+		// 캐릭터의 1~5번 특성그룹 ID (TraitGroup_n 필드 분기).
+		private int traitGroupByIndex(Table_Character.Row charRow, int index)
+		{
+			switch (index)
+			{
+				case 1: return charRow.TraitGroup_1;
+				case 2: return charRow.TraitGroup_2;
+				case 3: return charRow.TraitGroup_3;
+				case 4: return charRow.TraitGroup_4;
+				case 5: return charRow.TraitGroup_5;
+				default: return 0;
+			}
+		}
+
+		// 1~5의 한글 서수.
+		private string ordinal(int index)
+		{
+			switch (index)
+			{
+				case 1: return "첫 번째";
+				case 2: return "두 번째";
+				case 3: return "세 번째";
+				case 4: return "네 번째";
+				case 5: return "다섯 번째";
+				default: return index + "번째";
+			}
 		}
 	}
 }

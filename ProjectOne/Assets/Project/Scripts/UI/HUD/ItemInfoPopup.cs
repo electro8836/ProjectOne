@@ -34,8 +34,7 @@ namespace ProjectOne.UI
 
 		[Header("프리펩 / 데이터")]
 		[SerializeField] private EquipmentSlot _inventorySlotPrefab;		// Prefab_InventorySlot
-		[SerializeField] private EquipmentOptionSlot _statSlotPrefab;	// Prefab_EquipmentStatSlot
-		[SerializeField] private EquipmentOptionSlot _skillSlotPrefab;	// Prefab_EquipmentSkillSlot
+		[SerializeField] private EquipmentOptionSlot _optionSlotPrefab;	// Prefab_EquipmentOptionSlot
 		[SerializeField] private GradeColorTable _gradeColors;
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
@@ -111,15 +110,14 @@ namespace ProjectOne.UI
 			slot.HideStatusObjects();
 		}
 
-		// 옵션 슬롯을 GridLayout 에 추가한다 (스탯/스킬 프리펩은 isSkill 로 구분).
-		public void BuildOptions(IReadOnlyList<ItemOptionEntry> entries)
+		// 옵션 슬롯을 GridLayout 에 추가한다 (스탯/스킬/특성 공용 단일 프리펩). 아이콘 로드까지 대기.
+		public async UniTask BuildOptionsAsync(IReadOnlyList<ItemOptionEntry> entries, CancellationToken ct)
 		{
 			for (int i = 0; i < entries.Count; i++)
 			{
 				ItemOptionEntry entry = entries[i];
-				EquipmentOptionSlot prefab = entry.isSkill ? _skillSlotPrefab : _statSlotPrefab;
-				EquipmentOptionSlot slot = Instantiate(prefab, _gridParent);
-				slot.Set(entry.title, entry.text);
+				EquipmentOptionSlot slot = Instantiate(_optionSlotPrefab, _gridParent);
+				await slot.SetAsync(entry.iconAddress, entry.title, entry.desc, ct);
 			}
 		}
 
