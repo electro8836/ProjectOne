@@ -4,20 +4,15 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_Monster
+    public static class Table_StageReward
     {
         public class Row {
             public int ID { get; set; } = 0;
             public MonsterTypes MonsterType { get; set; } = MonsterTypes.None;
-            public string Name { get; set; } = string.Empty;
-            public string Desc { get; set; } = string.Empty;
-            public string Path { get; set; } = string.Empty;
-            public int BaseStatID { get; set; } = 0;
-            public int BaseSkillSet { get; set; } = 0;
         }
 
-        public const string Filename = "edt_monster.bytes";
-        public const TableType Type = TableType.TableMonster;
+        public const string Filename = "edt_stagereward.bytes";
+        public const TableType Type = TableType.TableStageReward;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -38,11 +33,6 @@ namespace EDT {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
                 row.MonsterType = (MonsterTypes)reader.ReadInt32();
-                row.Name = reader.ReadString();
-                row.Desc = reader.ReadString();
-                row.Path = reader.ReadString();
-                row.BaseStatID = reader.ReadInt32();
-                row.BaseSkillSet = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

@@ -9,7 +9,6 @@ namespace EDT {
         public class Row {
             public int ID { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
-            public string Desc { get; set; } = string.Empty;
             public BattleType BattleType { get; set; } = BattleType.None;
             public string MapPrefab { get; set; } = string.Empty;
             public string BGM { get; set; } = string.Empty;
@@ -44,7 +43,6 @@ namespace EDT {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
                 row.Name = reader.ReadString();
-                row.Desc = reader.ReadString();
                 row.BattleType = (BattleType)reader.ReadInt32();
                 row.MapPrefab = reader.ReadString();
                 row.BGM = reader.ReadString();

@@ -4,20 +4,23 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_Monster
+    public static class Table_Dungeon
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public MonsterTypes MonsterType { get; set; } = MonsterTypes.None;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
-            public string Path { get; set; } = string.Empty;
-            public int BaseStatID { get; set; } = 0;
-            public int BaseSkillSet { get; set; } = 0;
+            public int TotalStageCount { get; set; } = 0;
+            public int StageGroupID_1 { get; set; } = 0;
+            public int StageGroupID_2 { get; set; } = 0;
+            public int StageGroupID_3 { get; set; } = 0;
+            public int StageGroupID_4 { get; set; } = 0;
+            public int StageGroupID_5 { get; set; } = 0;
+            public int ExtraStageGroupID { get; set; } = 0;
         }
 
-        public const string Filename = "edt_monster.bytes";
-        public const TableType Type = TableType.TableMonster;
+        public const string Filename = "edt_dungeon.bytes";
+        public const TableType Type = TableType.TableDungeon;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -37,12 +40,15 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.MonsterType = (MonsterTypes)reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
-                row.Path = reader.ReadString();
-                row.BaseStatID = reader.ReadInt32();
-                row.BaseSkillSet = reader.ReadInt32();
+                row.TotalStageCount = reader.ReadInt32();
+                row.StageGroupID_1 = reader.ReadInt32();
+                row.StageGroupID_2 = reader.ReadInt32();
+                row.StageGroupID_3 = reader.ReadInt32();
+                row.StageGroupID_4 = reader.ReadInt32();
+                row.StageGroupID_5 = reader.ReadInt32();
+                row.ExtraStageGroupID = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

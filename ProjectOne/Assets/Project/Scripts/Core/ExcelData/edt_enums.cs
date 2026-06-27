@@ -60,6 +60,23 @@ namespace EDT {
         Raid,
     }
 
+    public enum MapModeType {
+        None,
+        Defense,
+        BuildingDestroy,
+        Capture,
+        Breakthrough,
+        BossBattle,
+    }
+
+    public enum DropObjectType {
+        None,
+        HealOrb,
+        StaminaOrb,
+        MagicEssence,
+        ArcaneScroll,
+    }
+
     public enum MaterialType {
         None,
         Enchant,
@@ -471,6 +488,13 @@ namespace EDT {
         TableGacha_Equipment,
         TableMapInfo,
         TableMonsterSpawnInfo,
+        TableDungeon,
+        TableStageGroup,
+        TableStage,
+        TableMapData,
+        TableMonsterSpawn,
+        TableDropObject,
+        TableStageReward,
         TableMaterial,
         TableMonster,
         TableMonsterPhase,

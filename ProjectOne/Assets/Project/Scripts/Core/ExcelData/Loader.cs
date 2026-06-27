@@ -172,6 +172,83 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - Dungeon
+            {
+                CurrentFile = Table_Dungeon.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Dungeon._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - StageGroup
+            {
+                CurrentFile = Table_StageGroup.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_StageGroup._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Stage
+            {
+                CurrentFile = Table_Stage.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Stage._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - MapData
+            {
+                CurrentFile = Table_MapData.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_MapData._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - MonsterSpawn
+            {
+                CurrentFile = Table_MonsterSpawn.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_MonsterSpawn._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - DropObject
+            {
+                CurrentFile = Table_DropObject.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_DropObject._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - StageReward
+            {
+                CurrentFile = Table_StageReward.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_StageReward._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Material
             {
                 CurrentFile = Table_Material.Filename;
