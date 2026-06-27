@@ -10,6 +10,8 @@ namespace EDT {
             public int ID { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
+            public string RecommandedLvText { get; set; } = string.Empty;
             public int TotalStageCount { get; set; } = 0;
             public int StageGroupID_1 { get; set; } = 0;
             public int StageGroupID_2 { get; set; } = 0;
@@ -42,6 +44,8 @@ namespace EDT {
                 row.ID = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
+                row.Icon = reader.ReadString();
+                row.RecommandedLvText = reader.ReadString();
                 row.TotalStageCount = reader.ReadInt32();
                 row.StageGroupID_1 = reader.ReadInt32();
                 row.StageGroupID_2 = reader.ReadInt32();

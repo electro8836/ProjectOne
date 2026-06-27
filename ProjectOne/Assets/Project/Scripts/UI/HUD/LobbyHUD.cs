@@ -17,6 +17,7 @@ namespace ProjectOne.UI
 	public class LobbyHUD : UIScreen
 	{
 		[SerializeField] private UIButton _testButton;
+		[SerializeField] private UIButton _dungeonButton;	// 던전 선택 UI 열기
 
 		[Header("하단 탭")]
 		[SerializeField] private TabGroup _tabGroup;
@@ -34,13 +35,20 @@ namespace ProjectOne.UI
 		// 탭이 열 화면의 Addressable 주소 (탭→화면 매핑은 코드에서 관리)
 		private const string CHARACTER_ADDRESS = "UI_Character";
 		private const string EQUIPMENT_ADDRESS = "UI_Equipment";
+		private const string DUNGEON_ADDRESS = "UI_DungeonSelect";
 
 		// 현재 로드한 캐릭터 아이콘 주소 (Acquire/Release 짝 맞춤용)
 		private string _iconAddress;
 
 		private void Awake()
 		{
-			_testButton.OnClickEvent += onBattleEnterClicked;
+			// _testButton: 임시 직접 전투 진입(현재 미연결). 던전 선택 UI로 대체되어 버튼은 _dungeonButton 으로 옮김.
+			if (_testButton != null)
+			{
+				_testButton.OnClickEvent += onBattleEnterClicked;
+			}
+
+			_dungeonButton.OnClickEvent += onDungeonClicked;
 
 			// 배타 선택은 TabGroup이 담당하고, 여기선 선택된 탭의 화면 처리만 한다.
 			_tabGroup.OnTabChanged += onTabChanged;
@@ -57,7 +65,12 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
-			_testButton.OnClickEvent -= onBattleEnterClicked;
+			if (_testButton != null)
+			{
+				_testButton.OnClickEvent -= onBattleEnterClicked;
+			}
+
+			_dungeonButton.OnClickEvent -= onDungeonClicked;
 
 			_tabGroup.OnTabChanged -= onTabChanged;
 			EventManager.Instance.Unsubscribe<OverlayClosedEvent>(onOverlayClosed);
@@ -201,6 +214,11 @@ namespace ProjectOne.UI
 				ResourceManager.Instance.Release(_iconAddress);
 				_iconAddress = null;
 			}
+		}
+
+		private void onDungeonClicked()
+		{
+			UIManager.Instance.OpenOverlayAsync<DungeonSelectUI>(DUNGEON_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 
 		private void onBattleEnterClicked()
