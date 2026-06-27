@@ -4,8 +4,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using EDT;
-using ProjectOne.Flow;
-using ProjectOne.Battle;
 using ProjectOne.Event;
 using ProjectOne.Resources;
 using ProjectOne.UserData;
@@ -16,7 +14,6 @@ namespace ProjectOne.UI
 	// 캐릭터 화면 중앙 배치 + 내비게이션 버튼들 (캐릭터/인벤토리/상점/던전 입장 등)
 	public class LobbyHUD : UIScreen
 	{
-		[SerializeField] private UIButton _testButton;
 		[SerializeField] private UIButton _dungeonButton;	// 던전 선택 UI 열기
 
 		[Header("하단 탭")]
@@ -29,9 +26,6 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _expText;				// Exp/Text (TMP)
 		[SerializeField] private TMP_Text _levelText;			// Text_Level
 
-		[Header("임시 전투 진입 파라미터 (던전 선택 UI 구현 전까지)")]
-		[SerializeField] private int _testMapId = 1;
-
 		// 탭이 열 화면의 Addressable 주소 (탭→화면 매핑은 코드에서 관리)
 		private const string CHARACTER_ADDRESS = "UI_Character";
 		private const string EQUIPMENT_ADDRESS = "UI_Equipment";
@@ -42,12 +36,6 @@ namespace ProjectOne.UI
 
 		private void Awake()
 		{
-			// _testButton: 임시 직접 전투 진입(현재 미연결). 던전 선택 UI로 대체되어 버튼은 _dungeonButton 으로 옮김.
-			if (_testButton != null)
-			{
-				_testButton.OnClickEvent += onBattleEnterClicked;
-			}
-
 			_dungeonButton.OnClickEvent += onDungeonClicked;
 
 			// 배타 선택은 TabGroup이 담당하고, 여기선 선택된 탭의 화면 처리만 한다.
@@ -65,11 +53,6 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
-			if (_testButton != null)
-			{
-				_testButton.OnClickEvent -= onBattleEnterClicked;
-			}
-
 			_dungeonButton.OnClickEvent -= onDungeonClicked;
 
 			_tabGroup.OnTabChanged -= onTabChanged;
@@ -219,15 +202,6 @@ namespace ProjectOne.UI
 		private void onDungeonClicked()
 		{
 			UIManager.Instance.OpenOverlayAsync<DungeonSelectUI>(DUNGEON_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
-		}
-
-		private void onBattleEnterClicked()
-		{
-			BattleContext ctx = new BattleContext();
-			ctx.MapId = _testMapId;
-			ctx.CharacterId = Account.Instance.Loadout.Selected;
-
-			GameFlow.Instance.ChangeStateAsync(new BattleState(ctx)).Forget();
 		}
 	}
 }

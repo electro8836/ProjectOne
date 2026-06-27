@@ -1,4 +1,7 @@
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
+using ProjectOne.Dungeon;
 
 namespace ProjectOne.UI
 {
@@ -16,26 +19,83 @@ namespace ProjectOne.UI
 
 		[Header("공통")]
 		[SerializeField] private UIButton _exitButton;
+		[SerializeField] private UIButton _openSelectButton;
+
+		// OpenSelectButton 클릭 대기용 — WaitOpenSelectAsync 한 번에 하나씩만 사용
+		private UniTaskCompletionSource _openSelectSource;
 
 		private void Awake()
 		{
+			UIManager.Instance.RegisterScreen(this);
+
 			if (_exitButton != null)
 			{
 				_exitButton.OnClickEvent += onExitClicked;
+			}
+
+			if (_openSelectButton != null)
+			{
+				_openSelectButton.OnClickEvent += onOpenSelectClicked;
+				_openSelectButton.gameObject.SetActive(false);
 			}
 		}
 
 		private void OnDestroy()
 		{
+			if (UIManager.HasInstance)
+			{
+				UIManager.Instance.UnregisterScreen(this);
+			}
+
 			if (_exitButton != null)
 			{
 				_exitButton.OnClickEvent -= onExitClicked;
 			}
+
+			if (_openSelectButton != null)
+			{
+				_openSelectButton.OnClickEvent -= onOpenSelectClicked;
+			}
+
+			_openSelectSource?.TrySetCanceled();
+		}
+
+		// OpenSelectButton 을 노출하고 클릭될 때까지 대기한다. 클릭(또는 ct 취소) 시 버튼을 다시 숨긴다.
+		// 선택 UI 가 열려있는 동안에는 버튼이 숨겨져 있어야 하므로, 호출자가 클릭 직후 선택 UI 를 연다.
+		public async UniTask WaitOpenSelectAsync(CancellationToken ct)
+		{
+			if (_openSelectButton == null)
+			{
+				return;
+			}
+
+			_openSelectButton.gameObject.SetActive(true);
+			_openSelectSource = new UniTaskCompletionSource();
+			using (ct.Register(onOpenSelectCanceled))
+			{
+				await _openSelectSource.Task;
+			}
+
+			_openSelectButton.gameObject.SetActive(false);
+		}
+
+		private void onOpenSelectClicked()
+		{
+			_openSelectSource?.TrySetResult();
+		}
+
+		private void onOpenSelectCanceled()
+		{
+			_openSelectSource?.TrySetCanceled();
 		}
 
 		private void onExitClicked()
 		{
-			// TODO: 전투 퇴장 시 전이할 상태 결정 (로비 복귀 등)
+			DungeonDirector director = Object.FindAnyObjectByType<DungeonDirector>();
+			if (director != null)
+			{
+				director.RequestExit();
+			}
 		}
 	}
 }

@@ -57,6 +57,38 @@ namespace ProjectOne.Map
 			_current = null;
 		}
 
+		// 맵 프리팹 하위에서 이름으로 스폰포인트 Transform 을 찾는다(재귀 탐색). 없으면 null.
+		// MonsterSpawn.SpawnPoint(게임오브젝트 이름)로 소환 위치를 해석할 때 사용한다.
+		public Transform GetSpawnPoint(string spawnPointName)
+		{
+			if (_mapInstance == null || string.IsNullOrEmpty(spawnPointName))
+			{
+				return null;
+			}
+
+			return findChildRecursive(_mapInstance.transform, spawnPointName);
+		}
+
+		private static Transform findChildRecursive(Transform parent, string name)
+		{
+			for (int i = 0; i < parent.childCount; i++)
+			{
+				Transform child = parent.GetChild(i);
+				if (child.name == name)
+				{
+					return child;
+				}
+
+				Transform found = findChildRecursive(child, name);
+				if (found != null)
+				{
+					return found;
+				}
+			}
+
+			return null;
+		}
+
 		// 주어진 월드 위치를 플로우필드 타겟으로 재베이크 (호출자가 베이크 시점을 결정)
 		public void BakeFlowField(Vector2 targetWorldPos)
 		{

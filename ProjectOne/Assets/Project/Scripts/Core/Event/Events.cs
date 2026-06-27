@@ -167,22 +167,9 @@ namespace ProjectOne.Event
 				}
 		}
 
-		// 메인HUD 스킵 버튼 → BattleDirector 가 구독해 웨이브 대기를 즉시 종료한다(웨이브 모드일 때만 유효).
+		// 메인HUD 스킵 버튼 → DefenseStageMode 가 구독해 웨이브 대기를 즉시 종료한다(Defense 모드일 때만 유효).
 		public readonly struct WaveSkipRequestedEvent
 		{
-		}
-
-		// 전투 종료 알림 (BattleDirector가 승패 확정 시 발행). 결과창/보상 수령 UI 등에서 구독.
-		public readonly struct BattleEndedEvent
-		{
-				public readonly bool IsVictory;
-				public readonly int[] ClearRewardIds;   // Table_MapInfo.ClearRewardIDs
-
-				public BattleEndedEvent(bool isVictory, int[] clearRewardIds)
-				{
-						this.IsVictory = isVictory;
-						this.ClearRewardIds = clearRewardIds;
-				}
 		}
 
 		// 인벤토리 변경 알림 (획득/합성/강화수치 변경). 인벤토리 UI 등에서 구독.

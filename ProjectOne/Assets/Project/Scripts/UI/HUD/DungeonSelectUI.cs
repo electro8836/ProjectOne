@@ -5,7 +5,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using EDT;
+using ProjectOne.Dungeon;
+using ProjectOne.Flow;
 using ProjectOne.Resources;
+using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
@@ -90,7 +93,16 @@ namespace ProjectOne.UI
 
 		private void onBattleClicked()
 		{
-			// 전투 진입 — 추후 구현
+			if (_dungeons.Count == 0)
+			{
+				return;
+			}
+
+			DungeonContext ctx = new DungeonContext();
+			ctx.DungeonId = _dungeons[_index].ID;
+			ctx.CharacterId = Account.Instance.Loadout.Selected;
+
+			GameFlow.Instance.ChangeStateAsync(new DungeonState(ctx)).Forget();
 		}
 
 		// 전체 던전을 ID 오름차순으로 모은다.

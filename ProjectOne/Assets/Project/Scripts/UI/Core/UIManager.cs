@@ -29,6 +29,9 @@ namespace ProjectOne.UI
 		// 오버레이 스택 (Back키 처리, 직렬 닫기용)
 		private readonly Stack<UIScreen> _overlayStack = new Stack<UIScreen>();
 
+		// 씬에 직접 배치된 HUD 등 화면 레지스트리 — 깨어날 때 등록/사라질 때 해제하여 타입으로 O(1) 조회
+		private readonly Dictionary<System.Type, UIScreen> _screens = new Dictionary<System.Type, UIScreen>();
+
 		// 현재 진행 중인 팝업의 CancellationTokenSource
 		private CancellationTokenSource _popupCts;
 
@@ -49,6 +52,44 @@ namespace ProjectOne.UI
 		{
 			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
 			base.OnDestroy();
+		}
+
+		// ── 화면(HUD) 레지스트리 ────────────────────────────────────────
+		// 씬에 직접 배치된 HUD가 Awake에서 자신을 등록하고 OnDestroy에서 해제한다.
+		// 게임플레이 측(예: DungeonDirector)이 FindAnyObjectByType 없이 화면을 조회하는 용도.
+
+		public void RegisterScreen(UIScreen screen)
+		{
+			if (screen == null)
+			{
+				return;
+			}
+
+			_screens[screen.GetType()] = screen;
+		}
+
+		public void UnregisterScreen(UIScreen screen)
+		{
+			if (screen == null)
+			{
+				return;
+			}
+
+			System.Type type = screen.GetType();
+			if (_screens.TryGetValue(type, out UIScreen current) && current == screen)
+			{
+				_screens.Remove(type);
+			}
+		}
+
+		public T GetScreen<T>() where T : UIScreen
+		{
+			if (_screens.TryGetValue(typeof(T), out UIScreen screen))
+			{
+				return screen as T;
+			}
+
+			return null;
 		}
 
 		// ── 네트워크 딤(블로커) ─────────────────────────────────────────
@@ -192,7 +233,7 @@ namespace ProjectOne.UI
 			}
 
 			GameObject go = Instantiate(prefab, _popupCanvas.transform);
-			ConfirmPopup popup = go.GetComponent<ConfirmPopup>();
+			StageFinishPopup popup = go.GetComponent<StageFinishPopup>();
 			if (popup == null)
 			{
 				Destroy(go);

@@ -97,6 +97,7 @@ namespace ProjectOne.Skill
 			attributePhrases(row, parts);
 			buffPhrases(row, parts);
 			addIfNotEmpty(parts, cooltimePhrase(row));
+			addIfNotEmpty(parts, durationPhrase(row));
 			addIfNotEmpty(parts, scanRangeDeltaPhrase(row, baseRow));
 			addIfNotEmpty(parts, targetCountDeltaPhrase(row, baseRow));
 			addIfNotEmpty(parts, projectileCountDeltaPhrase(row, baseRow));
@@ -190,6 +191,23 @@ namespace ProjectOne.Skill
 			return string.Empty;
 		}
 
+		// 버프 지속시간 — 첫 ActivateBuff 효과의 Duration. 영구 지속(Duration<=0)은 표기 생략.
+		private static string durationPhrase(Table_SkillInfo.Row row)
+		{
+			Table_SkillEffect.Row e = firstEffectOfType(row, SkillEffectTypes.ActivateBuff);
+			if (e == null || SkillEffectParams.TryParseActivateBuff(e, out ActivateBuffParams p) == false)
+			{
+				return string.Empty;
+			}
+
+			if (p.Duration > 0f)
+			{
+				return "지속시간 " + formatNum(p.Duration) + "초";
+			}
+
+			return string.Empty;
+		}
+
 		// 발동확률 — OnHit 계열(OnHitCaster/OnHitTarget) 일 때. 둘 다 CastingParam 을 확률 %로 사용.
 		private static string procChancePhrase(Table_SkillInfo.Row row)
 		{
@@ -220,7 +238,10 @@ namespace ProjectOne.Skill
 				return string.Empty;
 			}
 
-			return "공격 범위 +" + formatNum(delta) + "%";
+			// 공격(Damage) 효과가 없는 순수 버프 스킬은 "공격" 을 빼고 "범위" 로만 표기.
+			bool isAttack = firstEffectOfType(row, SkillEffectTypes.Damage) != null;
+			string prefix = isAttack ? "공격 범위 +" : "범위 +";
+			return prefix + formatNum(delta) + "%";
 		}
 
 		// 타겟 수 증가분 — Target 스캔의 ScanParam2(대상 수) L1 대비 증가분.

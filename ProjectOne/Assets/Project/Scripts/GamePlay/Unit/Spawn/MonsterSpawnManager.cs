@@ -40,6 +40,9 @@ namespace ProjectOne.Unit
 
 		private readonly Dictionary<int, ActiveEntry> _active = new Dictionary<int, ActiveEntry>();
 
+		// ClearAlive 시 Dictionary 순회용 임시 버퍼 (재사용)
+		private readonly List<ActiveEntry> _clearBuffer = new List<ActiveEntry>();
+
 		// 1회성(웨이브/레이드) 스폰으로 현재 살아있는 몬스터 수 — SpawnOneShot 시 즉시 증가, 사망 시 감소
 		private int _oneShotAlive;
 
@@ -81,6 +84,24 @@ namespace ProjectOne.Unit
 		public void Clear()
 		{
 			_spawnList.Clear();
+			_active.Clear();
+			_oneShotAlive = 0;
+		}
+
+		// 스테이지 전환/클리어 시 — 분할 소환을 멈추고, 살아있는 몬스터를 사망이 아닌 풀 반환으로 즉시 제거한다.
+		// (사망 처리하면 사망 연출/킬카운트가 발생하므로, 잔존 정리에는 직접 풀 반환을 쓴다.)
+		public void ClearAlive()
+		{
+			_spawnList.Clear();
+
+			_clearBuffer.Clear();
+			_clearBuffer.AddRange(_active.Values);
+			for (int i = 0; i < _clearBuffer.Count; i++)
+			{
+				UnitFactory.Instance.ReleaseMonster(_clearBuffer[i].monster);
+			}
+
+			_clearBuffer.Clear();
 			_active.Clear();
 			_oneShotAlive = 0;
 		}

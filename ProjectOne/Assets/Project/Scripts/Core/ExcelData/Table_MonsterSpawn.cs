@@ -10,9 +10,10 @@ namespace EDT {
             public int ID { get; set; } = 0;
             public int GroupID { get; set; } = 0;
             public int MonsterID { get; set; } = 0;
-            public int SpawnCount { get; set; } = 0;
             public string SpawnPoint { get; set; } = string.Empty;
-            public float SpawnDelay { get; set; } = 0f;
+            public int SpawnAllCount { get; set; } = 0;
+            public int SpawnStepCount { get; set; } = 0;
+            public float SpawnStepDelay { get; set; } = 0f;
         }
 
         public const string Filename = "edt_monsterspawn.bytes";
@@ -38,9 +39,10 @@ namespace EDT {
                 row.ID = reader.ReadInt32();
                 row.GroupID = reader.ReadInt32();
                 row.MonsterID = reader.ReadInt32();
-                row.SpawnCount = reader.ReadInt32();
                 row.SpawnPoint = reader.ReadString();
-                row.SpawnDelay = reader.ReadSingle();
+                row.SpawnAllCount = reader.ReadInt32();
+                row.SpawnStepCount = reader.ReadInt32();
+                row.SpawnStepDelay = reader.ReadSingle();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

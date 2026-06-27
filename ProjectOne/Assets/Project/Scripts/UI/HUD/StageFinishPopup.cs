@@ -5,8 +5,8 @@ using UnityEngine;
 
 namespace ProjectOne.UI
 {
-	// 확인/취소 팝업. UIManager.ShowConfirmPopupAsync가 WaitResultAsync로 결과를 기다린다.
-	public class ConfirmPopup : UIScreen
+	// 스테이지 종료/도전 확인 팝업. UIManager.ShowConfirmPopupAsync가 WaitResultAsync로 결과를 기다린다.
+	public class StageFinishPopup : UIScreen
 	{
 		[SerializeField] private TextMeshProUGUI _messageText;
 		[SerializeField] private UIButton _confirmButton;
