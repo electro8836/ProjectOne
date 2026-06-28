@@ -15,10 +15,9 @@ namespace ProjectOne.UI
 		[SerializeField] private WaveInfoTitle _waveInfoTitle;
 		[SerializeField] private BossUI _bossUI;
 		[SerializeField] private MonsterCount _monsterCount;
-		[SerializeField] private JoystickController _joystick;
+		[SerializeField] private EssenceCount _essenceCount;
 
 		[Header("공통")]
-		[SerializeField] private UIButton _exitButton;
 		[SerializeField] private UIButton _openSelectButton;
 
 		// OpenSelectButton 클릭 대기용 — WaitOpenSelectAsync 한 번에 하나씩만 사용
@@ -27,11 +26,6 @@ namespace ProjectOne.UI
 		private void Awake()
 		{
 			UIManager.Instance.RegisterScreen(this);
-
-			if (_exitButton != null)
-			{
-				_exitButton.OnClickEvent += onExitClicked;
-			}
 
 			if (_openSelectButton != null)
 			{
@@ -45,11 +39,6 @@ namespace ProjectOne.UI
 			if (UIManager.HasInstance)
 			{
 				UIManager.Instance.UnregisterScreen(this);
-			}
-
-			if (_exitButton != null)
-			{
-				_exitButton.OnClickEvent -= onExitClicked;
 			}
 
 			if (_openSelectButton != null)

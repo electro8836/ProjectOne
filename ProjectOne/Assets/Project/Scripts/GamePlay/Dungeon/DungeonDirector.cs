@@ -7,6 +7,9 @@ using ProjectOne.Flow;
 using ProjectOne.Map;
 using ProjectOne.UI;
 using ProjectOne.Unit;
+using ProjectOne.Projectile;
+using ProjectOne.Audio;
+using ProjectOne.Utils;
 
 namespace ProjectOne.Dungeon
 {
@@ -67,6 +70,9 @@ namespace ProjectOne.Dungeon
 			_dungeon = dungeon;
 			_ctx = ctx;
 			_cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+
+			// 던전 런 상태 초기화 (임시재화 0) — 로그라이트 런 시작
+			DungeonRunState.Instance.Reset();
 
 			// 히어로 1회 스폰 (던전 전체 동안 유지)
 			await spawnHeroAsync(ctx, _cts.Token);
@@ -222,6 +228,13 @@ namespace ProjectOne.Dungeon
 
 			_currentStage = stage;
 			_currentMode = mode;
+
+			// 스테이지 드랍 그룹 준비 (타입별 풀 사전 생성)
+			if (stage.DropObjectGroupID > 0)
+			{
+				await DropManager.Instance.PrepareStageAsync(stage.DropObjectGroupID, ct);
+			}
+
 			Debug.Log($"[DungeonDirector] 스테이지 진입: {stage.Name} (모드 {stage.ModeType})");
 			return true;
 		}
@@ -370,7 +383,8 @@ namespace ProjectOne.Dungeon
 			await GameFlow.Instance.ChangeStateAsync(new LobbyState());
 		}
 
-		// 던전 종료 시 유닛/스폰/풀/맵 일괄 정리 (매니저는 전투씬과 함께 파괴됨)
+		// 던전 종료 시 유닛/스폰/풀/맵 일괄 정리.
+		// 전투씬 수명 매니저는 씬과 함께 파괴되지만, 영속(DontDestroyOnLoad) 매니저는 명시적으로 비운다.
 		private void cleanupAll()
 		{
 			if (UnitContainer.HasInstance == true)
@@ -386,10 +400,21 @@ namespace ProjectOne.Dungeon
 			// 몬스터 풀은 UnitContainer(전투씬 수명) 자식이라 씬과 함께 파괴됨 → 영속 허브 캐시를 무효화
 			MonsterPoolHub.Instance.Clear();
 
+			// 드랍 풀 정리 + 프리팹 Addressable 핸들 해제
+			if (DropManager.HasInstance == true)
+			{
+				DropManager.Instance.Clear();
+			}
+
 			if (MapManager.HasInstance == true)
 			{
 				MapManager.Instance.UnloadMap();
 			}
+
+			// 영속(DontDestroyOnLoad) 매니저 — 씬과 함께 파괴되지 않아 풀/캐시를 명시적으로 비운다
+			ProjectileManager.Instance.Clear();
+			VFXManager.Instance.Clear();
+			AudioManager.Instance.Clear();
 		}
 
 		// 기준 히어로의 셀 변경 시에만 플로우필드 재베이크

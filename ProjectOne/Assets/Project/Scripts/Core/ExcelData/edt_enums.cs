@@ -54,12 +54,6 @@ namespace EDT {
         Skill,
     }
 
-    public enum BattleType {
-        None,
-        Wave,
-        Raid,
-    }
-
     public enum MapModeType {
         None,
         Defense,
@@ -486,8 +480,6 @@ namespace EDT {
         TableCraft,
         TableGachaInfo,
         TableGacha_Equipment,
-        TableMapInfo,
-        TableMonsterSpawnInfo,
         TableDungeon,
         TableStageGroup,
         TableStage,

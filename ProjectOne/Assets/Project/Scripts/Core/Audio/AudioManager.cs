@@ -50,6 +50,9 @@ namespace ProjectOne.Audio
 		// 라벨로 일괄 프리로드한 SFX 핸들 — OnDestroy 에서 ReleasePreloaded 로 반환
 		private IList<AudioClip> _preloadedSfx;
 
+		// preload 된 공용 SFX 이름 — Clear 시 전투 중 lazy 로드분과 구분해 보존
+		private readonly HashSet<string> _preloadedNames = new HashSet<string>();
+
 		// 매니저 파괴 진행 여부 — 비동기 콜백이 파괴 후 도착하는 경우 가드
 		private bool _isQuitting;
 
@@ -221,6 +224,7 @@ namespace ProjectOne.Audio
 				if (clip != null)
 				{
 					_clipCache[clip.name] = clip;
+					_preloadedNames.Add(clip.name);
 				}
 			}
 		}
@@ -441,6 +445,34 @@ namespace ProjectOne.Audio
 		}
 
 		// ── 정리 ──────────────────────────────────────────────────────────
+
+		// 로비 전환 — 전투 SFX 정리. BGM 과 preload 공용 SFX 는 유지.
+		public void Clear()
+		{
+			if (_sfxPool != null)
+			{
+				_sfxPool.ResetAll();
+			}
+
+			// 전투 중 lazy 로드된 SFX 클립만 해제 (preload 분 보존)
+			if (ResourceManager.HasInstance)
+			{
+				List<string> keys = new List<string>(_clipCache.Keys);
+				for (int i = 0; i < keys.Count; i++)
+				{
+					string key = keys[i];
+					if (_preloadedNames.Contains(key) == true)
+					{
+						continue;
+					}
+
+					ResourceManager.Instance.Release(key);
+					_clipCache.Remove(key);
+				}
+			}
+
+			_sfxThrottle.Clear();
+		}
 
 		protected override void OnDestroy()
 		{

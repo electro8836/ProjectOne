@@ -42,6 +42,22 @@ namespace ProjectOne.Audio
 			Release(item);
 		}
 
+		// 재생 중 SFX 전부 정지·회수 후 풀을 초기 개수로 리셋 (로비 전환 시)
+		public void ResetAll()
+		{
+			for (int i = _activeItems.Count - 1; i >= 0; i--)
+			{
+				AudioSourceItem item = _activeItems[i];
+				if (item != null)
+				{
+					item.ReturnToPool();
+				}
+			}
+
+			_activeItems.Clear();
+			ResetPool();
+		}
+
 		private void stealOldestVoice()
 		{
 			// 루프성(RootSFX)은 강제 종료 대상에서 제외 — oneshot 중 가장 오래된 것만 뺏는다.

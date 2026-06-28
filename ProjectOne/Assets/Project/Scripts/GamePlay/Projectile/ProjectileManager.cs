@@ -121,9 +121,19 @@ namespace ProjectOne.Projectile
 			return pool;
 		}
 
-		protected override void OnDestroy()
+		// 로비 전환 — 풀 GameObject(자식 투사체 포함) 파괴 + 프리팹 Addressable 핸들 해제.
+		public void Clear()
 		{
-			_isQuitting = true;
+			// 풀 GameObject 파괴 — 자식 투사체(활성/비활성) 함께 파괴
+			Dictionary<string, ProjectilePool>.Enumerator e = _pools.GetEnumerator();
+			while (e.MoveNext())
+			{
+				ProjectilePool pool = e.Current.Value;
+				if (pool != null)
+				{
+					Destroy(pool.gameObject);
+				}
+			}
 
 			// 캐시한 프리팹 주소마다 refCount 반환 (앱 종료 시 ResourceManager 가 이미 파괴됐을 수 있어 null 가드)
 			if (ResourceManager.HasInstance)
@@ -135,9 +145,15 @@ namespace ProjectOne.Projectile
 				}
 			}
 
-			_prefabs.Clear();
 			_pools.Clear();
+			_prefabs.Clear();
 			_failedAddresses.Clear();
+		}
+
+		protected override void OnDestroy()
+		{
+			_isQuitting = true;
+			Clear();
 			base.OnDestroy();
 		}
 	}

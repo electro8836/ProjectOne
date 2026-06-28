@@ -381,7 +381,7 @@ namespace ProjectOne.Unit
 					_mover.SetMoveEnabled(enabled: false);
 				}
 
-				EventManager.Instance.Publish(new UnitDiedEvent(_id, _tableId, GetUnitType()));
+				EventManager.Instance.Publish(new UnitDiedEvent(_id, _tableId, GetUnitType(), HitCenter));
 			}
 		}
 

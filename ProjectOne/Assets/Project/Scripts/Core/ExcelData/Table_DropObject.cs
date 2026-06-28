@@ -12,6 +12,7 @@ namespace EDT {
             public string Desc { get; set; } = string.Empty;
             public int GroupID { get; set; } = 0;
             public DropObjectType DropObjectType { get; set; } = DropObjectType.None;
+            public string Path { get; set; } = string.Empty;
             public MonsterTypes MonsterType { get; set; } = MonsterTypes.None;
             public float DropChance { get; set; } = 0f;
             public int MinCount { get; set; } = 0;
@@ -43,6 +44,7 @@ namespace EDT {
                 row.Desc = reader.ReadString();
                 row.GroupID = reader.ReadInt32();
                 row.DropObjectType = (DropObjectType)reader.ReadInt32();
+                row.Path = reader.ReadString();
                 row.MonsterType = (MonsterTypes)reader.ReadInt32();
                 row.DropChance = reader.ReadSingle();
                 row.MinCount = reader.ReadInt32();

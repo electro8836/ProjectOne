@@ -47,6 +47,14 @@ namespace ProjectOne.Utils
 			_pool.Release(item);
 		}
 
+		// 비활성 인스턴스를 전부 파괴하고 capacity 만큼 다시 예열 — 런타임 풀 크기 초기화
+		// 활성 아이템은 _pool.Clear() 대상이 아니므로, 호출자가 활성분을 먼저 회수해야 한다
+		public void ResetPool()
+		{
+			_pool.Clear();
+			prewarm();
+		}
+
 		// ── 내부 메서드 ───────────────────────────────────────────────
 
 		// capacity만큼 미리 생성해 비활성 상태로 풀에 채움

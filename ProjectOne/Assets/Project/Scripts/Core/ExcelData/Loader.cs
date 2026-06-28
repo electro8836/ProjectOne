@@ -150,28 +150,6 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - MapInfo
-            {
-                CurrentFile = Table_MapInfo.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_MapInfo._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - MonsterSpawnInfo
-            {
-                CurrentFile = Table_MonsterSpawnInfo.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_MonsterSpawnInfo._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
             #region Table - Dungeon
             {
                 CurrentFile = Table_Dungeon.Filename;

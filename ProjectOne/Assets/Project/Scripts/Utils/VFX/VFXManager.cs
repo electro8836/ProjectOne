@@ -23,6 +23,9 @@ namespace ProjectOne.Utils
 		// 로드에 실패한(잘못된 Addressable 키) 주소 — 재시도/경고 폭주 방지용 블랙리스트
 		private readonly HashSet<string> _failedAddresses = new HashSet<string>();
 
+		// ResourceManager 로 로드한(=OnDestroy 에서 Release 대상) 주소 키. 프리팹 직접 등록 키는 제외
+		private readonly HashSet<string> _addressLoadedKeys = new HashSet<string>();
+
 		// 활성 one-shot — 매 프레임 중앙 틱(Update)에서 종료 감지 후 풀로 회수
 		private readonly List<VFXItem> _activeOneShots = new List<VFXItem>(64);
 
@@ -72,6 +75,34 @@ namespace ProjectOne.Utils
 			}
 
 			playOneShotAsync(address, null, Vector3.zero, worldPosition, true).Forget();
+		}
+
+		// one-shot : 프리팹 직접 참조로 월드 좌표 고정 소환 (인스펙터 링크용). 주소 등록 불필요 — 항상 동기 스폰.
+		public void PlayOneShot(GameObject prefab, Vector3 worldPosition)
+		{
+			if (prefab == null)
+			{
+				return;
+			}
+
+			string key = registerDirectPrefab(prefab);
+			VFXItem item = tryGetItemSync(key);
+			if (item != null)
+			{
+				activateOneShot(item, null, Vector3.zero, worldPosition, true);
+			}
+		}
+
+		// 프리팹 직접 참조용 풀 키 — InstanceID 기반(같은 프리팹 에셋이면 동일 키 → 풀 공유). ResourceManager 비대상.
+		private string registerDirectPrefab(GameObject prefab)
+		{
+			string key = "prefab:" + prefab.GetInstanceID();
+			if (_prefabs.ContainsKey(key) == false)
+			{
+				_prefabs.Add(key, prefab);
+			}
+
+			return key;
 		}
 
 		// 루프성 : parent 에 붙여 유지, 핸들 반환 → 호출자가 Release (RootVFX)
@@ -321,6 +352,7 @@ namespace ProjectOne.Utils
 			if (_prefabs.ContainsKey(address) == false)
 			{
 				_prefabs.Add(address, prefab);
+				_addressLoadedKeys.Add(address);
 			}
 			else
 			{
@@ -346,14 +378,43 @@ namespace ProjectOne.Utils
 
 		// ── 정리 ──────────────────────────────────────────────────────
 
-		protected override void OnDestroy()
+		// 로비 전환 — 활성/풀 VFXItem 인스턴스 파괴 + 프리팹 Addressable 핸들 해제.
+		public void Clear()
 		{
-			_isQuitting = true;
+			// 활성 one-shot 인스턴스 파괴
+			for (int i = 0; i < _activeOneShots.Count; i++)
+			{
+				VFXItem item = _activeOneShots[i];
+				if (item != null)
+				{
+					Destroy(item.gameObject);
+				}
+			}
+
+			_activeOneShots.Clear();
+
+			// 풀에 보관된 비활성 인스턴스 파괴
+			Dictionary<string, Stack<VFXItem>>.Enumerator e = _pools.GetEnumerator();
+			while (e.MoveNext())
+			{
+				Stack<VFXItem> stack = e.Current.Value;
+				while (stack.Count > 0)
+				{
+					VFXItem item = stack.Pop();
+					if (item != null)
+					{
+						Destroy(item.gameObject);
+					}
+				}
+			}
+
+			_pools.Clear();
 
 			// 캐시한 프리팹 주소마다 refCount 반환 (앱 종료 시엔 ResourceManager 가 이미 파괴됐을 수 있어 null 가드)
+			// 프리팹 직접 등록 키는 ResourceManager 대상이 아니므로 주소 로드분만 해제
 			if (ResourceManager.HasInstance)
 			{
-				List<string> keys = new List<string>(_prefabs.Keys);
+				List<string> keys = new List<string>(_addressLoadedKeys);
 				for (int i = 0; i < keys.Count; i++)
 				{
 					ResourceManager.Instance.Release(keys[i]);
@@ -361,9 +422,14 @@ namespace ProjectOne.Utils
 			}
 
 			_prefabs.Clear();
-			_pools.Clear();
-			_activeOneShots.Clear();
+			_addressLoadedKeys.Clear();
 			_failedAddresses.Clear();
+		}
+
+		protected override void OnDestroy()
+		{
+			_isQuitting = true;
+			Clear();
 			base.OnDestroy();
 		}
 	}

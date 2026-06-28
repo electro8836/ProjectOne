@@ -36,17 +36,31 @@ namespace ProjectOne.Event
 		// 유닛 사망 글로벌 알림 (퀘스트/킬카운트/사망 알림 UI 등에서 구독).
 		// InstanceID: UnitBase.GetID() — 인스턴스 유일 식별
 		// TableID:    UnitBase.GetTableID() — CharacterID/MonsterID
+		// Position:   사망 시점 HitCenter (드랍 생성 위치 등에서 사용)
 		public readonly struct UnitDiedEvent
 		{
 				public readonly int InstanceID;
 				public readonly int TableID;
 				public readonly UnitType UnitType;
+				public readonly Vector2 Position;
 
-				public UnitDiedEvent(int instanceID, int tableID, UnitType unitType)
+				public UnitDiedEvent(int instanceID, int tableID, UnitType unitType, Vector2 position)
 				{
 						this.InstanceID = instanceID;
 						this.TableID = tableID;
 						this.UnitType = unitType;
+						this.Position = position;
+				}
+		}
+
+		// 던전 임시재화(MagicEssence) 수량 변경 알림. BattleHUD EssenceCount 위젯이 구독해 표시를 갱신한다.
+		public readonly struct DungeonEssenceChangedEvent
+		{
+				public readonly int Amount;
+
+				public DungeonEssenceChangedEvent(int amount)
+				{
+						this.Amount = amount;
 				}
 		}
 
