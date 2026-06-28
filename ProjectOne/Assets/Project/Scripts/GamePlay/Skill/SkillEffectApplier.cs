@@ -318,16 +318,15 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			Vector2 delta = (Vector2)target.HitCenter - (Vector2)source.HitCenter;
-			if (delta.sqrMagnitude <= Mathf.Epsilon)
+			if (source.Mover == null)
 			{
 				return;
 			}
 
-			dir = delta.normalized;
+			dir = source.Mover.Facing; // 공격자 정면 방향 (이미 정규화)
 			if (ratio < 0f)
 			{
-				dir = -dir;
+				dir = -dir; // 음수 비율 = 끌어당김(정면 반대)
 			}
 
 			float resist = target.Stats != null ? target.Stats.GetStat(StatInfo.KnockBackResist) : 0f;
