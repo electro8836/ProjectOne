@@ -4,17 +4,17 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_SkillCardUpgrade
+    public static class Table_SkillCardEnchant
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public SkillCardGrade SourceGrade { get; set; } = SkillCardGrade.None;
-            public SkillCardGrade TargetGrade { get; set; } = SkillCardGrade.None;
+            public CardSkillGrade SourceGrade { get; set; } = CardSkillGrade.None;
+            public int TargetLevel { get; set; } = 0;
             public int RequiredCount { get; set; } = 0;
         }
 
-        public const string Filename = "edt_skillcardupgrade.bytes";
-        public const TableType Type = TableType.TableSkillCardUpgrade;
+        public const string Filename = "edt_skillcardenchant.bytes";
+        public const TableType Type = TableType.TableSkillCardEnchant;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -34,8 +34,8 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.SourceGrade = (SkillCardGrade)reader.ReadInt32();
-                row.TargetGrade = (SkillCardGrade)reader.ReadInt32();
+                row.SourceGrade = (CardSkillGrade)reader.ReadInt32();
+                row.TargetLevel = reader.ReadInt32();
                 row.RequiredCount = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

@@ -315,22 +315,22 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - SkillCard
+            #region Table - CardSkill
             {
-                CurrentFile = Table_SkillCard.Filename;
+                CurrentFile = Table_CardSkill.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillCard._parser ) == false ) {
+                if( Load( reader, Table_CardSkill._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - SkillCardUpgrade
+            #region Table - SkillCardEnchant
             {
-                CurrentFile = Table_SkillCardUpgrade.Filename;
+                CurrentFile = Table_SkillCardEnchant.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillCardUpgrade._parser ) == false ) {
+                if( Load( reader, Table_SkillCardEnchant._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
