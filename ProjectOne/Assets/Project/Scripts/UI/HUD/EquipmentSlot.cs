@@ -111,7 +111,7 @@ namespace ProjectOne.UI
 
 			// 아틀라스에 있으면 await 없이 동기로 즉시 세팅 → 슬롯 생성과 같은 프레임에 표시(한 템포 늦음 방지).
 			// 아틀라스 스프라이트는 refcount 대상이 아니므로 _iconAddress 를 비워 releaseIcon 오작동을 막는다.
-			Sprite atlasSprite = IconAtlasCache.Instance.Get(address);
+			Sprite atlasSprite = AtlasManager.Instance.Get(address);
 			if (atlasSprite != null)
 			{
 				_itemIcon.sprite = atlasSprite;

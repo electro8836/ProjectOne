@@ -6,6 +6,8 @@ using ProjectOne.Audio;
 using ProjectOne.Data;
 using ProjectOne.Resources;
 using ProjectOne.Settings;
+using UnityEngine.U2D;
+using System.Collections.Generic;
 
 namespace ProjectOne.Flow
 {
@@ -15,7 +17,7 @@ namespace ProjectOne.Flow
 	public class BootState : IGameState
 	{
 		// 아웃게임 UI 아이콘 아틀라스 주소(파일명) — AddressableAutoMarker 가 Art/UI 의 .spriteatlasv2 를 자동 마킹.
-		private static readonly string[] _iconAtlasAddresses = { "Atlas_Common", "Atlas_OutGame" };
+		private static readonly string[] _iconAtlasAddresses = { "Atlas_Common", "Atlas_OutGame", "Atlas_Skill" };
 
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
@@ -41,7 +43,7 @@ namespace ProjectOne.Flow
 			}
 
 			// 3) 아웃게임 UI 아이콘 아틀라스 로드 (Addressable "Atlas_Common"/"Atlas_OutGame") — 화면 열 때 슬롯/아이콘 즉시 표시
-			cancelled = await IconAtlasCache.Instance.LoadAsync(_iconAtlasAddresses, ct).SuppressCancellationThrow();
+			cancelled = await AtlasManager.Instance.LoadAsync(_iconAtlasAddresses, ct).SuppressCancellationThrow();
 			if (cancelled)
 			{
 				return;

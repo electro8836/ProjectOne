@@ -10,14 +10,12 @@ namespace ProjectOne.Resources
 	// 아웃게임 UI 아이콘 SpriteAtlas 캐시.
 	// 부트에서 아틀라스를 로드해 상주시키고, 슬롯은 이름(=주소=파일명)으로 스프라이트를 동기 조회한다.
 	// 개별 아이콘을 어드레서블로 따로 로드하지 않으므로, 화면 열 때 로드 대기/깜빡임 없이 같은 프레임에 표시된다.
-	public class IconAtlasCache : Singleton<IconAtlasCache>
+	public class AtlasManager : Singleton<AtlasManager>
 	{
 		private readonly List<SpriteAtlas> _atlases = new List<SpriteAtlas>();
 
 		// 이름 → 스프라이트. 미포함 이름은 null 로 캐시해 GetSprite 재호출을 막는다.
 		private readonly Dictionary<string, Sprite> _sprites = new Dictionary<string, Sprite>();
-
-		protected IconAtlasCache() { }
 
 		// 부트 시 1회 — 지정한 아틀라스들을 로드해 상주시킨다(핸들 수명은 ResourceManager 캐시가 소유).
 		public async UniTask LoadAsync(string[] atlasAddresses, CancellationToken ct = default)
