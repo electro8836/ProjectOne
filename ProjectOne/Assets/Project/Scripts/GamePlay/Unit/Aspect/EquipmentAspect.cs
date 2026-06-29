@@ -119,14 +119,14 @@ namespace ProjectOne.Unit
 			hero.Stats.AddModifier(type, value, Source);
 		}
 
-		private void applySkill(Hero hero, int skillOption)
+		private void applySkill(Hero hero, SkillInfo skillOption)
 		{
-			if (skillOption == 0 || hero.SkillContainer == null)
+			if (skillOption == SkillInfo.None || hero.SkillContainer == null)
 			{
 				return;
 			}
 
-			hero.SkillContainer.Register((SkillInfo)skillOption, Source);
+			hero.SkillContainer.Register(skillOption, Source);
 		}
 	}
 }

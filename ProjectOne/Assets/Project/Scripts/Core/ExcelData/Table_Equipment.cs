@@ -21,8 +21,8 @@ namespace EDT {
             public float StatOptionValue_2 { get; set; } = 0f;
             public StatInfo StatOptionType_3 { get; set; } = StatInfo.None;
             public float StatOptionValue_3 { get; set; } = 0f;
-            public int SkillOption_1 { get; set; } = 0;
-            public int SkillOption_2 { get; set; } = 0;
+            public SkillInfo SkillOption_1 { get; set; } = SkillInfo.None;
+            public SkillInfo SkillOption_2 { get; set; } = SkillInfo.None;
             public int TraitSlotIndex { get; set; } = 0;
             public int TraitSlotValue { get; set; } = 0;
         }
@@ -61,8 +61,8 @@ namespace EDT {
                 row.StatOptionValue_2 = reader.ReadSingle();
                 row.StatOptionType_3 = (StatInfo)reader.ReadInt32();
                 row.StatOptionValue_3 = reader.ReadSingle();
-                row.SkillOption_1 = reader.ReadInt32();
-                row.SkillOption_2 = reader.ReadInt32();
+                row.SkillOption_1 = (SkillInfo)reader.ReadInt32();
+                row.SkillOption_2 = (SkillInfo)reader.ReadInt32();
                 row.TraitSlotIndex = reader.ReadInt32();
                 row.TraitSlotValue = reader.ReadInt32();
                 _all.Add( row.ID, row );

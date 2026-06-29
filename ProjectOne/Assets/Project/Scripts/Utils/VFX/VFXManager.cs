@@ -96,7 +96,7 @@ namespace ProjectOne.Utils
 		// 프리팹 직접 참조용 풀 키 — InstanceID 기반(같은 프리팹 에셋이면 동일 키 → 풀 공유). ResourceManager 비대상.
 		private string registerDirectPrefab(GameObject prefab)
 		{
-			string key = "prefab:" + prefab.GetInstanceID();
+			string key = prefab.name;
 			if (_prefabs.ContainsKey(key) == false)
 			{
 				_prefabs.Add(key, prefab);

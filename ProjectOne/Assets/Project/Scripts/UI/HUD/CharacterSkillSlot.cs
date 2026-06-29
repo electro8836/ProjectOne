@@ -48,8 +48,7 @@ namespace ProjectOne.UI
 				_lockCondition.text = "Lv " + trait.ReqLv;
 			}
 
-			Table_SkillInfo.Row skill = Table_SkillInfo.Get((SkillInfo)skillId);
-			await setIcon(skill != null ? skill.Icon : null, ct);
+			await setIcon(trait.Icon, ct);
 		}
 
 		private void onClicked()

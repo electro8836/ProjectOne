@@ -81,8 +81,7 @@ namespace ProjectOne.UI
 			setInfoGrid(trait, slotLevel);
 
 			SkillInfo cur = TraitSkillResolver.SkillForLevel(trait, slotLevel);
-			Table_SkillInfo.Row skill = Table_SkillInfo.Get(cur);
-			await setIcon(skill != null ? skill.Icon : null, ct);
+			await setIcon(trait.Icon, ct);
 
 			Reveal();
 			await WaitForCloseAsync(ct);

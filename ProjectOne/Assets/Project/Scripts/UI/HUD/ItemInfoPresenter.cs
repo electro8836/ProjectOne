@@ -121,30 +121,38 @@ namespace ProjectOne.UI
 			}
 
 			Table_StatInfo.Row info = Table_StatInfo.Get(type);
-			string title = info != null ? info.Name : type.ToString();
-			string desc = info != null && info.IsRatio ? value.ToString("0.##") + "%" : value.ToString("0.##");
+			if (info == null)
+			{
+				return;
+			}
+
+			string desc = info.IsRatio ? value.ToString("0.##") + "%" : value.ToString("0.##");
 
 			ItemOptionEntry entry;
-			entry.iconAddress = info != null ? info.Icon : string.Empty;
-			entry.title = title;
+			entry.iconAddress = info.Icon;
+			entry.title = info.Name;
 			entry.desc = desc;
 			entries.Add(entry);
 		}
 
 		// 스킬: 아이콘 + 스킬 이름 + 스킬 테이블 Desc 원문.
-		private void addSkillOption(List<ItemOptionEntry> entries, int skillOption)
+		private void addSkillOption(List<ItemOptionEntry> entries, SkillInfo skillOption)
 		{
-			if (skillOption == 0)
+			if (skillOption == SkillInfo.None)
 			{
 				return;
 			}
 
-			Table_SkillInfo.Row info = Table_SkillInfo.Get((SkillInfo)skillOption);
+			Table_SkillInfo.Row info = Table_SkillInfo.Get(skillOption);
+			if(info == null)
+			{
+				return;
+			}
 
 			ItemOptionEntry entry;
-			entry.iconAddress = info != null ? info.Icon : string.Empty;
-			entry.title = info != null ? info.Name : string.Empty;
-			entry.desc = info != null ? info.Desc : string.Empty;
+			entry.iconAddress = info.Icon;
+			entry.title = info.Name;
+			entry.desc = info.Desc;
 			entries.Add(entry);
 		}
 
@@ -177,7 +185,12 @@ namespace ProjectOne.UI
 
 			int groupId = traitGroupByIndex(charRow, index);
 			Table_CharacterTrait.Row trait = Table_CharacterTrait.Get(groupId);
-			return trait != null ? trait.Name : string.Empty;
+			if (trait== null)
+			{
+				return string.Empty; ;
+			}
+
+			return trait.Name;
 		}
 
 		// 캐릭터의 1~5번 특성그룹 ID (TraitGroup_n 필드 분기).

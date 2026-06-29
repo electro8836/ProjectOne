@@ -19,7 +19,7 @@ namespace EDT {
             public StatInfo StepStatOptionType_2 { get; set; } = StatInfo.None;
             public float StepStatOptionValue_2 { get; set; } = 0f;
             public int UnlockLv { get; set; } = 0;
-            public int UnlockSkill { get; set; } = 0;
+            public SkillInfo UnlockSkill { get; set; } = SkillInfo.None;
         }
 
         public const string Filename = "edt_enchant.bytes";
@@ -54,7 +54,7 @@ namespace EDT {
                 row.StepStatOptionType_2 = (StatInfo)reader.ReadInt32();
                 row.StepStatOptionValue_2 = reader.ReadSingle();
                 row.UnlockLv = reader.ReadInt32();
-                row.UnlockSkill = reader.ReadInt32();
+                row.UnlockSkill = (SkillInfo)reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );
