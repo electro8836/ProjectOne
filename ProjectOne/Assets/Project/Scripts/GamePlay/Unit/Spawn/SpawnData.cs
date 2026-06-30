@@ -14,7 +14,7 @@ namespace ProjectOne.Unit
 		public Vector3 center;
 
 		[Tooltip("중심으로부터 스폰 반경 — 이 반경 내 랜덤 위치에 생성 (0이면 중심 고정)")]
-		public float radius = 3f;
+		public float radius = 1f;
 
 		[Tooltip("최소 유지 수 — 현재 수가 이보다 적으면 즉시 충원")]
 		public int minCount = 1;

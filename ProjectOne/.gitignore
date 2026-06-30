@@ -24,6 +24,10 @@
 *.blend1
 *.blend1.meta
 
+# GIF (목업/미리보기 등) 은 버전관리 제외
+*.gif
+*.gif.meta
+
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
@@ -107,7 +111,3 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
-
-# ThirdParty 서드파티 에셋 (Asset Store 재설치 가능)
-/[Aa]ssets/ThirdParty/500FreeSkillIcons/
-/[Aa]ssets/ThirdParty/500FreeSkillIcons.meta

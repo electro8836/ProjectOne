@@ -95,10 +95,6 @@ namespace ProjectOne.Dungeon
 			case DropObjectType.MagicEssence:
 				DungeonRunState.Instance.AddEssence(_essenceAmount);
 				break;
-
-			case DropObjectType.ArcaneScroll:
-				EventManager.Instance.Publish(new CardShopOpenRequestedEvent());
-				break;
 			}
 		}
 	}

@@ -263,9 +263,4 @@ namespace ProjectOne.Event
 						this.Level = level;
 				}
 		}
-
-		// 던전 카드스킬 구매창 열기 요청 (ArcaneScroll 픽업 등). BattleHUD 가 구독해 오버레이를 연다.
-		public readonly struct CardShopOpenRequestedEvent
-		{
-		}
 }

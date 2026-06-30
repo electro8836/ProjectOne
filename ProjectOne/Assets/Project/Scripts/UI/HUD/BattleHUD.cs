@@ -1,9 +1,7 @@
-using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Dungeon;
-using ProjectOne.Event;
 
 namespace ProjectOne.UI
 {
@@ -24,11 +22,11 @@ namespace ProjectOne.UI
 
 		[Header("공통")]
 		[SerializeField] private UIButton _openSelectButton;
+		// 상점 기믹 범위 진입 시 노출되는 카드스킬 구매창 열기 버튼
+		[SerializeField] private UIButton _openShopButton;
 
 		// OpenSelectButton 클릭 대기용 — WaitOpenSelectAsync 한 번에 하나씩만 사용
 		private UniTaskCompletionSource _openSelectSource;
-
-		private Action<CardShopOpenRequestedEvent> _onCardShopRequested;
 
 		private void Awake()
 		{
@@ -40,8 +38,11 @@ namespace ProjectOne.UI
 				_openSelectButton.gameObject.SetActive(false);
 			}
 
-			_onCardShopRequested = onCardShopRequested;
-			EventManager.Instance.Subscribe<CardShopOpenRequestedEvent>(_onCardShopRequested);
+			if (_openShopButton != null)
+			{
+				_openShopButton.OnClickEvent += onShopClicked;
+				_openShopButton.gameObject.SetActive(false);
+			}
 		}
 
 		private void OnDestroy()
@@ -56,13 +57,25 @@ namespace ProjectOne.UI
 				_openSelectButton.OnClickEvent -= onOpenSelectClicked;
 			}
 
-			EventManager.Instance.Unsubscribe<CardShopOpenRequestedEvent>(_onCardShopRequested);
+			if (_openShopButton != null)
+			{
+				_openShopButton.OnClickEvent -= onShopClicked;
+			}
 
 			_openSelectSource?.TrySetCanceled();
 		}
 
-		// ArcaneScroll 픽업 → 카드스킬 구매창을 오버레이로 연다.
-		private void onCardShopRequested(CardShopOpenRequestedEvent e)
+		// 상점 기믹이 호출 — 히어로가 범위에 들고 날 때 상점 열기 버튼을 노출/숨김.
+		public void ShowShopButton(bool show)
+		{
+			if (_openShopButton != null)
+			{
+				_openShopButton.gameObject.SetActive(show);
+			}
+		}
+
+		// 상점 열기 버튼 클릭 → 카드스킬 구매창을 오버레이로 연다.
+		private void onShopClicked()
 		{
 			UIManager.Instance.OpenOverlayAsync<CardSkillBuyUI>(CARD_SHOP_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
 		}

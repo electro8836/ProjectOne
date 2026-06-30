@@ -22,7 +22,7 @@ namespace ProjectOne.Dungeon
 		private const int TempFallbackCharacterId = 101;
 
 		// 히어로 배치 기준 위치(맵 좌측)
-		private static readonly Vector3 HeroBasePos = new Vector3(-4f, 0f, 0f);
+		private static readonly Vector3 HeroBasePos = new Vector3(0f, 0f, 0f);
 
 		[Header("UI 주소 (Addressable)")]
 		[SerializeField] private string _stageSelectAddress = "Prefab_StageSelectPopup";
@@ -206,6 +206,12 @@ namespace ProjectOne.Dungeon
 			{
 				Debug.LogError($"[DungeonDirector] Table_Stage.Get({stageId}) == null");
 				return false;
+			}
+
+			// 다음 스테이지 진입 시 이전 인터미션에서 남은 기믹(상점 등) 일괄 회수
+			if (GimmickService.HasInstance == true)
+			{
+				GimmickService.Instance.DespawnAll();
 			}
 
 			Table_MapData.Row mapData = Table_MapData.Get(stage.MapID);
@@ -411,6 +417,12 @@ namespace ProjectOne.Dungeon
 			if (DropManager.HasInstance == true)
 			{
 				DropManager.Instance.Clear();
+			}
+
+			// 기믹 인스턴스 회수 + 프리팹 Addressable 핸들 해제
+			if (GimmickService.HasInstance == true)
+			{
+				GimmickService.Instance.Clear();
 			}
 
 			if (MapManager.HasInstance == true)

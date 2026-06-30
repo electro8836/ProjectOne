@@ -53,6 +53,9 @@ namespace ProjectOne.Dungeon
 				}
 			}
 
+			// 마지막 웨이브 클리어(스테이지 종료) 시에도 히어로 위치에 상점 기믹 등장 (다음 스테이지 진입 시 회수)
+			GimmickService.Instance.SpawnAtHeroAsync(GimmickService.ShopGimmickAddress).Forget();
+
 			_result = DungeonResult.Cleared;
 		}
 
@@ -60,6 +63,9 @@ namespace ProjectOne.Dungeon
 		{
 			_skipRequested = false;
 			EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, true, WaveWaitSeconds));
+
+			// 웨이브 간 대기 동안 히어로 위치에 상점 기믹 등장 (다음 웨이브 시작 시 회수)
+			GimmickService.Instance.SpawnAtHeroAsync(GimmickService.ShopGimmickAddress).Forget();
 
 			float elapsed = 0f;
 			while (elapsed < WaveWaitSeconds && _skipRequested == false)
@@ -72,6 +78,11 @@ namespace ProjectOne.Dungeon
 
 				await UniTask.Yield(PlayerLoopTiming.Update, ct);
 				elapsed += Time.deltaTime;
+			}
+
+			if (GimmickService.HasInstance == true)
+			{
+				GimmickService.Instance.DespawnAll();
 			}
 		}
 

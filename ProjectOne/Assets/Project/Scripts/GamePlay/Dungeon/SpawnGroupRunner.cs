@@ -16,7 +16,7 @@ namespace ProjectOne.Dungeon
 	internal static class SpawnGroupRunner
 	{
 		// 스폰포인트 기준 랜덤 배치 반경 (임시 — 추후 SpawnPoint 클래스로 대체)
-		private const float SpawnRadius = 2f;
+		private const float SpawnRadius = 1f;
 
 		// GroupID 필터링용 임시 버퍼 (Dictionary 전체 순회 회피용 재사용)
 		private static readonly List<Table_MonsterSpawn.Row> _rowBuffer = new List<Table_MonsterSpawn.Row>();
