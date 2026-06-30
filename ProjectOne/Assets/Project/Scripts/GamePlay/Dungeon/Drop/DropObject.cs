@@ -3,6 +3,7 @@ using EDT;
 using ProjectOne.Utils;
 using ProjectOne.Unit;
 using ProjectOne.Audio;
+using ProjectOne.Event;
 
 namespace ProjectOne.Dungeon
 {
@@ -96,7 +97,7 @@ namespace ProjectOne.Dungeon
 				break;
 
 			case DropObjectType.ArcaneScroll:
-				Debug.Log("[DropObject] ArcaneScroll 획득 — 카드 구매창 (미구현)");
+				EventManager.Instance.Publish(new CardShopOpenRequestedEvent());
 				break;
 			}
 		}

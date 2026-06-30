@@ -12,6 +12,7 @@ namespace EDT {
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
             public CardSkillGrade CardGrade { get; set; } = CardSkillGrade.None;
+            public int UnlockClearDungeonID { get; set; } = 0;
             public SkillInfo Skill_1 { get; set; } = SkillInfo.None;
             public int BuyPrice_1 { get; set; } = 0;
             public SkillInfo Skill_2 { get; set; } = SkillInfo.None;
@@ -51,6 +52,7 @@ namespace EDT {
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
                 row.CardGrade = (CardSkillGrade)reader.ReadInt32();
+                row.UnlockClearDungeonID = reader.ReadInt32();
                 row.Skill_1 = (SkillInfo)reader.ReadInt32();
                 row.BuyPrice_1 = reader.ReadInt32();
                 row.Skill_2 = (SkillInfo)reader.ReadInt32();

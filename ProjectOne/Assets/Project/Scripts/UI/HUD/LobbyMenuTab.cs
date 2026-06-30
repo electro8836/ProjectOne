@@ -6,7 +6,7 @@ namespace ProjectOne.UI
 	{
 		Character = 0,
 		Equipment = 1,
-		Skill = 2,
+		CardSkill = 2,
 		Shop = 3,
 		Craft = 4
 	}

@@ -4,17 +4,18 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_SkillCardEnchant
+    public static class Table_CardSkillEnchant
     {
         public class Row {
             public int ID { get; set; } = 0;
             public CardSkillGrade SourceGrade { get; set; } = CardSkillGrade.None;
             public int TargetLevel { get; set; } = 0;
             public int RequiredCount { get; set; } = 0;
+            public int MaxShopLevel { get; set; } = 0;
         }
 
-        public const string Filename = "edt_skillcardenchant.bytes";
-        public const TableType Type = TableType.TableSkillCardEnchant;
+        public const string Filename = "edt_cardskillenchant.bytes";
+        public const TableType Type = TableType.TableCardSkillEnchant;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -37,6 +38,7 @@ namespace EDT {
                 row.SourceGrade = (CardSkillGrade)reader.ReadInt32();
                 row.TargetLevel = reader.ReadInt32();
                 row.RequiredCount = reader.ReadInt32();
+                row.MaxShopLevel = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

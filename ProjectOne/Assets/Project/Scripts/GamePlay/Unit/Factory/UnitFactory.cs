@@ -24,6 +24,9 @@ namespace ProjectOne.Unit
 		// 장비 장착 Aspect — 무상태이므로 단일 인스턴스 재사용 (Register 는 중복 방지됨)
 		private readonly EquipmentAspect _equipmentAspect = new EquipmentAspect();
 
+		// 던전 카드스킬 Aspect — 무상태(슬롯은 DungeonRunState 보유). 슬롯이 비면 no-op
+		private readonly CardSkillAspect _cardSkillAspect = new CardSkillAspect();
+
 		private static int _nextInstanceId = 1;
 
 		public static int PeekNextInstanceId => _nextInstanceId;
@@ -73,6 +76,7 @@ namespace ProjectOne.Unit
 			}
 
 			HeroAspectRegistry.Instance.Register(_equipmentAspect);
+			HeroAspectRegistry.Instance.Register(_cardSkillAspect);
 			HeroAspectRegistry.Instance.ApplyAll(hero);
 
 			// 장비/레벨업 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전

@@ -29,6 +29,7 @@ namespace ProjectOne.UI
 		// 탭이 열 화면의 Addressable 주소 (탭→화면 매핑은 코드에서 관리)
 		private const string CHARACTER_ADDRESS = "UI_Character";
 		private const string EQUIPMENT_ADDRESS = "UI_Equipment";
+		private const string CARDSKILL_ADDRESS = "UI_CardSkill";
 		private const string DUNGEON_ADDRESS = "UI_DungeonSelect";
 
 		// 현재 로드한 캐릭터 아이콘 주소 (Acquire/Release 짝 맞춤용)
@@ -80,6 +81,10 @@ namespace ProjectOne.UI
 
 				case LobbyMenuTab.Equipment:
 					await UIManager.Instance.OpenOverlayAsync<EquipmentUI>(EQUIPMENT_ADDRESS, this.GetCancellationTokenOnDestroy());
+					break;
+
+				case LobbyMenuTab.CardSkill:
+					await UIManager.Instance.OpenOverlayAsync<CardSkillUI>(CARDSKILL_ADDRESS, this.GetCancellationTokenOnDestroy());
 					break;
 			}
 		}

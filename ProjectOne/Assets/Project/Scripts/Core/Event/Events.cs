@@ -232,4 +232,40 @@ namespace ProjectOne.Event
 		public readonly struct OverlayClosedEvent
 		{
 		}
+
+		// 로비 카드스킬 보유/강화 변경 알림 (획득/강화). 로비 카드스킬 목록 UI 등에서 구독.
+		public readonly struct CardSkillChangedEvent
+		{
+				public readonly int CardSkillId;
+				public readonly int OwnedCount;
+				public readonly int EnchantLevel;
+
+				public CardSkillChangedEvent(int cardSkillId, int ownedCount, int enchantLevel)
+				{
+						this.CardSkillId = cardSkillId;
+						this.OwnedCount = ownedCount;
+						this.EnchantLevel = enchantLevel;
+				}
+		}
+
+		// 던전 카드스킬 장착슬롯 변경 알림 (구매/판매/레벨업). 던전 구매창 UI 등에서 구독.
+		// SlotIndex=-1 은 전체 갱신 요청.
+		public readonly struct CardSkillSlotChangedEvent
+		{
+				public readonly int SlotIndex;
+				public readonly int CardSkillId;
+				public readonly int Level;
+
+				public CardSkillSlotChangedEvent(int slotIndex, int cardSkillId, int level)
+				{
+						this.SlotIndex = slotIndex;
+						this.CardSkillId = cardSkillId;
+						this.Level = level;
+				}
+		}
+
+		// 던전 카드스킬 구매창 열기 요청 (ArcaneScroll 픽업 등). BattleHUD 가 구독해 오버레이를 연다.
+		public readonly struct CardShopOpenRequestedEvent
+		{
+		}
 }

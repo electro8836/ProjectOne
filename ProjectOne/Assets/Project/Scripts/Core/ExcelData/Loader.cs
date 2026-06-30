@@ -18,6 +18,28 @@ namespace EDT {
         {
             BinaryReader reader = null;
 
+            #region Table - CardSkill
+            {
+                CurrentFile = Table_CardSkill.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_CardSkill._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - CardSkillEnchant
+            {
+                CurrentFile = Table_CardSkillEnchant.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_CardSkillEnchant._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Character
             {
                 CurrentFile = Table_Character.Filename;
@@ -309,28 +331,6 @@ namespace EDT {
                 CurrentFile = Table_SkillSet.Filename;
                 reader = open_file_functor( CurrentFile );
                 if( Load( reader, Table_SkillSet._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - CardSkill
-            {
-                CurrentFile = Table_CardSkill.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_CardSkill._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - SkillCardEnchant
-            {
-                CurrentFile = Table_SkillCardEnchant.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillCardEnchant._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

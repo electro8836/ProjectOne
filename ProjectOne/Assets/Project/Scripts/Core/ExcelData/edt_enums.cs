@@ -3,6 +3,15 @@ using System.Collections.Generic;
 
 namespace EDT {
 
+    public enum CardSkillGrade {
+        None,
+        Normal,
+        Magic,
+        Rare,
+        Epic,
+        Legendary,
+    }
+
     public enum CharacterTypes {
         None,
         Class_Melee,
@@ -140,15 +149,6 @@ namespace EDT {
         None,
         Root,
         Center,
-    }
-
-    public enum CardSkillGrade {
-        None,
-        Normal,
-        Magic,
-        Rare,
-        Epic,
-        Legendary,
     }
 
     public enum UIZOrder {
@@ -507,6 +507,8 @@ namespace EDT {
 
     public enum TableType {
         None,
+        TableCardSkill,
+        TableCardSkillEnchant,
         TableCharacter,
         TableLevelExp,
         TableUnlockCondition,
@@ -534,8 +536,6 @@ namespace EDT {
         TableSkillEffect,
         TableBuffInfo,
         TableSkillSet,
-        TableCardSkill,
-        TableSkillCardEnchant,
         TableSkinInfo,
         TableStatInfo,
         TableBaseStat,

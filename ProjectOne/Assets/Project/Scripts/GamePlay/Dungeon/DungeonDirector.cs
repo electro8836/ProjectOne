@@ -10,6 +10,7 @@ using ProjectOne.Unit;
 using ProjectOne.Projectile;
 using ProjectOne.Audio;
 using ProjectOne.Utils;
+using ProjectOne.UserData;
 
 namespace ProjectOne.Dungeon
 {
@@ -378,6 +379,12 @@ namespace ProjectOne.Dungeon
 
 			_ending = true;
 			Debug.Log($"[DungeonDirector] 던전 종료 victory={victory}");
+
+			// 승리 시 던전 클리어 기록(카드스킬 해금 등 진행도 게이트에 사용)
+			if (victory == true && _ctx != null)
+			{
+				Account.Instance.ClearedDungeons.MarkCleared(_ctx.DungeonId);
+			}
 
 			cleanupAll();
 			await GameFlow.Instance.ChangeStateAsync(new LobbyState());
