@@ -77,7 +77,6 @@ namespace EDT {
         HealOrb,
         StaminaOrb,
         MagicEssence,
-        ArcaneScroll,
     }
 
     public enum MaterialType {
