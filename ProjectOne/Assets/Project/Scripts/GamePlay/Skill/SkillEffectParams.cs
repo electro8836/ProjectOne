@@ -41,6 +41,12 @@ namespace ProjectOne.Skill
 		public float Value;
 	}
 
+	public struct AuraParams
+	{
+		public AuraInfo AuraId;
+		public float Duration; // 0 = 무한
+	}
+
 	public struct SpawnProjectileParams
 	{
 		public int Count;            // 발사체 개수 (>=1)
@@ -204,6 +210,37 @@ namespace ProjectOne.Skill
 			}
 
 			p.Value = v;
+			return true;
+		}
+
+		// ActivateAura : P1=AuraInfo ID(enum 이름, 필수), P2=지속시간 sec(빈값/"None"=0=무한)
+		public static bool TryParseActivateAura(Table_SkillEffect.Row row, out AuraParams p)
+		{
+			p = new AuraParams();
+			if (Enum.TryParse(row.EffectParam_1, out AuraInfo auraId) == false)
+			{
+				LogParseError(row, 1, "ActivateAura.AuraId");
+				return false;
+			}
+
+			p.AuraId = auraId;
+
+			// Duration 은 선택 — 비어있거나 "None" 이면 0 (무한 지속)
+			if (string.IsNullOrEmpty(row.EffectParam_2) == true || row.EffectParam_2 == "None")
+			{
+				p.Duration = 0f;
+			}
+			else
+			{
+				if (TryParseFloat(row.EffectParam_2, out float duration) == false)
+				{
+					LogParseError(row, 2, "ActivateAura.Duration");
+					return false;
+				}
+
+				p.Duration = duration;
+			}
+
 			return true;
 		}
 

@@ -315,6 +315,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - SkillSet
+            {
+                CurrentFile = Table_SkillSet.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_SkillSet._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - BuffInfo
             {
                 CurrentFile = Table_BuffInfo.Filename;
@@ -326,11 +337,11 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - SkillSet
+            #region Table - AuraInfo
             {
-                CurrentFile = Table_SkillSet.Filename;
+                CurrentFile = Table_AuraInfo.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillSet._parser ) == false ) {
+                if( Load( reader, Table_AuraInfo._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

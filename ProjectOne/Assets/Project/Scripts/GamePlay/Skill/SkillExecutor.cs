@@ -58,6 +58,7 @@ namespace ProjectOne.Skill
 					// 종료 MotionEffectTime 초 전에 공격모션, 종료 시점에 효과 발동 (BeginCasting 2단계 예약)
 					caster.SkillContainer.BeginCasting(row.CastingParam, row.MotionEffectTime, id);
 					break;
+				case SkillCastingTypes.Aura:
 				case SkillCastingTypes.Passive:
 					// 보통 Register 에서 ApplyPassive 로 처리됨 — 직접 호출 시 안전망으로 효과만 즉시 적용
 					ApplyEffects(row, id, caster);

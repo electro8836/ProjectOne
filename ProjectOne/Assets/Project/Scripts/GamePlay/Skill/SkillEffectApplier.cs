@@ -6,6 +6,7 @@ using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Combat;
 using ProjectOne.Buff;
+using ProjectOne.Aura;
 using ProjectOne.Utils;
 using ProjectOne.Event;
 using ProjectOne.Projectile;
@@ -118,8 +119,7 @@ namespace ProjectOne.Skill
 					ApplyAttribute(row, targets, signMul: -1f, hostBuff);
 					break;
 				case SkillEffectTypes.ActivateAura:
-					// TODO: 오라 시스템 미구현
-					Debug.Log($"[SkillEffectApplier] ActivateAura stub — Effect:{effectId}");
+					ApplyActivateAura(row, targets, damageSource, skillId);
 					break;
 				case SkillEffectTypes.SpawnProjectile:
 					// 발사체 발사 — targets(가장 가까운 적)를 방향 기준으로, caster 위치에서 N발 부채꼴 발사
@@ -421,6 +421,35 @@ namespace ProjectOne.Skill
 				}
 
 				t.BuffContainer.Apply(p.BuffID, p.Duration, p.Interval, source, skillId);
+			}
+		}
+
+		static void ApplyActivateAura(Table_SkillEffect.Row row, List<UnitBase> targets, UnitBase source, SkillInfo skillId)
+		{
+			// 오라 범위는 이 효과를 담은 스킬(skillId)의 ScanType/ScanParam 을 사용한다.
+			// 버프 경로(ApplyOnBuff)는 skillId 가 None 이라 범위 파라미터를 얻을 수 없으므로 무시.
+			if (skillId == SkillInfo.None)
+			{
+				Debug.LogError($"[SkillEffectApplier] ActivateAura 는 스킬 경로에서만 발동 가능(범위 파라미터 필요) — Effect:{row.ID}");
+				return;
+			}
+
+			AuraParams p;
+			if (SkillEffectParams.TryParseActivateAura(row, out p) == false)
+			{
+				return;
+			}
+
+			// targets 는 ApplyTarget 필터 결과 — Self 면 caster 1명, Enemy 면 적들에게 오라 부착
+			for (int i = 0; i < targets.Count; i++)
+			{
+				UnitBase t = targets[i];
+				if (t == null || t.AuraContainer == null)
+				{
+					continue;
+				}
+
+				t.AuraContainer.Apply(p.AuraId, p.Duration, source, skillId);
 			}
 		}
 

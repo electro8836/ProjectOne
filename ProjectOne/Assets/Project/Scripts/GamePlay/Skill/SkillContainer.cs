@@ -75,8 +75,8 @@ namespace ProjectOne.Skill
 			_byId.Add(id, rt);
 			_ordered.Add(rt);
 
-			// Passive 는 등록 즉시 상시 적용 (모션/쿨타임 없음)
-			if (rt.CastingType == SkillCastingTypes.Passive)
+			// Passive/Aura 는 등록 즉시 상시 적용 (모션/쿨타임 없음)
+			if (rt.CastingType == SkillCastingTypes.Passive || rt.CastingType == SkillCastingTypes.Aura)
 			{
 				SkillExecutor.ApplyPassive(id, _owner);
 			}
@@ -140,8 +140,8 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			// Passive(상시 적용) / OnHit 계열(적중 시 확률 발동) 은 직접 시전 대상 아님
-			if (rt.CastingType == SkillCastingTypes.Passive || rt.CastingType == SkillCastingTypes.OnHitCaster || rt.CastingType == SkillCastingTypes.OnHitTarget)
+			// Passive(상시 적용) / Aura(등록 시 부착) / OnHit 계열(적중 시 확률 발동) 은 직접 시전 대상 아님
+			if (rt.CastingType == SkillCastingTypes.Passive || rt.CastingType == SkillCastingTypes.Aura || rt.CastingType == SkillCastingTypes.OnHitCaster || rt.CastingType == SkillCastingTypes.OnHitTarget)
 			{
 				return false;
 			}
@@ -252,6 +252,7 @@ namespace ProjectOne.Skill
 			{
 				SkillRuntime rt = _ordered[i];
 				if (rt.CastingType == SkillCastingTypes.Passive
+					|| rt.CastingType == SkillCastingTypes.Aura
 					|| rt.CastingType == SkillCastingTypes.OnHitCaster
 					|| rt.CastingType == SkillCastingTypes.OnHitTarget)
 				{

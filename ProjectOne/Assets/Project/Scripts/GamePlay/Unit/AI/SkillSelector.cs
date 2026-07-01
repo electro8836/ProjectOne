@@ -35,7 +35,7 @@ namespace ProjectOne.Unit.AI
 					continue;
 				}
 
-				if (row.CastingType == SkillCastingTypes.Passive || row.CastingType == SkillCastingTypes.OnHitCaster || row.CastingType == SkillCastingTypes.OnHitTarget)
+				if (row.CastingType == SkillCastingTypes.Passive || row.CastingType == SkillCastingTypes.Aura || row.CastingType == SkillCastingTypes.OnHitCaster || row.CastingType == SkillCastingTypes.OnHitTarget)
 				{
 					continue;
 				}

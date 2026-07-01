@@ -116,13 +116,38 @@ namespace ProjectOne.Skill
 		// 스킬의 7개 효과 슬롯을 순서대로 순회한다 (StartEffect → Effect_0~4 → FinishEffect).
 		private static void forEachEffect(Table_SkillInfo.Row row, List<SkillEffect> outList)
 		{
-			outList.Add(row.StartEffect);
-			outList.Add(row.Effect_0);
-			outList.Add(row.Effect_1);
-			outList.Add(row.Effect_2);
-			outList.Add(row.Effect_3);
-			outList.Add(row.Effect_4);
-			outList.Add(row.FinishEffect);
+			addEffectExpandingAura(row.StartEffect, outList);
+			addEffectExpandingAura(row.Effect_0, outList);
+			addEffectExpandingAura(row.Effect_1, outList);
+			addEffectExpandingAura(row.Effect_2, outList);
+			addEffectExpandingAura(row.Effect_3, outList);
+			addEffectExpandingAura(row.Effect_4, outList);
+			addEffectExpandingAura(row.FinishEffect, outList);
+		}
+
+		// 효과를 리스트에 추가하되, ActivateAura 면 대상 오라(Table_AuraInfo)의 효과 슬롯(Effect_1~4)으로
+		// 펼쳐 넣는다 — 오라 스킬은 슬롯에 ActivateAura 만 있고 실제 수치(데미지·속성)는 오라에 있으므로,
+		// 이를 펼쳐야 레벨별 요약/추출(firstEffectOfType·attributePhrases 등)에 노출된다.
+		private static void addEffectExpandingAura(SkillEffect effect, List<SkillEffect> outList)
+		{
+			if (effect != SkillEffect.None)
+			{
+				Table_SkillEffect.Row e = Table_SkillEffect.Get(effect);
+				if (e != null && e.EffectType == SkillEffectTypes.ActivateAura && SkillEffectParams.TryParseActivateAura(e, out AuraParams p) == true)
+				{
+					Table_AuraInfo.Row aura = Table_AuraInfo.Get(p.AuraId);
+					if (aura != null)
+					{
+						outList.Add(aura.Effect_1);
+						outList.Add(aura.Effect_2);
+						outList.Add(aura.Effect_3);
+						outList.Add(aura.Effect_4);
+						return;
+					}
+				}
+			}
+
+			outList.Add(effect);
 		}
 
 		// 지정 타입의 첫 효과 행을 반환 (없으면 null).
@@ -437,6 +462,7 @@ namespace ProjectOne.Skill
 				case SkillEffectTypes.ActivateBuff: return describeActivateBuff(row, depth);
 				case SkillEffectTypes.DeactivateBuff: return describeDeactivateBuff(row);
 				case SkillEffectTypes.SpawnProjectile: return describeSpawnProjectile(row, depth);
+				case SkillEffectTypes.ActivateAura: return describeActivateAura(row, rangePhrase, depth);
 				default: return fallbackName(row);
 			}
 		}
@@ -588,6 +614,54 @@ namespace ProjectOne.Skill
 			return buffName + " 효과를 해제한다.";
 		}
 
+		// 오라 발동 — 대상 오라(Table_AuraInfo)의 상시/주기 효과를 각각 풀어써 줄바꿈으로 잇는다.
+		// 주기 효과(Interval>0)는 "N초마다 " 접두를 붙인다.
+		private static string describeActivateAura(Table_SkillEffect.Row row, string rangePhrase, int depth)
+		{
+			if (SkillEffectParams.TryParseActivateAura(row, out AuraParams p) == false)
+			{
+				return fallbackName(row);
+			}
+
+			Table_AuraInfo.Row aura = Table_AuraInfo.Get(p.AuraId);
+			if (aura == null)
+			{
+				return fallbackName(row);
+			}
+
+			SkillEffect[] effects = { aura.Effect_1, aura.Effect_2, aura.Effect_3, aura.Effect_4 };
+			float[] intervals = { aura.Effect1_Interval, aura.Effect2_Interval, aura.Effect3_Interval, aura.Effect4_Interval };
+
+			List<string> lines = new List<string>();
+			for (int i = 0; i < effects.Length; i++)
+			{
+				if (effects[i] == SkillEffect.None)
+				{
+					continue;
+				}
+
+				string inner = describeEffect(effects[i], rangePhrase, depth + 1);
+				if (string.IsNullOrEmpty(inner) == true)
+				{
+					continue;
+				}
+
+				if (intervals[i] > 0f)
+				{
+					inner = formatNum(intervals[i]) + "초마다 " + inner;
+				}
+
+				lines.Add(inner);
+			}
+
+			if (lines.Count == 0)
+			{
+				return fallbackName(row);
+			}
+
+			return string.Join("\n", lines);
+		}
+
 		private static string describeSpawnProjectile(Table_SkillEffect.Row row, int depth)
 		{
 			if (SkillEffectParams.TryParseSpawnProjectile(row, out SpawnProjectileParams p) == false)
@@ -635,6 +709,7 @@ namespace ProjectOne.Skill
 			switch (castingType)
 			{
 				case SkillCastingTypes.Passive: return "[상시] ";
+				case SkillCastingTypes.Aura: return "[오라] ";
 				case SkillCastingTypes.Casting: return castingParam + "초 캐스팅 후 ";
 				case SkillCastingTypes.OnHitCaster: return "공격 시 " + castingParam + "% 확률로 ";
 				case SkillCastingTypes.OnHitTarget: return "공격 시 " + castingParam + "% 확률로 ";

@@ -8,6 +8,7 @@ using ProjectOne.Event;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
 using ProjectOne.Buff;
+using ProjectOne.Aura;
 using ProjectOne.Unit.AI;
 using ProjectOne.UserData;
 
@@ -163,6 +164,8 @@ namespace ProjectOne.Unit
 			unit.SetVitals(vitals);
 			BuffContainer buffContainer = new BuffContainer(unit);
 			unit.SetBuffContainer(buffContainer);
+			AuraContainer auraContainer = new AuraContainer(unit);
+			unit.SetAuraContainer(auraContainer);
 			SkillContainer skillContainer = new SkillContainer(unit);
 			unit.SetSkillContainer(skillContainer);
 			UnitMover component = unit.GetComponent<UnitMover>();

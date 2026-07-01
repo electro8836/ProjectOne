@@ -52,6 +52,7 @@ MonoBehaviour:
   capacity: 10
   maxCapacity: 100
   _prefab: {fileID: 8618952226878094964, guid: be31d04bc2fd7864d88c08807af0c584, type: 3}
+  _hardCap: 30
 --- !u!223 &1146123250036364905
 Canvas:
   m_ObjectHideFlags: 0
@@ -125,5 +126,10 @@ MonoBehaviour:
   _offsetY: 0.2
   _normalColor: {r: 1, g: 1, b: 1, a: 1}
   _criticalColor: {r: 1, g: 0.55, b: 0, a: 1}
+  _superCriticalColor: {r: 1, g: 0.1, b: 0.1, a: 1}
+  _heroNormalColor: {r: 1, g: 0.2, b: 0.2, a: 1}
+  _heroCriticalColor: {r: 1, g: 0.2, b: 0.8, a: 1}
+  _heroSuperCriticalColor: {r: 0.7, g: 0.1, b: 1, a: 1}
   _stackSpacing: 0.15
-  _maxStack: 5
+  _maxStack: 10
+  _cullingMargin: 0.05

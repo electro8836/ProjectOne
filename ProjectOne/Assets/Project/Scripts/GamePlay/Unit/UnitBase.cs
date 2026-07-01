@@ -8,6 +8,7 @@ using ProjectOne.Event;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
 using ProjectOne.Buff;
+using ProjectOne.Aura;
 using ProjectOne.Unit.AI;
 
 namespace ProjectOne.Unit
@@ -47,6 +48,8 @@ namespace ProjectOne.Unit
 		protected SkillContainer _skillContainer;
 
 		protected BuffContainer _buffContainer;
+
+		protected AuraContainer _auraContainer;
 
 		protected AiBrain _brain;
 
@@ -98,6 +101,8 @@ namespace ProjectOne.Unit
 		public SkillContainer SkillContainer => _skillContainer;
 
 		public BuffContainer BuffContainer => _buffContainer;
+
+		public AuraContainer AuraContainer => _auraContainer;
 
 		public UnitMover Mover => _mover;
 
@@ -209,6 +214,11 @@ namespace ProjectOne.Unit
 			_buffContainer = bc;
 		}
 
+		public void SetAuraContainer(AuraContainer ac)
+		{
+			_auraContainer = ac;
+		}
+
 		// AI 자동전투 두뇌 주입 — 미주입(null) 이면 자동전투 안 함 (플레이어 직접조작 등)
 		public void SetBrain(AiBrain brain)
 		{
@@ -243,6 +253,11 @@ namespace ProjectOne.Unit
 				if (_buffContainer != null)
 				{
 					_buffContainer.Tick(deltaTime);
+				}
+
+				if (_auraContainer != null)
+				{
+					_auraContainer.Tick(deltaTime);
 				}
 
 				if (_skillContainer != null)
