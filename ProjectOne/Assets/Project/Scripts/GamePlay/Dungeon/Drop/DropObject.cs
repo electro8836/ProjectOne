@@ -21,12 +21,29 @@ namespace ProjectOne.Dungeon
 		// 픽업 SFX (직접 링크) — AudioManager 풀에서 2D 재생
 		[SerializeField] private AudioClip _pickupSfx;
 
+		[Header("자석 흡입")]
+		// 흡입 시작 속도(유닛/초)
+		[SerializeField] private float _homingStartSpeed = 2f;
+		// 흡입 가속도(유닛/초²) — 히어로에 가까워질수록 빨라지는 느낌
+		[SerializeField] private float _homingAccel = 40f;
+		// 흡입 최대 속도(유닛/초)
+		[SerializeField] private float _homingMaxSpeed = 20f;
+
 		private DropObjectType _type;
 		private DropObjectPool _ownerPool;
 		// MagicEssence 1회 획득량 (스폰 시 주입)
 		private int _essenceAmount;
 		// 같은 프레임 다중 트리거로 이중 반환되는 것 방지
 		private bool _isReleased;
+		// 이동/트리거 감지용 Kinematic Rigidbody2D (static 콜라이더 이동 시 충돌 트리 재빌드 회피)
+		private Rigidbody2D _rb;
+		// 현재 흡입 속도 (스폰마다 _homingStartSpeed 로 리셋)
+		private float _homingSpeed;
+
+		private void Awake()
+		{
+			_rb = this.GetComponent<Rigidbody2D>();
+		}
 
 		// DropObjectPool.Spawn() 이 위치 설정 → Initialize() → OnActivate() 순서로 호출
 		public void Initialize(DropObjectType type, DropObjectPool pool, int essenceAmount)
@@ -35,6 +52,20 @@ namespace ProjectOne.Dungeon
 			_ownerPool = pool;
 			_essenceAmount = essenceAmount;
 			_isReleased = false;
+			_homingSpeed = _homingStartSpeed;
+		}
+
+		// HeroMagnet 센서가 프레임(물리)마다 호출 — 히어로 중심으로 가속 이동. 최종 획득은 기존 OnTriggerEnter2D 가 처리.
+		public void MagnetTick(Vector2 targetCenter)
+		{
+			if (_isReleased == true)
+			{
+				return;
+			}
+
+			_homingSpeed = Mathf.Min(_homingSpeed + _homingAccel * Time.fixedDeltaTime, _homingMaxSpeed);
+			Vector2 next = Vector2.MoveTowards(_rb.position, targetCenter, _homingSpeed * Time.fixedDeltaTime);
+			_rb.MovePosition(next);
 		}
 
 		public void OnActivate()
@@ -48,6 +79,12 @@ namespace ProjectOne.Dungeon
 		private void OnTriggerEnter2D(Collider2D other)
 		{
 			if (_isReleased == true)
+			{
+				return;
+			}
+
+			// 자석 센서(히어로 자식)는 획득 대상 아님 — 넓은 범위에서 즉시 획득되는 것 방지
+			if (other.GetComponent<HeroMagnet>() != null)
 			{
 				return;
 			}

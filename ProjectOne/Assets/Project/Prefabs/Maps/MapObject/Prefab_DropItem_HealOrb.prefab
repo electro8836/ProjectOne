@@ -133,7 +133,8 @@ GameObject:
   - component: {fileID: 8153835517047229488}
   - component: {fileID: 3867689462896128090}
   - component: {fileID: 3083817498620499467}
-  m_Layer: 0
+  - component: {fileID: 7444618901890603985}
+  m_Layer: 8
   m_Name: Prefab_DropItem_HealOrb
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -207,3 +208,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Dungeon.DropObject
   _pickupFx: {fileID: 104202, guid: 9db0e5efd4f0696439c1b3f126d4c179, type: 3}
   _pickupSfx: {fileID: 8300000, guid: 1abdd58de0133a7428d09deaa7b8caea, type: 3}
+  _homingStartSpeed: 2
+  _homingAccel: 40
+  _homingMaxSpeed: 20
+--- !u!50 &7444618901890603985
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6291654552190905979}
+  m_BodyType: 1
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 0
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 1
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
