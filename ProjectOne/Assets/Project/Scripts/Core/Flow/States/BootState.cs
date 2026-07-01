@@ -6,8 +6,6 @@ using ProjectOne.Audio;
 using ProjectOne.Data;
 using ProjectOne.Resources;
 using ProjectOne.Settings;
-using UnityEngine.U2D;
-using System.Collections.Generic;
 
 namespace ProjectOne.Flow
 {
@@ -16,9 +14,6 @@ namespace ProjectOne.Flow
 	// 1.Bootstrap 씬은 이미 로드된 상태이므로 씬 로드는 하지 않는다.
 	public class BootState : IGameState
 	{
-		// 아웃게임 UI 아이콘 아틀라스 주소(파일명) — AddressableAutoMarker 가 Art/UI 의 .spriteatlasv2 를 자동 마킹.
-		private static readonly string[] _iconAtlasAddresses = { "Atlas_Common", "Atlas_OutGame", "Atlas_Skill" };
-
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
 			// 0) 로컬 설정 로드 (가벼움, 타이틀 전 적용)
@@ -42,11 +37,19 @@ namespace ProjectOne.Flow
 				return;
 			}
 
-			// 3) 아웃게임 UI 아이콘 아틀라스 로드 (Addressable "Atlas_Common"/"Atlas_OutGame") — 화면 열 때 슬롯/아이콘 즉시 표시
-			cancelled = await AtlasManager.Instance.LoadAsync(_iconAtlasAddresses, ct).SuppressCancellationThrow();
-			if (cancelled)
+			// 3) 아웃게임 UI 아이콘 아틀라스 로드 (AtlasManifest 주입 목록) — 화면 열 때 슬롯/아이콘 즉시 표시
+			AtlasManifest atlasManifest = AssetBundleLoader.Instance.AtlasManifest;
+			if (atlasManifest != null && atlasManifest.AtlasAddresses.Count > 0)
 			{
-				return;
+				cancelled = await AtlasManager.Instance.LoadAsync(atlasManifest.AtlasAddresses, ct).SuppressCancellationThrow();
+				if (cancelled)
+				{
+					return;
+				}
+			}
+			else
+			{
+				Debug.LogWarning("[BootState] AtlasManifest 미연결 또는 비어 있음. 아틀라스 로드 건너뜀. (부트 씬 AssetBundleLoader에 AtlasManifest 연결 + Mark All 실행 필요)");
 			}
 
 			Debug.Log("부트 완료 — Character:" + Table_Character.All().Count

@@ -58,6 +58,10 @@ namespace ProjectOne.Resources
 		[SerializeField] private PatchConfig _config;
 		public PatchConfig Config => _config;
 
+		// 아웃게임 아이콘 아틀라스 목록 — 인스펙터에서 AtlasManifest.asset 연결
+		[SerializeField] private AtlasManifest _atlasManifest;
+		public AtlasManifest AtlasManifest => _atlasManifest;
+
 		private string _serverUrl;
 
 		// 속도 측정용 상태 (DownloadAsync 진입마다 초기화)

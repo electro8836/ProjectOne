@@ -5,11 +5,11 @@ namespace EDT {
 
     public enum CardSkillGrade {
         None,
-        Normal,
-        Magic,
+        Uncommon,
         Rare,
         Epic,
         Legendary,
+        Mythic,
     }
 
     public enum CharacterTypes {

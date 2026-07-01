@@ -40,11 +40,15 @@ namespace ProjectOne.Dungeon
 		// 구매창 후보 상태 (고정 3칸, 잠금 카드만 유지 의미)
 		private readonly ShopCardState[] _shopCards = new ShopCardState[ShopCardCount];
 
+		// 리롤 횟수 (스테이지 경계에서 리셋, 스테이지 진행 중에는 누적)
+		private int _rerollCount;
+
 		private DungeonRunState()
 		{
 		}
 
 		public int EssenceAmount => _essence;
+		public int RerollCount => _rerollCount;
 
 		// ── 임시재화 ──────────────────────────────────────────────────
 
@@ -71,6 +75,20 @@ namespace ProjectOne.Dungeon
 			_essence -= cost;
 			publishEssenceChanged();
 			return true;
+		}
+
+		// ── 리롤 ──────────────────────────────────────────────────────
+
+		// 리롤 1회 소진 반영 (다음 가격 산정용 카운터 증가)
+		public void IncrementRerollCount()
+		{
+			_rerollCount++;
+		}
+
+		// 스테이지 경계에서 리롤 가격을 최초 비용으로 되돌린다
+		public void ResetRerollCount()
+		{
+			_rerollCount = 0;
 		}
 
 		// ── 카드스킬 슬롯 ─────────────────────────────────────────────
@@ -195,6 +213,7 @@ namespace ProjectOne.Dungeon
 		public void Reset()
 		{
 			_essence = 0;
+			_rerollCount = 0;
 			for (int i = 0; i < SlotCount; i++)
 			{
 				_slots[i] = default(CardSkillSlot);

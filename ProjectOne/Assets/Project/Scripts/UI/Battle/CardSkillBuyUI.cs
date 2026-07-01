@@ -8,11 +8,12 @@ using EDT;
 using ProjectOne.Event;
 using ProjectOne.Dungeon;
 using ProjectOne.Resources;
+using ProjectOne.Utils;
 
 namespace ProjectOne.UI
 {
 	// 던전 카드스킬 구매창. 보유 카드 중 3장을 제시(CardSkillShopItem)하고, 장착슬롯 6칸(CardSkillEquipSlotView)을 보여준다.
-	// 카드를 선택하면 구매, 장착슬롯을 선택하면 판매(반값)로 하단 BuyOrSell 버튼이 동작한다. Reroll 은 3장을 다시 뽑는다(무료).
+	// 카드를 선택하면 구매, 장착슬롯을 선택하면 판매(반값)로 하단 BuyOrSell 버튼이 동작한다. Reroll 은 재화를 소비해 3장을 다시 뽑는다.
 	// 구매/판매/레벨업의 실제 판정과 Hero 적용은 DungeonCardShop 이 담당하고, 이 클래스는 표시/입력만 책임진다.
 	public class CardSkillBuyUI : UIScreen
 	{
@@ -38,6 +39,10 @@ namespace ProjectOne.UI
 		[SerializeField] private UIButton _buyOrSellButton;		// Button_01_BuyOrSell
 		[SerializeField] private TMP_Text _buyOrSellLabel;		// Button_01_BuyOrSell/Text (TMP)
 		[SerializeField] private UIButton _rerollButton;		// Button_01_Reroll
+
+		[Header("리롤")]
+		[SerializeField] private RerollConfig _rerollConfig;	// 리롤 가격 정책
+		[SerializeField] private TMP_Text _rerollText;			// Text_Reroll (새로고침 (가격) 표시)
 
 		private SelectionKind _selKind = SelectionKind.None;
 		private int _selIndex = -1;
@@ -121,6 +126,7 @@ namespace ProjectOne.UI
 			roll();
 			refreshSlots();
 			refreshCurrency();
+			refreshReroll();
 			clearSelection();
 			return UniTask.CompletedTask;
 		}
@@ -179,8 +185,36 @@ namespace ProjectOne.UI
 
 		private void onRerollClicked()
 		{
+			int count = DungeonRunState.Instance.RerollCount;
+			int price = _rerollConfig != null ? _rerollConfig.GetPrice(count) : 0;
+			if (price > 0 && DungeonRunState.Instance.TrySpendEssence(price) == false)
+			{
+				return;
+			}
+
+			DungeonRunState.Instance.IncrementRerollCount();
 			roll();
+			refreshReroll();
 			clearSelection();
+		}
+
+		// 리롤 가격 표시/버튼 상태 갱신 — 재화 부족 시 괄호 안 가격 숫자만 빨강
+		private void refreshReroll()
+		{
+			int count = DungeonRunState.Instance.RerollCount;
+			int price = _rerollConfig != null ? _rerollConfig.GetPrice(count) : 0;
+			bool afford = DungeonRunState.Instance.EssenceAmount >= price;
+			if (_rerollText != null)
+			{
+				string priceStr = NumberFormat.ToShort(price);
+				string body = afford == true ? priceStr : "<color=red>" + priceStr + "</color>";
+				_rerollText.text = "새로고침\n( " + body + " )";
+			}
+
+			if (_rerollButton != null)
+			{
+				_rerollButton.interactable = afford;
+			}
 		}
 
 		private void onCloseClicked()
@@ -215,7 +249,7 @@ namespace ProjectOne.UI
 					}
 				}
 
-				_cardItems[i].Bind(0, string.Empty, string.Empty, 0, 0, null);
+				_cardItems[i].Bind(0, string.Empty, string.Empty, 0, 0, null, CardSkillGrade.None);
 			}
 		}
 
@@ -270,7 +304,7 @@ namespace ProjectOne.UI
 				}
 				else
 				{
-					item.Bind(0, string.Empty, string.Empty, 0, 0, null);
+					item.Bind(0, string.Empty, string.Empty, 0, 0, null, CardSkillGrade.None);
 				}
 			}
 		}
@@ -298,6 +332,7 @@ namespace ProjectOne.UI
 			if (DungeonCardShop.Instance.GetBuyInfo(item.CardSkillId, out level, out price, out buyable) == true)
 			{
 				item.RefreshLevelPrice(level, price);
+				item.RefreshAffordable(DungeonRunState.Instance.EssenceAmount);
 				item.SetInteractable(buyable);
 			}
 		}
@@ -307,7 +342,9 @@ namespace ProjectOne.UI
 			Table_CardSkill.Row card = Table_CardSkill.Get(cardSkillId);
 			string title = card != null ? card.Name : string.Empty;
 			string desc = card != null ? card.Desc : string.Empty;
-			item.Bind(cardSkillId, title, desc, level, price, iconFor(card));
+			CardSkillGrade grade = card != null ? card.CardGrade : CardSkillGrade.None;
+			item.Bind(cardSkillId, title, desc, level, price, iconFor(card), grade);
+			item.RefreshAffordable(DungeonRunState.Instance.EssenceAmount);
 			item.SetInteractable(true);
 		}
 
@@ -323,7 +360,8 @@ namespace ProjectOne.UI
 
 				DungeonRunState.CardSkillSlot slot = DungeonRunState.Instance.GetSlot(i);
 				Table_CardSkill.Row card = slot.cardSkillId > 0 ? Table_CardSkill.Get(slot.cardSkillId) : null;
-				_equipSlots[i].Bind(slot.cardSkillId, iconFor(card));
+				CardSkillGrade grade = card != null ? card.CardGrade : CardSkillGrade.None;
+				_equipSlots[i].Bind(slot.cardSkillId, iconFor(card), grade);
 			}
 		}
 
@@ -355,7 +393,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// BuyOrSell 버튼 라벨/활성 갱신
+		// BuyOrSell 버튼 라벨/가격/활성 갱신 — 미선택이면 "구매"만 표시하고 버튼 비활성(딤)
 		private void refreshBuyOrSell()
 		{
 			bool active = _selKind != SelectionKind.None;
@@ -364,9 +402,30 @@ namespace ProjectOne.UI
 				_buyOrSellButton.interactable = active;
 			}
 
-			if (_buyOrSellLabel != null)
+			if (_buyOrSellLabel == null)
 			{
-				_buyOrSellLabel.text = _selKind == SelectionKind.EquipSlot ? "판매" : "구매";
+				return;
+			}
+
+			if (_selKind == SelectionKind.EquipSlot)
+			{
+				int refund = DungeonRunState.Instance.GetSlot(_selIndex).investedEssence / 2;
+				_buyOrSellLabel.text = "판매\n(" + NumberFormat.ToShort(refund) + ")";
+			}
+			else if (_selKind == SelectionKind.ShopCard)
+			{
+				int level;
+				int price;
+				bool buyable;
+				DungeonCardShop.Instance.GetBuyInfo(_cardItems[_selIndex].CardSkillId, out level, out price, out buyable);
+				bool afford = DungeonRunState.Instance.EssenceAmount >= price;
+				string priceStr = NumberFormat.ToShort(price);
+				string body = afford == true ? priceStr : "<color=red>" + priceStr + "</color>";
+				_buyOrSellLabel.text = "구매\n( " + body + " )";
+			}
+			else
+			{
+				_buyOrSellLabel.text = "구매";
 			}
 		}
 
@@ -384,6 +443,17 @@ namespace ProjectOne.UI
 			{
 				_currencyText.text = evt.Amount.ToString();
 			}
+
+			for (int i = 0; i < _cardItems.Length; i++)
+			{
+				if (_cardItems[i] != null && _cardItems[i].HasCard == true)
+				{
+					_cardItems[i].RefreshAffordable(evt.Amount);
+				}
+			}
+
+			refreshReroll();
+			refreshBuyOrSell();
 		}
 
 		private void onSlotChanged(CardSkillSlotChangedEvent evt)

@@ -52,6 +52,13 @@ namespace ProjectOne.Editor
 		private const string _patchConfigDir       = "Assets/Project/Data/ScriptableObject/Config";
 		private const string _patchConfigAssetPath = "Assets/Project/Data/ScriptableObject/Config/PatchConfig.asset";
 
+		// AtlasManifest.asset 위치 — 아웃게임 아이콘 아틀라스 주소 목록(AssetBundleLoader가 인스펙터로 보유)
+		private const string _atlasManifestAssetPath = "Assets/Project/Data/ScriptableObject/Config/AtlasManifest.asset";
+
+		// 아틀라스 수집 대상 폴더/확장자 — Rules 의 .spriteatlasv2 규칙과 동일
+		private const string _atlasFolder = "Assets/Project/Art/UI";
+		private const string _atlasExt    = ".spriteatlasv2";
+
 		// ── AssetPostprocessor 진입점 ─────────────────────────────────
 
 		static void OnPostprocessAllAssets(
@@ -101,6 +108,33 @@ namespace ProjectOne.Editor
 				EditorUtility.SetDirty(settings);
 				AssetDatabase.SaveAssets();
 			}
+
+			// 아틀라스(.spriteatlasv2)가 추가/이동/삭제됐으면 AtlasManifest 자동 갱신
+			if (atlasChanged(importedAssets) || atlasChanged(movedAssets)
+				|| atlasChanged(movedFromAssetPaths) || atlasChanged(deletedAssets))
+			{
+				refreshAtlasManifest();
+			}
+		}
+
+		// 경로 배열에 감시 폴더의 .spriteatlasv2 가 하나라도 있으면 true
+		private static bool atlasChanged(string[] paths)
+		{
+			for (int i = 0; i < paths.Length; i++)
+			{
+				if (isWatchedAtlas(paths[i]))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private static bool isWatchedAtlas(string assetPath)
+		{
+			return assetPath.StartsWith(_atlasFolder + "/", System.StringComparison.OrdinalIgnoreCase)
+				&& Path.GetExtension(assetPath).ToLower() == _atlasExt;
 		}
 
 		// ── 일괄 마킹 메뉴 ───────────────────────────────────────────
@@ -145,8 +179,9 @@ namespace ProjectOne.Editor
 			EditorUtility.SetDirty(settings);
 			AssetDatabase.SaveAssets();
 
-			// 마킹 완료 후 PatchConfig.asset 자동 갱신
+			// 마킹 완료 후 PatchConfig.asset / AtlasManifest.asset 자동 갱신
 			refreshPatchConfig();
+			refreshAtlasManifest();
 
 			EditorUtility.DisplayDialog("완료", $"{count}개 에셋을 Addressable로 마킹했습니다.", "확인");
 		}
@@ -373,6 +408,54 @@ namespace ProjectOne.Editor
 
 			AssetDatabase.SaveAssets();
 			Debug.Log($"[Addressables] PatchConfig 갱신 완료: [{string.Join(", ", labelList)}]");
+		}
+
+		// Art/UI 의 .spriteatlasv2 주소를 수집해 AtlasManifest.asset의 _atlasAddresses를 갱신
+		// MarkAll() 및 아틀라스 추가/삭제 시 자동 호출 → 부트가 이 목록으로 아틀라스를 로드
+		private static void refreshAtlasManifest()
+		{
+			// 감시 폴더에서 .spriteatlasv2 를 찾아 주소(=확장자 제외 파일명) 목록 수집
+			var addressList = new List<string>();
+			if (AssetDatabase.IsValidFolder(_atlasFolder))
+			{
+				string[] guids = AssetDatabase.FindAssets("", new[] { _atlasFolder });
+				for (int i = 0; i < guids.Length; i++)
+				{
+					string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+					if (isWatchedAtlas(path))
+					{
+						addressList.Add(Path.GetFileNameWithoutExtension(path));
+					}
+				}
+			}
+
+			// Config 폴더 없으면 생성 (Data/ScriptableObject 까지는 존재한다고 가정)
+			if (!AssetDatabase.IsValidFolder(_patchConfigDir))
+			{
+				AssetDatabase.CreateFolder("Assets/Project/Data/ScriptableObject", "Config");
+			}
+
+			// AtlasManifest.asset 로드 또는 신규 생성
+			AtlasManifest manifest = AssetDatabase.LoadAssetAtPath<AtlasManifest>(_atlasManifestAssetPath);
+			if (manifest == null)
+			{
+				manifest = ScriptableObject.CreateInstance<AtlasManifest>();
+				AssetDatabase.CreateAsset(manifest, _atlasManifestAssetPath);
+			}
+
+			// SerializedObject로 _atlasAddresses만 갱신
+			var so = new SerializedObject(manifest);
+			SerializedProperty addressesProp = so.FindProperty("_atlasAddresses");
+			addressesProp.arraySize = addressList.Count;
+			for (int i = 0; i < addressList.Count; i++)
+			{
+				addressesProp.GetArrayElementAtIndex(i).stringValue = addressList[i];
+			}
+			so.ApplyModifiedProperties();
+			EditorUtility.SetDirty(manifest);
+
+			AssetDatabase.SaveAssets();
+			Debug.Log($"[Addressables] AtlasManifest 갱신 완료: [{string.Join(", ", addressList)}]");
 		}
 	}
 }

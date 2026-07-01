@@ -208,6 +208,9 @@ namespace ProjectOne.Dungeon
 				return false;
 			}
 
+			// 스테이지 경계 — 리롤 가격을 최초 비용으로 리셋 (스테이지 진행 중 상점에는 누적)
+			DungeonRunState.Instance.ResetRerollCount();
+
 			// 다음 스테이지 진입 시 이전 인터미션에서 남은 기믹(상점 등) 일괄 회수
 			if (GimmickService.HasInstance == true)
 			{

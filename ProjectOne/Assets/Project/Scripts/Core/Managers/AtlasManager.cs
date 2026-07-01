@@ -18,9 +18,10 @@ namespace ProjectOne.Resources
 		private readonly Dictionary<string, Sprite> _sprites = new Dictionary<string, Sprite>();
 
 		// 부트 시 1회 — 지정한 아틀라스들을 로드해 상주시킨다(핸들 수명은 ResourceManager 캐시가 소유).
-		public async UniTask LoadAsync(string[] atlasAddresses, CancellationToken ct = default)
+		// 주소 목록은 AtlasManifest(에디터가 Art/UI 의 .spriteatlasv2 를 수집)에서 주입받는다.
+		public async UniTask LoadAsync(IReadOnlyList<string> atlasAddresses, CancellationToken ct = default)
 		{
-			for (int i = 0; i < atlasAddresses.Length; i++)
+			for (int i = 0; i < atlasAddresses.Count; i++)
 			{
 				SpriteAtlas atlas = await ResourceManager.Instance.AcquireAsync<SpriteAtlas>(atlasAddresses[i], ct);
 				if (atlas != null && _atlases.Contains(atlas) == false)
