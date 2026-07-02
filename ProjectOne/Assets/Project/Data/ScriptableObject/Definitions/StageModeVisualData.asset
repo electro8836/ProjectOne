@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4cc6dab04bd5a847968170df3665f9e, type: 3}
+  m_Name: StageModeVisualData
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.StageModeVisualData
+  _entries:
+  - mode: 1
+    iconAddress: PictoIcon_Defense
+  - mode: 2
+    iconAddress: PictoIcon_Destroy
+  - mode: 3
+    iconAddress: PictoIcon_Capture
+  - mode: 4
+    iconAddress: PictoIcon_Breakthrough
+  - mode: 5
+    iconAddress: PictoIcon_Boss

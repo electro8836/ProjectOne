@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ProjectOne.Event;
 using ProjectOne.Utils;
 
@@ -43,12 +44,22 @@ namespace ProjectOne.Dungeon
 		// 리롤 횟수 (스테이지 경계에서 리셋, 스테이지 진행 중에는 누적)
 		private int _rerollCount;
 
+		// 클리어한 스테이지 보상 누적 (던전 종료 결과창에 표시, 지급은 이후)
+		private readonly List<DungeonRewardResult> _accumulatedRewards = new List<DungeonRewardResult>();
+
+		// 다음 스테이지 선택 화면에 뜬 2개 후보의 롤 보상(표시용, 후속 StageSelectUI 가 조회)
+		private int _optionStageIdA;
+		private int _optionRewardItemIdA;
+		private int _optionStageIdB;
+		private int _optionRewardItemIdB;
+
 		private DungeonRunState()
 		{
 		}
 
 		public int EssenceAmount => _essence;
 		public int RerollCount => _rerollCount;
+		public IReadOnlyList<DungeonRewardResult> AccumulatedRewards => _accumulatedRewards;
 
 		// ── 임시재화 ──────────────────────────────────────────────────
 
@@ -207,6 +218,47 @@ namespace ProjectOne.Dungeon
 			_shopCards[index].locked = locked;
 		}
 
+		// ── 보상 ──────────────────────────────────────────────────────
+
+		// 클리어 스테이지 보상 누적
+		public void AddRewards(IReadOnlyList<DungeonRewardResult> rewards)
+		{
+			if (rewards == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < rewards.Count; i++)
+			{
+				_accumulatedRewards.Add(rewards[i]);
+			}
+		}
+
+		// 선택 화면 2개 후보의 롤 보상 등록 (단일 후보면 B 를 0 으로)
+		public void SetStageOptionRewards(int stageIdA, int rewardIdA, int stageIdB, int rewardIdB)
+		{
+			_optionStageIdA = stageIdA;
+			_optionRewardItemIdA = rewardIdA;
+			_optionStageIdB = stageIdB;
+			_optionRewardItemIdB = rewardIdB;
+		}
+
+		// 후보 stageId 에 배정된 롤 보상 RewardItemId (없으면 0)
+		public int GetStageOptionRewardItemId(int stageId)
+		{
+			if (stageId > 0 && stageId == _optionStageIdA)
+			{
+				return _optionRewardItemIdA;
+			}
+
+			if (stageId > 0 && stageId == _optionStageIdB)
+			{
+				return _optionRewardItemIdB;
+			}
+
+			return 0;
+		}
+
 		// ── 런 초기화 ─────────────────────────────────────────────────
 
 		// 던전 진입 시 임시재화/슬롯/구매창 상태 모두 초기화
@@ -223,6 +275,12 @@ namespace ProjectOne.Dungeon
 			{
 				_shopCards[i] = default(ShopCardState);
 			}
+
+			_accumulatedRewards.Clear();
+			_optionStageIdA = 0;
+			_optionRewardItemIdA = 0;
+			_optionStageIdB = 0;
+			_optionRewardItemIdB = 0;
 
 			publishEssenceChanged();
 			EventManager.Instance.Publish(new CardSkillSlotChangedEvent(-1, 0, 0));

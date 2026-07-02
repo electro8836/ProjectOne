@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Flow;
+using ProjectOne.Loading;
 using ProjectOne.Map;
 using ProjectOne.UI;
 using ProjectOne.Unit;
@@ -24,12 +25,18 @@ namespace ProjectOne.Dungeon
 		// 히어로 배치 기준 위치(맵 좌측)
 		private static readonly Vector3 HeroBasePos = new Vector3(0f, 0f, 0f);
 
-		[Header("UI 주소 (Addressable)")]
-		[SerializeField] private string _stageSelectAddress = "Prefab_StageSelectPopup";
-		[SerializeField] private string _confirmPopupAddress = "Prefab_StageFinishPopup";
+		// UI 프리팹 주소(Addressable) — 씬 직렬화로 숨는 것을 막기 위해 코드 상수로 고정
+		private const string StageSelectAddress = "Prefab_StageSelect";
+		private const string DungeonResultAddress = "Prefab_DungeonResult";
+
+		// 엑스트라 스테이지 클리어 후 결과창 등장까지 대기(초)
+		private const float ResultDelayAfterExtra = 3f;
 
 		private Table_Dungeon.Row _dungeon;
 		private DungeonContext _ctx;
+
+		// 현재 진행 중인 스테이지에 확정된 롤 보상 RewardItemId (클리어 시 해석·누적)
+		private int _currentRollRewardItemId;
 
 		// 전투 수명 토큰 — 종료(클리어/패배/강제퇴장) 시 취소해 진행 루프를 결정적으로 중단한다.
 		private CancellationTokenSource _cts;
@@ -42,6 +49,9 @@ namespace ProjectOne.Dungeon
 
 		// 스테이지 선택 후보 수집용 버퍼 (재사용)
 		private readonly List<int> _candidateBuffer = new List<int>();
+
+		// 선택 UI 전달용 옵션 버퍼 (재사용)
+		private readonly List<StageSelectUI.StageOption> _optionBuffer = new List<StageSelectUI.StageOption>();
 
 		// 플로우필드 재베이크 임계값 — 기준 히어로가 다른 셀로 이동했을 때만 재계산
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
@@ -86,6 +96,9 @@ namespace ProjectOne.Dungeon
 				endDungeonAsync(false).Forget();
 				return;
 			}
+
+			// 첫 스테이지(라운드 1) 롤 보상 확정
+			_currentRollRewardItemId = DungeonRewardResolver.PickRollRewardItemId(ctx.DungeonId, 1);
 
 			// 첫 스테이지 진행 폴링부터 던전 끝까지 백그라운드로 구동
 			runDungeonGuardedAsync(_cts.Token).Forget();
@@ -137,6 +150,16 @@ namespace ProjectOne.Dungeon
 					return false;
 				}
 
+				// 스테이지 클리어(라운드 index+1) 보상 해석·누적
+				if (result == DungeonResult.Cleared)
+				{
+					accumulateStageRewards(index + 1);
+
+					// 본편 스테이지 종료 상점 — 다음 진행 전 히어로 위치에 등장.
+					// (엑스트라는 tryExtraStageAsync 경로라 여기서 스폰되지 않음 → 클리어 후 상점 없음)
+					GimmickService.Instance.SpawnAtHeroAsync(GimmickService.ShopGimmickAddress).Forget();
+				}
+
 				cleanupStage();
 				if (result == DungeonResult.Defeat)
 				{
@@ -160,6 +183,9 @@ namespace ProjectOne.Dungeon
 				{
 					return false;
 				}
+
+				// 선택한 스테이지에 배정된 롤 보상을 진행 대상으로 확정
+				_currentRollRewardItemId = DungeonRunState.Instance.GetStageOptionRewardItemId(nextStageId);
 			}
 
 			// 본편 클리어 — 엑스트라 스테이지 도전(선택)
@@ -176,26 +202,66 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			bool challenge = await askExtraChallengeAsync(ct);
+			int extraStageId = firstStageOfGroup(_dungeon.ExtraStageGroupID);
+			int extraRound = _dungeon.TotalStageCount + 1;
+
+			bool challenge = await askExtraChallengeAsync(extraStageId, extraRound, ct);
 			if (challenge == false || ct.IsCancellationRequested == true)
 			{
 				return;
 			}
 
-			int extraStageId = firstStageOfGroup(_dungeon.ExtraStageGroupID);
 			bool entered = await beginStageAsync(extraStageId, ct);
 			if (entered == false)
 			{
 				return;
 			}
 
-			await waitStageResultAsync(ct);
+			// 엑스트라 스테이지 롤 보상 확정 (라운드 = 본편 총 스테이지 수 + 1)
+			_currentRollRewardItemId = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, extraRound);
+
+			DungeonResult result = await waitStageResultAsync(ct);
 			if (ct.IsCancellationRequested == true)
 			{
 				return;
 			}
 
+			// 엑스트라 클리어 보상 누적 + 결과창 등장까지 3초 대기(귀환 경로는 즉시 표시)
+			if (result == DungeonResult.Cleared)
+			{
+				accumulateStageRewards(extraRound);
+				await UniTask.Delay(System.TimeSpan.FromSeconds(ResultDelayAfterExtra), cancellationToken: ct).SuppressCancellationThrow();
+			}
+
 			cleanupStage();
+		}
+
+		// 현재 진행 스테이지의 롤 보상 + 라운드 고정 보상을 등급까지 해석해 누적한다.
+		private void accumulateStageRewards(int round)
+		{
+			// 라운드가 본편 총 스테이지 수 + 1 이면 추가(엑스트라) 스테이지 보상
+			bool isBonus = round == _dungeon.TotalStageCount + 1;
+
+			List<DungeonRewardResult> rewards = new List<DungeonRewardResult>();
+
+			DungeonRewardResult rolled;
+			if (DungeonRewardResolver.Resolve(_currentRollRewardItemId, out rolled) == true)
+			{
+				rewards.Add(new DungeonRewardResult(rolled.RewardItemId, rolled.Type, rolled.SourceRowId, rolled.Amount, isBonus));
+			}
+
+			int[] fixIds = DungeonRewardResolver.GetFixRewardItemIds(_ctx.DungeonId, round);
+			for (int i = 0; i < fixIds.Length; i++)
+			{
+				DungeonRewardResult fixResult;
+				if (DungeonRewardResolver.Resolve(fixIds[i], out fixResult) == true)
+				{
+					rewards.Add(new DungeonRewardResult(fixResult.RewardItemId, fixResult.Type, fixResult.SourceRowId, fixResult.Amount, isBonus));
+				}
+			}
+
+			DungeonRunState.Instance.AddRewards(rewards);
+			_currentRollRewardItemId = 0;
 		}
 
 		// 스테이지 진입 — 맵 로드 + 모드 셋업. 성공 시 _currentStage/_currentMode 세팅 후 true.
@@ -296,9 +362,18 @@ namespace ProjectOne.Dungeon
 				return 0;
 			}
 
+			// 롤 보상 라운드 = 다음 스테이지 포지션 + 1
+			int round = stagePosition + 1;
+
 			if (_candidateBuffer.Count == 1)
 			{
-				return _candidateBuffer[0];
+				int only = _candidateBuffer[0];
+				int rewardOnly = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, round);
+				DungeonRunState.Instance.SetStageOptionRewards(only, rewardOnly, 0, 0);
+
+				_optionBuffer.Clear();
+				_optionBuffer.Add(new StageSelectUI.StageOption(only, rewardOnly));
+				return await openStageSelectAsync(_optionBuffer, stagePosition + 1, only, ct);
 			}
 
 			// 중복 없이 2개 랜덤 추출
@@ -307,13 +382,22 @@ namespace ProjectOne.Dungeon
 			_candidateBuffer.RemoveAt(idxA);
 			int stageB = _candidateBuffer[Random.Range(0, _candidateBuffer.Count)];
 
-			if (string.IsNullOrEmpty(_stageSelectAddress))
-			{
-				return stageA;
-			}
+			// 각 후보에 롤 보상 1개씩 부여(선택 UI 표시용). 선택된 스테이지 진입 시 이 값이 확정된다.
+			int rewardA = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, round);
+			int rewardB = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, round);
+			DungeonRunState.Instance.SetStageOptionRewards(stageA, rewardA, stageB, rewardB);
 
-			// 유저가 OpenSelectButton 을 눌러 선택 UI 를 열고, 스테이지를 고를 때까지 반복.
-			// 선택 UI 의 ExitButton(0 반환) 으로 닫으면 다시 OpenSelectButton 노출 단계로 돌아간다.
+			// 후보 옵션 구성 (stageId + 배정된 롤 보상)
+			_optionBuffer.Clear();
+			_optionBuffer.Add(new StageSelectUI.StageOption(stageA, rewardA));
+			_optionBuffer.Add(new StageSelectUI.StageOption(stageB, rewardB));
+			return await openStageSelectAsync(_optionBuffer, stagePosition + 1, stageA, ct);
+		}
+
+		// 포탈 버튼 게이트 → 선택 UI 오픈 → 하나 선택(EnterButton)까지 대기 후 stageId 반환.
+		// ExitButton(0 반환)으로 닫으면 다시 포탈 버튼 노출 단계로 돌아간다. UI 로드 실패 시 fallbackStageId.
+		private async UniTask<int> openStageSelectAsync(List<StageSelectUI.StageOption> options, int stageNumber, int fallbackStageId, CancellationToken ct)
+		{
 			BattleHUD hud = UIManager.Instance.GetScreen<BattleHUD>();
 			while (ct.IsCancellationRequested == false)
 			{
@@ -326,13 +410,13 @@ namespace ProjectOne.Dungeon
 					}
 				}
 
-				StageSelectUI ui = await UIManager.Instance.OpenOverlayAsync<StageSelectUI>(_stageSelectAddress, ct);
+				StageSelectUI ui = await UIManager.Instance.OpenOverlayAsync<StageSelectUI>(StageSelectAddress, ct);
 				if (ui == null)
 				{
-					return stageA;
+					return fallbackStageId;
 				}
 
-				int chosen = await ui.WaitSelectionAsync(stageA, stageB, ct);
+				int chosen = await ui.WaitStageSelectionAsync(options, stageNumber, _dungeon.TotalStageCount, ct);
 				await UIManager.Instance.CloseOverlayAsync(false);
 
 				if (chosen > 0)
@@ -344,14 +428,49 @@ namespace ProjectOne.Dungeon
 			return 0;
 		}
 
-		private async UniTask<bool> askExtraChallengeAsync(CancellationToken ct)
+		// 엑스트라 도전(true)/마을 귀환(false)을 통합 선택 UI 로 묻는다.
+		// 포탈 버튼 게이트 후 UI 오픈, ExitButton(닫기)이면 다시 포탈 버튼 노출 단계로 돌아간다.
+		private async UniTask<bool> askExtraChallengeAsync(int extraStageId, int extraRound, CancellationToken ct)
 		{
-			if (string.IsNullOrEmpty(_confirmPopupAddress))
+			Table_Stage.Row extra = Table_Stage.Get(extraStageId);
+			MapModeType extraMode = extra != null ? extra.ModeType : MapModeType.None;
+			int[] fixIds = DungeonRewardResolver.GetFixRewardItemIds(_ctx.DungeonId, extraRound);
+
+			BattleHUD hud = UIManager.Instance.GetScreen<BattleHUD>();
+			while (ct.IsCancellationRequested == false)
 			{
-				return false;
+				if (hud != null)
+				{
+					await hud.WaitOpenSelectAsync(ct);
+					if (ct.IsCancellationRequested == true)
+					{
+						return false;
+					}
+				}
+
+				StageSelectUI ui = await UIManager.Instance.OpenOverlayAsync<StageSelectUI>(StageSelectAddress, ct);
+				if (ui == null)
+				{
+					return false;
+				}
+
+				StageSelectUI.ExtraChoice choice = await ui.WaitExtraChoiceAsync(extraMode, fixIds, ct);
+				await UIManager.Instance.CloseOverlayAsync(false);
+
+				if (choice == StageSelectUI.ExtraChoice.Challenge)
+				{
+					return true;
+				}
+
+				if (choice == StageSelectUI.ExtraChoice.Return)
+				{
+					return false;
+				}
+
+				// Exit → 루프(포탈 버튼 다시 노출)
 			}
 
-			return await UIManager.Instance.ShowConfirmPopupAsync(_confirmPopupAddress, "엑스트라 스테이지에 도전하시겠습니까?", ct);
+			return false;
 		}
 
 		private static async UniTask spawnHeroAsync(DungeonContext ctx, CancellationToken ct)
@@ -393,10 +512,30 @@ namespace ProjectOne.Dungeon
 			if (victory == true && _ctx != null)
 			{
 				Account.Instance.ClearedDungeons.MarkCleared(_ctx.DungeonId);
+
+				// 클리어 결과창(누적 보상) 노출 — 배경 클릭/카운트다운으로 닫힐 때까지 대기(정리 전, 맵/히어로 유지)
+				await showDungeonResultAsync(_cts.Token);
 			}
 
 			cleanupAll();
 			await GameFlow.Instance.ChangeStateAsync(new LobbyState());
+		}
+
+		// 던전 클리어 결과창을 열고 유저 닫힘(배경 클릭 또는 자동복귀 카운트다운)까지 대기한다.
+		private async UniTask showDungeonResultAsync(CancellationToken ct)
+		{
+			DungeonResultUI ui = await UIManager.Instance.OpenOverlayAsync<DungeonResultUI>(DungeonResultAddress, ct);
+			if (ui == null)
+			{
+				return;
+			}
+
+			await ui.WaitAsync(ct);
+
+			// 결과창이 아직 덮고 있는 동안 로딩을 먼저 띄운 뒤 결과창을 닫는다
+			// (결과창→로비 전환 틈에 BattleHUD 가 잠깐 보이는 것을 방지). 이후 LobbyState 는 이미 표시 중이라 재표시하지 않음.
+			await LoadingManager.Instance.ShowAsync(LoadingFlow.ReturnToLobby, ct);
+			await UIManager.Instance.CloseOverlayAsync(false);
 		}
 
 		// 던전 종료 시 유닛/스폰/풀/맵 일괄 정리.

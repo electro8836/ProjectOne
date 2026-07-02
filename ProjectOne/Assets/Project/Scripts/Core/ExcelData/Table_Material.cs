@@ -12,6 +12,7 @@ namespace EDT {
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
             public MaterialType MaterialType { get; set; } = MaterialType.None;
+            public MaterialGradeType MaterialGrade { get; set; } = MaterialGradeType.None;
             public string Navigation { get; set; } = string.Empty;
         }
 
@@ -40,6 +41,7 @@ namespace EDT {
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
                 row.MaterialType = (MaterialType)reader.ReadInt32();
+                row.MaterialGrade = (MaterialGradeType)reader.ReadInt32();
                 row.Navigation = reader.ReadString();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

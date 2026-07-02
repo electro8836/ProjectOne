@@ -85,6 +85,15 @@ namespace EDT {
         Craft,
     }
 
+    public enum MaterialGradeType {
+        None,
+        Normal,
+        Magic,
+        Rare,
+        Epic,
+        Legendary,
+    }
+
     public enum MonsterTypes {
         None,
         Normal,
@@ -94,10 +103,10 @@ namespace EDT {
 
     public enum RewardTypes {
         None,
-        Material,
         Equipment,
-        Experience,
-        Gold,
+        Material,
+        Skill,
+        Currency,
     }
 
     public enum SkillCastingTypes {
@@ -529,14 +538,18 @@ namespace EDT {
         TableDungeon,
         TableStageGroup,
         TableStage,
+        TableDungeonReward,
         TableMapData,
         TableMonsterSpawn,
         TableDropObject,
-        TableStageReward,
         TableMaterial,
         TableMonster,
         TableMonsterPhase,
-        TableReward,
+        TableRewardItem,
+        TableReward_Eqiupment,
+        TableReward_Material,
+        TableReward_CardSkill,
+        TableReward_Currency,
         TableSkillInfo,
         TableSkillEffect,
         TableSkillSet,

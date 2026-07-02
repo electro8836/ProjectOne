@@ -164,20 +164,23 @@ namespace ProjectOne.Event
 		}
 
 		// 웨이브 상태 전이 알림 (웨이브 모드). 메인HUD의 스킵 버튼/웨이브 표시 등에서 구독.
-		// IsWaiting=true: 다음 웨이브 대기 중(스킵 버튼 노출), WaitSeconds: 대기 총 시간(초)
+		// IsWaiting=true: 웨이브 클리어 배너("N/M단계 방어 완료"), WaitSeconds: 대기 총 시간(초)
+		// CanSkip=true: 다음 웨이브가 있어 스킵 버튼 노출. 마지막 웨이브 클리어 시엔 false(스킵 없음).
 		public readonly struct WaveStateChangedEvent
 		{
 				public readonly int CurrentWave;   // 1-based 현재 웨이브
 				public readonly int TotalWaves;
 				public readonly bool IsWaiting;
 				public readonly float WaitSeconds;
+				public readonly bool CanSkip;
 
-				public WaveStateChangedEvent(int currentWave, int totalWaves, bool isWaiting, float waitSeconds)
+				public WaveStateChangedEvent(int currentWave, int totalWaves, bool isWaiting, float waitSeconds, bool canSkip)
 				{
 						this.CurrentWave = currentWave;
 						this.TotalWaves = totalWaves;
 						this.IsWaiting = isWaiting;
 						this.WaitSeconds = waitSeconds;
+						this.CanSkip = canSkip;
 				}
 		}
 

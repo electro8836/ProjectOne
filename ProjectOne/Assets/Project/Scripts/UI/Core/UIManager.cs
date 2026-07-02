@@ -219,34 +219,6 @@ namespace ProjectOne.UI
 
 		// ── 공통 팝업 ───────────────────────────────────────────────────
 
-		// 확인/취소 팝업. 확인이면 true, 취소·외부취소면 false를 반환한다.
-		public async UniTask<bool> ShowConfirmPopupAsync(string address, string message, CancellationToken ct)
-		{
-			_popupCts?.Cancel();
-			_popupCts?.Dispose();
-			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
-			if (prefab == null)
-			{
-				return false;
-			}
-
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
-			StageFinishPopup popup = go.GetComponent<StageFinishPopup>();
-			if (popup == null)
-			{
-				Destroy(go);
-				ResourceManager.Instance.Release(address);
-				return false;
-			}
-
-			bool result = await popup.WaitResultAsync(message, _popupCts.Token);
-			Destroy(go);
-			ResourceManager.Instance.Release(address);
-			return result;
-		}
-
 		// 아이템 정보 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowItemInfoPopupAsync(string address, int itemId, CancellationToken ct)
 		{

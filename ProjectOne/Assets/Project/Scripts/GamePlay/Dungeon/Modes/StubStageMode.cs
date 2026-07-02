@@ -10,9 +10,7 @@ namespace ProjectOne.Dungeon
 	{
 		public UniTask SetupAsync(Table_Stage.Row stage, CancellationToken ct)
 		{
-			// 미구현 모드는 진입 즉시 클리어 — 히어로 위치에 상점 기믹 등장 (다음 스테이지 진입 시 회수)
-			GimmickService.Instance.SpawnAtHeroAsync(GimmickService.ShopGimmickAddress).Forget();
-
+			// 미구현 모드는 진입 즉시 클리어. 스테이지 종료 상점은 DungeonDirector 가 본편 클리어 시 스폰한다(엑스트라 제외).
 			return UniTask.CompletedTask;
 		}
 

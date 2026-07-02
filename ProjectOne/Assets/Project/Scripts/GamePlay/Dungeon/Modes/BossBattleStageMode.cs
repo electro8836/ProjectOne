@@ -28,9 +28,7 @@ namespace ProjectOne.Dungeon
 
 			await UniTask.WaitUntil(isKillTargetReached, PlayerLoopTiming.Update, ct);
 
-			// 보스 처치(클리어) 시 히어로 위치에 상점 기믹 1회 등장 (다음 스테이지 진입 시 회수)
-			GimmickService.Instance.SpawnAtHeroAsync(GimmickService.ShopGimmickAddress).Forget();
-
+			// 스테이지 종료 상점은 DungeonDirector 가 본편 클리어 시 스폰한다(엑스트라 제외).
 			_result = DungeonResult.Cleared;
 		}
 

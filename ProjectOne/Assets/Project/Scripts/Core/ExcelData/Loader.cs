@@ -205,6 +205,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - DungeonReward
+            {
+                CurrentFile = Table_DungeonReward.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_DungeonReward._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - MapData
             {
                 CurrentFile = Table_MapData.Filename;
@@ -232,17 +243,6 @@ namespace EDT {
                 CurrentFile = Table_DropObject.Filename;
                 reader = open_file_functor( CurrentFile );
                 if( Load( reader, Table_DropObject._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - StageReward
-            {
-                CurrentFile = Table_StageReward.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_StageReward._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
@@ -282,11 +282,55 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - Reward
+            #region Table - RewardItem
             {
-                CurrentFile = Table_Reward.Filename;
+                CurrentFile = Table_RewardItem.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Reward._parser ) == false ) {
+                if( Load( reader, Table_RewardItem._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Reward_Eqiupment
+            {
+                CurrentFile = Table_Reward_Eqiupment.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Reward_Eqiupment._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Reward_Material
+            {
+                CurrentFile = Table_Reward_Material.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Reward_Material._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Reward_CardSkill
+            {
+                CurrentFile = Table_Reward_CardSkill.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Reward_CardSkill._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Reward_Currency
+            {
+                CurrentFile = Table_Reward_Currency.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Reward_Currency._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

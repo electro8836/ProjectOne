@@ -32,7 +32,7 @@ namespace ProjectOne.Dungeon
 			for (int wave = 1; wave <= totalWaves; wave++)
 			{
 				int groupId = GetGroupId(stage.MonsterSpawnGroupIDs, wave - 1);
-				EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, false, 0f));
+				EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, false, 0f, false));
 
 				// 웨이브 전용 소환 CTS — 전멸 시 취소해 지속(SpawnStep) 소환을 멈춘다
 				_spawnCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -51,24 +51,29 @@ namespace ProjectOne.Dungeon
 				{
 					await waitBetweenWavesAsync(wave, totalWaves, ct);
 				}
+				else
+				{
+					// 마지막 웨이브 클리어 — "M/M단계 방어 완료" 배너 표시(스킵 버튼 없음)
+					EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, true, 0f, false));
+				}
 			}
 
-			// 마지막 웨이브 클리어(스테이지 종료) 시에도 히어로 위치에 상점 기믹 등장 (다음 스테이지 진입 시 회수)
-			GimmickService.Instance.SpawnAtHeroAsync(GimmickService.ShopGimmickAddress).Forget();
-
+			// 스테이지 종료 상점은 DungeonDirector 가 본편 클리어 시 스폰한다(엑스트라 제외).
 			_result = DungeonResult.Cleared;
 		}
 
 		private async UniTask waitBetweenWavesAsync(int wave, int totalWaves, CancellationToken ct)
 		{
 			_skipRequested = false;
-			EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, true, WaveWaitSeconds));
+			EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, true, WaveWaitSeconds, true));
 
 			// 웨이브 간 대기 동안 히어로 위치에 상점 기믹 등장 (다음 웨이브 시작 시 회수)
 			GimmickService.Instance.SpawnAtHeroAsync(GimmickService.ShopGimmickAddress).Forget();
 
+			// 시간 경과 자동 전환은 미사용 — 스킵(버튼/스페이스바)으로만 다음 웨이브로 진행한다.
+			// elapsed 누적과 WaveWaitSeconds 비교 로직은 추후 재사용을 위해 보존하되 종료 조건에서는 뺀다.
 			float elapsed = 0f;
-			while (elapsed < WaveWaitSeconds && _skipRequested == false)
+			while (_skipRequested == false)
 			{
 				if (isSkipKeyPressed() == true)
 				{

@@ -17,7 +17,6 @@ namespace EDT {
             public int[] MapObjectIDs { get; set; } = Array.Empty<int>();
             public int[] MonsterSpawnGroupIDs { get; set; } = Array.Empty<int>();
             public int DropObjectGroupID { get; set; } = 0;
-            public int[] StageRewardIDs { get; set; } = Array.Empty<int>();
         }
 
         public const string Filename = "edt_stage.bytes";
@@ -50,7 +49,6 @@ namespace EDT {
                 { int _n = reader.ReadInt32(); row.MapObjectIDs = new int[_n]; for(int _i=0;_i<_n;_i++) row.MapObjectIDs[_i] = reader.ReadInt32(); }
                 { int _n = reader.ReadInt32(); row.MonsterSpawnGroupIDs = new int[_n]; for(int _i=0;_i<_n;_i++) row.MonsterSpawnGroupIDs[_i] = reader.ReadInt32(); }
                 row.DropObjectGroupID = reader.ReadInt32();
-                { int _n = reader.ReadInt32(); row.StageRewardIDs = new int[_n]; for(int _i=0;_i<_n;_i++) row.StageRewardIDs[_i] = reader.ReadInt32(); }
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

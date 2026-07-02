@@ -4,22 +4,18 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_Reward
+    public static class Table_Reward_Currency
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public string Name { get; set; } = string.Empty;
-            public string Desc { get; set; } = string.Empty;
-            public string Icon { get; set; } = string.Empty;
-            public RewardTypes RewardType { get; set; } = RewardTypes.None;
-            public float Probability { get; set; } = 0f;
+            public int CurrencySourceID { get; set; } = 0;
+            public CurrencyInfo CurrencyType { get; set; } = CurrencyInfo.None;
             public int MinCount { get; set; } = 0;
             public int MaxCount { get; set; } = 0;
-            public int[] SourceIDs { get; set; } = Array.Empty<int>();
         }
 
-        public const string Filename = "edt_reward.bytes";
-        public const TableType Type = TableType.TableReward;
+        public const string Filename = "edt_reward_currency.bytes";
+        public const TableType Type = TableType.TableReward_Currency;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -39,14 +35,10 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.Name = reader.ReadString();
-                row.Desc = reader.ReadString();
-                row.Icon = reader.ReadString();
-                row.RewardType = (RewardTypes)reader.ReadInt32();
-                row.Probability = reader.ReadSingle();
+                row.CurrencySourceID = reader.ReadInt32();
+                row.CurrencyType = (CurrencyInfo)reader.ReadInt32();
                 row.MinCount = reader.ReadInt32();
                 row.MaxCount = reader.ReadInt32();
-                { int _n = reader.ReadInt32(); row.SourceIDs = new int[_n]; for(int _i=0;_i<_n;_i++) row.SourceIDs[_i] = reader.ReadInt32(); }
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

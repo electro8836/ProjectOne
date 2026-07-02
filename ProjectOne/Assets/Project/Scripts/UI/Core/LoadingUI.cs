@@ -44,12 +44,13 @@ namespace ProjectOne.UI
 			_progressText.text = Mathf.RoundToInt(current * 100f) + "%";
 		}
 
-		public override async UniTask OnOpenAsync(CancellationToken ct)
+		public override UniTask OnOpenAsync(CancellationToken ct)
 		{
 			_targetProgress = 0f;
 			_progressBar.value = 0f;
 			_progressText.text = "0%";
-			await fadeAsync(0f, 1f, ct);
+			_canvasGroup.alpha = 1f;   // 페이드인 없이 즉시 표시
+			return UniTask.CompletedTask;
 		}
 
 		public override async UniTask OnCloseAsync()
