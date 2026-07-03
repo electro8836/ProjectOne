@@ -70,18 +70,18 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 누적 보상을 등급/보너스 단위로 합산해 슬롯을 생성한다 (DungeonResultUI 와 동일 규칙).
+		// 누적 보상을 상자/보너스 단위로 합산해 슬롯을 생성한다 (DungeonResultUI 와 동일 규칙).
 		private void buildSlots()
 		{
 			IReadOnlyList<DungeonRewardResult> rewards = DungeonRunState.Instance.AccumulatedRewards;
 
-			// 키 = (보너스여부) + (등급/종류) — 보너스는 일반과 분리, 같은 등급끼리만 합산.
+			// 키 = (보너스여부) + (RewardItemId) — 보너스는 일반과 분리, 같은 상자끼리만 합산.
 			List<MergedReward> merged = new List<MergedReward>();
 			Dictionary<string, int> keyIndex = new Dictionary<string, int>();
 			for (int i = 0; i < rewards.Count; i++)
 			{
 				DungeonRewardResult r = rewards[i];
-				string key = (r.IsBonus ? "B" : "N") + DungeonRewardResolver.GradeKey(r);
+				string key = (r.IsBonus ? "B" : "N") + r.RewardItemId;
 
 				int idx;
 				if (keyIndex.TryGetValue(key, out idx) == true)

@@ -94,7 +94,7 @@ namespace ProjectOne.UI
 
 		private string equipLabel()
 		{
-			return isEquipped() ? "Unequip" : "Equip";
+			return isEquipped() ? "장착해제" : "장착";
 		}
 
 		// 스탯 옵션 1~3, 스킬 옵션 1~2, 특성 옵션 순서대로 렌더 데이터를 만든다.

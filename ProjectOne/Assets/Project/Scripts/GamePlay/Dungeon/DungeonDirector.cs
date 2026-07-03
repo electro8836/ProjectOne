@@ -247,7 +247,8 @@ namespace ProjectOne.Dungeon
 			cleanupStage();
 		}
 
-		// 현재 진행 스테이지의 롤 보상 + 라운드 고정 보상을 등급까지 해석해 누적한다.
+		// 현재 진행 스테이지의 롤 보상 + 라운드 고정 보상을 RewardItem(상자) 단위로 누적한다.
+		// 실제 등급/재화수량은 이후 서버 오픈 시 결정하므로 여기서 랜덤을 굴리지 않는다.
 		private void accumulateStageRewards(int round)
 		{
 			// 라운드가 본편 총 스테이지 수 + 1 이면 추가(엑스트라) 스테이지 보상
@@ -255,19 +256,17 @@ namespace ProjectOne.Dungeon
 
 			List<DungeonRewardResult> rewards = new List<DungeonRewardResult>();
 
-			DungeonRewardResult rolled;
-			if (DungeonRewardResolver.Resolve(_currentRollRewardItemId, out rolled) == true)
+			if (_currentRollRewardItemId > 0)
 			{
-				rewards.Add(new DungeonRewardResult(rolled.RewardItemId, rolled.Type, rolled.SourceRowId, rolled.Amount, isBonus));
+				rewards.Add(new DungeonRewardResult(_currentRollRewardItemId, 1, isBonus));
 			}
 
 			int[] fixIds = DungeonRewardResolver.GetFixRewardItemIds(_ctx.DungeonId, round);
 			for (int i = 0; i < fixIds.Length; i++)
 			{
-				DungeonRewardResult fixResult;
-				if (DungeonRewardResolver.Resolve(fixIds[i], out fixResult) == true)
+				if (fixIds[i] > 0)
 				{
-					rewards.Add(new DungeonRewardResult(fixResult.RewardItemId, fixResult.Type, fixResult.SourceRowId, fixResult.Amount, isBonus));
+					rewards.Add(new DungeonRewardResult(fixIds[i], 1, isBonus));
 				}
 			}
 
