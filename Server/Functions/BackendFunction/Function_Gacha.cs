@@ -53,18 +53,11 @@ namespace BackendFunction
 				}
 
 				// 3. GachaInfo 차트 조회 → 비용/타입 결정(서버 권위 — 클라 값 불신)
-				if (ChartUtil.ResolveChartFileId(GachaInfoChartName, out string gachaInfoFileId, out string infoErr) == false)
+				if (ChartUtil.GetChartRows(GachaInfoChartName, out JsonData infoRows, out string infoErr) == false)
 				{
 					return FuncResult.Error(infoErr);
 				}
 
-				var gachaInfoResult = Backend.Chart.GetChartContents(gachaInfoFileId);
-				if (!gachaInfoResult.IsSuccess())
-				{
-					return FuncResult.Error("Failed to get GachaInfo chart: " + gachaInfoResult.GetErrorCode());
-				}
-
-				JsonData infoRows = gachaInfoResult.FlattenRows();
 				string gachaType = null;
 				string currencyTypeName = null;
 				int currencyCost = -1;
@@ -149,18 +142,10 @@ namespace BackendFunction
 				}
 
 				// 6. Gacha_Equipment 차트 조회 → gachaId 그룹의 등급 가중치 수집
-				if (ChartUtil.ResolveChartFileId(GachaEquipmentChartName, out string gachaEquipFileId, out string gradeErr) == false)
+				if (ChartUtil.GetChartRows(GachaEquipmentChartName, out JsonData gradeRows, out string gradeErr) == false)
 				{
 					return FuncResult.Error(gradeErr);
 				}
-
-				var gradeResult = Backend.Chart.GetChartContents(gachaEquipFileId);
-				if (!gradeResult.IsSuccess())
-				{
-					return FuncResult.Error("Failed to get Gacha_Equipment chart: " + gradeResult.GetErrorCode());
-				}
-
-				JsonData gradeRows = gradeResult.FlattenRows();
 				List<string> grades = new List<string>();
 				List<int> weights = new List<int>();
 				int weightSum = 0;
@@ -181,18 +166,10 @@ namespace BackendFunction
 				}
 
 				// 7. Equipment 차트 조회 → 등급별 후보 풀 분류(한 번만)
-				if (ChartUtil.ResolveChartFileId(EquipmentChartName, out string equipFileId, out string equipErr) == false)
+				if (ChartUtil.GetChartRows(EquipmentChartName, out JsonData equipRows, out string equipErr) == false)
 				{
 					return FuncResult.Error(equipErr);
 				}
-
-				var equipResult = Backend.Chart.GetChartContents(equipFileId);
-				if (!equipResult.IsSuccess())
-				{
-					return FuncResult.Error("Failed to get Equipment chart: " + equipResult.GetErrorCode());
-				}
-
-				JsonData equipRows = equipResult.FlattenRows();
 				Dictionary<string, List<int>> poolByGrade = new Dictionary<string, List<int>>();
 				for (int i = 0; i < equipRows.Count; i++)
 				{

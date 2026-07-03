@@ -32,6 +32,37 @@ namespace BackendFunction
 	{
 		private static readonly Dictionary<string, string> _chartFileIdCache = new Dictionary<string, string>();
 
+		// 차트 콘텐츠(행) 캐시 — 정적 차트 데이터를 워밍 컨테이너 동안 재사용해 매 호출 재다운로드를 막는다.
+		// 차트 재업로드 시 워밍 컨테이너는 콜드스타트/재배포 전까지 옛 데이터를 볼 수 있다(fileId 캐시와 동일 특성).
+		private static readonly Dictionary<string, JsonData> _chartRowsCache = new Dictionary<string, JsonData>();
+
+		// 차트 이름으로 행(FlattenRows)을 반환한다. 최초 1회만 네트워크 조회하고 이후 캐시 반환.
+		public static bool GetChartRows(string chartName, out JsonData rows, out string err)
+		{
+			if (_chartRowsCache.TryGetValue(chartName, out rows) == true)
+			{
+				err = null;
+				return true;
+			}
+
+			if (ResolveChartFileId(chartName, out string fileId, out err) == false)
+			{
+				return false;
+			}
+
+			var result = Backend.Chart.GetChartContents(fileId);
+			if (!result.IsSuccess())
+			{
+				err = "Failed to get chart " + chartName + ": " + result.GetErrorCode();
+				return false;
+			}
+
+			rows = result.FlattenRows();
+			_chartRowsCache[chartName] = rows;
+			err = null;
+			return true;
+		}
+
 		// chartName 에 해당하는 차트 파일 ID 를 반환한다. 성공 시 캐시에 저장.
 		public static bool ResolveChartFileId(string chartName, out string fileId, out string err)
 		{

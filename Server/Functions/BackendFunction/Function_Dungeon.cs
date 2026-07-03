@@ -411,49 +411,82 @@ namespace BackendFunction
 			target.exp += rewardExp;
 			newExp = target.exp;
 
-			// 2. USER_INVENTORY — 장비/재료 가산
-			if (loadMyData("USER_INVENTORY", out JsonData invRows, out err) == false)
+			// 획득 타입 판별 — 해당 테이블이 필요할 때만 로드/기록해 불필요한 왕복을 없앤다.
+			bool needInventory = false;
+			bool needCurrency = false;
+			bool needCardSkill = false;
+			for (int i = 0; i < granted.Count; i++)
 			{
-				return false;
+				switch (granted[i].rewardType)
+				{
+				case RewardTypeEquipment:
+				case RewardTypeMaterial:
+					needInventory = true;
+					break;
+				case RewardTypeSkill:
+					needCardSkill = true;
+					break;
+				case RewardTypeCurrency:
+					needCurrency = true;
+					break;
+				}
 			}
 
-			InventoryDto inventory = invRows.Count > 0
-				? JsonConvert.DeserializeObject<InventoryDto>(invRows[0]["Data"].ToString())
-				: new InventoryDto();
-			if (inventory == null)
+			// 2. USER_INVENTORY — 장비/재료 가산(있을 때만)
+			InventoryDto inventory = null;
+			if (needInventory == true)
 			{
-				inventory = new InventoryDto();
+				if (loadMyData("USER_INVENTORY", out JsonData invRows, out err) == false)
+				{
+					return false;
+				}
+
+				inventory = invRows.Count > 0
+					? JsonConvert.DeserializeObject<InventoryDto>(invRows[0]["Data"].ToString())
+					: new InventoryDto();
+				if (inventory == null)
+				{
+					inventory = new InventoryDto();
+				}
 			}
 
-			// 3. USER_CURRENCY — 재화 가산
-			if (loadMyData("USER_CURRENCY", out JsonData curRows, out err) == false)
+			// 3. USER_CURRENCY — 재화 가산(있을 때만)
+			CurrencyDto currency = null;
+			if (needCurrency == true)
 			{
-				return false;
+				if (loadMyData("USER_CURRENCY", out JsonData curRows, out err) == false)
+				{
+					return false;
+				}
+
+				currency = curRows.Count > 0
+					? JsonConvert.DeserializeObject<CurrencyDto>(curRows[0]["Data"].ToString())
+					: new CurrencyDto();
+				if (currency == null)
+				{
+					currency = new CurrencyDto();
+				}
 			}
 
-			CurrencyDto currency = curRows.Count > 0
-				? JsonConvert.DeserializeObject<CurrencyDto>(curRows[0]["Data"].ToString())
-				: new CurrencyDto();
-			if (currency == null)
+			// 4. USER_CARDSKILL — 카드스킬 가산(있을 때만)
+			CardSkillBookDto cardSkillBook = null;
+			if (needCardSkill == true)
 			{
-				currency = new CurrencyDto();
+				if (loadMyData("USER_CARDSKILL", out JsonData cardRows, out err) == false)
+				{
+					return false;
+				}
+
+				cardSkillBook = cardRows.Count > 0
+					? JsonConvert.DeserializeObject<CardSkillBookDto>(cardRows[0]["Data"].ToString())
+					: new CardSkillBookDto();
+				if (cardSkillBook == null)
+				{
+					cardSkillBook = new CardSkillBookDto();
+				}
 			}
 
-			// 4. USER_CARDSKILL — 카드스킬 가산
-			if (loadMyData("USER_CARDSKILL", out JsonData cardRows, out err) == false)
-			{
-				return false;
-			}
-
-			CardSkillBookDto cardSkillBook = cardRows.Count > 0
-				? JsonConvert.DeserializeObject<CardSkillBookDto>(cardRows[0]["Data"].ToString())
-				: new CardSkillBookDto();
-			if (cardSkillBook == null)
-			{
-				cardSkillBook = new CardSkillBookDto();
-			}
-
-			// 5. USER_DUNGEON — 클리어 기록 추가(중복 방지)
+			// 5. USER_DUNGEON — 클리어 기록 추가(항상, 중복 방지)
 			if (loadMyData("USER_DUNGEON", out JsonData dungeonRows, out err) == false)
 			{
 				return false;
@@ -490,23 +523,36 @@ namespace BackendFunction
 				}
 			}
 
-			// 6. 트랜잭션 원자 쓰기 — 함수 컨텍스트라 new Where() 로 내 행 지정.
+			// 6. 트랜잭션 원자 쓰기 — 항상 캐릭터+던전, 획득 타입이 있는 테이블만 추가. 함수 컨텍스트라 new Where().
+			List<TransactionValue> tx = new List<TransactionValue>();
+
 			Param charParam = new Param();
 			charParam.Add("Data", JsonConvert.SerializeObject(character));
-			Param invParam = new Param();
-			invParam.Add("Data", JsonConvert.SerializeObject(inventory));
-			Param curParam = new Param();
-			curParam.Add("Data", JsonConvert.SerializeObject(currency));
-			Param cardParam = new Param();
-			cardParam.Add("Data", JsonConvert.SerializeObject(cardSkillBook));
+			tx.Add(TransactionValue.SetUpdate("USER_CHARACTER", new Where(), charParam));
+
+			if (needInventory == true)
+			{
+				Param invParam = new Param();
+				invParam.Add("Data", JsonConvert.SerializeObject(inventory));
+				tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), invParam));
+			}
+
+			if (needCurrency == true)
+			{
+				Param curParam = new Param();
+				curParam.Add("Data", JsonConvert.SerializeObject(currency));
+				tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), curParam));
+			}
+
+			if (needCardSkill == true)
+			{
+				Param cardParam = new Param();
+				cardParam.Add("Data", JsonConvert.SerializeObject(cardSkillBook));
+				tx.Add(TransactionValue.SetUpdate("USER_CARDSKILL", new Where(), cardParam));
+			}
+
 			Param dungeonParam = new Param();
 			dungeonParam.Add("Data", JsonConvert.SerializeObject(clearedDungeons));
-
-			List<TransactionValue> tx = new List<TransactionValue>();
-			tx.Add(TransactionValue.SetUpdate("USER_CHARACTER", new Where(), charParam));
-			tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), invParam));
-			tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), curParam));
-			tx.Add(TransactionValue.SetUpdate("USER_CARDSKILL", new Where(), cardParam));
 			tx.Add(TransactionValue.SetUpdate("USER_DUNGEON", new Where(), dungeonParam));
 
 			var txResult = Backend.GameData.TransactionWriteV2(tx);
@@ -636,24 +682,10 @@ namespace BackendFunction
 			return true;
 		}
 
-		// 차트 이름으로 행 조회(파일 ID 는 ChartUtil 이 이름→ID 캐시).
+		// 차트 이름으로 행 조회 — ChartUtil 이 콘텐츠까지 캐시(워밍 컨테이너 재사용).
 		private static bool loadChartRows(string chartName, out JsonData rows, out string err)
 		{
-			rows = null;
-			if (ChartUtil.ResolveChartFileId(chartName, out string fileId, out err) == false)
-			{
-				return false;
-			}
-
-			var result = Backend.Chart.GetChartContents(fileId);
-			if (!result.IsSuccess())
-			{
-				err = "Failed to get chart " + chartName + ": " + result.GetErrorCode();
-				return false;
-			}
-
-			rows = result.FlattenRows();
-			return true;
+			return ChartUtil.GetChartRows(chartName, out rows, out err);
 		}
 
 		// 함수 컨텍스트에서 내 도메인 행 조회.

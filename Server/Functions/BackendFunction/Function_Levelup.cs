@@ -169,19 +169,11 @@ namespace BackendFunction
 		private static bool getRequiredExp(int level, out int requiredExp, out string err)
 		{
 			requiredExp = 0;
-			if (ChartUtil.ResolveChartFileId(LevelExpChartName, out string fileId, out err) == false)
+			if (ChartUtil.GetChartRows(LevelExpChartName, out JsonData rows, out err) == false)
 			{
 				return false;
 			}
 
-			var result = Backend.Chart.GetChartContents(fileId);
-			if (!result.IsSuccess())
-			{
-				err = "Failed to get LevelExp chart: " + result.GetErrorCode();
-				return false;
-			}
-
-			JsonData rows = result.FlattenRows();
 			for (int i = 0; i < rows.Count; i++)
 			{
 				// 차트 키 컬럼명: ID 는 뒤끝 예약어라 LevelExpID 로 명명됨.
@@ -201,19 +193,11 @@ namespace BackendFunction
 		private static bool getLevelupCost(int level, out CostRow cost, out string err)
 		{
 			cost = new CostRow();
-			if (ChartUtil.ResolveChartFileId(LevelupCostChartName, out string fileId, out err) == false)
+			if (ChartUtil.GetChartRows(LevelupCostChartName, out JsonData rows, out err) == false)
 			{
 				return false;
 			}
 
-			var result = Backend.Chart.GetChartContents(fileId);
-			if (!result.IsSuccess())
-			{
-				err = "Failed to get LevelupCost chart: " + result.GetErrorCode();
-				return false;
-			}
-
-			JsonData rows = result.FlattenRows();
 			for (int i = 0; i < rows.Count; i++)
 			{
 				// 차트 키 컬럼명: ID 는 뒤끝 예약어라 LevelupCostID 로 명명됨.

@@ -177,22 +177,13 @@ namespace BackendFunction
 		private bool buildStarterCharacterJson(out string dataJson, out string err)
 		{
 			// 1. UnlockCondition 차트 — Free 조건 ID 수집
-			if (ChartUtil.ResolveChartFileId("UnlockCondition", out string unlockFileId, out err) == false)
+			if (ChartUtil.GetChartRows("UnlockCondition", out JsonData unlockRows, out err) == false)
 			{
 				dataJson = null;
-				return false;
-			}
-
-			var unlockResult = Backend.Chart.GetChartContents(unlockFileId);
-			if (!unlockResult.IsSuccess())
-			{
-				dataJson = null;
-				err = "Failed to get UnlockCondition chart: " + unlockResult.GetErrorCode();
 				return false;
 			}
 
 			HashSet<int> freeConditionIds = new HashSet<int>();
-			JsonData unlockRows = unlockResult.FlattenRows();
 			for (int i = 0; i < unlockRows.Count; i++)
 			{
 				// 차트는 정수(1) 또는 문자열("Free")로 올라올 수 있어 둘 다 Free 로 인식한다(CharacterUnlockState.Free = 1).
@@ -204,23 +195,14 @@ namespace BackendFunction
 			}
 
 			// 2. Character 차트 — Free 조건을 참조하는 캐릭터 수집
-			if (ChartUtil.ResolveChartFileId("Character", out string charFileId, out err) == false)
+			if (ChartUtil.GetChartRows("Character", out JsonData charRows, out err) == false)
 			{
 				dataJson = null;
-				return false;
-			}
-
-			var charResult = Backend.Chart.GetChartContents(charFileId);
-			if (!charResult.IsSuccess())
-			{
-				dataJson = null;
-				err = "Failed to get Character chart: " + charResult.GetErrorCode();
 				return false;
 			}
 
 			CharacterDto dto = new CharacterDto();
 			int minCharacterId = 0;
-			JsonData charRows = charResult.FlattenRows();
 			for (int i = 0; i < charRows.Count; i++)
 			{
 				int unlockConditionId = int.Parse(charRows[i]["UnlockConditionID"].ToString());
