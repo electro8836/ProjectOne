@@ -61,6 +61,20 @@ namespace BackendFunction
 
 				response.inventory = JsonConvert.DeserializeObject<InventoryDto>(inventoryJson);
 
+				if (ensureDomainRow("USER_CARDSKILL", buildEmptyCardSkillJson(), out string cardSkillJson, out string cardSkillErr) == false)
+				{
+					return FuncResult.Error(cardSkillErr);
+				}
+
+				response.cardSkill = JsonConvert.DeserializeObject<CardSkillBookDto>(cardSkillJson);
+
+				if (ensureDomainRow("USER_DUNGEON", buildEmptyClearedDungeonsJson(), out string dungeonJson, out string dungeonErr) == false)
+				{
+					return FuncResult.Error(dungeonErr);
+				}
+
+				response.clearedDungeons = JsonConvert.DeserializeObject<ClearedDungeonsDto>(dungeonJson);
+
 				// 4. USER_CHARACTER — 없으면 무료 캐릭터(차트 UnlockState=Free)로 생성, 있으면 기존 보유 유지.
 				if (ensureCharacterRow(out string characterJson, out string characterErr) == false)
 				{
@@ -257,6 +271,18 @@ namespace BackendFunction
 		private static string buildEmptyInventoryJson()
 		{
 			return JsonConvert.SerializeObject(new InventoryDto());
+		}
+
+		// 빈 카드스킬 JSON
+		private static string buildEmptyCardSkillJson()
+		{
+			return JsonConvert.SerializeObject(new CardSkillBookDto());
+		}
+
+		// 빈 던전 클리어 기록 JSON
+		private static string buildEmptyClearedDungeonsJson()
+		{
+			return JsonConvert.SerializeObject(new ClearedDungeonsDto());
 		}
 	}
 }

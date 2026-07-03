@@ -19,6 +19,8 @@ namespace EDT {
             public int StageGroupID_4 { get; set; } = 0;
             public int StageGroupID_5 { get; set; } = 0;
             public int ExtraStageGroupID { get; set; } = 0;
+            public int ClearExp { get; set; } = 0;
+            public int ExtraClearExp { get; set; } = 0;
         }
 
         public const string Filename = "edt_dungeon.bytes";
@@ -53,6 +55,8 @@ namespace EDT {
                 row.StageGroupID_4 = reader.ReadInt32();
                 row.StageGroupID_5 = reader.ReadInt32();
                 row.ExtraStageGroupID = reader.ReadInt32();
+                row.ClearExp = reader.ReadInt32();
+                row.ExtraClearExp = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

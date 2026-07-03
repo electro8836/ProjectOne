@@ -13,6 +13,8 @@ using ProjectOne.Projectile;
 using ProjectOne.Audio;
 using ProjectOne.Utils;
 using ProjectOne.UserData;
+using ProjectOne.Network;
+using ProjectOne.Shared;
 
 namespace ProjectOne.Dungeon
 {
@@ -54,6 +56,14 @@ namespace ProjectOne.Dungeon
 		private IStageMode _currentMode;
 
 		private bool _ending;
+
+		// 추가(엑스트라) 스테이지를 클리어했는지 — 서버 경험치(ExtraExp)·보너스 보상 지급 근거.
+		private bool _extraCleared;
+
+		// 클리어 서버 요청을 이미 시작했는지(중복 전송 방지) + 진행 중 요청 핸들.
+		private bool _clearRequestSent;
+		private UniTask<DungeonClearResponse> _clearTask;
+		private UniTaskCompletionSource<DungeonClearResponse> _clearTcs;
 
 		// 사망창에서 '귀환'을 선택했는지 — true 면 승패와 무관하게 결과창 없이 즉시 로비로 복귀(보상 없음).
 		private bool _forcedLobbyReturn;
@@ -240,7 +250,11 @@ namespace ProjectOne.Dungeon
 			// 엑스트라 클리어 보상 누적 + 결과창 등장까지 3초 대기(귀환 경로는 즉시 표시)
 			if (result == DungeonResult.Cleared)
 			{
+				_extraCleared = true;
 				accumulateStageRewards(extraRound);
+
+				// 3초 연출과 서버 왕복을 겹치기 위해 여기서 클리어 요청을 먼저 시작해 둔다.
+				beginClearRequestIfNeeded();
 				await UniTask.Delay(System.TimeSpan.FromSeconds(ResultDelayAfterExtra), cancellationToken: ct).SuppressCancellationThrow();
 			}
 
@@ -620,8 +634,18 @@ namespace ProjectOne.Dungeon
 			{
 				Account.Instance.ClearedDungeons.MarkCleared(_ctx.DungeonId);
 
-				// 클리어 결과창(누적 보상) 노출 — 배경 클릭/카운트다운으로 닫힐 때까지 대기(정리 전, 맵/히어로 유지)
-				await showDungeonResultAsync(_cts.Token);
+				// 서버에 클리어 요청(누적 상자) — 아직 시작 안 됐으면 시작하고, 응답(권위 보상)을 받을 때까지 대기.
+				beginClearRequestIfNeeded();
+				DungeonClearResponse resp = await _clearTask;
+				applyClearResponse(resp);
+
+				// 클리어 결과창(서버 확정 보상) 노출 — 배경 클릭/카운트다운으로 닫힐 때까지 대기(정리 전, 맵/히어로 유지)
+				await showDungeonResultAsync(resp, _cts.Token);
+			}
+			else
+			{
+				// 실패/강제귀환 — 로그용 실패 패킷만 전송(응답 무시, 보상 없음).
+				sendDungeonClearFailLog();
 			}
 
 			cleanupAll();
@@ -629,7 +653,8 @@ namespace ProjectOne.Dungeon
 		}
 
 		// 던전 클리어 결과창을 열고 유저 닫힘(배경 클릭 또는 자동복귀 카운트다운)까지 대기한다.
-		private async UniTask showDungeonResultAsync(CancellationToken ct)
+		// resp 가 있으면 서버 확정 보상을, null 이면 누적 상자 목록으로 폴백 표시한다.
+		private async UniTask showDungeonResultAsync(DungeonClearResponse resp, CancellationToken ct)
 		{
 			DungeonResultUI ui = await UIManager.Instance.OpenOverlayAsync<DungeonResultUI>(DungeonResultAddress, ct);
 			if (ui == null)
@@ -637,12 +662,126 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			await ui.WaitAsync(ct);
+			IReadOnlyList<GrantedRewardDto> rewards = (resp != null) ? resp.rewards : null;
+			await ui.WaitAsync(rewards, _ctx.DungeonId, _extraCleared, ct);
 
 			// 결과창이 아직 덮고 있는 동안 로딩을 먼저 띄운 뒤 결과창을 닫는다
 			// (결과창→로비 전환 틈에 BattleHUD 가 잠깐 보이는 것을 방지). 이후 LobbyState 는 이미 표시 중이라 재표시하지 않음.
 			await LoadingManager.Instance.ShowAsync(LoadingFlow.ReturnToLobby, ct);
 			await UIManager.Instance.CloseOverlayAsync(false);
+		}
+
+		// ── 서버 클리어 요청 ──────────────────────────────────────────────
+
+		// 클리어 서버 요청을 1회만 시작한다(멱등). 응답은 _clearTask 로 await 한다.
+		private void beginClearRequestIfNeeded()
+		{
+			if (_clearRequestSent == true)
+			{
+				return;
+			}
+
+			_clearRequestSent = true;
+			_clearTask = sendDungeonClearAsync(true, _extraCleared);
+		}
+
+		// 콜백 API 를 UniTask 로 브릿지 — 응답(또는 실패 시 null)을 결과로 준다.
+		private UniTask<DungeonClearResponse> sendDungeonClearAsync(bool cleared, bool extraCleared)
+		{
+			_clearTcs = new UniTaskCompletionSource<DungeonClearResponse>();
+			DungeonClearRequest req = buildClearRequest(cleared, extraCleared);
+			NetworkManager.Instance.RequestDungeonClear(req, onClearResponse);
+			return _clearTcs.Task;
+		}
+
+		// 서버 응답 — 실패/미로그인이면 null 로 결과 세팅(호출부가 폴백 처리).
+		private void onClearResponse(bool success, DungeonClearResponse data, string error)
+		{
+			if (success == false || data == null)
+			{
+				Debug.LogWarning("[DungeonDirector] 던전 클리어 서버 처리 실패: " + error);
+				_clearTcs?.TrySetResult(null);
+				return;
+			}
+
+			_clearTcs?.TrySetResult(data);
+		}
+
+		// 실패(사망→귀환/강제퇴장) 로그용 — cleared=false 로 전송하고 응답은 무시(보상 없음).
+		private void sendDungeonClearFailLog()
+		{
+			if (_ctx == null || NetworkManager.Instance.IsLoggedIn == false)
+			{
+				return;
+			}
+
+			DungeonClearRequest req = buildClearRequest(false, false);
+			NetworkManager.Instance.RequestDungeonClear(req, null);
+		}
+
+		// 누적 상자(AccumulatedRewards) + 던전ID/캐릭터/클리어여부로 요청 DTO 구성.
+		private DungeonClearRequest buildClearRequest(bool cleared, bool extraCleared)
+		{
+			DungeonClearRequest req = new DungeonClearRequest();
+			req.dungeonId = _ctx.DungeonId;
+			req.characterId = _ctx.CharacterId;
+			req.cleared = cleared;
+			req.extraCleared = extraCleared;
+
+			IReadOnlyList<DungeonRewardResult> acc = DungeonRunState.Instance.AccumulatedRewards;
+			RewardBoxDto[] boxes = new RewardBoxDto[acc.Count];
+			for (int i = 0; i < acc.Count; i++)
+			{
+				RewardBoxDto box = new RewardBoxDto();
+				box.rewardItemId = acc[i].RewardItemId;
+				box.count = acc[i].Amount;
+				box.isBonus = acc[i].IsBonus;
+				boxes[i] = box;
+			}
+
+			req.boxes = boxes;
+			return req;
+		}
+
+		// 서버 응답을 내 계정에 반영 — 경험치(권위) + 획득 아이템/카드스킬/재화.
+		private void applyClearResponse(DungeonClearResponse resp)
+		{
+			if (resp == null)
+			{
+				return;
+			}
+
+			if (_ctx != null)
+			{
+				Account.Instance.Loadout.SetExp(_ctx.CharacterId, resp.exp);
+			}
+
+			if (resp.rewards == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < resp.rewards.Length; i++)
+			{
+				GrantedRewardDto g = resp.rewards[i];
+				switch ((RewardTypes)g.rewardType)
+				{
+				case RewardTypes.Equipment:
+				case RewardTypes.Material:
+					Account.Instance.Inventory.Add(g.itemId, g.count);
+					break;
+				case RewardTypes.Skill:
+					Account.Instance.CardSkillBook.Add(g.itemId, g.count);
+					break;
+				case RewardTypes.Currency:
+				{
+					CurrencyInfo type = (CurrencyInfo)g.itemId;
+					int current = Account.Instance.Wallet.GetAmount(type);
+					Account.Instance.Wallet.SetAmount(type, current + g.count);
+					break;
+				}
+				}
+			}
 		}
 
 		// 던전 종료 시 유닛/스폰/풀/맵 일괄 정리.

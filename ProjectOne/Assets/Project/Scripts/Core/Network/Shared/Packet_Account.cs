@@ -17,5 +17,7 @@ namespace ProjectOne.Shared
 		public CurrencyDto currency;
 		public InventoryDto inventory;
 		public CharacterDto character;
+		public CardSkillBookDto cardSkill;
+		public ClearedDungeonsDto clearedDungeons;
 	}
 }

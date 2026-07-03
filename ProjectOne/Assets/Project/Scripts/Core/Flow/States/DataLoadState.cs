@@ -63,6 +63,16 @@ namespace ProjectOne.Flow
 				{
 					Account.Instance.SetCharacter(data.character);
 				}
+
+				if (data.cardSkill != null)
+				{
+					Account.Instance.SetCardSkill(data.cardSkill);
+				}
+
+				if (data.clearedDungeons != null)
+				{
+					Account.Instance.SetClearedDungeons(data.clearedDungeons);
+				}
 			}
 			else
 			{

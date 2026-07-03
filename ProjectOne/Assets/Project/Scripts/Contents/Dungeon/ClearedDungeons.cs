@@ -1,16 +1,13 @@
 using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
 using ProjectOne.Shared;
 
 namespace ProjectOne.UserData
 {
 	// 클리어한 던전 ID 기록 도메인. 카드스킬 해금 등 진행도 게이트에 사용한다.
-	// 현재는 로컬(PlayerPrefs) 영속 — 서버 연동 시 SetClearedDungeons(dto) 주입으로 전환한다(PlayerPrefs 제거 예정).
+	// 영속은 서버(Backnd USER_DUNGEON)가 담당한다. GetUserData 로 SetClearedDungeons(dto) 주입,
+	// 던전 클리어 시 DungeonClear 함수가 서버에 기록한다. 클라는 세션 내 즉시 해금용으로 인메모리만 유지한다.
 	public sealed class ClearedDungeons
 	{
-		private const string PrefsKey = "ClearedDungeons";
-
 		private readonly HashSet<int> _ids = new HashSet<int>();
 
 		public ClearedDungeons(ClearedDungeonsDto dto)
@@ -25,7 +22,7 @@ namespace ProjectOne.UserData
 			return _ids.Contains(dungeonId);
 		}
 
-		// 클리어 기록 추가 — 새로 추가됐을 때만 로컬 영속(PlayerPrefs)에 저장.
+		// 클리어 기록 추가 — 세션 내 즉시 해금용 인메모리 반영(영속은 서버 DungeonClear 담당).
 		public void MarkCleared(int dungeonId)
 		{
 			if (dungeonId <= 0)
@@ -33,10 +30,7 @@ namespace ProjectOne.UserData
 				return;
 			}
 
-			if (_ids.Add(dungeonId) == true)
-			{
-				saveToPrefs();
-			}
+			_ids.Add(dungeonId);
 		}
 
 		// 직렬화 DTO 로 변환 — 저장/전송 시 사용
@@ -53,62 +47,20 @@ namespace ProjectOne.UserData
 		{
 			_ids.Clear();
 
-			// 서버 DTO 가 주어지면 그것을, 아니면 로컬 영속(PlayerPrefs)을 로드한다.
-			if (dto != null && dto.dungeonIds != null)
-			{
-				for (int i = 0; i < dto.dungeonIds.Count; i++)
-				{
-					int id = dto.dungeonIds[i];
-					if (id > 0)
-					{
-						_ids.Add(id);
-					}
-				}
-
-				return;
-			}
-
-			loadFromPrefs();
-		}
-
-		// PlayerPrefs 에 쉼표 구분 정수로 보관 (예: "1,3,5")
-		private void loadFromPrefs()
-		{
-			string raw = PlayerPrefs.GetString(PrefsKey, string.Empty);
-			if (string.IsNullOrEmpty(raw) == true)
+			// 서버 DTO 주입 — 없으면 빈 상태(미로그인/오프라인).
+			if (dto == null || dto.dungeonIds == null)
 			{
 				return;
 			}
 
-			string[] tokens = raw.Split(',');
-			for (int i = 0; i < tokens.Length; i++)
+			for (int i = 0; i < dto.dungeonIds.Count; i++)
 			{
-				int id;
-				if (int.TryParse(tokens[i], out id) == true && id > 0)
+				int id = dto.dungeonIds[i];
+				if (id > 0)
 				{
 					_ids.Add(id);
 				}
 			}
-		}
-
-		private void saveToPrefs()
-		{
-			StringBuilder sb = new StringBuilder();
-			bool first = true;
-			HashSet<int>.Enumerator e = _ids.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				if (first == false)
-				{
-					sb.Append(',');
-				}
-
-				sb.Append(e.Current);
-				first = false;
-			}
-
-			PlayerPrefs.SetString(PrefsKey, sb.ToString());
-			PlayerPrefs.Save();
 		}
 	}
 }

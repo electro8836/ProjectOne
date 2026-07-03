@@ -17,6 +17,11 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _countText;
 		[SerializeField] private GameObject _bonus;
 
+		[Header("등급 색상 대상")]
+		[SerializeField] private Image _bgMask;
+		[SerializeField] private Image _gradient;
+		[SerializeField] private Image _glow;
+
 		// 참조카운트 해제용 아이콘 주소 추적 (아틀라스 스프라이트는 null 로 두어 대상 제외)
 		private string _iconAddress;
 
@@ -34,6 +39,131 @@ namespace ProjectOne.UI
 
 			Table_RewardItem.Row item = Table_RewardItem.Get(rewardItemId);
 			await setIconAsync(item != null ? item.Icon : string.Empty, ct);
+		}
+
+		// 아이템 모드 — 서버가 확정한 실제 아이템을 타입/등급 색상으로 표시한다(던전 결과창용).
+		// 색상 테이블은 호출자(DungeonResultUI)가 주입한다.
+		public async UniTask BindItemAsync(int rewardType, int itemId, int count, bool isBonus,
+			GradeColorTable equipmentColors, MaterialGradeColorTable materialColors, CardSkillGradeColorTable cardSkillColors,
+			CancellationToken ct)
+		{
+			if (_countText != null)
+			{
+				_countText.text = count.ToString();
+			}
+
+			if (_bonus != null)
+			{
+				_bonus.SetActive(isBonus);
+			}
+
+			string iconAddress = string.Empty;
+			switch ((RewardTypes)rewardType)
+			{
+			case RewardTypes.Equipment:
+			{
+				Table_Equipment.Row row = Table_Equipment.Get(itemId);
+				if (row != null)
+				{
+					applyGradeColors(equipmentColors != null ? equipmentColors.Get(row.Grade) : null);
+					iconAddress = row.Icon;
+				}
+
+				break;
+			}
+			case RewardTypes.Material:
+			{
+				Table_Material.Row row = Table_Material.Get(itemId);
+				if (row != null)
+				{
+					applyMaterialColors(materialColors != null ? materialColors.Get(row.MaterialGrade) : null);
+					iconAddress = row.Icon;
+				}
+
+				break;
+			}
+			case RewardTypes.Skill:
+			{
+				Table_CardSkill.Row row = Table_CardSkill.Get(itemId);
+				if (row != null)
+				{
+					applyCardSkillColors(cardSkillColors != null ? cardSkillColors.Get(row.CardGrade) : null);
+					iconAddress = row.Icon;
+				}
+
+				break;
+			}
+			case RewardTypes.Currency:
+			{
+				// 재화는 등급이 없어 색상은 프리팹 기본값 그대로 두고 아이콘/수량만 표시한다.
+				Table_CurrencyInfo.Row row = Table_CurrencyInfo.Get((CurrencyInfo)itemId);
+				if (row != null)
+				{
+					iconAddress = row.Icon;
+				}
+
+				break;
+			}
+			}
+
+			await setIconAsync(iconAddress, ct);
+		}
+
+		// 장비 등급 색상 — Bg_Mask/Gradient/Glow 3개에 색을 적용한다(모두 활성).
+		private void applyGradeColors(GradeColorTable.GradeColor gc)
+		{
+			if (gc == null)
+			{
+				return;
+			}
+
+			setColor(_bgMask, gc.bgMask, true);
+			setColor(_gradient, gc.gradient, true);
+			setColor(_glow, gc.glow, true);
+		}
+
+		// 재료 등급 색상 — 장비와 동일하게 3개에 적용한다.
+		private void applyMaterialColors(MaterialGradeColorTable.GradeColor gc)
+		{
+			if (gc == null)
+			{
+				return;
+			}
+
+			setColor(_bgMask, gc.bgMask, true);
+			setColor(_gradient, gc.gradient, true);
+			setColor(_glow, gc.glow, true);
+		}
+
+		// 카드스킬 등급 색상 — Bg_Mask 만 색을 적용하고 Gradient/Glow 는 비활성화한다.
+		private void applyCardSkillColors(CardSkillGradeColorTable.GradeColor gc)
+		{
+			if (gc == null)
+			{
+				return;
+			}
+
+			setColor(_bgMask, gc.bgMask, true);
+			if (_gradient != null)
+			{
+				_gradient.gameObject.SetActive(false);
+			}
+
+			if (_glow != null)
+			{
+				_glow.gameObject.SetActive(false);
+			}
+		}
+
+		private static void setColor(Image target, Color color, bool active)
+		{
+			if (target == null)
+			{
+				return;
+			}
+
+			target.gameObject.SetActive(active);
+			target.color = color;
 		}
 
 		// 아틀라스 우선(동기), 미포함 시 비동기 로드. StageSelectSlot/EquipmentSlot 패턴.
