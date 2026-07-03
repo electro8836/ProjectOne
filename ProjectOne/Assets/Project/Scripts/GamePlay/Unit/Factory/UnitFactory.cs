@@ -220,6 +220,7 @@ namespace ProjectOne.Unit
 			SkillIndicator skillIndicator = unit.GetComponent<SkillIndicator>();
 			if (skillIndicator != null)
 			{
+				skillIndicator.ConfigureForHero();
 				skillIndicator.SetSkills(unit.SkillContainer.GetAll());
 			}
 		}

@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
+using ProjectOne.Event;
 using ProjectOne.Flow;
 using ProjectOne.Loading;
 using ProjectOne.Map;
@@ -28,6 +29,13 @@ namespace ProjectOne.Dungeon
 		// UI 프리팹 주소(Addressable) — 씬 직렬화로 숨는 것을 막기 위해 코드 상수로 고정
 		private const string StageSelectAddress = "Prefab_StageSelect";
 		private const string DungeonResultAddress = "Prefab_DungeonResult";
+		private const string DungeonContinueAddress = "Prefab_DungeonContinue";
+
+		// 부활 다이아 소모값 = 현재 스테이지 번호 × 이 값
+		private const int ReviveCostPerStage = 150;
+
+		// 한 판(런)에서 허용하는 최대 부활 횟수
+		private const int MaxReviveCount = 2;
 
 		// 엑스트라 스테이지 클리어 후 결과창 등장까지 대기(초)
 		private const float ResultDelayAfterExtra = 3f;
@@ -46,6 +54,9 @@ namespace ProjectOne.Dungeon
 		private IStageMode _currentMode;
 
 		private bool _ending;
+
+		// 사망창에서 '귀환'을 선택했는지 — true 면 승패와 무관하게 결과창 없이 즉시 로비로 복귀(보상 없음).
+		private bool _forcedLobbyReturn;
 
 		// 스테이지 선택 후보 수집용 버퍼 (재사용)
 		private readonly List<int> _candidateBuffer = new List<int>();
@@ -144,7 +155,7 @@ namespace ProjectOne.Dungeon
 			// 첫 스테이지는 Begin 에서 이미 진입(_currentStage/_currentMode 세팅됨)
 			for (int index = 0; index < _dungeon.TotalStageCount; index++)
 			{
-				DungeonResult result = await waitStageResultAsync(ct);
+				DungeonResult result = await waitStageResultWithReviveAsync(index + 1, ct);
 				if (ct.IsCancellationRequested == true)
 				{
 					return false;
@@ -220,7 +231,7 @@ namespace ProjectOne.Dungeon
 			// 엑스트라 스테이지 롤 보상 확정 (라운드 = 본편 총 스테이지 수 + 1)
 			_currentRollRewardItemId = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, extraRound);
 
-			DungeonResult result = await waitStageResultAsync(ct);
+			DungeonResult result = await waitStageResultWithReviveAsync(extraRound, ct);
 			if (ct.IsCancellationRequested == true)
 			{
 				return;
@@ -313,6 +324,102 @@ namespace ProjectOne.Dungeon
 
 			Debug.Log($"[DungeonDirector] 스테이지 진입: {stage.Name} (모드 {stage.ModeType})");
 			return true;
+		}
+
+		// 스테이지 결과 대기 — 히어로 전멸(Defeat) 시 부활/귀환 선택창을 띄운다.
+		// 부활을 선택하면 같은 스테이지를 계속 진행(다시 폴링)하고, 귀환/취소면 Defeat 로 확정한다.
+		private async UniTask<DungeonResult> waitStageResultWithReviveAsync(int stageNumber, CancellationToken ct)
+		{
+			while (ct.IsCancellationRequested == false)
+			{
+				DungeonResult result = await waitStageResultAsync(ct);
+				if (result != DungeonResult.Defeat)
+				{
+					return result;
+				}
+
+				bool revived = await handleDefeatAsync(stageNumber, ct);
+				if (ct.IsCancellationRequested == true || revived == false)
+				{
+					return DungeonResult.Defeat;
+				}
+
+				// 부활 → 같은 스테이지 계속 진행 (다시 결과 폴링)
+			}
+
+			return DungeonResult.Defeat;
+		}
+
+		// 히어로 전멸 처리 — 게임을 멈추고(UI 제외) 부활/귀환 선택창을 띄운다.
+		// 부활 선택 시 히어로를 사망 위치에서 되살리고 true, 귀환/취소면 false 를 반환한다.
+		private async UniTask<bool> handleDefeatAsync(int stageNumber, CancellationToken ct)
+		{
+			int reviveCost = stageNumber * ReviveCostPerStage;
+			int remaining = MaxReviveCount - DungeonRunState.Instance.ReviveUsedCount;
+			if (remaining < 0)
+			{
+				remaining = 0;
+			}
+
+			// 몬스터/발사체/FX/게임 진행시간 전부 정지 (UI 만 동작 — 전 시스템이 scaled time 사용)
+			Time.timeScale = 0f;
+
+			// 취소(씬 종료 등) 시에도 정지가 풀리도록 오픈 예외를 흡수한다 — 정지 상태로 남지 않게.
+			(bool openCanceled, DungeonContinueUI ui) = await UIManager.Instance
+				.OpenOverlayAsync<DungeonContinueUI>(DungeonContinueAddress, ct)
+				.SuppressCancellationThrow();
+			if (openCanceled == true || ui == null)
+			{
+				Time.timeScale = 1f;
+				return false;
+			}
+
+			(bool canceled, bool revive) = await ui.WaitChoiceAsync(reviveCost, remaining, MaxReviveCount, ct).SuppressCancellationThrow();
+
+			// 취소(씬/에디터 종료 등) — 매니저들이 이미 파괴됐을 수 있어 접근하지 않고 정지만 풀고 종료.
+			if (canceled == true || ct.IsCancellationRequested == true)
+			{
+				Time.timeScale = 1f;
+				return false;
+			}
+
+			await UIManager.Instance.CloseOverlayAsync(false);
+
+			// 부활 선택 시에만 히어로를 되살린다. 귀환은 정지만 풀고 종료 흐름에 맡긴다.
+			if (revive == true)
+			{
+				DungeonRunState.Instance.IncrementReviveUsed();
+				reviveHeroInPlace();
+				Time.timeScale = 1f;
+				return true;
+			}
+
+			// 귀환 — 어디서 죽었든(엑스트라 포함) 결과창 없이 즉시 로비로. 보상 없음.
+			_forcedLobbyReturn = true;
+			Time.timeScale = 1f;
+			return false;
+		}
+
+		// 사망한 히어로를 현재 위치에서 되살린다 (HP/상태 복구 + 스폰 이벤트 재발행).
+		// 사망 시 UnitDiedEvent 로 체력바/조이스틱/카메라 타겟이 정리되므로, 재바인딩을 위해
+		// 스폰 경로와 동일하게 UnitSpawnedEvent 를 다시 발행한다.
+		private static void reviveHeroInPlace()
+		{
+			if (UnitContainer.HasInstance == false)
+			{
+				return;
+			}
+
+			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
+			{
+				UnitBase hero = heroes[i];
+				if (hero != null && hero.IsDead == true)
+				{
+					hero.OnSpawnReset(hero.transform.position);
+					EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), hero.GetTableID()));
+				}
+			}
 		}
 
 		// 현재 스테이지 결과 폴링 — 클리어/패배 확정 또는 제한시간 초과(패배)까지 대기.
@@ -508,8 +615,9 @@ namespace ProjectOne.Dungeon
 			_ending = true;
 			Debug.Log($"[DungeonDirector] 던전 종료 victory={victory}");
 
+			// 사망창에서 '귀환'을 선택하면 승리(엑스트라 진입 전 본편 클리어 등)여도 결과창 없이 즉시 로비로 — 보상 없음.
 			// 승리 시 던전 클리어 기록(카드스킬 해금 등 진행도 게이트에 사용)
-			if (victory == true && _ctx != null)
+			if (victory == true && _forcedLobbyReturn == false && _ctx != null)
 			{
 				Account.Instance.ClearedDungeons.MarkCleared(_ctx.DungeonId);
 

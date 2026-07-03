@@ -51,6 +51,8 @@ namespace ProjectOne.Unit
 		[SerializeField] private bool _castingOnly = false;
 		[Tooltip("체크 시 플레이어 인디케이터 토글(SkillIndicatorSettings)에 종속 — 플레이어 캐릭터용")]
 		[SerializeField] private bool _obeyPlayerSetting = true;
+		[Tooltip("체크 시 평타(IsBasicAttack) 스킬만 인디케이터 표시 — 히어로용")]
+		[SerializeField] private bool _basicAttackOnly = false;
 
 		private UnitBase _owner;
 		private UnitMover _mover;
@@ -93,6 +95,12 @@ namespace ProjectOne.Unit
 		{
 			_castingOnly = (showAllSkills == false);
 			_obeyPlayerSetting = false;
+		}
+
+		// 히어로용 설정 — SetSkills 호출 전에 적용해야 TryAddItem 의 평타 필터가 반영된다.
+		public void ConfigureForHero()
+		{
+			_basicAttackOnly = true;
 		}
 
 		// 플레이어 인디케이터 토글 — 종속하는 경우에만 반응. OFF 면 표시 중인 것 즉시 숨김.
@@ -186,6 +194,12 @@ namespace ProjectOne.Unit
 
 			// 몬스터(캐스팅 전용)는 Casting 스킬만 인디케이터 생성
 			if (_castingOnly == true && row.CastingType != SkillCastingTypes.Casting)
+			{
+				return;
+			}
+
+			// 히어로(평타 전용)는 IsBasicAttack 스킬만 인디케이터 생성
+			if (_basicAttackOnly == true && row.IsBasicAttack == false)
 			{
 				return;
 			}

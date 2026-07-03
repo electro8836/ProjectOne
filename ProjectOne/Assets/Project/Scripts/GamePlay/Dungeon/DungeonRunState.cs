@@ -44,6 +44,9 @@ namespace ProjectOne.Dungeon
 		// 리롤 횟수 (스테이지 경계에서 리셋, 스테이지 진행 중에는 누적)
 		private int _rerollCount;
 
+		// 이번 런에서 사용한 부활 횟수 (던전 종료 시 초기화)
+		private int _reviveUsedCount;
+
 		// 클리어한 스테이지 보상 누적 (던전 종료 결과창에 표시, 지급은 이후)
 		private readonly List<DungeonRewardResult> _accumulatedRewards = new List<DungeonRewardResult>();
 
@@ -59,6 +62,7 @@ namespace ProjectOne.Dungeon
 
 		public int EssenceAmount => _essence;
 		public int RerollCount => _rerollCount;
+		public int ReviveUsedCount => _reviveUsedCount;
 		public IReadOnlyList<DungeonRewardResult> AccumulatedRewards => _accumulatedRewards;
 
 		// ── 임시재화 ──────────────────────────────────────────────────
@@ -100,6 +104,14 @@ namespace ProjectOne.Dungeon
 		public void ResetRerollCount()
 		{
 			_rerollCount = 0;
+		}
+
+		// ── 부활 ──────────────────────────────────────────────────────
+
+		// 부활 1회 사용 반영
+		public void IncrementReviveUsed()
+		{
+			_reviveUsedCount++;
 		}
 
 		// ── 카드스킬 슬롯 ─────────────────────────────────────────────
@@ -266,6 +278,7 @@ namespace ProjectOne.Dungeon
 		{
 			_essence = 0;
 			_rerollCount = 0;
+			_reviveUsedCount = 0;
 			for (int i = 0; i < SlotCount; i++)
 			{
 				_slots[i] = default(CardSkillSlot);
