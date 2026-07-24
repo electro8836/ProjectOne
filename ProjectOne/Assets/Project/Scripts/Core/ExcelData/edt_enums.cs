@@ -191,11 +191,8 @@ namespace EDT {
     public enum CurrencyInfo {
         None,
         Gold,
+        Ruby,
         Dia,
-        GoldDungeonTicket,
-        ExpDungeonTicket,
-        RaidTicket,
-        PVPTicket,
     }
 
     public enum SkillInfo {
@@ -204,8 +201,6 @@ namespace EDT {
         SKILL_MONSTER_ATK_RANGE_01,
         SKILL_MONSTER_MATK_RANGE_01,
         SKILL_BREAK,
-        SKILL_CLASS_BASIC_01,
-        SKILL_CLASS_BASIC_02,
         SKILL_DASH_01,
         SKILL_DASH_ATTACK_01,
         SKILL_CASTING_ATTACK_01,
