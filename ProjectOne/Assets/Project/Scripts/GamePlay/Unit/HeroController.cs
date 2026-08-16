@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using EDT;
@@ -86,7 +86,7 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			_mover.Move(move, _hero.Stats.GetStat(StatInfo.MoveSpeed));
+			_mover.Move(move, _hero.MoveSpeed);
 		}
 
 		// 평타 입력 → 보유 첫 스킬 발동. 범위 밖 적이어도 TryCast가 그대로 실행.
@@ -97,7 +97,7 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			IReadOnlyList<SkillInfo> all = _hero.SkillContainer.GetAll();
+			IReadOnlyList<EDT.Skill> all = _hero.SkillContainer.GetAll();
 			if (all.Count > 0)
 			{
 				_hero.SkillContainer.TryCast(all[0]);

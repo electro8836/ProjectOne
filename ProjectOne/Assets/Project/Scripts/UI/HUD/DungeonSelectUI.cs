@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -98,10 +98,19 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			DungeonContext ctx = new DungeonContext();
-			ctx.DungeonId = _dungeons[_index].ID;
-			ctx.CharacterId = Account.Instance.Loadout.Selected;
+			EDT.Dungeon type = _dungeons[_index].ID;
 
+			// 입장하면 무조건 1회가 소모된다. 클리어·실패·즉시 이탈을 가리지 않는다 (맵 설계 6절).
+			if (ProjectOne.Dungeon.DungeonProgress.TryConsumeEnter(type) == false)
+			{
+				Debug.LogWarning($"[DungeonSelectUI] 남은 입장 횟수가 없습니다 — {type}");
+				return;
+			}
+
+			// 최고 클리어 단계의 다음 단계에 도전한다 (해금 조건: 최고클리어 >= N-1).
+			int stage = ProjectOne.Dungeon.DungeonProgress.GetHighestStage(type) + 1;
+
+			DungeonContext ctx = new DungeonContext(type, stage);
 			GameFlow.Instance.ChangeStateAsync(new DungeonState(ctx)).Forget();
 		}
 
@@ -123,7 +132,7 @@ namespace ProjectOne.UI
 			return a.ID.CompareTo(b.ID);
 		}
 
-		// 현재 선택 인덱스 기준으로 이름·권장레벨·아이콘(이전/현재/다음)을 갱신한다.
+		// 현재 선택 인덱스 기준으로 이름·입장 횟수·아이콘(이전/현재/다음)을 갱신한다.
 		private void refresh()
 		{
 			if (_dungeons.Count == 0)
@@ -135,7 +144,13 @@ namespace ProjectOne.UI
 
 			Table_Dungeon.Row current = _dungeons[_index];
 			_dungeonNameText.text = current.Name;
-			_recommendLevelText.text = current.RecommandedLvText;
+
+			// 권장레벨 컬럼이 사라져 남은 입장 횟수를 그 자리에 표시한다.
+			int remaining = ProjectOne.Dungeon.DungeonProgress.GetRemainingCount(current.ID);
+			int max = ProjectOne.Dungeon.DungeonProgress.GetMaxCount(current.ID);
+			_recommendLevelText.text = "입장 " + remaining + "/" + max;
+
+			_battleButton.interactable = remaining > 0;
 
 			bool hasPrev = _index > 0;
 			bool hasNext = _index < _dungeons.Count - 1;

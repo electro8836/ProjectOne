@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
@@ -6,6 +6,10 @@ using ProjectOne.Audio;
 using ProjectOne.Data;
 using ProjectOne.Resources;
 using ProjectOne.Settings;
+using ProjectOne.Dungeon;
+using ProjectOne.Items;
+using ProjectOne.Skill;
+using ProjectOne.Unit.Stats;
 
 namespace ProjectOne.Flow
 {
@@ -30,6 +34,13 @@ namespace ProjectOne.Flow
 				return;
 			}
 
+			// 1-1) 정적 조회 인덱스 구축 — 반드시 테이블 로드 이후여야 한다(둘 다 테이블에서 만든다).
+			StatCatalog.Build();
+			SkillParamCatalog.Build();
+			OptionCatalog.Build();
+			EquipmentCatalog.Build();
+			DungeonProgress.Build();
+
 			// 2) SFX 클립 일괄 프리로드 (Addressables 라벨 "SFX") — 첫 재생 끊김 방지
 			cancelled = await AudioManager.Instance.PreloadSFXByLabelAsync("SFX", ct).SuppressCancellationThrow();
 			if (cancelled)
@@ -52,9 +63,11 @@ namespace ProjectOne.Flow
 				Debug.LogWarning("[BootState] AtlasManifest 미연결 또는 비어 있음. 아틀라스 로드 건너뜀. (부트 씬 AssetBundleLoader에 AtlasManifest 연결 + Mark All 실행 필요)");
 			}
 
-			Debug.Log("부트 완료 — Character:" + Table_Character.All().Count
-				+ " Monster:" + Table_Monster.All().Count
-				+ " BaseStat:" + Table_BaseStat.All().Count);
+			Debug.Log("부트 완료 — Stat:" + Table_Stat.All().Count
+				+ " StatDetail:" + Table_StatDetail.All().Count
+				+ " Skill:" + Table_Skill.All().Count
+				+ " Item:" + Table_Item.All().Count
+				+ " Monster:" + Table_Monster.All().Count);
 
 			// 다음 상태로 자동 전이
 			GameFlow.Instance.ChangeStateAsync(new TitleState()).Forget();

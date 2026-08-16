@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -36,15 +36,15 @@ namespace ProjectOne.Unit
 			_loading[monsterId] = inflight;
 
 			Table_Monster.Row row = Table_Monster.Get(monsterId);
-			if (row == null || string.IsNullOrEmpty(row.Path))
+			if (row == null || string.IsNullOrEmpty(row.PrefabPath))
 			{
-				Debug.LogError($"[MonsterPoolHub] Table_Monster 또는 Path 없음 (id={monsterId})");
+				Debug.LogError($"[MonsterPoolHub] Table_Monster 또는 PrefabPath 없음 (id={monsterId})");
 				_loading.Remove(monsterId);
 				inflight.TrySetResult(null);
 				return null;
 			}
 
-			(bool loadCancelled, GameObject val) = await ResourceManager.Instance.AcquireAsync<GameObject>(row.Path, ct).SuppressCancellationThrow();
+			(bool loadCancelled, GameObject val) = await ResourceManager.Instance.AcquireAsync<GameObject>(row.PrefabPath, ct).SuppressCancellationThrow();
 			if (loadCancelled)
 			{
 				_loading.Remove(monsterId);
@@ -55,7 +55,7 @@ namespace ProjectOne.Unit
 
 			if (val == null)
 			{
-				Debug.LogError("[MonsterPoolHub] 프리팹 로드 실패: " + row.Path);
+				Debug.LogError("[MonsterPoolHub] 프리팹 로드 실패: " + row.PrefabPath);
 				_loading.Remove(monsterId);
 				inflight.TrySetResult(null);
 				return null;
@@ -83,9 +83,9 @@ namespace ProjectOne.Unit
 			while (e.MoveNext())
 			{
 				Table_Monster.Row row = Table_Monster.Get(e.Current);
-				if (row != null && string.IsNullOrEmpty(row.Path) == false)
+				if (row != null && string.IsNullOrEmpty(row.PrefabPath) == false)
 				{
-					ResourceManager.Instance.Release(row.Path);
+					ResourceManager.Instance.Release(row.PrefabPath);
 				}
 			}
 

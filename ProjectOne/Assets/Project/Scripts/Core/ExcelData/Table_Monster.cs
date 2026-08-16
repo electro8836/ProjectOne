@@ -8,12 +8,16 @@ namespace EDT {
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public MonsterTypes MonsterType { get; set; } = MonsterTypes.None;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
-            public string Path { get; set; } = string.Empty;
-            public int BaseStatID { get; set; } = 0;
-            public int BaseSkillSet { get; set; } = 0;
+            public MonsterType MonsterType { get; set; } = MonsterType.None;
+            public string PrefabPath { get; set; } = string.Empty;
+            public int StatGroupID { get; set; } = 0;
+            public int AIGroupID { get; set; } = 0;
+            public Skill[] SkillIDs { get; set; } = Array.Empty<Skill>();
+            public int BaseExp { get; set; } = 0;
+            public int PerLevelExp { get; set; } = 0;
+            public int RewardGroupID { get; set; } = 0;
         }
 
         public const string Filename = "edt_monster.bytes";
@@ -37,12 +41,16 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.MonsterType = (MonsterTypes)reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
-                row.Path = reader.ReadString();
-                row.BaseStatID = reader.ReadInt32();
-                row.BaseSkillSet = reader.ReadInt32();
+                row.MonsterType = (MonsterType)reader.ReadInt32();
+                row.PrefabPath = reader.ReadString();
+                row.StatGroupID = reader.ReadInt32();
+                row.AIGroupID = reader.ReadInt32();
+                { int _n = reader.ReadInt32(); row.SkillIDs = new Skill[_n]; for(int _i=0;_i<_n;_i++) row.SkillIDs[_i] = (Skill)reader.ReadInt32(); }
+                row.BaseExp = reader.ReadInt32();
+                row.PerLevelExp = reader.ReadInt32();
+                row.RewardGroupID = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

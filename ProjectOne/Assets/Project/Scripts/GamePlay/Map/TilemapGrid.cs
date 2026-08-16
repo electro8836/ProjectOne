@@ -60,6 +60,35 @@ namespace ProjectOne.Map
 			_fieldHeight = height;
 			_cellSize    = (Vector2)_grid.cellSize;
 			_cellOrigin  = CellToWorld(_boundsMin);   // 네이티브 호출 1회 — 이후 산술로 변환
+
+			// 월드 AABB 캐시 — 여러 그리드맵이 공존할 때 좌표로 담당 그리드를 찾는 데 쓴다.
+			Vector2 min = _cellOrigin - _cellSize * 0.5f;
+			Vector2 max = min + new Vector2(_cellSize.x * width, _cellSize.y * height);
+			_worldMin = min;
+			_worldMax = max;
+			_boundsReady = true;
+		}
+
+		private Vector2 _worldMin;
+		private Vector2 _worldMax;
+		private bool _boundsReady;
+
+		// 이 그리드가 커버하는 월드 영역. InitializeFlowField 이후에만 유효하다.
+		public bool ContainsWorldPos(Vector2 worldPos)
+		{
+			if (_boundsReady == false)
+			{
+				return false;
+			}
+
+			return worldPos.x >= _worldMin.x && worldPos.x <= _worldMax.x
+				&& worldPos.y >= _worldMin.y && worldPos.y <= _worldMax.y;
+		}
+
+		// 영역 중심 — 히어로 시작 배치 등에 쓴다.
+		public Vector2 WorldCenter
+		{
+			get { return (_worldMin + _worldMax) * 0.5f; }
 		}
 
 		public void BakeFlowField(Vector2 worldPos)

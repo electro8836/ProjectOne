@@ -1,45 +1,47 @@
 using System.Collections.Generic;
+using EDT;
 using UnityEngine;
 using ProjectOne.Event;
+using ProjectOne.Items;
 using ProjectOne.Shared;
 
 namespace ProjectOne.UserData
 {
-	// 보유 아이템(아이템정보 도메인) 모델 — 획득/합성/강화수치 보관(인메모리).
-	// 공유 DTO(InventoryDto)를 받아 런타임 OwnedItem 으로 변환 보유하고, 저장/전송 시 ToDto() 로 역변환한다.
-	// 영속은 서버(Backnd 함수)가 담당, 변경 시 알림만 발행.
+	// 인벤토리 모델(인메모리) — 두 종류를 함께 보유한다.
+	//
+	//   스택 아이템   재료·소모품·수집품. itemId → count 로 합쳐진다.
+	//   장비 인스턴스 UID 단위. 같은 아이템이라도 등급·강화·순도·품질이 달라 합칠 수 없다 (아이템 설계 4장).
+	//
+	// 공유 DTO(InventoryDto)를 받아 런타임 모델로 변환하고, 저장/전송 시 ToDto() 로 역변환한다.
+	// 영속은 서버(Backnd 함수)가 담당, 변경 시 알림만 발행. UID 채번은 서버 이관 전까지 클라가 한다(STEP 14).
 	public sealed class Inventory
 	{
-		// 강화 최대 수치 (강화 실행 로직은 범위 외 — 수치만 보관)
-		public const int MaxEnhanceLevel = 15;
-
-		// 순서 보존용 목록 + 빠른 조회용 인덱스(동일 OwnedItem 참조 공유)
+		// 순서 보존용 목록 + 빠른 조회용 인덱스(동일 인스턴스 참조 공유)
 		private readonly List<OwnedItem> _items = new List<OwnedItem>();
-		private readonly Dictionary<int, OwnedItem> _index = new Dictionary<int, OwnedItem>();
+		private readonly Dictionary<int, OwnedItem> _itemIndex = new Dictionary<int, OwnedItem>();
+
+		private readonly List<EquipmentInstance> _equipments = new List<EquipmentInstance>();
+		private readonly Dictionary<long, EquipmentInstance> _equipIndex = new Dictionary<long, EquipmentInstance>();
+
+		private long _nextUid = 1;
 
 		public Inventory(InventoryDto dto)
 		{
 			buildFromDto(dto);
 		}
 
-		// ── 공개 API ──────────────────────────────────────────────────
+		// ── 스택 아이템 ───────────────────────────────────────────────
 
 		// 보유 여부 — count >= 1 이면 사용 가능
 		public bool Has(int itemId)
 		{
-			OwnedItem item;
-			if (_index.TryGetValue(itemId, out item) == true)
-			{
-				return item.count >= 1;
-			}
-
-			return false;
+			return GetCount(itemId) >= 1;
 		}
 
 		public int GetCount(int itemId)
 		{
 			OwnedItem item;
-			if (_index.TryGetValue(itemId, out item) == true)
+			if (_itemIndex.TryGetValue(itemId, out item) == true)
 			{
 				return item.count;
 			}
@@ -47,19 +49,7 @@ namespace ProjectOne.UserData
 			return 0;
 		}
 
-		public int GetEnhanceLevel(int itemId)
-		{
-			OwnedItem item;
-			if (_index.TryGetValue(itemId, out item) == true)
-			{
-				return item.enhanceLevel;
-			}
-
-			return 0;
-		}
-
-		// 전체 보유 아이템 조회 (읽기 전용) — 디버그/조회용
-		public IReadOnlyList<OwnedItem> GetAll()
+		public IReadOnlyList<OwnedItem> GetAllItems()
 		{
 			return _items;
 		}
@@ -73,18 +63,19 @@ namespace ProjectOne.UserData
 			}
 
 			OwnedItem item;
-			if (_index.TryGetValue(itemId, out item) == false)
+			if (_itemIndex.TryGetValue(itemId, out item) == false)
 			{
-				item = makeItem(itemId);
+				item = new OwnedItem();
+				item.itemId = itemId;
 				_items.Add(item);
-				_index.Add(itemId, item);
+				_itemIndex.Add(itemId, item);
 			}
 
 			item.count += amount;
-			publishChange(item);
+			EventManager.Instance.Publish(new InventoryChangeEvent(item.itemId, item.count));
 		}
 
-		// 아이템 소모 — 보유 수량이 충분하면 차감 후 true (제작 재료/재화성 소모용)
+		// 아이템 소모 — 보유 수량이 충분하면 차감 후 true
 		public bool TrySpend(int itemId, int amount = 1)
 		{
 			if (itemId <= 0 || amount <= 0)
@@ -93,66 +84,134 @@ namespace ProjectOne.UserData
 			}
 
 			OwnedItem item;
-			if (_index.TryGetValue(itemId, out item) == false || item.count < amount)
+			if (_itemIndex.TryGetValue(itemId, out item) == false || item.count < amount)
 			{
 				return false;
 			}
 
 			item.count -= amount;
-			publishChange(item);
+			EventManager.Instance.Publish(new InventoryChangeEvent(item.itemId, item.count));
 			return true;
 		}
 
-		// 합성 가능 여부.
-		// TODO(테이블 컬럼 추가 후): Table_ItemInfo 의 NextGradeItemId / CombineCount 로 판정.
-		public bool CanCombine(int itemId)
+		// ── 장비 인스턴스 ─────────────────────────────────────────────
+
+		public EquipmentInstance GetEquipment(long uid)
 		{
-			return false;
+			EquipmentInstance instance;
+			_equipIndex.TryGetValue(uid, out instance);
+			return instance;
 		}
 
-		// 합성 실행 — CombineCount 만큼 소모하고 NextGradeItemId 를 1개 획득.
-		// TODO(테이블 컬럼 추가 후): NextGradeItemId / CombineCount 컬럼이 생기면 본문을 구현한다.
-		public bool TryCombine(int itemId)
+		public IReadOnlyList<EquipmentInstance> GetAllEquipments()
 		{
-			if (CanCombine(itemId) == false)
+			return _equipments;
+		}
+
+		// 생성된 인스턴스를 인벤토리에 넣는다. UID 가 비어 있으면 여기서 채번한다.
+		public EquipmentInstance AddEquipment(EquipmentInstance instance)
+		{
+			if (instance == null)
+			{
+				return null;
+			}
+
+			if (instance.uid <= 0)
+			{
+				instance.uid = _nextUid;
+				_nextUid++;
+			}
+			else if (instance.uid >= _nextUid)
+			{
+				_nextUid = instance.uid + 1;
+			}
+
+			if (_equipIndex.ContainsKey(instance.uid) == true)
+			{
+				Debug.LogError($"[Inventory] 장비 UID 중복: {instance.uid}");
+				return _equipIndex[instance.uid];
+			}
+
+			_equipments.Add(instance);
+			_equipIndex.Add(instance.uid, instance);
+			EventManager.Instance.Publish(new EquipmentChangeEvent(instance.uid));
+			return instance;
+		}
+
+		// 장비 소멸 — 착용 중이면 거부한다. 해제는 호출자(Loadout)가 먼저 해야 한다.
+		public bool RemoveEquipment(long uid)
+		{
+			EquipmentInstance instance;
+			if (_equipIndex.TryGetValue(uid, out instance) == false)
 			{
 				return false;
 			}
 
-			return false;
+			if (instance.IsEquipped == true)
+			{
+				Debug.LogWarning($"[Inventory] 착용 중인 장비는 소멸시킬 수 없습니다: {uid}");
+				return false;
+			}
+
+			_equipments.Remove(instance);
+			_equipIndex.Remove(uid);
+			EventManager.Instance.Publish(new EquipmentChangeEvent(uid));
+			return true;
 		}
 
-		// 강화 수치 설정 (0~15 보관만 — 강화 실행 로직은 범위 외)
-		public void SetEnhanceLevel(int itemId, int level)
+		// 강화/승급 등으로 인스턴스 내용이 바뀐 뒤 알림만 발행한다.
+		public void NotifyEquipmentChanged(long uid)
 		{
-			OwnedItem item;
-			if (_index.TryGetValue(itemId, out item) == false)
-			{
-				return;
-			}
-
-			int clamped = Mathf.Clamp(level, 0, MaxEnhanceLevel);
-			if (item.enhanceLevel == clamped)
-			{
-				return;
-			}
-
-			item.enhanceLevel = clamped;
-			publishChange(item);
+			EventManager.Instance.Publish(new EquipmentChangeEvent(uid));
 		}
 
-		// 직렬화 DTO 로 변환 — 저장/전송 시 사용
+		// 특정 착용 슬롯에 넣을 수 있는 장비 목록을 채운다(호출자가 버퍼를 소유).
+		public void CollectBySlot(EquipSlotTypes slot, List<EquipmentInstance> buffer)
+		{
+			if (buffer == null)
+			{
+				return;
+			}
+
+			buffer.Clear();
+			for (int i = 0; i < _equipments.Count; i++)
+			{
+				Table_Equipment.Row row = _equipments[i].Equipment;
+				if (row != null && row.EquipSlotType == slot)
+				{
+					buffer.Add(_equipments[i]);
+				}
+			}
+		}
+
+		// ── 직렬화 ────────────────────────────────────────────────────
+
 		public InventoryDto ToDto()
 		{
 			InventoryDto dto = new InventoryDto();
+			dto.nextEquipmentUid = _nextUid;
+
 			for (int i = 0; i < _items.Count; i++)
 			{
 				OwnedItem src = _items[i];
 				OwnedItemDto entry = new OwnedItemDto();
 				entry.itemId = src.itemId;
 				entry.count = src.count;
-				entry.enhanceLevel = src.enhanceLevel;
 				dto.items.Add(entry);
+			}
+
+			for (int i = 0; i < _equipments.Count; i++)
+			{
+				EquipmentInstance src = _equipments[i];
+				EquipmentInstanceDto entry = new EquipmentInstanceDto();
+				entry.uid = src.uid;
+				entry.itemId = src.itemId;
+				entry.grade = (int)src.grade;
+				entry.level = src.level;
+				entry.purity = (int)src.purity;
+				entry.quality = src.quality;
+				entry.equippedSlot = (int)src.equippedSlot;
+				dto.equipments.Add(entry);
 			}
 
 			return dto;
@@ -160,45 +219,72 @@ namespace ProjectOne.UserData
 
 		// ── 내부 ──────────────────────────────────────────────────────
 
-		// 공유 DTO → 런타임 OwnedItem 변환
 		private void buildFromDto(InventoryDto dto)
 		{
 			_items.Clear();
-			_index.Clear();
+			_itemIndex.Clear();
+			_equipments.Clear();
+			_equipIndex.Clear();
+			_nextUid = 1;
+
 			if (dto == null)
 			{
 				return;
 			}
 
-			for (int i = 0; i < dto.items.Count; i++)
+			if (dto.nextEquipmentUid > 0)
 			{
-				OwnedItemDto src = dto.items[i];
-				if (src == null || src.itemId <= 0)
+				_nextUid = dto.nextEquipmentUid;
+			}
+
+			if (dto.items != null)
+			{
+				for (int i = 0; i < dto.items.Count; i++)
+				{
+					OwnedItemDto src = dto.items[i];
+					if (src == null || src.itemId <= 0)
+					{
+						continue;
+					}
+
+					OwnedItem item = new OwnedItem();
+					item.itemId = src.itemId;
+					item.count = src.count;
+					_items.Add(item);
+					_itemIndex[item.itemId] = item;
+				}
+			}
+
+			if (dto.equipments == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < dto.equipments.Count; i++)
+			{
+				EquipmentInstanceDto src = dto.equipments[i];
+				if (src == null || src.uid <= 0 || src.itemId <= 0)
 				{
 					continue;
 				}
 
-				OwnedItem item = new OwnedItem();
-				item.itemId = src.itemId;
-				item.count = src.count;
-				item.enhanceLevel = src.enhanceLevel;
-				_items.Add(item);
-				_index[item.itemId] = item;
+				EquipmentInstance instance = new EquipmentInstance();
+				instance.uid = src.uid;
+				instance.itemId = src.itemId;
+				instance.grade = (ItemGradeType)src.grade;
+				instance.level = src.level > 0 ? src.level : 1;
+				instance.purity = (EquipPurity)src.purity;
+				instance.quality = src.quality;
+				instance.equippedSlot = (EquipSlotTypes)src.equippedSlot;
+
+				_equipments.Add(instance);
+				_equipIndex[instance.uid] = instance;
+
+				if (instance.uid >= _nextUid)
+				{
+					_nextUid = instance.uid + 1;
+				}
 			}
-		}
-
-		private static OwnedItem makeItem(int itemId)
-		{
-			OwnedItem item = new OwnedItem();
-			item.itemId = itemId;
-			item.count = 0;
-			item.enhanceLevel = 0;
-			return item;
-		}
-
-		private void publishChange(OwnedItem item)
-		{
-			EventManager.Instance.Publish(new InventoryChangeEvent(item.itemId, item.count, item.enhanceLevel));
 		}
 	}
 }

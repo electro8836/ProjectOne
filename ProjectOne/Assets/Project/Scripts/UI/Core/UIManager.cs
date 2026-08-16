@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -220,7 +220,7 @@ namespace ProjectOne.UI
 		// ── 공통 팝업 ───────────────────────────────────────────────────
 
 		// 아이템 정보 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.
-		public async UniTask ShowItemInfoPopupAsync(string address, int itemId, CancellationToken ct)
+		public async UniTask ShowItemInfoPopupAsync(string address, long uid, CancellationToken ct)
 		{
 			_popupCts?.Cancel();
 			_popupCts?.Dispose();
@@ -241,7 +241,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			await popup.ShowAsync(itemId, _popupCts.Token);
+			await popup.ShowAsync(uid, _popupCts.Token);
 			Destroy(go);
 
 			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
@@ -252,67 +252,6 @@ namespace ProjectOne.UI
 		}
 
 		// 캐릭터 디테일 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.
-		public async UniTask ShowCharacterDetailPopupAsync(string address, int characterId, CancellationToken ct)
-		{
-			_popupCts?.Cancel();
-			_popupCts?.Dispose();
-			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
-			if (prefab == null)
-			{
-				return;
-			}
-
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
-			CharacterDetailPopup popup = go.GetComponent<CharacterDetailPopup>();
-			if (popup == null)
-			{
-				Destroy(go);
-				ResourceManager.Instance.Release(address);
-				return;
-			}
-
-			await popup.ShowAsync(characterId, _popupCts.Token);
-			Destroy(go);
-
-			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
-			if (ResourceManager.HasInstance)
-			{
-				ResourceManager.Instance.Release(address);
-			}
-		}
-
-		// 특성 스킬 디테일 팝업을 캐릭터 디테일 팝업 위에 중첩해서 연다.
-		// 주의: 부모(캐릭터 디테일)를 닫지 않기 위해 _popupCts 를 건드리지 않고, 넘겨받은 ct 를 그대로 쓴다.
-		// (부모가 닫히면 그 ct 가 취소되며 이 팝업도 함께 정리된다.)
-		public async UniTask ShowSkillDetailPopupAsync(string address, int traitGroupId, int slotLevel, CancellationToken ct)
-		{
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct);
-			if (prefab == null)
-			{
-				return;
-			}
-
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
-			SkillDetailPopup popup = go.GetComponent<SkillDetailPopup>();
-			if (popup == null)
-			{
-				Destroy(go);
-				ResourceManager.Instance.Release(address);
-				return;
-			}
-
-			await popup.ShowAsync(traitGroupId, slotLevel, ct);
-			Destroy(go);
-
-			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
-			if (ResourceManager.HasInstance)
-			{
-				ResourceManager.Instance.Release(address);
-			}
-		}
-
 		// ── 이벤트 핸들러 ───────────────────────────────────────────────
 
 		// 상태가 전이될 때 열려있는 오버레이를 모두 닫는다.

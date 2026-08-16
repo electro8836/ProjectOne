@@ -1,335 +1,384 @@
-using System;
+﻿using System;
 using System.Globalization;
-using UnityEngine;
 using EDT;
+using UnityEngine;
 
 namespace ProjectOne.Skill
 {
-	// SkillEffect.Row 의 EffectParam_1~7 (string) 을 EffectType별 강타입 struct로 파싱
-	// 컨벤션:
-	//   Damage             : P1=기본데미지(float), P2=계수 속성(StatInfo 이름), P3=계수값(float), P4=브레이크 게이지 데미지 비율(공격자 BreakDamage 배수, 1=100%, 0=없음 / HP 데미지와 무관), P5=넉백 힘 방향·비율(-/+, 0=없음)
-	//   ActivateBuff       : P1=BuffInfo ID(enum 이름), P2=지속시간 sec(0=무한), P3=발동 간격 sec
-	//   DeactivateBuff     : P1=BuffInfo ID
-	//   IncreaseAttribute  : P1=StatInfo 이름(_Add/_Ratio/_Amp), P2=증가 수치 (_Ratio/_Amp 는 퍼센트 입력 100=100%, _Add 는 절대값)
-	//   DecreaseAttribute  : P1=StatInfo 이름(_Add/_Ratio/_Amp), P2=감소 수치 (_Ratio/_Amp 는 퍼센트 입력 100=100%, _Add 는 절대값)
-	//   ActivateAura       : P1=Aura ID, P2=지속시간 (현재 stub)
+	// SkillEffect 의 EffectParam_1~5(전부 문자열)를 강타입으로 파싱한다.
+	//
+	// 슬롯 번호가 아니라 ParamKey(이름)로 값을 꺼낸다. 슬롯 번호는 Table_SkillParamDef 가 알고 있고,
+	// 모디파이어도 이름으로 슬롯을 지목하므로 코드가 번호를 직접 아는 순간 두 곳이 어긋난다.
+	//
+	// 파싱 실패는 에러 로그 후 false — 해당 효과는 적용하지 않는다.
+	// (경고로 두면 오타 하나로 옵션이 조용히 안 먹는다 — 설계 15.1)
 
+	// Damage — 비례 계수 + 고정값 + 다단히트
 	public struct DamageParams
 	{
-		public float BaseDamage;
-		public StatInfo CoefStat;   // None 이면 계수 없음
-		public float CoefValue;
-		public float BreakDamageRatio; // 0=없음, 공격자 BreakDamage 스탯에 곱할 비율 (브레이크 게이지 데미지, 1=100%, HP 데미지와 무관)
-		public float KnockbackRatio; // 0=없음, +는 밀어내기, -는 당기기 (시전자 넉백 파워에 곱할 비율)
+		public float Ratio;
+		public float FlatValue;
+		public int HitCount;
+		public float HitInterval;
+		public Stat ScaleStat;
 	}
 
-	public struct ActivateBuffParams
+	// Heal — 지속 회복(TickCount/TickInterval) 포함
+	public struct HealParams
 	{
-		public BuffInfo BuffID;
+		public float Ratio;
+		public float FlatValue;
+		public int TickCount;
+		public float TickInterval;
+		public Stat ScaleStat;
+	}
+
+	// Buff — 지속시간·중첩은 버프가 아니라 부여하는 쪽이 정한다 (설계 8.3)
+	public struct BuffParams
+	{
+		public EDT.Buff RefID;
 		public float Duration;
-		public float Interval;
+		public int StackMax;
+		public float Ratio;
+		public float Chance;
 	}
 
-	public struct DeactivateBuffParams
+	// StatChange — 패시브·오라의 스탯 변경. Duration 0 = 영구
+	public struct StatChangeParams
 	{
-		public BuffInfo BuffID;
-	}
-
-	public struct AttributeParams
-	{
-		public StatInfo AttrType;
+		public StatDetail StatDetailID;
 		public float Value;
+		public float Duration;
 	}
 
-	public struct AuraParams
+	public struct ProjectileParams
 	{
-		public AuraInfo AuraId;
-		public float Duration; // 0 = 무한
+		public EDT.Projectile RefID;
+		public int Count;
+		public float Angle;
+		public float Interval;
+		public float SpeedRate;
 	}
 
-	public struct SpawnProjectileParams
+	public struct SummonParams
 	{
-		public int Count;            // 발사체 개수 (>=1)
-		public float AngleStep;      // 이웃 발 사이 간격(도) — 타겟 방향 중심 좌우 대칭 분산
-		public string Prefab;        // 발사체 프리팹 주소
-		public SkillEffect HitEffect; // 적중 시 적용할 효과
-		public float HitRadius;      // 임팩트 AoE 반경 (0=단일 타겟, >0=적중/마지막 위치 원형 범위)
+		public EDT.Summon RefID;
+		public int Count;
+		public float Duration;
+		public float Radius;
+	}
+
+	// Force — 밀기/당기기. 반드시 ChainEffectIDs 로 연결한다 (설계 5.6)
+	public struct ForceParams
+	{
+		public float Power;
+		public float Duration;
+		public ForceType ForceType;
+	}
+
+	public struct CooldownReduceParams
+	{
+		public EDT.Skill TargetSkillID;
+		public float Ratio;
+		public float FlatValue;
+	}
+
+	public struct BuffConsumeParams
+	{
+		public EDT.Buff RefID;
+		public int Count;
 	}
 
 	public static class SkillEffectParams
 	{
+		// ── 타입별 파싱 ───────────────────────────────────────────────
+
 		public static bool TryParseDamage(Table_SkillEffect.Row row, out DamageParams p)
 		{
-			p = new DamageParams();
-			if (string.IsNullOrEmpty(row.EffectParam_1) == true || row.EffectParam_1 == "None")
+			p = default(DamageParams);
+			if (row == null)
 			{
-				p.BaseDamage = 0f;
-			}
-			else if (TryParseFloat(row.EffectParam_1, out float baseDam) == false)
-			{
-				LogParseError(row, 1, "Damage.BaseDamage");
-				return false;
-			}
-			else
-			{
-				p.BaseDamage = baseDam;
-			}
-
-			// P4 브레이크 게이지 데미지 비율 — 선택 (비어있거나 "None" 이면 0). 게이지 감소 = 공격자 BreakDamage × 비율 (HP 무관)
-			p.BreakDamageRatio = 0f;
-			if (string.IsNullOrEmpty(row.EffectParam_4) == false && row.EffectParam_4 != "None")
-			{
-				if (TryParseFloat(row.EffectParam_4, out float breakRatio) == false)
-				{
-					LogParseError(row, 4, "Damage.BreakDamageRatio");
-					return false;
-				}
-
-				p.BreakDamageRatio = breakRatio;
-			}
-
-			// P5 넉백 힘 방향·비율 — 선택 (비어있거나 "None" 이면 0). 음수 허용(당기기)
-			p.KnockbackRatio = 0f;
-			if (string.IsNullOrEmpty(row.EffectParam_5) == false && row.EffectParam_5 != "None")
-			{
-				if (TryParseFloat(row.EffectParam_5, out float kbRatio) == false)
-				{
-					LogParseError(row, 5, "Damage.KnockbackRatio");
-					return false;
-				}
-
-				p.KnockbackRatio = kbRatio;
-			}
-
-			// P2/P3 는 선택 — 계수 없으면 None
-			if (string.IsNullOrEmpty(row.EffectParam_2) == true || row.EffectParam_2 == "None")
-			{
-				p.CoefStat = StatInfo.None;
-				p.CoefValue = 0f;
-				return true;
-			}
-
-			if (Enum.TryParse(row.EffectParam_2, out StatInfo stat) == false)
-			{
-				LogParseError(row, 2, "Damage.CoefStat (StatInfo)");
 				return false;
 			}
 
-			p.CoefStat = stat;
+			p.Ratio = readFloat(row, "Ratio", 0f);
+			p.FlatValue = readFloat(row, "FlatValue", 0f);
+			p.HitCount = readInt(row, "HitCount", 1);
+			p.HitInterval = readFloat(row, "HitInterval", 0f);
+			p.ScaleStat = readEnum(row, "ScaleStat", Stat.None);
 
-			if (TryParseFloat(row.EffectParam_3, out float coef) == false)
+			if (p.HitCount < 1)
 			{
-				LogParseError(row, 3, "Damage.CoefValue");
-				return false;
-			}
-
-			p.CoefValue = coef;
-			return true;
-		}
-
-		public static bool TryParseActivateBuff(Table_SkillEffect.Row row, out ActivateBuffParams p)
-		{
-			p = new ActivateBuffParams();
-			if (Enum.TryParse(row.EffectParam_1, out BuffInfo buffId) == false)
-			{
-				LogParseError(row, 1, "ActivateBuff.BuffID");
-				return false;
-			}
-
-			p.BuffID = buffId;
-
-			// Duration 은 선택 — 비어있거나 "None" 이면 0 (무한 지속)
-			if (string.IsNullOrEmpty(row.EffectParam_2) == true || row.EffectParam_2 == "None")
-			{
-				p.Duration = 0f;
-			}
-			else
-			{
-				if (TryParseFloat(row.EffectParam_2, out float duration) == false)
-				{
-					LogParseError(row, 2, "ActivateBuff.Duration");
-					return false;
-				}
-
-				p.Duration = duration;
-			}
-
-			// Interval 은 선택 — 비어있으면 0
-			if (string.IsNullOrEmpty(row.EffectParam_3) == true)
-			{
-				p.Interval = 0f;
-			}
-			else
-			{
-				if (TryParseFloat(row.EffectParam_3, out float interval) == false)
-				{
-					LogParseError(row, 3, "ActivateBuff.Interval");
-					return false;
-				}
-
-				p.Interval = interval;
+				p.HitCount = 1;
 			}
 
 			return true;
 		}
 
-		public static bool TryParseDeactivateBuff(Table_SkillEffect.Row row, out DeactivateBuffParams p)
+		public static bool TryParseHeal(Table_SkillEffect.Row row, out HealParams p)
 		{
-			p = new DeactivateBuffParams();
-			if (Enum.TryParse(row.EffectParam_1, out BuffInfo buffId) == false)
+			p = default(HealParams);
+			if (row == null)
 			{
-				LogParseError(row, 1, "DeactivateBuff.BuffID");
 				return false;
 			}
 
-			p.BuffID = buffId;
-			return true;
-		}
+			p.Ratio = readFloat(row, "Ratio", 0f);
+			p.FlatValue = readFloat(row, "FlatValue", 0f);
+			p.TickCount = readInt(row, "TickCount", 1);
+			p.TickInterval = readFloat(row, "TickInterval", 0f);
+			p.ScaleStat = readEnum(row, "ScaleStat", Stat.None);
 
-		public static bool TryParseAttribute(Table_SkillEffect.Row row, out AttributeParams p)
-		{
-			p = new AttributeParams();
-			if (Enum.TryParse(row.EffectParam_1, out StatInfo stat) == false)
+			if (p.TickCount < 1)
 			{
-				LogParseError(row, 1, "Attribute.StatInfo");
-				return false;
-			}
-
-			p.AttrType = stat;
-
-			if (TryParseFloat(row.EffectParam_2, out float v) == false)
-			{
-				LogParseError(row, 2, "Attribute.Value");
-				return false;
-			}
-
-			// 테이블은 퍼센트(100=100%) 입력 — _Ratio/_Amp 는 분수로 변환, _Add 는 절대값 유지
-			if (IsPercentInput(stat) == true)
-			{
-				v = v / 100f;
-			}
-
-			p.Value = v;
-			return true;
-		}
-
-		// ActivateAura : P1=AuraInfo ID(enum 이름, 필수), P2=지속시간 sec(빈값/"None"=0=무한)
-		public static bool TryParseActivateAura(Table_SkillEffect.Row row, out AuraParams p)
-		{
-			p = new AuraParams();
-			if (Enum.TryParse(row.EffectParam_1, out AuraInfo auraId) == false)
-			{
-				LogParseError(row, 1, "ActivateAura.AuraId");
-				return false;
-			}
-
-			p.AuraId = auraId;
-
-			// Duration 은 선택 — 비어있거나 "None" 이면 0 (무한 지속)
-			if (string.IsNullOrEmpty(row.EffectParam_2) == true || row.EffectParam_2 == "None")
-			{
-				p.Duration = 0f;
-			}
-			else
-			{
-				if (TryParseFloat(row.EffectParam_2, out float duration) == false)
-				{
-					LogParseError(row, 2, "ActivateAura.Duration");
-					return false;
-				}
-
-				p.Duration = duration;
+				p.TickCount = 1;
 			}
 
 			return true;
 		}
 
-		// SpawnProjectile : P1=개수(int, 기본 1), P2=각도 간격(float, 기본 0), P3=발사체 프리팹 주소(필수), P4=적중 효과 SkillEffect(필수), P5=임팩트 AoE 반경(float, 기본 0=단일)
-		public static bool TryParseSpawnProjectile(Table_SkillEffect.Row row, out SpawnProjectileParams p)
+		public static bool TryParseBuff(Table_SkillEffect.Row row, out BuffParams p)
 		{
-			p = new SpawnProjectileParams();
-
-			// P1 개수 — 선택(기본 1), 1 미만 불가
-			int count = 1;
-			if (string.IsNullOrEmpty(row.EffectParam_1) == false && row.EffectParam_1 != "None")
+			p = default(BuffParams);
+			if (row == null)
 			{
-				if (int.TryParse(row.EffectParam_1, NumberStyles.Integer, CultureInfo.InvariantCulture, out count) == false || count < 1)
-				{
-					LogParseError(row, 1, "SpawnProjectile.Count");
-					return false;
-				}
-			}
-
-			p.Count = count;
-
-			// P2 각도 간격 — 선택(기본 0 = 전부 같은 방향)
-			p.AngleStep = 0f;
-			if (string.IsNullOrEmpty(row.EffectParam_2) == false && row.EffectParam_2 != "None")
-			{
-				if (TryParseFloat(row.EffectParam_2, out float step) == false)
-				{
-					LogParseError(row, 2, "SpawnProjectile.AngleStep");
-					return false;
-				}
-
-				p.AngleStep = step;
-			}
-
-			// P3 발사체 프리팹 주소 — 필수
-			if (string.IsNullOrEmpty(row.EffectParam_3) == true || row.EffectParam_3 == "None")
-			{
-				LogParseError(row, 3, "SpawnProjectile.Prefab");
 				return false;
 			}
 
-			p.Prefab = row.EffectParam_3;
-
-			// P4 적중 효과 — 필수
-			if (Enum.TryParse(row.EffectParam_4, out SkillEffect hitEffect) == false)
+			p.RefID = readEnum(row, "RefID", EDT.Buff.None);
+			if (p.RefID == EDT.Buff.None)
 			{
-				LogParseError(row, 4, "SpawnProjectile.HitEffect (SkillEffect)");
+				logMissing(row, "RefID");
 				return false;
 			}
 
-			p.HitEffect = hitEffect;
+			p.Duration = readFloat(row, "Duration", 0f);
+			p.StackMax = readInt(row, "StackMax", 1);
+			p.Ratio = readFloat(row, "Ratio", 0f);
 
-			// P5 임팩트 AoE 반경 — 선택(기본 0 = 단일 타겟). >0 이면 적중/마지막 위치 원형 범위 적용
-			p.HitRadius = 0f;
-			if (string.IsNullOrEmpty(row.EffectParam_5) == false && row.EffectParam_5 != "None")
+			// Chance 빈 칸은 0(=절대 안 걸림)이 아니라 확정 부여로 해석한다.
+			// Reward.Chance 와 달리 "확률 0으로 봉인"을 표현할 필요가 없는 슬롯이다.
+			string raw = SkillParamCatalog.GetRawParamByKey(row, "Chance");
+			p.Chance = string.IsNullOrEmpty(raw) ? 1f : readFloat(row, "Chance", 1f);
+
+			return true;
+		}
+
+		public static bool TryParseStatChange(Table_SkillEffect.Row row, out StatChangeParams p)
+		{
+			p = default(StatChangeParams);
+			if (row == null)
 			{
-				if (TryParseFloat(row.EffectParam_5, out float radius) == false)
-				{
-					LogParseError(row, 5, "SpawnProjectile.HitRadius");
-					return false;
-				}
+				return false;
+			}
 
-				p.HitRadius = radius;
+			p.StatDetailID = readEnum(row, "StatDetailID", StatDetail.None);
+			if (p.StatDetailID == StatDetail.None)
+			{
+				logMissing(row, "StatDetailID");
+				return false;
+			}
+
+			p.Value = readFloat(row, "Value", 0f);
+			p.Duration = readFloat(row, "Duration", 0f);
+			return true;
+		}
+
+		public static bool TryParseProjectile(Table_SkillEffect.Row row, out ProjectileParams p)
+		{
+			p = default(ProjectileParams);
+			if (row == null)
+			{
+				return false;
+			}
+
+			p.RefID = readEnum(row, "RefID", EDT.Projectile.None);
+			if (p.RefID == EDT.Projectile.None)
+			{
+				logMissing(row, "RefID");
+				return false;
+			}
+
+			p.Count = readInt(row, "Count", 1);
+			p.Angle = readFloat(row, "Angle", 0f);
+			p.Interval = readFloat(row, "Interval", 0f);
+			p.SpeedRate = readFloat(row, "SpeedRate", 1f);
+
+			if (p.Count < 1)
+			{
+				p.Count = 1;
+			}
+
+			if (p.SpeedRate <= 0f)
+			{
+				p.SpeedRate = 1f;
 			}
 
 			return true;
 		}
 
-		// 퍼센트 입력(100=100%) → 분수 변환 대상 여부 — 테이블 IsRatio 사용
-		static bool IsPercentInput(StatInfo stat)
+		public static bool TryParseSummon(Table_SkillEffect.Row row, out SummonParams p)
 		{
-			Table_StatInfo.Row row = Table_StatInfo.Get(stat);
-			return row != null && row.IsRatio == true;
-		}
-
-		static bool TryParseFloat(string s, out float value)
-		{
-			value = 0f;
-			if (string.IsNullOrEmpty(s) == true)
+			p = default(SummonParams);
+			if (row == null)
 			{
 				return false;
 			}
 
-			return float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+			p.RefID = readEnum(row, "RefID", EDT.Summon.None);
+			if (p.RefID == EDT.Summon.None)
+			{
+				logMissing(row, "RefID");
+				return false;
+			}
+
+			p.Count = readInt(row, "Count", 1);
+			p.Duration = readFloat(row, "Duration", 0f);
+			p.Radius = readFloat(row, "Radius", 0f);
+
+			if (p.Count < 1)
+			{
+				p.Count = 1;
+			}
+
+			return true;
 		}
 
-		static void LogParseError(Table_SkillEffect.Row row, int paramIndex, string field)
+		public static bool TryParseForce(Table_SkillEffect.Row row, out ForceParams p)
 		{
-			Debug.LogError($"[SkillEffectParams] 파싱 실패 — Effect:{row.ID}, Param_{paramIndex}({field})");
+			p = default(ForceParams);
+			if (row == null)
+			{
+				return false;
+			}
+
+			p.Power = readFloat(row, "Power", 0f);
+			p.Duration = readFloat(row, "Duration", 0f);
+			p.ForceType = readEnum(row, "ForceType", ForceType.None);
+
+			if (p.ForceType == ForceType.None)
+			{
+				logMissing(row, "ForceType");
+				return false;
+			}
+
+			return true;
+		}
+
+		public static bool TryParseCooldownReduce(Table_SkillEffect.Row row, out CooldownReduceParams p)
+		{
+			p = default(CooldownReduceParams);
+			if (row == null)
+			{
+				return false;
+			}
+
+			p.TargetSkillID = readEnum(row, "TargetSkillID", EDT.Skill.None);
+			if (p.TargetSkillID == EDT.Skill.None)
+			{
+				logMissing(row, "TargetSkillID");
+				return false;
+			}
+
+			p.Ratio = readFloat(row, "Ratio", 0f);
+			p.FlatValue = readFloat(row, "FlatValue", 0f);
+			return true;
+		}
+
+		public static bool TryParseBuffConsume(Table_SkillEffect.Row row, out BuffConsumeParams p)
+		{
+			p = default(BuffConsumeParams);
+			if (row == null)
+			{
+				return false;
+			}
+
+			p.RefID = readEnum(row, "RefID", EDT.Buff.None);
+			if (p.RefID == EDT.Buff.None)
+			{
+				logMissing(row, "RefID");
+				return false;
+			}
+
+			p.Count = readInt(row, "Count", 1);
+			if (p.Count < 1)
+			{
+				p.Count = 1;
+			}
+
+			return true;
+		}
+
+		// ── 슬롯 읽기 ─────────────────────────────────────────────────
+
+		private static float readFloat(Table_SkillEffect.Row row, string paramKey, float fallback)
+		{
+			string raw = SkillParamCatalog.GetRawParamByKey(row, paramKey);
+			if (isEmpty(raw) == true)
+			{
+				return fallback;
+			}
+
+			float value;
+			if (float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out value) == false)
+			{
+				logParseError(row, paramKey, raw, "float");
+				return fallback;
+			}
+
+			return value;
+		}
+
+		private static int readInt(Table_SkillEffect.Row row, string paramKey, int fallback)
+		{
+			string raw = SkillParamCatalog.GetRawParamByKey(row, paramKey);
+			if (isEmpty(raw) == true)
+			{
+				return fallback;
+			}
+
+			int value;
+			if (int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out value) == false)
+			{
+				logParseError(row, paramKey, raw, "int");
+				return fallback;
+			}
+
+			return value;
+		}
+
+		private static T readEnum<T>(Table_SkillEffect.Row row, string paramKey, T fallback) where T : struct
+		{
+			string raw = SkillParamCatalog.GetRawParamByKey(row, paramKey);
+			if (isEmpty(raw) == true)
+			{
+				return fallback;
+			}
+
+			T value;
+			if (Enum.TryParse<T>(raw, out value) == false)
+			{
+				logParseError(row, paramKey, raw, typeof(T).Name);
+				return fallback;
+			}
+
+			return value;
+		}
+
+		// 빈 칸은 언제나 None 이다. 엑셀에서 "None" 을 직접 적은 경우도 같게 취급한다.
+		private static bool isEmpty(string raw)
+		{
+			return string.IsNullOrEmpty(raw) == true || raw == "None";
+		}
+
+		private static void logParseError(Table_SkillEffect.Row row, string paramKey, string raw, string typeName)
+		{
+			Debug.LogError($"[SkillEffectParams] 파싱 실패 — Effect:{row.ID} Type:{row.EffectType} {paramKey}=\"{raw}\" (기대 타입 {typeName})");
+		}
+
+		private static void logMissing(Table_SkillEffect.Row row, string paramKey)
+		{
+			Debug.LogError($"[SkillEffectParams] 필수 파라미터 누락 — Effect:{row.ID} Type:{row.EffectType} {paramKey}");
 		}
 	}
 }

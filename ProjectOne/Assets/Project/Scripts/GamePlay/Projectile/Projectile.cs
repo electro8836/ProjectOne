@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using ProjectOne.Utils;
@@ -110,7 +110,7 @@ namespace ProjectOne.Projectile
 			{
 				_hitBuffer.Clear();
 				_hitBuffer.Add(_data.target);
-				SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer);
+				SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer, 0);
 			}
 		}
 
@@ -149,7 +149,7 @@ namespace ProjectOne.Projectile
 				{
 					_hitBuffer.Clear();
 					_hitBuffer.Add(unit);
-					SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer);
+					SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer, 0);
 				}
 
 				returnToPool("hit");

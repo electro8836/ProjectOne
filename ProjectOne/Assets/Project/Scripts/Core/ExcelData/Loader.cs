@@ -18,77 +18,33 @@ namespace EDT {
         {
             BinaryReader reader = null;
 
-            #region Table - CardSkill
+            #region Table - Buff
             {
-                CurrentFile = Table_CardSkill.Filename;
+                CurrentFile = Table_Buff.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_CardSkill._parser ) == false ) {
+                if( Load( reader, Table_Buff._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - CardSkillEnchant
+            #region Table - CharacterStat
             {
-                CurrentFile = Table_CardSkillEnchant.Filename;
+                CurrentFile = Table_CharacterStat.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_CardSkillEnchant._parser ) == false ) {
+                if( Load( reader, Table_CharacterStat._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - Character
+            #region Table - CharacterLevelExp
             {
-                CurrentFile = Table_Character.Filename;
+                CurrentFile = Table_CharacterLevelExp.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Character._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - LevelExp
-            {
-                CurrentFile = Table_LevelExp.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_LevelExp._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - UnlockCondition
-            {
-                CurrentFile = Table_UnlockCondition.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_UnlockCondition._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - LevelupCost
-            {
-                CurrentFile = Table_LevelupCost.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_LevelupCost._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - CharacterTrait
-            {
-                CurrentFile = Table_CharacterTrait.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_CharacterTrait._parser ) == false ) {
+                if( Load( reader, Table_CharacterLevelExp._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
@@ -106,11 +62,11 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - CurrencyInfo
+            #region Table - Currency
             {
-                CurrentFile = Table_CurrencyInfo.Filename;
+                CurrentFile = Table_Currency.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_CurrencyInfo._parser ) == false ) {
+                if( Load( reader, Table_Currency._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
@@ -128,22 +84,77 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - Enchant
+            #region Table - EquipOption
             {
-                CurrentFile = Table_Enchant.Filename;
+                CurrentFile = Table_EquipOption.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Enchant._parser ) == false ) {
+                if( Load( reader, Table_EquipOption._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - Craft
+            #region Table - EquipEnhance
             {
-                CurrentFile = Table_Craft.Filename;
+                CurrentFile = Table_EquipEnhance.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Craft._parser ) == false ) {
+                if( Load( reader, Table_EquipEnhance._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - EquipEnhanceTier
+            {
+                CurrentFile = Table_EquipEnhanceTier.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_EquipEnhanceTier._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - EquipPromotion
+            {
+                CurrentFile = Table_EquipPromotion.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_EquipPromotion._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - EquipQuality
+            {
+                CurrentFile = Table_EquipQuality.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_EquipQuality._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - EquipPurity
+            {
+                CurrentFile = Table_EquipPurity.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_EquipPurity._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - EquipGradeWeight
+            {
+                CurrentFile = Table_EquipGradeWeight.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_EquipGradeWeight._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
@@ -172,6 +183,50 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - Item
+            {
+                CurrentFile = Table_Item.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Item._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Map
+            {
+                CurrentFile = Table_Map.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Map._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Act
+            {
+                CurrentFile = Table_Act.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Act._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - MapStage
+            {
+                CurrentFile = Table_MapStage.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_MapStage._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Dungeon
             {
                 CurrentFile = Table_Dungeon.Filename;
@@ -183,77 +238,55 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - StageGroup
+            #region Table - DungeonStage
             {
-                CurrentFile = Table_StageGroup.Filename;
+                CurrentFile = Table_DungeonStage.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_StageGroup._parser ) == false ) {
+                if( Load( reader, Table_DungeonStage._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - Stage
+            #region Table - WeaponMastery
             {
-                CurrentFile = Table_Stage.Filename;
+                CurrentFile = Table_WeaponMastery.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Stage._parser ) == false ) {
+                if( Load( reader, Table_WeaponMastery._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - DungeonReward
+            #region Table - SkillTreeNode
             {
-                CurrentFile = Table_DungeonReward.Filename;
+                CurrentFile = Table_SkillTreeNode.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_DungeonReward._parser ) == false ) {
+                if( Load( reader, Table_SkillTreeNode._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - MapData
+            #region Table - SkillPoint
             {
-                CurrentFile = Table_MapData.Filename;
+                CurrentFile = Table_SkillPoint.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_MapData._parser ) == false ) {
+                if( Load( reader, Table_SkillPoint._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - MonsterSpawn
+            #region Table - MasteryLevelExp
             {
-                CurrentFile = Table_MonsterSpawn.Filename;
+                CurrentFile = Table_MasteryLevelExp.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_MonsterSpawn._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - DropObject
-            {
-                CurrentFile = Table_DropObject.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_DropObject._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - Material
-            {
-                CurrentFile = Table_Material.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Material._parser ) == false ) {
+                if( Load( reader, Table_MasteryLevelExp._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
@@ -271,77 +304,132 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - MonsterPhase
+            #region Table - MonsterStat
             {
-                CurrentFile = Table_MonsterPhase.Filename;
+                CurrentFile = Table_MonsterStat.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_MonsterPhase._parser ) == false ) {
+                if( Load( reader, Table_MonsterStat._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - RewardItem
+            #region Table - MonsterAI
             {
-                CurrentFile = Table_RewardItem.Filename;
+                CurrentFile = Table_MonsterAI.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_RewardItem._parser ) == false ) {
+                if( Load( reader, Table_MonsterAI._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - Reward_Eqiupment
+            #region Table - MonsterSpawn
             {
-                CurrentFile = Table_Reward_Eqiupment.Filename;
+                CurrentFile = Table_MonsterSpawn.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Reward_Eqiupment._parser ) == false ) {
+                if( Load( reader, Table_MonsterSpawn._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - Reward_Material
+            #region Table - Npc
             {
-                CurrentFile = Table_Reward_Material.Filename;
+                CurrentFile = Table_Npc.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Reward_Material._parser ) == false ) {
+                if( Load( reader, Table_Npc._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - Reward_CardSkill
+            #region Table - NpcSpawn
             {
-                CurrentFile = Table_Reward_CardSkill.Filename;
+                CurrentFile = Table_NpcSpawn.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Reward_CardSkill._parser ) == false ) {
+                if( Load( reader, Table_NpcSpawn._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - Reward_Currency
+            #region Table - NpcDialog
             {
-                CurrentFile = Table_Reward_Currency.Filename;
+                CurrentFile = Table_NpcDialog.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Reward_Currency._parser ) == false ) {
+                if( Load( reader, Table_NpcDialog._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - SkillInfo
+            #region Table - Option
             {
-                CurrentFile = Table_SkillInfo.Filename;
+                CurrentFile = Table_Option.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillInfo._parser ) == false ) {
+                if( Load( reader, Table_Option._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Projectile
+            {
+                CurrentFile = Table_Projectile.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Projectile._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Quest
+            {
+                CurrentFile = Table_Quest.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Quest._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Reward
+            {
+                CurrentFile = Table_Reward.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Reward._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - RewardItemPool
+            {
+                CurrentFile = Table_RewardItemPool.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_RewardItemPool._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - Skill
+            {
+                CurrentFile = Table_Skill.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Skill._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
@@ -359,88 +447,55 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - SkillSet
+            #region Table - SkillModifier
             {
-                CurrentFile = Table_SkillSet.Filename;
+                CurrentFile = Table_SkillModifier.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillSet._parser ) == false ) {
+                if( Load( reader, Table_SkillModifier._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - BuffInfo
+            #region Table - SkillParamDef
             {
-                CurrentFile = Table_BuffInfo.Filename;
+                CurrentFile = Table_SkillParamDef.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_BuffInfo._parser ) == false ) {
+                if( Load( reader, Table_SkillParamDef._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - AuraInfo
+            #region Table - Stat
             {
-                CurrentFile = Table_AuraInfo.Filename;
+                CurrentFile = Table_Stat.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_AuraInfo._parser ) == false ) {
+                if( Load( reader, Table_Stat._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - SkinInfo
+            #region Table - StatDetail
             {
-                CurrentFile = Table_SkinInfo.Filename;
+                CurrentFile = Table_StatDetail.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkinInfo._parser ) == false ) {
+                if( Load( reader, Table_StatDetail._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - StatInfo
+            #region Table - Summon
             {
-                CurrentFile = Table_StatInfo.Filename;
+                CurrentFile = Table_Summon.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_StatInfo._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - BaseStat
-            {
-                CurrentFile = Table_BaseStat.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_BaseStat._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - LevelupStat
-            {
-                CurrentFile = Table_LevelupStat.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_LevelupStat._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - UIWidgetPath
-            {
-                CurrentFile = Table_UIWidgetPath.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_UIWidgetPath._parser ) == false ) {
+                if( Load( reader, Table_Summon._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EDT;
 using ProjectOne.Map;
@@ -161,7 +161,7 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			self.Mover.Move(final, self.Stats.GetStat(StatInfo.MoveSpeed));
+			self.Mover.Move(final, self.MoveSpeed);
 		}
 
 		// 주기적 의사결정 — 타겟 탐색, 정지/재접근 전환(히스테리시스+시야), 접근 방향 산출
@@ -181,7 +181,7 @@ namespace ProjectOne.Unit.AI
 			if (_cachedRange < 0f)
 			{
 				_cachedRange = GetStoppingRange(self);
-				Table_SkillInfo.Row basicRow = GetBasicAttackRow(self);
+				Table_Skill.Row basicRow = GetBasicAttackRow(self);
 				_basicIsProjectile = (basicRow != null && SkillSelector.IsProjectileSkill(basicRow) == true);
 			}
 
@@ -259,7 +259,7 @@ namespace ProjectOne.Unit.AI
 		}
 
 		// 기본공격 스킬 행 — 없으면 null
-		private static Table_SkillInfo.Row GetBasicAttackRow(UnitBase self)
+		private static Table_Skill.Row GetBasicAttackRow(UnitBase self)
 		{
 			SkillContainer sc = self.SkillContainer;
 			if (sc == null)
@@ -267,13 +267,13 @@ namespace ProjectOne.Unit.AI
 				return null;
 			}
 
-			SkillInfo basic = sc.GetBasicAttack();
-			if (basic == SkillInfo.None)
+			EDT.Skill basic = sc.GetBasicAttack();
+			if (basic == EDT.Skill.None)
 			{
 				return null;
 			}
 
-			return Table_SkillInfo.Get(basic);
+			return Table_Skill.Get(basic);
 		}
 
 		// 정지 사거리 — 보유 스킬 중 최소 사거리. 그 거리까지 접근해야 보유 스킬 전부가 사거리 안에 들어 시전 가능해진다.

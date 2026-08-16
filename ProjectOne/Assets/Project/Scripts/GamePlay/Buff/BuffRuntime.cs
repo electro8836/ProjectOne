@@ -1,7 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EDT;
-using ProjectOne.Audio;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
@@ -9,37 +8,41 @@ using ProjectOne.Utils;
 
 namespace ProjectOne.Buff
 {
-	// 버프 한 개의 런타임 상태
-	// - 생성 시 Table_BuffInfo.Effect 를 1회 적용 (IncreaseAttribute 인 경우 StatModifier 핸들 회수)
-	// - IntervalEffect 가 설정되어 있고 intervalSec > 0 이면 주기적으로 발동
-	// - duration <= 0 은 무한 지속(수동 해제 전까지)
+	// 버프 한 개의 런타임 상태.
+	//
+	// 버프는 수치를 직접 갖지 않는다 — EffectID_01/02 를 참조하고, 지속시간·최대중첩은
+	// 부여하는 SkillEffect 가 정한다 (설계 8.2·8.3).
+	// TickInterval 이 0이면 지속형(스탯 변화), 0보다 크면 주기 발동형(DoT·HoT)이다.
 	public sealed class BuffRuntime
 	{
-		public BuffInfo Id { get; private set; }
+		// 행동 차단에 쓰는 키 — 같은 버프가 걸고 푼 것만 정확히 회수하기 위해 ID를 섞는다.
+		readonly string _blockKey;
+
+		public EDT.Buff Id { get; private set; }
 		public bool IsDebuff { get; private set; }
 		public UnitBase Owner { get; private set; }
 		public UnitBase Source { get; private set; }
 		public bool IsInfinite { get; private set; }
 		public float RemainingDuration { get; private set; }
-		public float IntervalSec { get; private set; }
-		public SkillEffect IntervalEffect { get; private set; }
-		public SkillEffect Effect { get; private set; }     // 부착 시 1회 적용되는 효과 — 코드 버프(대시 공격)가 경로 데미지 소스로도 참조
-		public SkillInfo SourceSkill { get; private set; }  // 이 버프를 발동시킨 스킬 — 코드 버프가 ScanType/ScanParam 등을 읽는 데 사용
+		public float TickInterval { get; private set; }
+		public EDT.Skill SourceSkill { get; private set; }
+
+		// 현재 중첩 수. StackPolicy 가 Independent 일 때만 2 이상이 된다.
+		public int Stack { get; private set; }
 
 		IntervalTimer _intervalTimer;
 		readonly List<StatModifier> _modHandles = new List<StatModifier>(2);
-		IBuffBehavior _behavior;   // 코드로 정의된 버프 동작 (없으면 null — 데이터 버프)
-		ITickableBuff _tickable;   // 매 프레임 갱신이 필요한 코드 버프 (없으면 null)
+		SkillEffect _effect01;
+		SkillEffect _effect02;
+		ActionBlockType[] _blockFlags;
 		bool _expired;
-		VFXHandle _rootVfx;        // 버프 지속 동안 owner 에 부착되는 루프성 VFX
-		AudioSfxHandle _rootSfx;   // 버프 지속 동안 재생되는 루프성 SFX
 
 		public bool IsExpired
 		{
 			get { return _expired; }
 		}
 
-		public BuffRuntime(BuffInfo id, UnitBase owner, UnitBase source, float duration, float intervalSec, SkillInfo sourceSkill = SkillInfo.None)
+		public BuffRuntime(EDT.Buff id, UnitBase owner, UnitBase source, float duration, EDT.Skill sourceSkill)
 		{
 			Id = id;
 			Owner = owner;
@@ -47,57 +50,72 @@ namespace ProjectOne.Buff
 			SourceSkill = sourceSkill;
 			IsInfinite = duration <= 0f;
 			RemainingDuration = IsInfinite ? 0f : duration;
-			IntervalSec = intervalSec;
+			Stack = 1;
+			_blockKey = "Buff_" + id;
 
-			Table_BuffInfo.Row row = Table_BuffInfo.Get(id);
-			if (row != null)
+			Table_Buff.Row row = Table_Buff.Get(id);
+			if (row == null)
 			{
-				IsDebuff = row.IsDebuff;
-				IntervalEffect = row.IntervalEffect;
-				Effect = row.Effect;
-
-				// VFX: 버프가 적용된 유닛에 부착해 지속 동안 따라다니게 함 — 앵커가 Center 면 충돌체 중심만큼 띄움
-				if (string.IsNullOrEmpty(row.VFX) == false && owner != null)
-				{
-					Vector3 offset = (row.VFXAnchor == SkillAnchorType.Center) ? (Vector3)(owner.HitCenter - (Vector2)owner.transform.position) : Vector3.zero;
-					_rootVfx = VFXManager.Instance.Attach(row.VFX, owner.transform, offset);
-				}
-
-				// SFX: 버프 지속 동안 루프 재생, Dispose 에서 정지
-				if (string.IsNullOrEmpty(row.SFX) == false)
-				{
-					_rootSfx = AudioManager.Instance.PlayLoopSFX(row.SFX);
-				}
-
-				// Effect: 부착 시 1회 발동 — owner를 caster로 해서 Self 효과가 owner에 적용되도록 함
-				if (row.Effect != SkillEffect.None)
-				{
-					SkillEffectApplier.ApplyOnBuff(row.Effect, owner, source, this);
-				}
+				Debug.LogError($"[BuffRuntime] Table_Buff.Get({id}) == null");
+				_expired = true;
+				return;
 			}
 
-			// 코드로 정의된 버프가 registry 에 있으면 활성화 — 없으면 데이터 동작만 수행
-			_behavior = BuffBehaviorRegistry.Create(id, owner, source);
-			if (_behavior != null)
-			{
-				_tickable = _behavior as ITickableBuff;
-				if (_tickable != null)
-				{
-					_tickable.SetHost(this);
-				}
+			IsDebuff = row.IsDebuff;
+			TickInterval = row.TickInterval;
+			_effect01 = row.EffectID_01;
+			_effect02 = row.EffectID_02;
+			_blockFlags = row.BlockFlags;
 
-				_behavior.OnActivate();
+			applyBlockFlags();
+
+			// 지속형(TickInterval = 0)은 부착 시 1회 적용한다. 주기형은 Tick 이 발동시킨다.
+			if (TickInterval <= 0f)
+			{
+				applyEffects();
 			}
 		}
 
-		// duration/interval만 갱신 (재적용 — 스택은 아니고 새로고침)
-		public void Refresh(float duration, float intervalSec)
+		// 같은 버프가 다시 걸렸을 때 — 정책은 BuffContainer 가 결정하고 여기서는 값만 갱신한다.
+		public void Refresh(float duration)
 		{
 			IsInfinite = duration <= 0f;
 			RemainingDuration = IsInfinite ? 0f : duration;
-			IntervalSec = intervalSec;
 			_intervalTimer.Reset();
 			_expired = false;
+		}
+
+		// 남은 시간에 가산 (StackPolicy = Extend)
+		public void Extend(float duration)
+		{
+			if (IsInfinite == true || duration <= 0f)
+			{
+				return;
+			}
+
+			RemainingDuration += duration;
+			_expired = false;
+		}
+
+		public void AddStack(int max)
+		{
+			if (max > 0 && Stack >= max)
+			{
+				return;
+			}
+
+			Stack++;
+		}
+
+		// BuffConsume 이 스택을 차감한다. 0이 되면 만료 처리된다.
+		public void ConsumeStack(int count)
+		{
+			Stack -= count;
+			if (Stack <= 0)
+			{
+				Stack = 0;
+				_expired = true;
+			}
 		}
 
 		public void Tick(float dt)
@@ -107,24 +125,16 @@ namespace ProjectOne.Buff
 				return;
 			}
 
-			// 코드 버프의 프레임 갱신 — 자체 종료 조건(거리 도달·막힘 등) 충족 시 즉시 만료
-			if (_tickable != null && _tickable.Tick(dt) == true)
+			// 주기 발동형 — DoT/HoT. 중첩은 각자 독립 인스턴스이므로 여기서 곱하지 않는다.
+			if (TickInterval > 0f)
 			{
-				_expired = true;
-				return;
-			}
-
-			// 주기 효과
-			if (IntervalEffect != SkillEffect.None && IntervalSec > 0f)
-			{
-				int n = _intervalTimer.Tick(dt, IntervalSec);
+				int n = _intervalTimer.Tick(dt, TickInterval);
 				for (int i = 0; i < n; i++)
 				{
-					SkillEffectApplier.ApplyOnBuff(IntervalEffect, Owner, Source, this);
+					applyEffects();
 				}
 			}
 
-			// 지속시간
 			if (IsInfinite == false)
 			{
 				RemainingDuration -= dt;
@@ -136,7 +146,7 @@ namespace ProjectOne.Buff
 			}
 		}
 
-		// SkillEffectApplier 가 IncreaseAttribute/DecreaseAttribute 적용 시 핸들을 등록
+		// StatChange 효과가 부착한 모디파이어 핸들을 회수 목록에 등록한다.
 		public void RegisterModifier(StatModifier mod)
 		{
 			if (mod == null)
@@ -147,30 +157,10 @@ namespace ProjectOne.Buff
 			_modHandles.Add(mod);
 		}
 
-		// 버프 종료 — 부착 시 적용된 StatModifier 들을 전부 회수
+		// 버프 종료 — 차단 해제 + 부착된 StatModifier 전량 회수
 		public void Dispose()
 		{
-			// 코드 버프 비활성화 — 행동 차단 등 해제
-			if (_behavior != null)
-			{
-				_behavior.OnDeactivate();
-				_behavior = null;
-				_tickable = null;
-			}
-
-			// RootVFX 회수 — 버프 종료와 함께 사라짐
-			if (_rootVfx != null)
-			{
-				VFXManager.Instance.Release(_rootVfx);
-				_rootVfx = null;
-			}
-
-			// RootSFX 정지 — 버프 종료와 함께 멈춤
-			if (_rootSfx != null)
-			{
-				AudioManager.Instance.StopLoopSFX(_rootSfx);
-				_rootSfx = null;
-			}
+			releaseBlockFlags();
 
 			if (Owner != null && Owner.Stats != null)
 			{
@@ -182,6 +172,103 @@ namespace ProjectOne.Buff
 
 			_modHandles.Clear();
 			_expired = true;
+		}
+
+		// ── 내부 ──────────────────────────────────────────────────────
+
+		void applyEffects()
+		{
+			if (Owner == null)
+			{
+				return;
+			}
+
+			// 버프 효과의 시전자는 버프를 건 주체(Source)이고 대상은 Owner 다.
+			applyOne(_effect01);
+			applyOne(_effect02);
+		}
+
+		readonly List<UnitBase> _selfTarget = new List<UnitBase>(1);
+		void applyOne(SkillEffect effectId)
+		{
+			if (effectId == SkillEffect.None)
+			{
+				return;
+			}
+
+			_selfTarget.Clear();
+			_selfTarget.Add(Owner);
+
+			UnitBase caster = (Source != null) ? Source : Owner;
+			SkillEffectApplier.Apply(effectId, caster, SourceSkill, _selfTarget, 0);
+		}
+
+		// BlockFlags 자체가 효과다 — 기절 계열은 EffectID 가 비어 있어도 된다 (설계 8.2).
+		void applyBlockFlags()
+		{
+			if (_blockFlags == null || Owner == null)
+			{
+				return;
+			}
+
+			bool blocksCast = false;
+			for (int i = 0; i < _blockFlags.Length; i++)
+			{
+				switch (_blockFlags[i])
+				{
+					case ActionBlockType.Move:
+						Owner.BlockMove(_blockKey);
+						break;
+					case ActionBlockType.Turn:
+						if (Owner.Mover != null)
+						{
+							Owner.Mover.SetFacingLocked(true);
+						}
+
+						break;
+					case ActionBlockType.Attack:
+					case ActionBlockType.Cast:
+						Owner.BlockSkill(_blockKey);
+						blocksCast |= _blockFlags[i] == ActionBlockType.Cast;
+						break;
+				}
+			}
+
+			// Cast 차단은 진행 중인 시전도 취소한다 (설계 2.2).
+			if (blocksCast == true && Owner.SkillContainer != null)
+			{
+				Owner.SkillContainer.CancelCasting();
+				Owner.SkillContainer.CancelBehavior();
+			}
+		}
+
+		void releaseBlockFlags()
+		{
+			if (_blockFlags == null || Owner == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < _blockFlags.Length; i++)
+			{
+				switch (_blockFlags[i])
+				{
+					case ActionBlockType.Move:
+						Owner.UnblockMove(_blockKey);
+						break;
+					case ActionBlockType.Turn:
+						if (Owner.Mover != null)
+						{
+							Owner.Mover.SetFacingLocked(false);
+						}
+
+						break;
+					case ActionBlockType.Attack:
+					case ActionBlockType.Cast:
+						Owner.UnblockSkill(_blockKey);
+						break;
+				}
+			}
 		}
 	}
 }

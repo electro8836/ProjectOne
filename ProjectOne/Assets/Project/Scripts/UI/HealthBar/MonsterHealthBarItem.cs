@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using EDT;
 using ProjectOne.Unit;
@@ -33,7 +33,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			float maxHp = _unit.Stats.GetStat(StatInfo.MaxHP);
+			float maxHp = _unit.Stats.GetStat(Stat.Stat_MaxHp);
 			_hpSlider.value = (maxHp > 0f) ? (_unit.Vitals.Hp / maxHp) : 0f;
 		}
 

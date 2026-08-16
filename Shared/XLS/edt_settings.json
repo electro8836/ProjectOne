@@ -669,7 +669,7 @@
       "IsAllowEmpty": true
     },
     "Consumable.LinkedRewardIDs": {
-      "IsArray": false,
+      "IsArray": true,
       "IsAllowEmpty": true
     },
     "Equipment.ID": {
@@ -2257,6 +2257,1490 @@
       "IsAllowEmpty": true
     },
     "Dungeon.ExtraClearExp": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.IsDebuff": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.MaxStack": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.StackPolicy": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.TickInterval": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.BlockFlags": {
+      "IsArray": true,
+      "IsAllowEmpty": true
+    },
+    "Buff.EffectID_01": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Buff.EffectID_02": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.BaseStatType_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.LvAddStat_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.BaseStatType_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.LvAddStat_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.BaseStatType_3": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.LvAddStat_3": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterClass.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterClass.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterClass.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterClass.CharacterType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterClass.ClassType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterClass.ClassTier": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterClass.CharacterSkillGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkill.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkill.GroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkill.CharacterSkillType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkill.Grade": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkill.SKILLID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkill.SkillRankGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.GroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.SkillRank": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.OptionID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.OptionValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.ReqItemID_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.ReqItemCnt_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.ReqItemID_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterSkillRank.ReqItemCnt_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "AccountLevel.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "AccountLevel.TotalExperience": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "ClassLevel.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "ClassLevel.TotalExperience": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Currency.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Currency.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Currency.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Currency.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Equipment.EquipSlotType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Equipment.WeaponType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Equipment.MaxGrade": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Equipment.EquipOptionGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Equipment.ReqClassType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.GroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.ItemGrade": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt1_ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt1_Val": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt1_Step": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt2_ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt2_Val": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt2_Step": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt3_ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt3_Val": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt3_Step": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt4_ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt4_Val": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.Opt4_Step": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.UnlockOpt_ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.UnlockOpt_MinVal": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipOption.UnlockOpt_MaxVal": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.Category": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.EnhanceTier": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostItemID_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostItemCnt_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostItemMult_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostItemID_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostItemCnt_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostItemMult_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostCurrencyID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostCurrencyValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhance.CostCurrencyMult": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhanceTier.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhanceTier.Grade": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhanceTier.MinLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipEnhanceTier.MaxLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.Category": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.FromGrade": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.ToGrade": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostItemID_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostItemCnt_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostItemID_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostItemCnt_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostItemID_3": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostItemCnt_3": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostItemID_4": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostItemCnt_4": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostCurrencyID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPromotion.CostCurrencyValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipQuality.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipQuality.MinValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipQuality.MaxValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipQuality.AssignWeight": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipQuality.CalcRate": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPurity.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPurity.DisplayName": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPurity.OptionMultiplier": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPurity.AssignWeight": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPurity.CalcRate": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipPurity.ColorHex": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipGradeWeight.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipGradeWeight.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipGradeWeight.Normal": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipGradeWeight.Magic": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipGradeWeight.Rare": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipGradeWeight.Epic": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipGradeWeight.Legendary": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "EquipGradeWeight.Mythic": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.MainCategory": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.SubCategory": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.Grade": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.MaxStack": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Field.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Field.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Field.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Field.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Field.MapName": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Field.BGM": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.DungeonType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.MapPath": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.BGM": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.ClearRewardIDs": {
+      "IsArray": true,
+      "IsAllowEmpty": true
+    },
+    "Monster.BaseSkill": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Option.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Option.OptionType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Option.OptionTarget": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.PrefabPath": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.Speed": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.Accel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.MaxSpeed": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.HomingRate": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.Pierce": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.MaxDistance": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.ExplodeRadius": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.HitEffectID_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Projectile.HitEffectID_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.Animation": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.CastingType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.CastingParam": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.ApplyTarget": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.ScanTypes": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.ScanRange": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.ScanParam": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.Cooldown": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.EffectID_01": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.EffectID_02": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillEffect.EffectOrigin": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillEffect.Delay": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillEffect.ChainEffectID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.Scope": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.TargetID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.ParamKey": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.Operator": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.Value": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.RefValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillParamDef.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillParamDef.EffectType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillParamDef.Index": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillParamDef.ParamKey": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillParamDef.ValueType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillParamDef.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Stat.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Stat.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Stat.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Stat.Category": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Stat.ValueTypes": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Stat.MinValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Stat.MaxValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "StatDetail.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "StatDetail.StatID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "StatDetail.StatDetailType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "StatDetail.StatValueType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "StatDetail.DisplayFormat": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.PrefabPath": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.SummonMode": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.BehaviourID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.SkillID_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.SkillID_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.ProjectileID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.AITableID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.ActionInterval": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.ReturnDelay": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.OrbitRadius": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.OrbitSpeed": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.FollowDistance": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.InheritStatType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.InheritStatRatio": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.MaxCount": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Stat.ValueType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.SummonType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillEffect.ChainEffectIDs": {
+      "IsArray": true,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.StatDetailID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.BaseValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterStat.PerLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterLevelExp.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "CharacterLevelExp.TotalExperience": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Consumable.ConsumeEffect": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Consumable.EffectParam_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Consumable.EffectParam_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Consumable.CooldownGroup": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Consumable.Cooldown": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Item.DropTier": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Map.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Map.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Map.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Map.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Map.MapType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Map.SceneName": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Map.BGM": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Act.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Act.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Act.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Act.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Act.Order": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MapStage.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MapStage.ActID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MapStage.Order": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MapStage.ReqLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MapStage.ReqQuestID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.DefaultEnterCount": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.MaxEnterCount": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.RevivalCostType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.RevivalCost": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.RevivalCostStep": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Dungeon.MaxRevivalCount": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "DungeonStage.DungeonType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "DungeonStage.Stage": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "DungeonStage.MapID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "DungeonStage.MonsterSpawnGroupIDs": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "DungeonStage.MonsterLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "DungeonStage.RewardExp": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "DungeonStage.RewardGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.WeaponType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.RangeType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.LevelBonusOption": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.LevelBonusPerLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.NormalAttackSkill": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.MaxRow": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.MaxColumn": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "WeaponMastery.SkillTreeNodeGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.GroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.NodePos_Row": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.NodePos_Column": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.PrevNodeID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.RequireTreePoint": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.Option": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.BaseValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.PerLevelValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillTreeNode.MaxLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillPoint.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillPoint.MaxPoint": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillPoint.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillPoint.IsShared": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillPoint.SourceType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MasteryLevelExp.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MasteryLevelExp.TotalExperience": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Monster.PrefabPath": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Monster.StatGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Monster.AIGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Monster.SkillIDs": {
+      "IsArray": true,
+      "IsAllowEmpty": true
+    },
+    "Monster.BaseExp": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Monster.PerLevelExp": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Monster.RewardGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterStat.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterStat.GroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterStat.StatDetailID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterStat.BaseValue": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterStat.PerLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterAI.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterAI.AIType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterAI.AggroType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterAI.DetectRange": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterAI.LeashRange": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterSpawn.Level": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterSpawn.Count": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "MonsterSpawn.RewardGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Npc.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Npc.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Npc.Title": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Npc.NpcType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Npc.FunctionID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Npc.PrefabName": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Npc.Portrait": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcSpawn.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcSpawn.NpcID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcSpawn.MapID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcSpawn.SpawnPointID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcSpawn.SpawnStartQuestID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcSpawn.UseSpawnEnd": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcSpawn.SpawnEndQuestID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcDialog.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcDialog.NpcID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcDialog.QuestID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcDialog.TriggerType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "NpcDialog.Text": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.Name": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.Desc": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.Category": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.ReqLevel": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.ReqQuestID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.AcceptType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.AcceptNpcID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.IsRepeatable": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.CompleteType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.CompleteNpcID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.QuestTargetType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.QuestParam_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.QuestParam_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.QuestParam_3": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.RewardExp": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Quest.RewardGroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Reward.GroupID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Reward.TargetID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Reward.EquipGradeWeightID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Reward.Chance": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "RewardItemPool.ID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "RewardItemPool.PoolID": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "RewardItemPool.DropTier": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "RewardItemPool.MainCategory": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "RewardItemPool.SubCategory": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "RewardItemPool.Weight": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.SkillCategory": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.AnimName": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.AnimLength": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.ScanType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.SkillVFX": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Skill.SkillSFX": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillEffect.EffectTime": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillEffect.OnHitTrigger": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.Scope_Skill": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.Scope_Effect": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.Scope_Projectile": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.Scope_Summon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "SkillModifier.Scope_Buff": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.ScaleByRadius": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.AIType": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.DieWithOwner": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.ReturnDistance": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.InheritStatType_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.InheritStatRatio_1": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.InheritStatType_2": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "Summon.InheritStatRatio_2": {
       "IsArray": false,
       "IsAllowEmpty": true
     }

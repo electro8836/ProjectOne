@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EDT;
 using ProjectOne.Utils;
@@ -18,7 +18,9 @@ namespace ProjectOne.Skill
 		// Target 스캔용 후보 거리(sqrMagnitude) — _scratch 와 인덱스 1:1 대응
 		private static readonly List<float> _scratchDist = new List<float>(32);
 
-		public static List<UnitBase> ScanByType(SkillScanType scanType, float param1, float param2, UnitBase caster, bool useOverride = false, Vector2 centerOverride = default, Vector2 facingOverride = default)
+		// scanRange 의 의미는 형태마다 다르다 — Circle/Sector=반경, Line=길이, Target=사거리 (설계 3.4).
+		// scanParam 은 Sector=각도(도), Line=폭, Target=최대 대상 수. Circle 은 미사용.
+		public static List<UnitBase> ScanByType(SkillScanTypes scanType, float scanRange, float scanParam, UnitBase caster, bool useOverride = false, Vector2 centerOverride = default, Vector2 facingOverride = default)
 		{
 			_scratch.Clear();
 			if (caster == null)
@@ -28,17 +30,17 @@ namespace ProjectOne.Skill
 
 			switch (scanType)
 			{
-			case SkillScanType.None:
+			case SkillScanTypes.None:
 				return _scratch;
 			default:
 			{
 				Vector2 hitCenter = useOverride ? centerOverride : caster.HitCenter;
 				Vector2 facing = useOverride ? facingOverride : GetFacing(caster);
 				IReadOnlyList<UnitBase> all = UnitContainer.Instance.All;
-				if (scanType == SkillScanType.Target)
+				if (scanType == SkillScanTypes.Target)
 				{
-					// param2 = 타겟 수 (ScanParam2). 0 이하면 1명으로 처리(하위호환)
-					int count = (param2 < 1f) ? 1 : (int)param2;
+					// 대상 수 제한은 Target 전용이다. 범위 공격은 범위 안을 전부 타격한다 (설계 2.4).
+					int count = (scanParam < 1f) ? 1 : (int)scanParam;
 					// 반경 내 유효한 적을 모두 후보로 수집 (거리 함께 보관)
 					_scratchDist.Clear();
 					for (int i = 0; i < all.Count; i++)
@@ -48,7 +50,7 @@ namespace ProjectOne.Skill
 						{
 							Vector2 val = unitBase2.HitCenter - hitCenter;
 							float sqrMagnitude = val.sqrMagnitude;
-							float num2 = param1 + unitBase2.Radius;
+							float num2 = scanRange + unitBase2.Radius;
 							if (!(sqrMagnitude > num2 * num2))
 							{
 								_scratch.Add(unitBase2);
@@ -100,17 +102,14 @@ namespace ProjectOne.Skill
 						bool flag = false;
 						switch (scanType)
 						{
-						case SkillScanType.Circle:
-							flag = Scanner.InCircle(hitCenter, param1, hitCenter2, radius);
+						case SkillScanTypes.Circle:
+							flag = Scanner.InCircle(hitCenter, scanRange, hitCenter2, radius);
 							break;
-						case SkillScanType.Sector:
-							flag = Scanner.InSector(hitCenter, facing, param1, param2, hitCenter2, radius);
+						case SkillScanTypes.Sector:
+							flag = Scanner.InSector(hitCenter, facing, scanRange, scanParam, hitCenter2, radius);
 							break;
-						case SkillScanType.Line:
-							flag = Scanner.InLine(hitCenter, facing, param1, param2, hitCenter2, radius);
-							break;
-						case SkillScanType.Donut:
-							flag = Scanner.InDonut(hitCenter, param1, param2, hitCenter2, radius);
+						case SkillScanTypes.Line:
+							flag = Scanner.InLine(hitCenter, facing, scanRange, scanParam, hitCenter2, radius);
 							break;
 						}
 

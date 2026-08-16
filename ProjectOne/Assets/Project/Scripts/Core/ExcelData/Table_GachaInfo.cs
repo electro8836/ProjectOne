@@ -12,7 +12,7 @@ namespace EDT {
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
-            public CurrencyInfo CurrencyType { get; set; } = CurrencyInfo.None;
+            public Currency CurrencyType { get; set; } = Currency.None;
             public int CurrencyCost { get; set; } = 0;
         }
 
@@ -41,7 +41,7 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
-                row.CurrencyType = (CurrencyInfo)reader.ReadInt32();
+                row.CurrencyType = (Currency)reader.ReadInt32();
                 row.CurrencyCost = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

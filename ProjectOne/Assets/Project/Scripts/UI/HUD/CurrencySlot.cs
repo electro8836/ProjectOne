@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +12,7 @@ namespace ProjectOne.UI
 {
 	public class CurrencySlot : MonoBehaviour
 	{
-		[SerializeField] private CurrencyInfo _targetCurrency;
+		[SerializeField] private EDT.Currency _targetCurrency;
 
 		[Header("UI 참조")]
 		[SerializeField] private Image _iconImage;
@@ -20,14 +20,9 @@ namespace ProjectOne.UI
 		[SerializeField] private UIButton _navigationButton;
 
 		private Action<ResourceChangeEvent> _onResourceChanged;
-		private bool _isRegenable;
-		private int _regenMax;
-		private int _navigationLink;
 
 		private void Awake()
 		{
-			cacheRowData();
-
 			_onResourceChanged = onResourceChanged;
 			EventManager.Instance.Subscribe<ResourceChangeEvent>(_onResourceChanged);
 			_navigationButton.OnClickEvent += onNavigationClicked;
@@ -42,7 +37,7 @@ namespace ProjectOne.UI
 
 			if (ResourceManager.HasInstance)
 			{
-				Table_CurrencyInfo.Row row = Table_CurrencyInfo.Get(_targetCurrency);
+				Table_Currency.Row row = Table_Currency.Get(_targetCurrency);
 				if (row != null && !string.IsNullOrEmpty(row.Icon))
 				{
 					ResourceManager.Instance.Release(row.Icon);
@@ -59,21 +54,7 @@ namespace ProjectOne.UI
 
 		private void onNavigationClicked()
 		{
-			// TODO: _navigationLink 값으로 획득 안내 팝업 열기
-		}
-
-		// 테이블 메타데이터(충전형 여부·최대치·획득 링크)를 1회 캐싱
-		private void cacheRowData()
-		{
-			Table_CurrencyInfo.Row row = Table_CurrencyInfo.Get(_targetCurrency);
-			if (row == null)
-			{
-				return;
-			}
-
-			_isRegenable = row.Regenable;
-			_regenMax = row.RegenMax;
-			_navigationLink = row.NavigationLink;
+			// TODO(STEP 6) — 재화 획득 안내 팝업. 신규 테이블에 링크 컬럼이 없어 코드가 매핑을 갖게 된다.
 		}
 
 		private void refresh()
@@ -86,7 +67,7 @@ namespace ProjectOne.UI
 
 		private async UniTaskVoid loadIconAsync(CancellationToken ct)
 		{
-			Table_CurrencyInfo.Row row = Table_CurrencyInfo.Get(_targetCurrency);
+			Table_Currency.Row row = Table_Currency.Get(_targetCurrency);
 			if (row == null || string.IsNullOrEmpty(row.Icon)) { return; }
 
 			// 아틀라스에 있으면 동기로 즉시 세팅 — 없으면 비동기 로드(OnDestroy 의 Release 와 짝).
@@ -106,12 +87,6 @@ namespace ProjectOne.UI
 
 		private void updateAmount(int amount)
 		{
-			if (_isRegenable)
-			{
-				_amountText.text = amount.ToString() + "/" + _regenMax.ToString();
-				return;
-			}
-
 			_amountText.text = formatAmount(amount);
 		}
 

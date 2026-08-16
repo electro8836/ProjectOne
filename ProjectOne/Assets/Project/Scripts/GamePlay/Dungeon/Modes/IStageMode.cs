@@ -4,14 +4,11 @@ using EDT;
 
 namespace ProjectOne.Dungeon
 {
-	// 스테이지 모드 규칙 — MapModeType 별 진행/승패 판정을 캡슐화한다.
-	// 맵 로드와 히어로 스폰은 DungeonDirector 가 던전 단위로 처리하므로, 모드는 몬스터/규칙만 담당한다.
+	// 던전 단계의 클리어 방식. 신규 설계에서는 모드 컬럼을 두지 않고
+	// DungeonType(Gold/Exp) enum 하나가 곧 규칙 하나다 (맵 설계 9장).
 	public interface IStageMode
 	{
-		// 몬스터 스폰·진행 루프 시작. DungeonDirector 가 스테이지 진입 시 1회 호출.
-		UniTask SetupAsync(Table_Stage.Row stage, CancellationToken ct);
-
-		// 매 프레임 스테이지 승패 판정 — DungeonDirector 가 폴링한다.
+		UniTask SetupAsync(Table_DungeonStage.Row stage, CancellationToken ct);
 		DungeonResult CheckResult();
 	}
 }

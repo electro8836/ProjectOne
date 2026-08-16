@@ -9,7 +9,7 @@ namespace EDT {
         public class Row {
             public int ID { get; set; } = 0;
             public int GachaID { get; set; } = 0;
-            public ItemGradeTypes Grade { get; set; } = ItemGradeTypes.None;
+            public ItemGradeType Grade { get; set; } = ItemGradeType.None;
             public int Weight { get; set; } = 0;
         }
 
@@ -35,7 +35,7 @@ namespace EDT {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
                 row.GachaID = reader.ReadInt32();
-                row.Grade = (ItemGradeTypes)reader.ReadInt32();
+                row.Grade = (ItemGradeType)reader.ReadInt32();
                 row.Weight = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

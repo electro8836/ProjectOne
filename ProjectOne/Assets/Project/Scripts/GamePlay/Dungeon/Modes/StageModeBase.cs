@@ -12,21 +12,21 @@ namespace ProjectOne.Dungeon
 		// RunAsync 가 클리어를 확정하면 Cleared 로 채운다. CheckResult 가 폴링.
 		protected DungeonResult _result = DungeonResult.InProgress;
 
-		public UniTask SetupAsync(Table_Stage.Row stage, CancellationToken ct)
+		public UniTask SetupAsync(Table_DungeonStage.Row stage, CancellationToken ct)
 		{
 			runGuardedAsync(stage, ct).Forget();
 			return UniTask.CompletedTask;
 		}
 
 		// RunAsync 의 취소 예외를 흡수(미관측 예외 방지)하고, 종료 후 공통 정리를 보장한다.
-		private async UniTaskVoid runGuardedAsync(Table_Stage.Row stage, CancellationToken ct)
+		private async UniTaskVoid runGuardedAsync(Table_DungeonStage.Row stage, CancellationToken ct)
 		{
 			await RunAsync(stage, ct).SuppressCancellationThrow();
 			OnFinished();
 		}
 
 		// 모드별 진행 루프 — 클리어 시 _result 를 Cleared 로 세팅하고 반환한다. ct 취소 시 자연 종료(throw).
-		protected abstract UniTask RunAsync(Table_Stage.Row stage, CancellationToken ct);
+		protected abstract UniTask RunAsync(Table_DungeonStage.Row stage, CancellationToken ct);
 
 		// 모드 종료(클리어/취소) 시 공통 정리 — 이벤트 구독 해제 등. 필요 시 오버라이드.
 		protected virtual void OnFinished()
@@ -54,15 +54,19 @@ namespace ProjectOne.Dungeon
 			return MonsterSpawnManager.Instance.ActiveCount <= 0;
 		}
 
-		// 스테이지 진행 그룹 배열에서 index 위치의 GroupID (범위 밖이면 0)
-		protected static int GetGroupId(int[] groups, int index)
+		// 단계가 쓸 스폰 그룹. 신규 테이블은 단수 컬럼이라 그룹이 하나뿐이다.
+		//
+		// TODO(STEP 15) — 설계상 `MonsterSpawnGroupIDs` 는 배열(`!int[]`)이어야 하는데
+		// 컨버터가 단수 int 로 생성했다. 배열이 되면 웨이브별로 다른 그룹을 쓸 수 있다.
+		protected static int GetSpawnGroupId(Table_DungeonStage.Row stage)
 		{
-			if (groups == null || index < 0 || index >= groups.Length)
-			{
-				return 0;
-			}
+			return (stage != null) ? stage.MonsterSpawnGroupIDs : 0;
+		}
 
-			return groups[index];
+		// 몬스터 레벨 — DungeonStage.MonsterLevel 이 있으면 MonsterSpawn.Level 을 오버라이드한다 (몬스터 설계 8장).
+		protected static int GetLevelOverride(Table_DungeonStage.Row stage)
+		{
+			return (stage != null) ? stage.MonsterLevel : 0;
 		}
 
 		private static bool AllHeroesDead()

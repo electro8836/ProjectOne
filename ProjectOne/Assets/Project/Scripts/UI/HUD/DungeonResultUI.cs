@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -10,8 +10,8 @@ using ProjectOne.Shared;
 namespace ProjectOne.UI
 {
 	// 던전 결과창(Prefab_DungeonResult). 서버가 확정한 실제 획득 보상을 슬롯으로 나열하고,
-	// 배경 클릭 또는 자동복귀 카운트다운(표시 시점부터 _autoReturnSeconds) 만료 시 로비로 이동한다.
-	// 서버 응답이 없으면(오프라인/실패) 누적 상자 목록으로 폴백 표시한다.
+	// "다음 단계 도전" 또는 마을 복귀 중 하나를 기다린다.
+	// 도전은 새 입장이므로 입장 횟수를 다시 소모한다 — 호출부가 남은 횟수를 보고 버튼 활성을 결정한다.
 	public class DungeonResultUI : UIScreen
 	{
 		[Header("보상 목록")]
@@ -19,23 +19,25 @@ namespace ProjectOne.UI
 		[SerializeField] private RewardSlot _slotPrefab;
 
 		[Header("등급 색상 테이블")]
-		[SerializeField] private GradeColorTable _equipmentColors;
-		[SerializeField] private MaterialGradeColorTable _materialColors;
-		[SerializeField] private CardSkillGradeColorTable _cardSkillColors;
+		[SerializeField] private GradeColorTable _gradeColors;
 
 		[Header("복귀")]
-		[SerializeField] private UIButton _backgroundButton;             // 보상 외 영역 클릭 → 로비
+		[SerializeField] private UIButton _backgroundButton;             // 보상 외 영역 클릭 → 마을
 		[SerializeField] private TMP_Text _touchToContinueText;
 		[SerializeField] private TMP_Text _expText;                      // 획득 경험치 표시(선택)
 		[SerializeField] private float _autoReturnSeconds = 30f;
 
-		private UniTaskCompletionSource _closeSource;
+		[Header("다음 단계")]
+		[SerializeField] private UIButton _nextStageButton;              // 다음 단계 도전 (입장 횟수 재소모)
+
+		// true = 다음 단계 도전, false = 마을 복귀
+		private UniTaskCompletionSource<bool> _closeSource;
 
 		// 합산 중간 표현 — 대표 타입/아이템 + 합산 수량 + 보너스 여부
 		private struct MergedReward
 		{
-			public int rewardType;   // 아이템 모드에서만 유효(RewardTypes)
-			public int itemId;       // 아이템 모드=실제 아이템ID, 상자 모드=RewardItemId
+			public int rewardType;   // RewardType 정수
+			public int itemId;
 			public int count;
 			public bool isBonus;
 		}
@@ -43,39 +45,44 @@ namespace ProjectOne.UI
 		private void Awake()
 		{
 			_backgroundButton.OnClickEvent += onBackgroundClicked;
+			if (_nextStageButton != null)
+			{
+				_nextStageButton.OnClickEvent += onNextStageClicked;
+			}
 		}
 
 		private void OnDestroy()
 		{
 			_backgroundButton.OnClickEvent -= onBackgroundClicked;
+			if (_nextStageButton != null)
+			{
+				_nextStageButton.OnClickEvent -= onNextStageClicked;
+			}
+
 			_closeSource?.TrySetCanceled();
 		}
 
-		// 슬롯 빌드 + 카운트다운 시작. 배경 클릭/카운트다운 만료 중 먼저 오는 것까지 대기.
-		// rewards 가 있으면 서버 확정 아이템을, null 이면 누적 상자 목록을 표시한다.
-		public async UniTask WaitAsync(IReadOnlyList<GrantedRewardDto> rewards, int dungeonId, bool extraCleared, CancellationToken ct)
-		{
-			buildSlots(rewards);
-			updateExpText(dungeonId, extraCleared);
-
-			_closeSource = new UniTaskCompletionSource();
-			countdownAsync().Forget();
-
-			using (ct.Register(onCanceled))
-			{
-				await _closeSource.Task;
-			}
-		}
-
-		private void buildSlots(IReadOnlyList<GrantedRewardDto> rewards)
+		// 슬롯 빌드 + 카운트다운 시작. 다음 단계 도전(true) / 마을 복귀(false) 중 먼저 오는 것까지 대기.
+		public async UniTask<bool> WaitAsync(IReadOnlyList<GrantedRewardDto> rewards, EDT.Dungeon dungeonType, int stage, bool canChallengeNext, CancellationToken ct)
 		{
 			if (rewards != null)
 			{
 				buildItemSlots(rewards);
 			}
-			else
+
+			updateExpText(dungeonType, stage);
+
+			if (_nextStageButton != null)
 			{
-				buildBoxSlots();
+				_nextStageButton.gameObject.SetActive(canChallengeNext);
+			}
+
+			_closeSource = new UniTaskCompletionSource<bool>();
+			countdownAsync().Forget();
+
+			using (ct.Register(onCanceled))
+			{
+				return await _closeSource.Task;
 			}
 		}
 
@@ -108,59 +115,20 @@ namespace ProjectOne.UI
 			{
 				RewardSlot slot = Instantiate(_slotPrefab, _rewardGrid);
 				slot.BindItemAsync(merged[i].rewardType, merged[i].itemId, merged[i].count, merged[i].isBonus,
-					_equipmentColors, _materialColors, _cardSkillColors, iconCt).Forget();
+					_gradeColors, iconCt).Forget();
 			}
 		}
 
-		// 폴백(서버 응답 없음) — 누적 상자 목록을 상자 단위로 합산해 표시(기존 동작).
-		private void buildBoxSlots()
-		{
-			IReadOnlyList<DungeonRewardResult> rewards = DungeonRunState.Instance.AccumulatedRewards;
-
-			List<MergedReward> merged = new List<MergedReward>();
-			Dictionary<string, int> keyIndex = new Dictionary<string, int>();
-			for (int i = 0; i < rewards.Count; i++)
-			{
-				DungeonRewardResult r = rewards[i];
-				string key = (r.IsBonus ? "B" : "N") + r.RewardItemId;
-
-				int idx;
-				if (keyIndex.TryGetValue(key, out idx) == true)
-				{
-					MergedReward m = merged[idx];
-					m.count += r.Amount;
-					merged[idx] = m;
-				}
-				else
-				{
-					keyIndex[key] = merged.Count;
-					merged.Add(new MergedReward { itemId = r.RewardItemId, count = r.Amount, isBonus = r.IsBonus });
-				}
-			}
-
-			CancellationToken iconCt = this.GetCancellationTokenOnDestroy();
-			for (int i = 0; i < merged.Count; i++)
-			{
-				RewardSlot slot = Instantiate(_slotPrefab, _rewardGrid);
-				slot.BindAsync(merged[i].itemId, merged[i].count, merged[i].isBonus, iconCt).Forget();
-			}
-		}
-
-		// 획득 경험치 표시 — 던전 테이블의 ClearExp(+추가 클리어 시 ExtraClearExp).
-		private void updateExpText(int dungeonId, bool extraCleared)
+		// 획득 경험치 표시 — 경험치는 던전이 아니라 단계가 소유한다 (DungeonStage.RewardExp).
+		private void updateExpText(EDT.Dungeon dungeonType, int stage)
 		{
 			if (_expText == null)
 			{
 				return;
 			}
 
-			Table_Dungeon.Row row = Table_Dungeon.Get(dungeonId);
-			int exp = 0;
-			if (row != null)
-			{
-				exp = row.ClearExp + (extraCleared == true ? row.ExtraClearExp : 0);
-			}
-
+			Table_DungeonStage.Row row = ProjectOne.Dungeon.DungeonProgress.FindStageRow(dungeonType, stage);
+			int exp = (row != null) ? row.RewardExp : 0;
 			_expText.text = "+" + exp;
 		}
 
@@ -182,7 +150,7 @@ namespace ProjectOne.UI
 			}
 
 			updateTouchText(0);
-			_closeSource?.TrySetResult();
+			_closeSource?.TrySetResult(false);
 		}
 
 		private void updateTouchText(int seconds)
@@ -195,7 +163,12 @@ namespace ProjectOne.UI
 
 		private void onBackgroundClicked()
 		{
-			_closeSource?.TrySetResult();
+			_closeSource?.TrySetResult(false);
+		}
+
+		private void onNextStageClicked()
+		{
+			_closeSource?.TrySetResult(true);
 		}
 
 		private void onCanceled()

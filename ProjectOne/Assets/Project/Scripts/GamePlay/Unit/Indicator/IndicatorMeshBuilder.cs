@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EDT;
 
@@ -12,17 +12,16 @@ namespace ProjectOne.Unit
 		public abstract Mesh Build(float param1, float param2, int segments, float ringThickness);
 
 		// ScanType → 빌더 매핑. stateless 이므로 인스턴스를 하나씩만 두고 재사용한다.
-		private static readonly Dictionary<SkillScanType, IndicatorMeshBuilder> _builders = new Dictionary<SkillScanType, IndicatorMeshBuilder>
+		private static readonly Dictionary<SkillScanTypes, IndicatorMeshBuilder> _builders = new Dictionary<SkillScanTypes, IndicatorMeshBuilder>
 		{
-			{ SkillScanType.Circle, new CircleMeshBuilder() },
-			{ SkillScanType.Target, new TargetMeshBuilder() },
-			{ SkillScanType.Sector, new SectorMeshBuilder() },
-			{ SkillScanType.Line,   new LineMeshBuilder() },
-			{ SkillScanType.Donut,  new DonutMeshBuilder() },
+			{ SkillScanTypes.Circle, new CircleMeshBuilder() },
+			{ SkillScanTypes.Target, new TargetMeshBuilder() },
+			{ SkillScanTypes.Sector, new SectorMeshBuilder() },
+			{ SkillScanTypes.Line,   new LineMeshBuilder() },
 		};
 
 		// 미지원/None 이면 null (표시 대상 아님)
-		public static IndicatorMeshBuilder Get(SkillScanType type)
+		public static IndicatorMeshBuilder Get(SkillScanTypes type)
 		{
 			IndicatorMeshBuilder builder;
 			_builders.TryGetValue(type, out builder);
@@ -152,15 +151,6 @@ namespace ProjectOne.Unit
 		public override Mesh Build(float param1, float param2, int segments, float ringThickness)
 		{
 			return BuildLineMesh(param1, param2);
-		}
-	}
-
-	// 도넛 — param1 = 외경, param2 = 내경 (Scanner.InDonut 기준)
-	public sealed class DonutMeshBuilder : IndicatorMeshBuilder
-	{
-		public override Mesh Build(float param1, float param2, int segments, float ringThickness)
-		{
-			return BuildRing(param2, param1, segments);
 		}
 	}
 }

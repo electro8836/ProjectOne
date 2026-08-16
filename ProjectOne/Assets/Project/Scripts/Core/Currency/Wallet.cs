@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Shared;
@@ -10,7 +10,7 @@ namespace ProjectOne.UserData
 	// 서버 권위: 영속은 서버(Backnd 함수)가 담당하고, 클라는 변경 시 변경 알림만 발행한다.
 	public sealed class Wallet
 	{
-		private readonly Dictionary<CurrencyInfo, int> _index = new Dictionary<CurrencyInfo, int>();
+		private readonly Dictionary<EDT.Currency, int> _index = new Dictionary<EDT.Currency, int>();
 
 		public Wallet(CurrencyDto dto)
 		{
@@ -20,7 +20,7 @@ namespace ProjectOne.UserData
 		// ── 공개 API ──────────────────────────────────────────────────
 
 		// 보유 수량 — 미존재 시 0
-		public int GetAmount(CurrencyInfo type)
+		public int GetAmount(EDT.Currency type)
 		{
 			int value;
 			if (_index.TryGetValue(type, out value) == true)
@@ -32,7 +32,7 @@ namespace ProjectOne.UserData
 		}
 
 		// 수량 설정 — 이전값과 같으면 무시, 변경 시 변경 알림
-		public void SetAmount(CurrencyInfo type, int amount)
+		public void SetAmount(EDT.Currency type, int amount)
 		{
 			int prev = GetAmount(type);
 			if (prev == amount)
@@ -48,11 +48,11 @@ namespace ProjectOne.UserData
 		public CurrencyDto ToDto()
 		{
 			CurrencyDto dto = new CurrencyDto();
-			System.Array types = System.Enum.GetValues(typeof(CurrencyInfo));
+			System.Array types = System.Enum.GetValues(typeof(EDT.Currency));
 			for (int i = 0; i < types.Length; i++)
 			{
-				CurrencyInfo type = (CurrencyInfo)types.GetValue(i);
-				if (type == CurrencyInfo.None)
+				EDT.Currency type = (EDT.Currency)types.GetValue(i);
+				if (type == EDT.Currency.None)
 				{
 					continue;
 				}
@@ -85,12 +85,12 @@ namespace ProjectOne.UserData
 			for (int i = 0; i < dto.amounts.Count; i++)
 			{
 				CurrencyAmountDto entry = dto.amounts[i];
-				if (entry == null || entry.currencyId == (int)CurrencyInfo.None)
+				if (entry == null || entry.currencyId == (int)EDT.Currency.None)
 				{
 					continue;
 				}
 
-				_index[(CurrencyInfo)entry.currencyId] = entry.amount;
+				_index[(EDT.Currency)entry.currencyId] = entry.amount;
 			}
 		}
 	}

@@ -1,18 +1,16 @@
-using EDT;
+﻿using EDT;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Skill
 {
-	// 코드로 정의되는 커스텀 스킬의 동작 인터페이스
-	// - 스킬 ID(enum) 와 동일한 이름의 클래스가 이 인터페이스를 구현하면
-	//   SkillExecutor 가 리플렉션으로 찾아 SkillContainer.BeginBehavior 로 위임한다.
-	// - 구현 클래스는 (UnitBase caster) 생성자를 가져야 한다.
-	// - 버프의 IBuffBehavior + ITickableBuff 와 대칭. 스킬은 "시작→진행→종료" 시퀀스라 하나로 합친다.
+	// 코드로 정의되는 커스텀 스킬의 동작 인터페이스.
+	// - SkillBehaviorRegistry 에 등록된 스킬만 이 경로를 타고, 나머지는 테이블 효과 경로로 처리된다.
+	// - "시작→진행→종료" 시퀀스라 하나의 인터페이스로 합친다.
 	//   보스 멀티스텝(연타+차지 등)처럼 매 프레임 진행이 필요한 행동을 코드로 오케스트레이션한다.
 	public interface ISkillBehavior
 	{
 		// 생성 직후 1회 — caster / skillId 주입 (테이블 행은 skillId 로 조회)
-		void SetContext(UnitBase caster, SkillInfo skillId);
+		void SetContext(UnitBase caster, EDT.Skill skillId);
 
 		// 발동 시작 1회
 		void OnStart();

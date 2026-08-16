@@ -1,39 +1,57 @@
+using System.Collections.Generic;
 using EDT;
 
 namespace ProjectOne.Unit.Stats
 {
-	// BaseStatID → Table_BaseStat 조회 → StatContainer 생성 (모든 유닛 공통 경로)
+	// 캐릭터/몬스터의 Base 레이어를 테이블에서 읽어 StatContainer 를 만든다.
+	// 성장식은 양쪽 동일: 값 = BaseValue + PerLevel × (Level - 1)
+	// (CharacterStat 은 캐릭터가 하나뿐이라 그룹 키가 없고, MonsterStat 만 GroupID 로 묶인다)
 	public static class StatContainerFactory
 	{
-		public static StatContainer FromBaseStatID(int baseStatId)
+		public static StatContainer ForCharacter(int level)
 		{
-			var c = new StatContainer();
+			StatContainer c = new StatContainer();
 
-			Table_BaseStat.Row row = Table_BaseStat.Get(baseStatId);
-			if (row == null)
+			List<Table_CharacterStat.Row> all = new List<Table_CharacterStat.Row>(Table_CharacterStat.All().Values);
+			for (int i = 0; i < all.Count; i++)
+			{
+				applyRow(c, all[i].StatDetailID, all[i].BaseValue, all[i].PerLevel, level);
+			}
+
+			return c;
+		}
+
+		public static StatContainer ForMonster(int statGroupId, int level)
+		{
+			StatContainer c = new StatContainer();
+			if (statGroupId <= 0)
 			{
 				return c;
 			}
 
-			c.SetBase(StatInfo.ATK_Base,             row.ATK_Base);
-			c.SetBase(StatInfo.MATK_Base,            row.MATK_Base);
-			c.SetBase(StatInfo.CritRate_Base,        row.CritRate_Base);
-			c.SetBase(StatInfo.CritDam_Base,         row.CritDam_Base);
-			c.SetBase(StatInfo.MaxHP_Base,           row.MaxHP_Base);
-			c.SetBase(StatInfo.DEF_Base,             row.DEF_Base);
-			c.SetBase(StatInfo.MDEF_Base,            row.MDEF_Base);
-			c.SetBase(StatInfo.HpRecovery_Base,      row.HpRecovery_Base);
-			c.SetBase(StatInfo.AtkSpeed_Base,        row.AtkSpeed_Base);
-			c.SetBase(StatInfo.MoveSpeed_Base,       row.MoveSpeed_Base);
-			c.SetBase(StatInfo.BreakGage_Base,       row.BreakGage_Base);
-			c.SetBase(StatInfo.BreakDamage_Base,     row.BreakDamage_Base);
-			c.SetBase(StatInfo.BreakRecovery_Base,   row.BreakRecovery_Base);
-			c.SetBase(StatInfo.KnockBack_Base,       row.KnockBack_Base);
-			c.SetBase(StatInfo.KnockBackResist_Base, row.KnockBackResist_Base);
-			c.SetBase(StatInfo.MaxStamina_Base,      row.MaxStamina_Base);
-			c.SetBase(StatInfo.StaminaRegen_Base,    row.StaminaRegen_Base);
+			List<Table_MonsterStat.Row> all = new List<Table_MonsterStat.Row>(Table_MonsterStat.All().Values);
+			for (int i = 0; i < all.Count; i++)
+			{
+				if (all[i].GroupID != statGroupId)
+				{
+					continue;
+				}
+
+				applyRow(c, all[i].StatDetailID, all[i].BaseValue, all[i].PerLevel, level);
+			}
 
 			return c;
+		}
+
+		private static void applyRow(StatContainer c, StatDetail detail, float baseValue, float perLevel, int level)
+		{
+			if (detail == StatDetail.None)
+			{
+				return;
+			}
+
+			int lv = level > 1 ? level : 1;
+			c.SetBase(detail, baseValue + perLevel * (lv - 1));
 		}
 	}
 }

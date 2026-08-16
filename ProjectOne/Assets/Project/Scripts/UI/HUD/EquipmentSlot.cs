@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using EDT;
+using ProjectOne.Items;
 using ProjectOne.Resources;
 
 namespace ProjectOne.UI
@@ -32,41 +33,43 @@ namespace ProjectOne.UI
 		// 현재 로드한 아이콘 주소 (Acquire/Release 짝 맞춤용)
 		private string _iconAddress;
 
-		// 클릭 시 전달할 아이템 ID와 구독 이벤트
-		private int _itemId;
-		public event Action<int> OnClicked;
+		// 클릭 시 전달할 장비 인스턴스 UID와 구독 이벤트
+		private long _uid;
+		public event Action<long> OnClicked;
 
 		private void Awake()
 		{
 			_button.OnClickEvent += onClicked;
 		}
 
-		public async UniTask Bind(Table_Equipment.Row row, bool owned, int count, int enhanceLevel, bool equipped, GradeColorTable colors, CancellationToken ct)
+		// 등급·레벨·순도는 아이템 테이블이 아니라 인스턴스가 소유한다.
+		// 그리드는 보유 인스턴스만 나열하므로 미보유(Unlock) 표시는 쓰지 않는다.
+		public async UniTask Bind(EquipmentInstance instance, bool equipped, GradeColorTable colors, CancellationToken ct)
 		{
-			_itemId = row.ID;
+			_uid = instance.uid;
 
-			GradeColorTable.GradeColor gc = colors.Get(row.Grade);
+			Table_Item.Row row = instance.Item;
+
+			GradeColorTable.GradeColor gc = colors.Get(instance.grade);
 			_bgMask.color = gc.bgMask;
 			_gradient.color = gc.gradient;
 			_glow.color = gc.glow;
 
-			_unlock.SetActive(!owned);
+			_unlock.SetActive(false);
 			_focus.SetActive(equipped);
 
-			if (owned)
+			_levelText.gameObject.SetActive(true);
+			_levelText.text = "Lv." + instance.level;
+
+			// 장비는 스택이 아니므로 개수 자리에 순도 등급을 표기한다 (아이템 설계 8장).
+			Table_EquipPurity.Row purity = Table_EquipPurity.Get(instance.purity);
+			_countText.gameObject.SetActive(purity != null);
+			if (purity != null)
 			{
-				_levelText.gameObject.SetActive(true);
-				_countText.gameObject.SetActive(true);
-				_levelText.text = "Lv." + (enhanceLevel + 1);
-				_countText.text = count.ToString();
-			}
-			else
-			{
-				_levelText.gameObject.SetActive(false);
-				_countText.gameObject.SetActive(false);
+				_countText.text = purity.DisplayName;
 			}
 
-			await setIcon(row.Icon, ct);
+			await setIcon((row != null) ? row.Icon : string.Empty, ct);
 		}
 
 		// 미보유(Unlock)·장착(Focus) 표시를 숨긴다 (아이템 정보 팝업의 슬롯용).
@@ -86,7 +89,7 @@ namespace ProjectOne.UI
 		{
 			if (OnClicked != null)
 			{
-				OnClicked.Invoke(_itemId);
+				OnClicked.Invoke(_uid);
 			}
 		}
 

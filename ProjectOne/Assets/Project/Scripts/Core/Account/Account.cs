@@ -10,7 +10,6 @@ namespace ProjectOne.UserData
 		public Inventory Inventory { get; private set; }
 		public Loadout Loadout { get; private set; }
 		public SkillBook SkillBook { get; private set; }
-		public CardSkillBook CardSkillBook { get; private set; }
 		public ClearedDungeons ClearedDungeons { get; private set; }
 		public Wallet Wallet { get; private set; }
 
@@ -19,7 +18,6 @@ namespace ProjectOne.UserData
 			Inventory = new Inventory(null);
 			Loadout = new Loadout(null);
 			SkillBook = new SkillBook(null);
-			CardSkillBook = new CardSkillBook(null);
 			ClearedDungeons = new ClearedDungeons(null);
 			Wallet = new Wallet(null);
 		}
@@ -30,7 +28,7 @@ namespace ProjectOne.UserData
 			Inventory = new Inventory(data);
 		}
 
-		public void SetCharacter(CharacterDto data)
+		public void SetLoadout(LoadoutDto data)
 		{
 			Loadout = new Loadout(data);
 		}
@@ -38,11 +36,6 @@ namespace ProjectOne.UserData
 		public void SetSkill(SkillDto data)
 		{
 			SkillBook = new SkillBook(data);
-		}
-
-		public void SetCardSkill(CardSkillBookDto data)
-		{
-			CardSkillBook = new CardSkillBook(data);
 		}
 
 		public void SetClearedDungeons(ClearedDungeonsDto data)

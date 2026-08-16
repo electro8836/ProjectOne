@@ -1,4 +1,4 @@
-using EDT;
+﻿using EDT;
 
 namespace ProjectOne.Unit.AI
 {
@@ -13,7 +13,7 @@ namespace ProjectOne.Unit.AI
 
 		// 몬스터: 히어로로 접근 이동 + 사거리 내 스킬 자동 시전.
 		// 일반/엘리트/보스 모두 현재는 접근형 — 보스 전용 BossBehavior 는 3단계까지 폴백.
-		public static AiBrain CreateForMonster(UnitBase monster, MonsterTypes type)
+		public static AiBrain CreateForMonster(UnitBase monster, MonsterType type)
 		{
 			return new AiBrain(monster, new MonsterApproachBehavior());
 		}

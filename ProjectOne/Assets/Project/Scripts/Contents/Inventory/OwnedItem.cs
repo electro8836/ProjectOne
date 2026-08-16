@@ -1,10 +1,10 @@
 namespace ProjectOne.UserData
 {
-	// 보유 아이템 1종(클라 런타임). 직렬화 DTO(OwnedItemDto)와 분리 — 클라 전용 필드는 여기에 추가한다.
+	// 스택 아이템 1종(클라 런타임) — 재료·소모품·수집품.
+	// 장비는 인스턴스 단위이므로 여기 들어오지 않는다 (ProjectOne.Items.EquipmentInstance).
 	public sealed class OwnedItem
 	{
 		public int itemId;
 		public int count;
-		public int enhanceLevel;
 	}
 }

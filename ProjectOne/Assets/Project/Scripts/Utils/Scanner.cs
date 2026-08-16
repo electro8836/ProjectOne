@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using ProjectOne.Unit;
 
@@ -78,20 +78,6 @@ namespace ProjectOne.Utils
 
 			float num3 = width * 0.5f + targetRadius;
 			return Mathf.Abs(num2) <= num3;
-		}
-
-		public static bool InDonut(Vector2 origin, float outerRadius, float innerRadius, Vector2 point, float targetRadius = 0f)
-		{
-			Vector2 val = point - origin;
-			float sqrMagnitude = val.sqrMagnitude;
-			float num = outerRadius + targetRadius;
-			float num2 = Mathf.Max(0f, innerRadius - targetRadius);
-			if (sqrMagnitude <= num * num)
-			{
-				return sqrMagnitude >= num2 * num2;
-			}
-
-			return false;
 		}
 	}
 }

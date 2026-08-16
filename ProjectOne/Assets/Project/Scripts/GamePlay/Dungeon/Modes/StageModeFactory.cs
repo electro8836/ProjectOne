@@ -1,22 +1,25 @@
-using UnityEngine;
 using EDT;
+using UnityEngine;
 
 namespace ProjectOne.Dungeon
 {
-	// Table_Stage.ModeType(MapModeType) 값을 구체 IStageMode 구현으로 매핑한다.
+	// DungeonType → 구체 모드 매핑.
+	//
+	// 조합으로 표현하려 들면 던전이 늘어날 때마다 조합으로 안 되는 게 나와 결국 코드 분기를 추가하게 된다.
+	// enum 하나가 곧 규칙 하나인 것이 정직하다 (맵 설계 9장).
 	public static class StageModeFactory
 	{
-		public static IStageMode Create(MapModeType mode)
+		public static IStageMode Create(EDT.Dungeon dungeonType)
 		{
-			switch (mode)
+			switch (dungeonType)
 			{
-			case MapModeType.Defense:
-				return new DefenseStageMode();
-			case MapModeType.BossBattle:
-				return new BossBattleStageMode();
-			default:
-				Debug.LogWarning($"[StageModeFactory] 미구현 모드 {mode} — 즉시 클리어 스텁으로 진행");
-				return new StubStageMode();
+				case EDT.Dungeon.Gold:
+					return new GoldDungeonMode();
+				case EDT.Dungeon.Exp:
+					return new ExpDungeonMode();
+				default:
+					Debug.LogError($"[StageModeFactory] 대응하는 모드가 없는 던전 종류: {dungeonType}");
+					return null;
 			}
 		}
 	}

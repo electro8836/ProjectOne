@@ -1,350 +1,200 @@
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using EDT;
-using ProjectOne.Resources;
+using ProjectOne.Field;
+using ProjectOne.Flow;
+using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
-	// 스테이지 선택 화면(다음 스테이지 선택 + 엑스트라 도전/마을 귀환 통합).
-	// DungeonDirector 가 OpenOverlayAsync 로 열고, 모드에 맞는 Wait...Async 로 결과를 기다린다.
+	// 포탈 UI — 액트를 고르고 그 액트의 스테이지를 고른다 (맵 설계 1.2).
+	//
+	// MapType=Stage 인 것만 다룬다. 마을과 던전은 목록에 섞이지 않는다.
+	// 필드 안에서 열면 같은 액트는 즉시 이동, 다른 액트는 그리드맵 교체로 처리한다.
 	public class StageSelectUI : UIScreen
 	{
-		// 엑스트라 화면 선택 결과 — 닫기/도전/귀환
-		public enum ExtraChoice
-		{
-			Exit,
-			Challenge,
-			Return,
-		}
+		[Header("액트")]
+		[SerializeField] private TMP_Text _actNameText;
+		[SerializeField] private UIButton _prevActButton;
+		[SerializeField] private UIButton _nextActButton;
 
-		// 스테이지 후보 1개 — stageId + 배정된 롤 보상 RewardItemId
-		public readonly struct StageOption
-		{
-			public readonly int StageId;
-			public readonly int RollRewardItemId;
+		[Header("스테이지 목록")]
+		[SerializeField] private Transform _stageGrid;
+		[SerializeField] private StageSelectSlot _slotPrefab;
 
-			public StageOption(int stageId, int rollRewardItemId)
-			{
-				this.StageId = stageId;
-				this.RollRewardItemId = rollRewardItemId;
-			}
-		}
+		[Header("닫기")]
+		[SerializeField] private UIButton _closeButton;
 
-		[Header("공통")]
-		[SerializeField] private StageModeVisualData _modeVisuals;
-		[SerializeField] private TMP_Text _subTitleText;
-		[SerializeField] private UIButton _enterButton;
-		[SerializeField] private UIButton _returnButton;
-		[SerializeField] private UIButton _exitButton;
+		private readonly List<Table_Act.Row> _acts = new List<Table_Act.Row>();
+		private readonly List<Table_MapStage.Row> _stages = new List<Table_MapStage.Row>();
+		private readonly List<StageSelectSlot> _slots = new List<StageSelectSlot>();
 
-		[Header("스테이지 선택")]
-		[SerializeField] private GameObject _stageList;
-		[SerializeField] private StageSelectSlot[] _slots;   // StageInfo_1, StageInfo_2
-
-		[Header("엑스트라")]
-		[SerializeField] private GameObject _extraStageInfo;
-		[SerializeField] private Image _extraModeIcon;
-		[SerializeField] private TMP_Text _extraModeNameText;
-		[SerializeField] private TMP_Text _extraModeRewardText;
-
-		private UniTaskCompletionSource<int> _selectionSource;
-		private UniTaskCompletionSource<ExtraChoice> _choiceSource;
-		private List<StageOption> _options;
-		private int _optionCount;
-		private int _selectedIndex = -1;
-		private bool _extraMode;
-		private string _extraIconAddress;
+		private int _actIndex;
 
 		private void Awake()
 		{
-			_enterButton.OnClickEvent += onEnterClicked;
-			_returnButton.OnClickEvent += onReturnClicked;
-			_exitButton.OnClickEvent += onExitClicked;
-
-			if (_slots != null && _slots.Length > 0 && _slots[0] != null)
-			{
-				_slots[0].Button.OnClickEvent += onSlot0Clicked;
-			}
-
-			if (_slots != null && _slots.Length > 1 && _slots[1] != null)
-			{
-				_slots[1].Button.OnClickEvent += onSlot1Clicked;
-			}
+			_prevActButton.OnClickEvent += onPrevActClicked;
+			_nextActButton.OnClickEvent += onNextActClicked;
+			_closeButton.OnClickEvent += onCloseClicked;
 		}
 
 		private void OnDestroy()
 		{
-			_enterButton.OnClickEvent -= onEnterClicked;
-			_returnButton.OnClickEvent -= onReturnClicked;
-			_exitButton.OnClickEvent -= onExitClicked;
-
-			if (_slots != null && _slots.Length > 0 && _slots[0] != null)
-			{
-				_slots[0].Button.OnClickEvent -= onSlot0Clicked;
-			}
-
-			if (_slots != null && _slots.Length > 1 && _slots[1] != null)
-			{
-				_slots[1].Button.OnClickEvent -= onSlot1Clicked;
-			}
-
-			releaseExtraIcon();
-			_selectionSource?.TrySetCanceled();
-			_choiceSource?.TrySetCanceled();
+			_prevActButton.OnClickEvent -= onPrevActClicked;
+			_nextActButton.OnClickEvent -= onNextActClicked;
+			_closeButton.OnClickEvent -= onCloseClicked;
 		}
 
-		// 다음 스테이지 선택. 선택된 StageID 반환.
-		public async UniTask<int> WaitStageSelectionAsync(List<StageOption> options, int stageNumber, int totalStages, CancellationToken ct)
+		public override UniTask OnOpenAsync(CancellationToken ct)
 		{
-			_extraMode = false;
-			_options = options;
-			_optionCount = options != null ? options.Count : 0;
+			collectActs();
 
-			_stageList.SetActive(true);
-			_extraStageInfo.SetActive(false);
-			_returnButton.gameObject.SetActive(false);
-
-			_subTitleText.text = "다음 스테이지를 선택해주세요\n(" + stageNumber + "/" + totalStages + ")";
-
-			CancellationToken iconCt = this.GetCancellationTokenOnDestroy();
-			for (int i = 0; i < _slots.Length; i++)
+			// 필드에 있다면 현재 액트를 먼저 보여준다.
+			_actIndex = 0;
+			if (FieldDirector.HasInstance == true)
 			{
-				StageSelectSlot slot = _slots[i];
-				if (slot == null)
+				int index = _acts.FindIndex(matchesCurrentAct);
+				if (index >= 0)
 				{
-					continue;
-				}
-
-				if (i < _optionCount)
-				{
-					slot.gameObject.SetActive(true);
-					slot.SetSelected(false);
-
-					StageOption option = options[i];
-					MapModeType mode = stageMode(option.StageId);
-					slot.SetTexts(modeName(mode), buildRewardText(new int[] { option.RollRewardItemId }));
-					slot.SetIconAsync(iconAddress(mode), iconCt).Forget();
-				}
-				else
-				{
-					slot.gameObject.SetActive(false);
+					_actIndex = index;
 				}
 			}
 
-			_selectedIndex = -1;
-			_enterButton.interactable = false;
-
-			_selectionSource = new UniTaskCompletionSource<int>();
-			using (ct.Register(onCanceled))
-			{
-				return await _selectionSource.Task;
-			}
+			refresh();
+			return UniTask.CompletedTask;
 		}
 
-		// 엑스트라 도전 / 마을 귀환 / 닫기 선택.
-		public async UniTask<ExtraChoice> WaitExtraChoiceAsync(MapModeType extraMode, int[] fixRewardItemIds, CancellationToken ct)
+		private bool matchesCurrentAct(Table_Act.Row row)
 		{
-			_extraMode = true;
-
-			_stageList.SetActive(false);
-			_extraStageInfo.SetActive(true);
-			_returnButton.gameObject.SetActive(true);
-
-			_subTitleText.text = "최종 스테이지에 도전하거나 마을로 귀환하세요";
-
-			if (_extraModeNameText != null)
-			{
-				_extraModeNameText.text = modeName(extraMode);
-			}
-
-			if (_extraModeRewardText != null)
-			{
-				_extraModeRewardText.text = buildRewardText(fixRewardItemIds);
-			}
-
-			setExtraIconAsync(iconAddress(extraMode), this.GetCancellationTokenOnDestroy()).Forget();
-
-			_enterButton.interactable = true;
-
-			_choiceSource = new UniTaskCompletionSource<ExtraChoice>();
-			using (ct.Register(onCanceled))
-			{
-				return await _choiceSource.Task;
-			}
+			return row.ID == FieldDirector.Instance.CurrentActId;
 		}
 
-		private void onSlot0Clicked()
+		// ── 목록 ──────────────────────────────────────────────────────
+
+		private void collectActs()
 		{
-			select(0);
+			_acts.Clear();
+			_acts.AddRange(Table_Act.All().Values);
+			_acts.Sort(compareActOrder);
 		}
 
-		private void onSlot1Clicked()
+		private static int compareActOrder(Table_Act.Row a, Table_Act.Row b)
 		{
-			select(1);
+			return a.Order.CompareTo(b.Order);
 		}
 
-		private void select(int index)
+		private void collectStages(int actId)
 		{
-			if (index < 0 || index >= _optionCount)
+			_stages.Clear();
+
+			Dictionary<int, Table_MapStage.Row> all = Table_MapStage.All();
+			Dictionary<int, Table_MapStage.Row>.Enumerator e = all.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				if (e.Current.Value.ActID == actId)
+				{
+					_stages.Add(e.Current.Value);
+				}
+			}
+
+			_stages.Sort(compareStageOrder);
+		}
+
+		private static int compareStageOrder(Table_MapStage.Row a, Table_MapStage.Row b)
+		{
+			return a.Order.CompareTo(b.Order);
+		}
+
+		// ── 표시 ──────────────────────────────────────────────────────
+
+		private void refresh()
+		{
+			if (_acts.Count == 0)
 			{
 				return;
 			}
 
-			_selectedIndex = index;
-			for (int i = 0; i < _slots.Length; i++)
+			Table_Act.Row act = _acts[_actIndex];
+			_actNameText.text = act.Name;
+
+			_prevActButton.gameObject.SetActive(_actIndex > 0);
+			_nextActButton.gameObject.SetActive(_actIndex < _acts.Count - 1);
+
+			collectStages(act.ID);
+			rebuildSlots();
+		}
+
+		private void rebuildSlots()
+		{
+			for (int i = 0; i < _slots.Count; i++)
 			{
 				if (_slots[i] != null)
 				{
-					_slots[i].SetSelected(i == index);
+					Destroy(_slots[i].gameObject);
 				}
 			}
 
-			_enterButton.interactable = true;
-		}
+			_slots.Clear();
 
-		private void onEnterClicked()
-		{
-			if (_extraMode == true)
+			int level = Account.Instance.Loadout.Level;
+			for (int i = 0; i < _stages.Count; i++)
 			{
-				_choiceSource?.TrySetResult(ExtraChoice.Challenge);
-				return;
+				Table_MapStage.Row stage = _stages[i];
+				Table_Map.Row map = Table_Map.Get(stage.ID);
+
+				// 입장 요구 레벨만 판정한다. ReqQuestID 판정은 퀘스트 시스템이 생기면 붙인다(STEP 12).
+				bool unlocked = level >= stage.ReqLevel;
+
+				StageSelectSlot slot = Instantiate(_slotPrefab, _stageGrid);
+				slot.Bind(stage.ID, (map != null) ? map.Name : stage.ID.ToString(), stage.ReqLevel, unlocked, onStageClicked);
+				_slots.Add(slot);
 			}
-
-			if (_selectedIndex < 0 || _selectedIndex >= _optionCount)
-			{
-				return;
-			}
-
-			_selectionSource?.TrySetResult(_options[_selectedIndex].StageId);
 		}
 
-		private void onReturnClicked()
+		// ── 입력 ──────────────────────────────────────────────────────
+
+		private void onPrevActClicked()
 		{
-			_choiceSource?.TrySetResult(ExtraChoice.Return);
-		}
-
-		// 닫기 — 스테이지 선택은 0(미선택), 엑스트라는 Exit 를 반환해 호출자가 포탈 버튼을 다시 노출한다.
-		private void onExitClicked()
-		{
-			if (_extraMode == true)
-			{
-				_choiceSource?.TrySetResult(ExtraChoice.Exit);
-				return;
-			}
-
-			_selectionSource?.TrySetResult(0);
-		}
-
-		private void onCanceled()
-		{
-			_selectionSource?.TrySetCanceled();
-			_choiceSource?.TrySetCanceled();
-		}
-
-		// 스테이지 모드 조회
-		private static MapModeType stageMode(int stageId)
-		{
-			Table_Stage.Row row = Table_Stage.Get(stageId);
-			return row != null ? row.ModeType : MapModeType.None;
-		}
-
-		// TODO(향후 모드명 유틸로 교체) — 임시로 enum 이름 표기
-		private static string modeName(MapModeType mode)
-		{
-			switch (mode)
-			{
-				case MapModeType.Defense:			return "디펜스";
-				case MapModeType.BuildingDestroy:	return "파괴";
-				case MapModeType.Capture:			return "점령";
-				case MapModeType.Breakthrough:		return "돌파";
-				case MapModeType.BossBattle:		return "보스";
-			}
-
-			return mode.ToString();
-		}
-
-		private string iconAddress(MapModeType mode)
-		{
-			return _modeVisuals != null ? _modeVisuals.GetIconAddress(mode) : string.Empty;
-		}
-
-		// "보상" + 각 RewardItem 이름을 줄바꿈으로
-		private static string buildRewardText(int[] rewardItemIds)
-		{
-			StringBuilder sb = new StringBuilder();
-			sb.Append("보상");
-			if (rewardItemIds != null)
-			{
-				for (int i = 0; i < rewardItemIds.Length; i++)
-				{
-					Table_RewardItem.Row item = Table_RewardItem.Get(rewardItemIds[i]);
-					if (item != null)
-					{
-						sb.Append('\n');
-						sb.Append(item.Name);
-					}
-				}
-			}
-
-			return sb.ToString();
-		}
-
-		// 엑스트라 모드 아이콘 로드 (아틀라스 우선, 비동기 폴백)
-		private async UniTask setExtraIconAsync(string address, CancellationToken ct)
-		{
-			if (_extraModeIcon == null || _extraIconAddress == address)
+			if (_actIndex <= 0)
 			{
 				return;
 			}
 
-			releaseExtraIcon();
-			_extraIconAddress = address;
-
-			if (string.IsNullOrEmpty(address) == true)
-			{
-				_extraIconAddress = null;
-				_extraModeIcon.enabled = false;
-				return;
-			}
-
-			Sprite atlasSprite = AtlasManager.Instance.Get(address);
-			if (atlasSprite != null)
-			{
-				_extraModeIcon.sprite = atlasSprite;
-				_extraModeIcon.enabled = true;
-				_extraIconAddress = null;
-				return;
-			}
-
-			_extraModeIcon.enabled = false;
-			(bool cancelled, Sprite icon) = await ResourceManager.Instance
-				.AcquireAsync<Sprite>(address, ct)
-				.SuppressCancellationThrow();
-
-			if (cancelled == true || _extraIconAddress != address)
-			{
-				return;
-			}
-
-			if (icon != null)
-			{
-				_extraModeIcon.sprite = icon;
-				_extraModeIcon.enabled = true;
-			}
+			_actIndex--;
+			refresh();
 		}
 
-		private void releaseExtraIcon()
+		private void onNextActClicked()
 		{
-			if (string.IsNullOrEmpty(_extraIconAddress) == false && ResourceManager.HasInstance == true)
+			if (_actIndex >= _acts.Count - 1)
 			{
-				ResourceManager.Instance.Release(_extraIconAddress);
-				_extraIconAddress = null;
+				return;
 			}
+
+			_actIndex++;
+			refresh();
+		}
+
+		private void onStageClicked(int stageId)
+		{
+			UIManager.Instance.CloseOverlayAsync().Forget();
+
+			// 필드 밖(마을)이면 씬 전환, 필드 안이면 씬 전환 없이 이동/교체.
+			if (FieldDirector.HasInstance == false)
+			{
+				GameFlow.Instance.ChangeStateAsync(new FieldState(stageId)).Forget();
+				return;
+			}
+
+			FieldDirector.Instance.ChangeActAsync(stageId, this.GetCancellationTokenOnDestroy()).Forget();
+		}
+
+		private void onCloseClicked()
+		{
+			UIManager.Instance.CloseOverlayAsync().Forget();
 		}
 	}
 }

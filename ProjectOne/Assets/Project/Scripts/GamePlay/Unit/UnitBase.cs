@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EDT;
@@ -8,7 +8,6 @@ using ProjectOne.Event;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
 using ProjectOne.Buff;
-using ProjectOne.Aura;
 using ProjectOne.Unit.AI;
 
 namespace ProjectOne.Unit
@@ -48,8 +47,6 @@ namespace ProjectOne.Unit
 		protected SkillContainer _skillContainer;
 
 		protected BuffContainer _buffContainer;
-
-		protected AuraContainer _auraContainer;
 
 		protected AiBrain _brain;
 
@@ -102,8 +99,6 @@ namespace ProjectOne.Unit
 
 		public BuffContainer BuffContainer => _buffContainer;
 
-		public AuraContainer AuraContainer => _auraContainer;
-
 		public UnitMover Mover => _mover;
 
 		// 행동 차단 키 집합 — 키별로 켜고 끄므로 여러 CC 가 겹쳐도 안전 (스턴+이동불가 동시 적용 등)
@@ -112,23 +107,29 @@ namespace ProjectOne.Unit
 
 		private readonly HashSet<string> _skillBlockKeys = new HashSet<string>();
 
-		// 1초 주기 자동 회복 타이머 (브레이크 게이지 / 스테미너 / HP)
+		// 1초 주기 자동 회복 타이머 (HP)
 		private IntervalTimer _secondTimer;
 
-		private bool _wasKnockbackImmune;
+		// 코드가 소유하는 기본 이동 속도. Stat_MoveSpeedBonus(비율)가 여기에 곱해진다 (기반테이블 8.1).
+		public const float BaseMoveSpeed = 3f;
+
+		// 최종 이동 속도 — 기본값 × (1 + 이동속도 보너스)
+		public float MoveSpeed
+		{
+			get
+			{
+				if (_stats == null)
+				{
+					return BaseMoveSpeed;
+				}
+
+				return BaseMoveSpeed * (1f + _stats.GetStat(Stat.Stat_MoveSpeedBonus));
+			}
+		}
 
 		public bool IsMoveBlocked => _moveBlockKeys.Count > 0;
 
 		public bool IsSkillBlocked => _skillBlockKeys.Count > 0;
-
-		public bool IsKnockbackImmune
-		{
-			get
-			{
-				if (_stats == null || _vitals == null) { return false; }
-				return _stats.GetStat(StatInfo.BreakGage) > 0f && !_vitals.IsBreak;
-			}
-		}
 
 		public void BlockMove(string key)
 		{
@@ -162,10 +163,19 @@ namespace ProjectOne.Unit
 
 		public abstract UnitType GetUnitType();
 
+		// 유닛 레벨 — 스탯 성장의 기준이자 데미지 방어 상수 K 의 기준(공격자 레벨).
+		// 스폰 시 확정되며 실시간으로 변하지 않는다.
+		public int Level { get; private set; } = 1;
+
 		public void SetIDs(int id, int tableId)
 		{
 			_id = id;
 			_tableId = tableId;
+		}
+
+		public void SetLevel(int level)
+		{
+			Level = level > 0 ? level : 1;
 		}
 
 		public void SetFaction(Faction f)
@@ -214,11 +224,6 @@ namespace ProjectOne.Unit
 			_buffContainer = bc;
 		}
 
-		public void SetAuraContainer(AuraContainer ac)
-		{
-			_auraContainer = ac;
-		}
-
 		// AI 자동전투 두뇌 주입 — 미주입(null) 이면 자동전투 안 함 (플레이어 직접조작 등)
 		public void SetBrain(AiBrain brain)
 		{
@@ -255,11 +260,6 @@ namespace ProjectOne.Unit
 					_buffContainer.Tick(deltaTime);
 				}
 
-				if (_auraContainer != null)
-				{
-					_auraContainer.Tick(deltaTime);
-				}
-
 				if (_skillContainer != null)
 				{
 					_skillContainer.Tick(deltaTime);
@@ -278,45 +278,18 @@ namespace ProjectOne.Unit
 					{
 						regenTick();
 					}
-
-					// 넉백 면역 상태(브레이크 게이지 보유 중) 변화 시 외곽선 토글
-					bool isImmune = IsKnockbackImmune;
-					if (isImmune != _wasKnockbackImmune)
-					{
-						_wasKnockbackImmune = isImmune;
-						_animator?.SetOutlineEnabled(isImmune);
-					}
 				}
 			}
 		}
 
-		// 1초 주기 자동 회복 — 브레이크 게이지 / 스테미너 / HP (호출부에서 _stats·_vitals null 보장)
+		// 1초 주기 자연 재생 — Stat_HpRegen 만큼 회복 (호출부에서 _stats·_vitals null 보장)
 		private void regenTick()
 		{
-			float breakRecovery = _stats.GetStat(StatInfo.BreakRecovery);
-			if (breakRecovery > 0f)
+			// 이미 풀피면 ModifyHp 내부 Clamp 로 무해
+			float hpRegen = _stats.GetStat(Stat.Stat_HpRegen);
+			if (hpRegen > 0f)
 			{
-				if (_vitals.IsBreak)
-				{
-					_vitals.TickBreakRecover(breakRecovery);
-				}
-				else
-				{
-					_vitals.ModifyBreakGage(breakRecovery);
-				}
-			}
-
-			float staminaRegen = _stats.GetStat(StatInfo.StaminaRegen);
-			if (staminaRegen > 0f)
-			{
-				_vitals.ModifyStamina(staminaRegen);
-			}
-
-			// 체력 회복 — 이미 풀피면 ModifyHp 내부 Clamp 로 무해
-			float hpRecovery = _stats.GetStat(StatInfo.HpRecovery);
-			if (hpRecovery > 0f)
-			{
-				_vitals.ModifyHp(hpRecovery);
+				_vitals.ModifyHp(hpRegen);
 			}
 		}
 
@@ -324,8 +297,8 @@ namespace ProjectOne.Unit
 		{
 			if (!(_animator == null) && _stats != null)
 			{
-				_animator.SetAttackSpeed(_stats.GetStat(StatInfo.AtkSpeed));
-				_animator.SetMoveSpeed(_stats.GetStat(StatInfo.MoveSpeed));
+				_animator.SetAttackSpeed(_stats.GetStat(Stat.Stat_AtkSpeed));
+				_animator.SetMoveSpeed(MoveSpeed);
 			}
 		}
 
@@ -349,24 +322,14 @@ namespace ProjectOne.Unit
 		{
 			if (!IsDead)
 			{
-				EventManager.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID, info.IsCritical, info.IsSuperCritical));
+				EventManager.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID, info.IsCritical));
 
-				// 피격 시 공격자가 자신의 StaminaSteal 만큼 스테미나 회복 (MaxStamina 0 이면 무해)
-				if (info.Damage > 0 && info.Attacker != null && info.Attacker.Stats != null && info.Attacker.Vitals != null)
-				{
-					float steal = info.Attacker.Stats.GetStat(StatInfo.StaminaSteal);
-					if (steal > 0f)
-					{
-						info.Attacker.Vitals.ModifyStamina(steal);
-					}
-				}
-
-				if (_animator != null && !IsKnockbackImmune)
+				if (_animator != null)
 				{
 					_animator.PlayHit();
 				}
 
-				if (info.KnockbackPower > 0f && _mover != null && !IsKnockbackImmune)
+				if (info.KnockbackPower > 0f && _mover != null)
 				{
 					_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
 					// 넉백 발생 → 진행 중인 캐스팅 취소
@@ -404,12 +367,9 @@ namespace ProjectOne.Unit
 		{
 			this.transform.position = pos;
 			IsDead = false;
-			_wasKnockbackImmune = false;
 			if (_vitals != null)
 			{
 				_vitals.InitHp();
-				_vitals.InitBreakGage();
-				_vitals.InitStamina();
 			}
 
 			if (_animator != null)

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -18,122 +18,105 @@ using ProjectOne.Shared;
 
 namespace ProjectOne.Dungeon
 {
-	// 던전 한 판의 오케스트레이터(씬 배치). 히어로 1회 스폰 → 스테이지 순차 진행(맵 교체/모드 실행/선택) →
-	// 본편 클리어 후 엑스트라 도전(선택) → 정리 후 로비 복귀.
+	// 던전 한 판의 오케스트레이터(씬 배치).
+	//
+	// **1회 입장 = DungeonStage 1단계**다 (맵 설계 9장). 맵 로드 → 히어로 스폰 → 모드 실행 → 결과.
+	// 여러 단계를 연달아 진행하지 않으며, "다음 단계 도전"은 결과창에서 새 입장으로 다시 들어온다.
 	public sealed class DungeonDirector : MonoBehaviour
 	{
-		// 임시: 캐릭터 미보유(CharacterId<=0) 시 사용할 기본 캐릭터 ID. 추후 신규계정 시작데이터로 대체.
-		private const int TempFallbackCharacterId = 101;
-
-		// 히어로 배치 기준 위치(맵 좌측)
+		// 히어로 배치 기준 위치
 		private static readonly Vector3 HeroBasePos = new Vector3(0f, 0f, 0f);
 
 		// UI 프리팹 주소(Addressable) — 씬 직렬화로 숨는 것을 막기 위해 코드 상수로 고정
-		private const string StageSelectAddress = "Prefab_StageSelect";
 		private const string DungeonResultAddress = "Prefab_DungeonResult";
 		private const string DungeonContinueAddress = "Prefab_DungeonContinue";
 
-		// 부활 다이아 소모값 = 현재 스테이지 번호 × 이 값
-		private const int ReviveCostPerStage = 150;
-
-		// 한 판(런)에서 허용하는 최대 부활 횟수
-		private const int MaxReviveCount = 2;
-
-		// 엑스트라 스테이지 클리어 후 결과창 등장까지 대기(초)
-		private const float ResultDelayAfterExtra = 3f;
-
 		private Table_Dungeon.Row _dungeon;
+		private Table_DungeonStage.Row _stage;
 		private DungeonContext _ctx;
-
-		// 현재 진행 중인 스테이지에 확정된 롤 보상 RewardItemId (클리어 시 해석·누적)
-		private int _currentRollRewardItemId;
 
 		// 전투 수명 토큰 — 종료(클리어/패배/강제퇴장) 시 취소해 진행 루프를 결정적으로 중단한다.
 		private CancellationTokenSource _cts;
 
-		// 현재 진행 중인 스테이지/모드 (폴링 대상)
-		private Table_Stage.Row _currentStage;
 		private IStageMode _currentMode;
-
 		private bool _ending;
-
-		// 추가(엑스트라) 스테이지를 클리어했는지 — 서버 경험치(ExtraExp)·보너스 보상 지급 근거.
-		private bool _extraCleared;
 
 		// 클리어 서버 요청을 이미 시작했는지(중복 전송 방지) + 진행 중 요청 핸들.
 		private bool _clearRequestSent;
 		private UniTask<DungeonClearResponse> _clearTask;
 		private UniTaskCompletionSource<DungeonClearResponse> _clearTcs;
 
-		// 사망창에서 '귀환'을 선택했는지 — true 면 승패와 무관하게 결과창 없이 즉시 로비로 복귀(보상 없음).
+		// 사망창에서 '귀환'을 선택했는지 — true 면 결과창 없이 즉시 마을로 복귀(보상 없음).
 		private bool _forcedLobbyReturn;
-
-		// 스테이지 선택 후보 수집용 버퍼 (재사용)
-		private readonly List<int> _candidateBuffer = new List<int>();
-
-		// 선택 UI 전달용 옵션 버퍼 (재사용)
-		private readonly List<StageSelectUI.StageOption> _optionBuffer = new List<StageSelectUI.StageOption>();
 
 		// 플로우필드 재베이크 임계값 — 기준 히어로가 다른 셀로 이동했을 때만 재계산
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
-		// 진입점 — DungeonState 가 씬 로드 후 호출한다. 히어로 스폰·첫 스테이지 진입까지 await.
+		private static DungeonDirector _instance;
+
+		public static bool HasInstance => _instance != null;
+
+		public static DungeonDirector Instance => _instance;
+
+		// 던전 씬은 비어 있으므로 코드가 직접 생성한다.
+		public static DungeonDirector EnsureInstance()
+		{
+			if (_instance != null)
+			{
+				return _instance;
+			}
+
+			GameObject go = new GameObject("DungeonDirector");
+			_instance = go.AddComponent<DungeonDirector>();
+			return _instance;
+		}
+
+		// 진입점 — DungeonState 가 씬 로드 후 호출한다. 맵 로드·히어로 스폰까지 await.
 		public async UniTask Begin(DungeonContext ctx)
 		{
 			if (ctx == null)
 			{
-				Debug.LogError("[DungeonDirector] DungeonContext == null");
+				Debug.LogError("[DungeonDirector] DungeonContext 가 null");
 				return;
 			}
 
-			Table_Dungeon.Row dungeon = Table_Dungeon.Get(ctx.DungeonId);
+			Table_Dungeon.Row dungeon = Table_Dungeon.Get(ctx.DungeonType);
 			if (dungeon == null)
 			{
-				Debug.LogError($"[DungeonDirector] Table_Dungeon.Get({ctx.DungeonId}) == null");
+				Debug.LogError($"[DungeonDirector] Table_Dungeon.Get({ctx.DungeonType}) == null");
 				return;
 			}
 
-			if (ctx.CharacterId <= 0)
+			Table_DungeonStage.Row stage = ctx.FindStageRow();
+			if (stage == null)
 			{
-				Debug.LogWarning($"[DungeonDirector] CharacterId 미설정 → 임시 기본값 {TempFallbackCharacterId} 사용");
-				ctx.CharacterId = TempFallbackCharacterId;
+				Debug.LogError($"[DungeonDirector] DungeonStage 없음 — {ctx.DungeonType} Stage {ctx.Stage}");
+				return;
 			}
 
 			_dungeon = dungeon;
+			_stage = stage;
 			_ctx = ctx;
 			_cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
-			// 던전 런 상태 초기화 (임시재화 0) — 로그라이트 런 시작
 			DungeonRunState.Instance.Reset();
 
-			// 히어로 1회 스폰 (던전 전체 동안 유지)
-			await spawnHeroAsync(ctx, _cts.Token);
+			await loadMapAsync(_cts.Token);
+			await spawnHeroAsync(_cts.Token);
 
-			// 첫 스테이지: StageGroupID_1 그룹의 StageID_1 고정
-			int firstStageId = firstStageOfGroup(dungeon.StageGroupID_1);
-			bool entered = await beginStageAsync(firstStageId, _cts.Token);
-			if (entered == false)
-			{
-				endDungeonAsync(false).Forget();
-				return;
-			}
+			// 던전 입장은 항상 완전한 상태에서 시작한다 (기반테이블 5.3)
+			healAllHeroes();
 
-			// 첫 스테이지(라운드 1) 롤 보상 확정
-			_currentRollRewardItemId = DungeonRewardResolver.PickRollRewardItemId(ctx.DungeonId, 1);
+			startStage();
 
-			// 첫 스테이지 진행 폴링부터 던전 끝까지 백그라운드로 구동
-			runDungeonGuardedAsync(_cts.Token).Forget();
+			// 진행 감시는 백그라운드로 — 여기서 await 를 끝내야 로딩 화면이 걷힌다.
+			runGuardedAsync(_cts.Token).Forget();
 		}
 
-		// 승패 무관 강제 종료 (HUD ExitButton 등에서 호출)
+		// DungeonHUD 나가기 버튼 → 즉시 종료(보상 없음)
 		public void RequestExit()
 		{
-			if (_ending == true)
-			{
-				return;
-			}
-
-			_cts?.Cancel();
+			_forcedLobbyReturn = true;
 			endDungeonAsync(false).Forget();
 		}
 
@@ -144,14 +127,25 @@ namespace ProjectOne.Dungeon
 
 		private void OnDestroy()
 		{
-			_cts?.Dispose();
+			if (_instance == this)
+			{
+				_instance = null;
+			}
+
+			if (_cts != null)
+			{
+				_cts.Cancel();
+				_cts.Dispose();
+				_cts = null;
+			}
 		}
 
-		// 진행 루프의 취소 예외를 흡수(미관측 예외 방지)하고, 정상 종료 시에만 로비로 전이한다.
-		private async UniTaskVoid runDungeonGuardedAsync(CancellationToken ct)
+		// ── 진행 ──────────────────────────────────────────────────────
+
+		private async UniTaskVoid runGuardedAsync(CancellationToken ct)
 		{
-			(bool canceled, bool victory) = await runStagesAsync(ct).SuppressCancellationThrow();
-			if (canceled == true || ct.IsCancellationRequested == true)
+			(bool cancelled, bool victory) = await runStageAsync(ct).SuppressCancellationThrow();
+			if (cancelled == true)
 			{
 				return;
 			}
@@ -159,264 +153,94 @@ namespace ProjectOne.Dungeon
 			endDungeonAsync(victory).Forget();
 		}
 
-		// 본편 스테이지 순차 진행 + 엑스트라 도전. 본편 전부 클리어면 true(승리).
-		private async UniTask<bool> runStagesAsync(CancellationToken ct)
+		private async UniTask<bool> runStageAsync(CancellationToken ct)
 		{
-			// 첫 스테이지는 Begin 에서 이미 진입(_currentStage/_currentMode 세팅됨)
-			for (int index = 0; index < _dungeon.TotalStageCount; index++)
+			while (true)
 			{
-				DungeonResult result = await waitStageResultWithReviveAsync(index + 1, ct);
-				if (ct.IsCancellationRequested == true)
-				{
-					return false;
-				}
-
-				// 스테이지 클리어(라운드 index+1) 보상 해석·누적
+				DungeonResult result = _currentMode != null ? _currentMode.CheckResult() : DungeonResult.InProgress;
 				if (result == DungeonResult.Cleared)
 				{
-					accumulateStageRewards(index + 1);
-
-					// 본편 스테이지 종료 상점 — 다음 진행 전 히어로 위치에 등장.
-					// (엑스트라는 tryExtraStageAsync 경로라 여기서 스폰되지 않음 → 클리어 후 상점 없음)
-					GimmickService.Instance.SpawnAtHeroAsync(GimmickService.ShopGimmickAddress).Forget();
+					return true;
 				}
 
-				cleanupStage();
 				if (result == DungeonResult.Defeat)
 				{
-					return false;
+					// 부활을 선택하면 같은 단계를 계속 진행한다.
+					bool revived = await handleDefeatAsync(ct);
+					if (revived == false)
+					{
+						return false;
+					}
 				}
 
-				int nextPosition = index + 1;
-				if (nextPosition >= _dungeon.TotalStageCount)
-				{
-					break;
-				}
-
-				int nextStageId = await selectNextStageAsync(nextPosition, ct);
-				if (ct.IsCancellationRequested == true)
-				{
-					return false;
-				}
-
-				bool entered = await beginStageAsync(nextStageId, ct);
-				if (entered == false)
-				{
-					return false;
-				}
-
-				// 선택한 스테이지에 배정된 롤 보상을 진행 대상으로 확정
-				_currentRollRewardItemId = DungeonRunState.Instance.GetStageOptionRewardItemId(nextStageId);
+				await UniTask.Yield(PlayerLoopTiming.Update, ct);
 			}
-
-			// 본편 클리어 — 엑스트라 스테이지 도전(선택)
-			await tryExtraStageAsync(ct);
-			return true;
 		}
 
-		// 엑스트라 그룹이 있으면 도전 여부를 묻고, 수락 시 엑스트라 스테이지 1판을 진행한다.
-		// (재화 차감은 흐름 외 — 추후 구현. 엑스트라 결과는 본편 승리에 영향 없음)
-		private async UniTask tryExtraStageAsync(CancellationToken ct)
+		private void startStage()
 		{
-			if (_dungeon.ExtraStageGroupID <= 0)
+			_currentMode = StageModeFactory.Create(_ctx.DungeonType);
+			if (_currentMode == null)
 			{
 				return;
 			}
 
-			int extraStageId = firstStageOfGroup(_dungeon.ExtraStageGroupID);
-			int extraRound = _dungeon.TotalStageCount + 1;
-
-			bool challenge = await askExtraChallengeAsync(extraStageId, extraRound, ct);
-			if (challenge == false || ct.IsCancellationRequested == true)
-			{
-				return;
-			}
-
-			bool entered = await beginStageAsync(extraStageId, ct);
-			if (entered == false)
-			{
-				return;
-			}
-
-			// 엑스트라 스테이지 롤 보상 확정 (라운드 = 본편 총 스테이지 수 + 1)
-			_currentRollRewardItemId = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, extraRound);
-
-			DungeonResult result = await waitStageResultWithReviveAsync(extraRound, ct);
-			if (ct.IsCancellationRequested == true)
-			{
-				return;
-			}
-
-			// 엑스트라 클리어 보상 누적 + 결과창 등장까지 3초 대기(귀환 경로는 즉시 표시)
-			if (result == DungeonResult.Cleared)
-			{
-				_extraCleared = true;
-				accumulateStageRewards(extraRound);
-
-				// 3초 연출과 서버 왕복을 겹치기 위해 여기서 클리어 요청을 먼저 시작해 둔다.
-				beginClearRequestIfNeeded();
-				await UniTask.Delay(System.TimeSpan.FromSeconds(ResultDelayAfterExtra), cancellationToken: ct).SuppressCancellationThrow();
-			}
-
-			cleanupStage();
+			_currentMode.SetupAsync(_stage, _cts.Token).Forget();
 		}
 
-		// 현재 진행 스테이지의 롤 보상 + 라운드 고정 보상을 RewardItem(상자) 단위로 누적한다.
-		// 실제 등급/재화수량은 이후 서버 오픈 시 결정하므로 여기서 랜덤을 굴리지 않는다.
-		private void accumulateStageRewards(int round)
+		private async UniTask loadMapAsync(CancellationToken ct)
 		{
-			// 라운드가 본편 총 스테이지 수 + 1 이면 추가(엑스트라) 스테이지 보상
-			bool isBonus = round == _dungeon.TotalStageCount + 1;
-
-			List<DungeonRewardResult> rewards = new List<DungeonRewardResult>();
-
-			if (_currentRollRewardItemId > 0)
-			{
-				rewards.Add(new DungeonRewardResult(_currentRollRewardItemId, 1, isBonus));
-			}
-
-			int[] fixIds = DungeonRewardResolver.GetFixRewardItemIds(_ctx.DungeonId, round);
-			for (int i = 0; i < fixIds.Length; i++)
-			{
-				if (fixIds[i] > 0)
-				{
-					rewards.Add(new DungeonRewardResult(fixIds[i], 1, isBonus));
-				}
-			}
-
-			DungeonRunState.Instance.AddRewards(rewards);
-			_currentRollRewardItemId = 0;
-		}
-
-		// 스테이지 진입 — 맵 로드 + 모드 셋업. 성공 시 _currentStage/_currentMode 세팅 후 true.
-		private async UniTask<bool> beginStageAsync(int stageId, CancellationToken ct)
-		{
-			Table_Stage.Row stage = Table_Stage.Get(stageId);
-			if (stage == null)
-			{
-				Debug.LogError($"[DungeonDirector] Table_Stage.Get({stageId}) == null");
-				return false;
-			}
-
-			// 스테이지 경계 — 리롤 가격을 최초 비용으로 리셋 (스테이지 진행 중 상점에는 누적)
-			DungeonRunState.Instance.ResetRerollCount();
-
-			// 다음 스테이지 진입 시 이전 인터미션에서 남은 기믹(상점 등) 일괄 회수
-			if (GimmickService.HasInstance == true)
-			{
-				GimmickService.Instance.DespawnAll();
-			}
-
-			Table_MapData.Row mapData = Table_MapData.Get(stage.MapID);
-			if (mapData == null)
-			{
-				Debug.LogError($"[DungeonDirector] Table_MapData.Get({stage.MapID}) == null");
-				return false;
-			}
-
-			bool mapOk = await MapManager.Instance.LoadMapAsync(mapData.MapPrefab, ct);
-			if (mapOk == false)
-			{
-				return false;
-			}
-
-			// 새 맵 기준 플로우필드 재베이크 트리거를 위해 캐시 셀 초기화
+			// 던전은 단계마다 그리드맵 하나만 쓴다. 다음 단계로 넘어가면 여기서 교체된다.
+			await MapManager.Instance.LoadMapAsync(_stage.MapID, ct);
 			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
+		}
 
-			IStageMode mode = StageModeFactory.Create(stage.ModeType);
-			await mode.SetupAsync(stage, ct);
+		private static async UniTask spawnHeroAsync(CancellationToken ct)
+		{
+			await UnitFactory.Instance.CreateHeroAsync(HeroBasePos, Faction.Player, true, ct);
+		}
 
-			_currentStage = stage;
-			_currentMode = mode;
+		// ── 사망 / 부활 ───────────────────────────────────────────────
 
-			// 스테이지 드랍 그룹 준비 (타입별 풀 사전 생성)
-			if (stage.DropObjectGroupID > 0)
+		// 부활을 선택하면 true. 귀환이거나 부활 불가면 false.
+		private async UniTask<bool> handleDefeatAsync(CancellationToken ct)
+		{
+			int used = DungeonRunState.Instance.ReviveUsedCount;
+			int max = _dungeon.MaxRevivalCount;
+
+			// MaxRevivalCount 가 None(0)이면 부활 불가 던전이다 (맵 설계 6절).
+			if (max <= 0 || used >= max)
 			{
-				await DropManager.Instance.PrepareStageAsync(stage.DropObjectGroupID, ct);
+				return false;
 			}
 
-			Debug.Log($"[DungeonDirector] 스테이지 진입: {stage.Name} (모드 {stage.ModeType})");
+			// n회차 부활 비용 = RevivalCost + RevivalCostStep × (n - 1)
+			int cost = _dungeon.RevivalCost + _dungeon.RevivalCostStep * used;
+
+			Time.timeScale = 0f;
+			bool revive = false;
+			DungeonContinueUI ui = await UIManager.Instance.OpenOverlayAsync<DungeonContinueUI>(DungeonContinueAddress, ct);
+			if (ui != null)
+			{
+				revive = await ui.WaitChoiceAsync(_dungeon.RevivalCostType, cost, max - used, max, ct);
+				await UIManager.Instance.CloseOverlayAsync(false);
+			}
+
+			Time.timeScale = 1f;
+
+			if (revive == false)
+			{
+				_forcedLobbyReturn = true;
+				return false;
+			}
+
+			DungeonRunState.Instance.IncrementReviveUsed();
+			reviveHeroes();
 			return true;
 		}
 
-		// 스테이지 결과 대기 — 히어로 전멸(Defeat) 시 부활/귀환 선택창을 띄운다.
-		// 부활을 선택하면 같은 스테이지를 계속 진행(다시 폴링)하고, 귀환/취소면 Defeat 로 확정한다.
-		private async UniTask<DungeonResult> waitStageResultWithReviveAsync(int stageNumber, CancellationToken ct)
-		{
-			while (ct.IsCancellationRequested == false)
-			{
-				DungeonResult result = await waitStageResultAsync(ct);
-				if (result != DungeonResult.Defeat)
-				{
-					return result;
-				}
-
-				bool revived = await handleDefeatAsync(stageNumber, ct);
-				if (ct.IsCancellationRequested == true || revived == false)
-				{
-					return DungeonResult.Defeat;
-				}
-
-				// 부활 → 같은 스테이지 계속 진행 (다시 결과 폴링)
-			}
-
-			return DungeonResult.Defeat;
-		}
-
-		// 히어로 전멸 처리 — 게임을 멈추고(UI 제외) 부활/귀환 선택창을 띄운다.
-		// 부활 선택 시 히어로를 사망 위치에서 되살리고 true, 귀환/취소면 false 를 반환한다.
-		private async UniTask<bool> handleDefeatAsync(int stageNumber, CancellationToken ct)
-		{
-			int reviveCost = stageNumber * ReviveCostPerStage;
-			int remaining = MaxReviveCount - DungeonRunState.Instance.ReviveUsedCount;
-			if (remaining < 0)
-			{
-				remaining = 0;
-			}
-
-			// 몬스터/발사체/FX/게임 진행시간 전부 정지 (UI 만 동작 — 전 시스템이 scaled time 사용)
-			Time.timeScale = 0f;
-
-			// 취소(씬 종료 등) 시에도 정지가 풀리도록 오픈 예외를 흡수한다 — 정지 상태로 남지 않게.
-			(bool openCanceled, DungeonContinueUI ui) = await UIManager.Instance
-				.OpenOverlayAsync<DungeonContinueUI>(DungeonContinueAddress, ct)
-				.SuppressCancellationThrow();
-			if (openCanceled == true || ui == null)
-			{
-				Time.timeScale = 1f;
-				return false;
-			}
-
-			(bool canceled, bool revive) = await ui.WaitChoiceAsync(reviveCost, remaining, MaxReviveCount, ct).SuppressCancellationThrow();
-
-			// 취소(씬/에디터 종료 등) — 매니저들이 이미 파괴됐을 수 있어 접근하지 않고 정지만 풀고 종료.
-			if (canceled == true || ct.IsCancellationRequested == true)
-			{
-				Time.timeScale = 1f;
-				return false;
-			}
-
-			await UIManager.Instance.CloseOverlayAsync(false);
-
-			// 부활 선택 시에만 히어로를 되살린다. 귀환은 정지만 풀고 종료 흐름에 맡긴다.
-			if (revive == true)
-			{
-				DungeonRunState.Instance.IncrementReviveUsed();
-				reviveHeroInPlace();
-				Time.timeScale = 1f;
-				return true;
-			}
-
-			// 귀환 — 어디서 죽었든(엑스트라 포함) 결과창 없이 즉시 로비로. 보상 없음.
-			_forcedLobbyReturn = true;
-			Time.timeScale = 1f;
-			return false;
-		}
-
-		// 사망한 히어로를 현재 위치에서 되살린다 (HP/상태 복구 + 스폰 이벤트 재발행).
-		// 사망 시 UnitDiedEvent 로 체력바/조이스틱/카메라 타겟이 정리되므로, 재바인딩을 위해
-		// 스폰 경로와 동일하게 UnitSpawnedEvent 를 다시 발행한다.
-		private static void reviveHeroInPlace()
+		// 사망 지점에서 부활 — 부활은 상황을 가리지 않고 전체 회복이다 (맵 설계 7.2).
+		private static void reviveHeroes()
 		{
 			if (UnitContainer.HasInstance == false)
 			{
@@ -427,196 +251,35 @@ namespace ProjectOne.Dungeon
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase hero = heroes[i];
-				if (hero != null && hero.IsDead == true)
+				if (hero == null || hero.IsDead == false)
 				{
-					hero.OnSpawnReset(hero.transform.position);
-					EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), hero.GetTableID()));
+					continue;
 				}
+
+				hero.OnSpawnReset(hero.transform.position);
+				EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), 0));
 			}
 		}
 
-		// 현재 스테이지 결과 폴링 — 클리어/패배 확정 또는 제한시간 초과(패배)까지 대기.
-		private async UniTask<DungeonResult> waitStageResultAsync(CancellationToken ct)
+		private static void healAllHeroes()
 		{
-			float limit = _currentStage.LimitTime;
-			float elapsed = 0f;
-			while (ct.IsCancellationRequested == false)
+			if (UnitContainer.HasInstance == false)
 			{
-				DungeonResult result = _currentMode.CheckResult();
-				if (result != DungeonResult.InProgress)
-				{
-					return result;
-				}
-
-				if (limit > 0f)
-				{
-					elapsed += Time.deltaTime;
-					if (elapsed >= limit)
-					{
-						Debug.Log("[DungeonDirector] 제한시간 초과 → 패배");
-						return DungeonResult.Defeat;
-					}
-				}
-
-				await UniTask.Yield(PlayerLoopTiming.Update);
-			}
-
-			return DungeonResult.InProgress;
-		}
-
-		// 다음 스테이지 선택 — 그룹에서 중복 없이 2개(없으면 1개) 뽑아 StageSelectUI 로 유저 선택.
-		private async UniTask<int> selectNextStageAsync(int stagePosition, CancellationToken ct)
-		{
-			int groupId = stageGroupIdAt(_dungeon, stagePosition);
-			Table_StageGroup.Row group = Table_StageGroup.Get(groupId);
-			if (group == null)
-			{
-				Debug.LogError($"[DungeonDirector] Table_StageGroup.Get({groupId}) == null");
-				return 0;
-			}
-
-			collectStageIds(group, _candidateBuffer);
-			if (_candidateBuffer.Count == 0)
-			{
-				Debug.LogError($"[DungeonDirector] StageGroup({groupId}) 에 유효 스테이지 없음");
-				return 0;
-			}
-
-			// 롤 보상 라운드 = 다음 스테이지 포지션 + 1
-			int round = stagePosition + 1;
-
-			if (_candidateBuffer.Count == 1)
-			{
-				int only = _candidateBuffer[0];
-				int rewardOnly = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, round);
-				DungeonRunState.Instance.SetStageOptionRewards(only, rewardOnly, 0, 0);
-
-				_optionBuffer.Clear();
-				_optionBuffer.Add(new StageSelectUI.StageOption(only, rewardOnly));
-				return await openStageSelectAsync(_optionBuffer, stagePosition + 1, only, ct);
-			}
-
-			// 중복 없이 2개 랜덤 추출
-			int idxA = Random.Range(0, _candidateBuffer.Count);
-			int stageA = _candidateBuffer[idxA];
-			_candidateBuffer.RemoveAt(idxA);
-			int stageB = _candidateBuffer[Random.Range(0, _candidateBuffer.Count)];
-
-			// 각 후보에 롤 보상 1개씩 부여(선택 UI 표시용). 선택된 스테이지 진입 시 이 값이 확정된다.
-			int rewardA = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, round);
-			int rewardB = DungeonRewardResolver.PickRollRewardItemId(_ctx.DungeonId, round);
-			DungeonRunState.Instance.SetStageOptionRewards(stageA, rewardA, stageB, rewardB);
-
-			// 후보 옵션 구성 (stageId + 배정된 롤 보상)
-			_optionBuffer.Clear();
-			_optionBuffer.Add(new StageSelectUI.StageOption(stageA, rewardA));
-			_optionBuffer.Add(new StageSelectUI.StageOption(stageB, rewardB));
-			return await openStageSelectAsync(_optionBuffer, stagePosition + 1, stageA, ct);
-		}
-
-		// 포탈 버튼 게이트 → 선택 UI 오픈 → 하나 선택(EnterButton)까지 대기 후 stageId 반환.
-		// ExitButton(0 반환)으로 닫으면 다시 포탈 버튼 노출 단계로 돌아간다. UI 로드 실패 시 fallbackStageId.
-		private async UniTask<int> openStageSelectAsync(List<StageSelectUI.StageOption> options, int stageNumber, int fallbackStageId, CancellationToken ct)
-		{
-			BattleHUD hud = UIManager.Instance.GetScreen<BattleHUD>();
-			while (ct.IsCancellationRequested == false)
-			{
-				if (hud != null)
-				{
-					await hud.WaitOpenSelectAsync(ct);
-					if (ct.IsCancellationRequested == true)
-					{
-						return 0;
-					}
-				}
-
-				StageSelectUI ui = await UIManager.Instance.OpenOverlayAsync<StageSelectUI>(StageSelectAddress, ct);
-				if (ui == null)
-				{
-					return fallbackStageId;
-				}
-
-				int chosen = await ui.WaitStageSelectionAsync(options, stageNumber, _dungeon.TotalStageCount, ct);
-				await UIManager.Instance.CloseOverlayAsync(false);
-
-				if (chosen > 0)
-				{
-					return chosen;
-				}
-			}
-
-			return 0;
-		}
-
-		// 엑스트라 도전(true)/마을 귀환(false)을 통합 선택 UI 로 묻는다.
-		// 포탈 버튼 게이트 후 UI 오픈, ExitButton(닫기)이면 다시 포탈 버튼 노출 단계로 돌아간다.
-		private async UniTask<bool> askExtraChallengeAsync(int extraStageId, int extraRound, CancellationToken ct)
-		{
-			Table_Stage.Row extra = Table_Stage.Get(extraStageId);
-			MapModeType extraMode = extra != null ? extra.ModeType : MapModeType.None;
-			int[] fixIds = DungeonRewardResolver.GetFixRewardItemIds(_ctx.DungeonId, extraRound);
-
-			BattleHUD hud = UIManager.Instance.GetScreen<BattleHUD>();
-			while (ct.IsCancellationRequested == false)
-			{
-				if (hud != null)
-				{
-					await hud.WaitOpenSelectAsync(ct);
-					if (ct.IsCancellationRequested == true)
-					{
-						return false;
-					}
-				}
-
-				StageSelectUI ui = await UIManager.Instance.OpenOverlayAsync<StageSelectUI>(StageSelectAddress, ct);
-				if (ui == null)
-				{
-					return false;
-				}
-
-				StageSelectUI.ExtraChoice choice = await ui.WaitExtraChoiceAsync(extraMode, fixIds, ct);
-				await UIManager.Instance.CloseOverlayAsync(false);
-
-				if (choice == StageSelectUI.ExtraChoice.Challenge)
-				{
-					return true;
-				}
-
-				if (choice == StageSelectUI.ExtraChoice.Return)
-				{
-					return false;
-				}
-
-				// Exit → 루프(포탈 버튼 다시 노출)
-			}
-
-			return false;
-		}
-
-		private static async UniTask spawnHeroAsync(DungeonContext ctx, CancellationToken ct)
-		{
-			if (ctx.CharacterId <= 0)
-			{
-				Debug.LogError("[DungeonDirector] 캐릭터 로드 실패!");
 				return;
 			}
 
-			// 플레이어 조작 히어로 1명 소환 (자동스킬 모드)
-			await UnitFactory.Instance.CreateHeroAsync(ctx.CharacterId, HeroBasePos, Faction.Player, true, ct);
-		}
-
-		// 스테이지 종료 시 — 분할 소환 중단/잔존 몬스터만 제거(맵·히어로는 유지).
-		// 맵은 다음 스테이지 진입의 LoadMapAsync 가 교체하고, 던전 종료 시 cleanupAll 이 언로드한다.
-		private void cleanupStage()
-		{
-			if (MonsterSpawnManager.HasInstance == true)
+			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
 			{
-				MonsterSpawnManager.Instance.ClearAlive();
+				UnitBase hero = heroes[i];
+				if (hero != null && hero.Vitals != null)
+				{
+					hero.Vitals.FullHeal();
+				}
 			}
-
-			_currentStage = null;
-			_currentMode = null;
 		}
+
+		// ── 종료 ──────────────────────────────────────────────────────
 
 		private async UniTaskVoid endDungeonAsync(bool victory)
 		{
@@ -626,34 +289,29 @@ namespace ProjectOne.Dungeon
 			}
 
 			_ending = true;
-			Debug.Log($"[DungeonDirector] 던전 종료 victory={victory}");
+			Debug.Log($"[DungeonDirector] 던전 종료 victory={victory} — {_ctx.DungeonType} Stage {_ctx.Stage}");
 
-			// 사망창에서 '귀환'을 선택하면 승리(엑스트라 진입 전 본편 클리어 등)여도 결과창 없이 즉시 로비로 — 보상 없음.
-			// 승리 시 던전 클리어 기록(카드스킬 해금 등 진행도 게이트에 사용)
-			if (victory == true && _forcedLobbyReturn == false && _ctx != null)
+			if (victory == true && _forcedLobbyReturn == false)
 			{
-				Account.Instance.ClearedDungeons.MarkCleared(_ctx.DungeonId);
+				// 최고 클리어 단계 갱신 — 다음 단계 해금과 퀘스트 판정의 근거다.
+				DungeonProgress.MarkStageCleared(_ctx.DungeonType, _ctx.Stage);
 
-				// 서버에 클리어 요청(누적 상자) — 아직 시작 안 됐으면 시작하고, 응답(권위 보상)을 받을 때까지 대기.
 				beginClearRequestIfNeeded();
 				DungeonClearResponse resp = await _clearTask;
 				applyClearResponse(resp);
 
-				// 클리어 결과창(서버 확정 보상) 노출 — 배경 클릭/카운트다운으로 닫힐 때까지 대기(정리 전, 맵/히어로 유지)
 				await showDungeonResultAsync(resp, _cts.Token);
 			}
 			else
 			{
-				// 실패/강제귀환 — 로그용 실패 패킷만 전송(응답 무시, 보상 없음).
 				sendDungeonClearFailLog();
 			}
 
 			cleanupAll();
-			await GameFlow.Instance.ChangeStateAsync(new LobbyState());
+			await GameFlow.Instance.ChangeStateAsync(new TownState());
 		}
 
-		// 던전 클리어 결과창을 열고 유저 닫힘(배경 클릭 또는 자동복귀 카운트다운)까지 대기한다.
-		// resp 가 있으면 서버 확정 보상을, null 이면 누적 상자 목록으로 폴백 표시한다.
+		// 결과창 — 서버 확정 보상을 보여주고, 다음 단계가 있으면 도전 여부를 묻는다.
 		private async UniTask showDungeonResultAsync(DungeonClearResponse resp, CancellationToken ct)
 		{
 			DungeonResultUI ui = await UIManager.Instance.OpenOverlayAsync<DungeonResultUI>(DungeonResultAddress, ct);
@@ -663,17 +321,56 @@ namespace ProjectOne.Dungeon
 			}
 
 			IReadOnlyList<GrantedRewardDto> rewards = (resp != null) ? resp.rewards : null;
-			await ui.WaitAsync(rewards, _ctx.DungeonId, _extraCleared, ct);
 
-			// 결과창이 아직 덮고 있는 동안 로딩을 먼저 띄운 뒤 결과창을 닫는다
-			// (결과창→로비 전환 틈에 BattleHUD 가 잠깐 보이는 것을 방지). 이후 LobbyState 는 이미 표시 중이라 재표시하지 않음.
-			await LoadingManager.Instance.ShowAsync(LoadingFlow.ReturnToLobby, ct);
+			// 다음 단계가 존재하고 입장 횟수가 남아 있을 때만 도전 버튼을 켠다.
+			bool hasNext = DungeonProgress.HasNextStage(_ctx.DungeonType, _ctx.Stage);
+			bool canChallenge = hasNext && DungeonProgress.CanEnter(_ctx.DungeonType);
+
+			bool challengeNext = await ui.WaitAsync(rewards, _ctx.DungeonType, _ctx.Stage, canChallenge, ct);
+
+			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToDungeon, ct);
 			await UIManager.Instance.CloseOverlayAsync(false);
+
+			if (challengeNext == true && DungeonProgress.TryConsumeEnter(_ctx.DungeonType) == true)
+			{
+				// 다음 단계는 새 입장이다 — 씬은 그대로 두고 맵만 교체한다.
+				await enterNextStageAsync(ct);
+			}
 		}
 
-		// ── 서버 클리어 요청 ──────────────────────────────────────────────
+		// 다음 단계로 재진입 — 씬 전환 없이 맵/모드만 새로 세운다.
+		private async UniTask enterNextStageAsync(CancellationToken ct)
+		{
+			DungeonContext next = new DungeonContext(_ctx.DungeonType, _ctx.Stage + 1);
+			Table_DungeonStage.Row nextStage = next.FindStageRow();
+			if (nextStage == null)
+			{
+				return;
+			}
 
-		// 클리어 서버 요청을 1회만 시작한다(멱등). 응답은 _clearTask 로 await 한다.
+			// 이전 단계의 잔존물 정리 (히어로는 유지)
+			if (MonsterSpawnManager.HasInstance == true)
+			{
+				MonsterSpawnManager.Instance.ClearAlive();
+			}
+
+			_ctx = next;
+			_stage = nextStage;
+			_ending = false;
+			_clearRequestSent = false;
+			_forcedLobbyReturn = false;
+			DungeonRunState.Instance.Reset();
+
+			await loadMapAsync(ct);
+			healAllHeroes();
+			startStage();
+
+			await LoadingManager.Instance.HideAsync();
+			runGuardedAsync(ct).Forget();
+		}
+
+		// ── 서버 클리어 요청 ──────────────────────────────────────────
+
 		private void beginClearRequestIfNeeded()
 		{
 			if (_clearRequestSent == true)
@@ -682,19 +379,16 @@ namespace ProjectOne.Dungeon
 			}
 
 			_clearRequestSent = true;
-			_clearTask = sendDungeonClearAsync(true, _extraCleared);
+			_clearTask = sendDungeonClearAsync(true);
 		}
 
-		// 콜백 API 를 UniTask 로 브릿지 — 응답(또는 실패 시 null)을 결과로 준다.
-		private UniTask<DungeonClearResponse> sendDungeonClearAsync(bool cleared, bool extraCleared)
+		private UniTask<DungeonClearResponse> sendDungeonClearAsync(bool cleared)
 		{
 			_clearTcs = new UniTaskCompletionSource<DungeonClearResponse>();
-			DungeonClearRequest req = buildClearRequest(cleared, extraCleared);
-			NetworkManager.Instance.RequestDungeonClear(req, onClearResponse);
+			NetworkManager.Instance.RequestDungeonClear(buildClearRequest(cleared), onClearResponse);
 			return _clearTcs.Task;
 		}
 
-		// 서버 응답 — 실패/미로그인이면 null 로 결과 세팅(호출부가 폴백 처리).
 		private void onClearResponse(bool success, DungeonClearResponse data, string error)
 		{
 			if (success == false || data == null)
@@ -707,7 +401,6 @@ namespace ProjectOne.Dungeon
 			_clearTcs?.TrySetResult(data);
 		}
 
-		// 실패(사망→귀환/강제퇴장) 로그용 — cleared=false 로 전송하고 응답은 무시(보상 없음).
 		private void sendDungeonClearFailLog()
 		{
 			if (_ctx == null || NetworkManager.Instance.IsLoggedIn == false)
@@ -715,35 +408,20 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			DungeonClearRequest req = buildClearRequest(false, false);
-			NetworkManager.Instance.RequestDungeonClear(req, null);
+			NetworkManager.Instance.RequestDungeonClear(buildClearRequest(false), null);
 		}
 
-		// 누적 상자(AccumulatedRewards) + 던전ID/캐릭터/클리어여부로 요청 DTO 구성.
-		private DungeonClearRequest buildClearRequest(bool cleared, bool extraCleared)
+		// 어느 던전의 몇 단계를 클리어했는지만 보낸다. 보상 계산은 서버가 RewardGroupID 로 한다.
+		private DungeonClearRequest buildClearRequest(bool cleared)
 		{
 			DungeonClearRequest req = new DungeonClearRequest();
-			req.dungeonId = _ctx.DungeonId;
-			req.characterId = _ctx.CharacterId;
+			req.dungeonType = (int)_ctx.DungeonType;
+			req.stage = _ctx.Stage;
 			req.cleared = cleared;
-			req.extraCleared = extraCleared;
-
-			IReadOnlyList<DungeonRewardResult> acc = DungeonRunState.Instance.AccumulatedRewards;
-			RewardBoxDto[] boxes = new RewardBoxDto[acc.Count];
-			for (int i = 0; i < acc.Count; i++)
-			{
-				RewardBoxDto box = new RewardBoxDto();
-				box.rewardItemId = acc[i].RewardItemId;
-				box.count = acc[i].Amount;
-				box.isBonus = acc[i].IsBonus;
-				boxes[i] = box;
-			}
-
-			req.boxes = boxes;
 			return req;
 		}
 
-		// 서버 응답을 내 계정에 반영 — 경험치(권위) + 획득 아이템/카드스킬/재화.
+		// 서버 응답을 내 계정에 반영 — 경험치(권위) + 획득 아이템/재화.
 		private void applyClearResponse(DungeonClearResponse resp)
 		{
 			if (resp == null)
@@ -751,31 +429,27 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			if (_ctx != null)
-			{
-				Account.Instance.Loadout.SetExp(_ctx.CharacterId, resp.exp);
-			}
+			Account.Instance.Loadout.SetExp(resp.exp);
 
 			if (resp.rewards == null)
 			{
 				return;
 			}
 
+			DungeonRunState.Instance.AddRewards(resp.rewards);
+
 			for (int i = 0; i < resp.rewards.Length; i++)
 			{
 				GrantedRewardDto g = resp.rewards[i];
-				switch ((RewardTypes)g.rewardType)
+				switch ((RewardType)g.rewardType)
 				{
-				case RewardTypes.Equipment:
-				case RewardTypes.Material:
+				case RewardType.Item:
+				case RewardType.ItemPool:
 					Account.Instance.Inventory.Add(g.itemId, g.count);
 					break;
-				case RewardTypes.Skill:
-					Account.Instance.CardSkillBook.Add(g.itemId, g.count);
-					break;
-				case RewardTypes.Currency:
+				case RewardType.Currency:
 				{
-					CurrencyInfo type = (CurrencyInfo)g.itemId;
+					EDT.Currency type = (EDT.Currency)g.itemId;
 					int current = Account.Instance.Wallet.GetAmount(type);
 					Account.Instance.Wallet.SetAmount(type, current + g.count);
 					break;
@@ -783,6 +457,8 @@ namespace ProjectOne.Dungeon
 				}
 			}
 		}
+
+		// ── 정리 ──────────────────────────────────────────────────────
 
 		// 던전 종료 시 유닛/스폰/풀/맵 일괄 정리.
 		// 전투씬 수명 매니저는 씬과 함께 파괴되지만, 영속(DontDestroyOnLoad) 매니저는 명시적으로 비운다.
@@ -798,19 +474,11 @@ namespace ProjectOne.Dungeon
 				MonsterSpawnManager.Instance.Clear();
 			}
 
-			// 몬스터 풀은 UnitContainer(전투씬 수명) 자식이라 씬과 함께 파괴됨 → 영속 허브 캐시를 무효화
 			MonsterPoolHub.Instance.Clear();
 
-			// 드랍 풀 정리 + 프리팹 Addressable 핸들 해제
 			if (DropManager.HasInstance == true)
 			{
 				DropManager.Instance.Clear();
-			}
-
-			// 기믹 인스턴스 회수 + 프리팹 Addressable 핸들 해제
-			if (GimmickService.HasInstance == true)
-			{
-				GimmickService.Instance.Clear();
 			}
 
 			if (MapManager.HasInstance == true)
@@ -818,7 +486,6 @@ namespace ProjectOne.Dungeon
 				MapManager.Instance.UnloadMap();
 			}
 
-			// 영속(DontDestroyOnLoad) 매니저 — 씬과 함께 파괴되지 않아 풀/캐시를 명시적으로 비운다
 			ProjectileManager.Instance.Clear();
 			VFXManager.Instance.Clear();
 			AudioManager.Instance.Clear();
@@ -866,56 +533,6 @@ namespace ProjectOne.Dungeon
 			}
 
 			return null;
-		}
-
-		private static int firstStageOfGroup(int groupId)
-		{
-			Table_StageGroup.Row group = Table_StageGroup.Get(groupId);
-			if (group == null)
-			{
-				Debug.LogError($"[DungeonDirector] Table_StageGroup.Get({groupId}) == null");
-				return 0;
-			}
-
-			return group.StageID_1;
-		}
-
-		// 스테이지 진행 위치(0-based) → StageGroupID_(position+1)
-		private static int stageGroupIdAt(Table_Dungeon.Row dungeon, int position)
-		{
-			switch (position)
-			{
-			case 0:
-				return dungeon.StageGroupID_1;
-			case 1:
-				return dungeon.StageGroupID_2;
-			case 2:
-				return dungeon.StageGroupID_3;
-			case 3:
-				return dungeon.StageGroupID_4;
-			case 4:
-				return dungeon.StageGroupID_5;
-			default:
-				return 0;
-			}
-		}
-
-		private static void collectStageIds(Table_StageGroup.Row group, List<int> output)
-		{
-			output.Clear();
-			addStageId(output, group.StageID_1);
-			addStageId(output, group.StageID_2);
-			addStageId(output, group.StageID_3);
-			addStageId(output, group.StageID_4);
-			addStageId(output, group.StageID_5);
-		}
-
-		private static void addStageId(List<int> output, int stageId)
-		{
-			if (stageId > 0)
-			{
-				output.Add(stageId);
-			}
 		}
 	}
 }

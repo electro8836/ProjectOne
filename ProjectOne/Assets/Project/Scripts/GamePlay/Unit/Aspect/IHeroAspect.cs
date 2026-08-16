@@ -1,4 +1,4 @@
-namespace ProjectOne.Unit
+﻿namespace ProjectOne.Unit
 {
 	// Hero 후처리 단계 — 적용 순서를 enum 으로 고정 (수동 ApplyOrder int 사용 금지)
 	public enum HeroAspectStage
@@ -8,7 +8,7 @@ namespace ProjectOne.Unit
 		Achievement = 20, // 업적 보너스
 		Collection = 30,  // 콜렉션(스킨 보유 등) 효과
 		Equipment = 40,   // 장비 장착
-		Skill = 50,       // 외부 스킬 부여
+		Skill = 50,           // 외부 스킬 부여
 		Buff = 60         // 영구성 버프
 	}
 

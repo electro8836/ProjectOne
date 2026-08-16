@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -70,19 +70,18 @@ namespace ProjectOne.Editor
 			// 현재 바이탈 — 현재값 / 최댓값
 			if (vitals != null)
 			{
-				EditorGUILayout.LabelField("HP", $"{vitals.Hp:0.##} / {stats.GetStat(StatInfo.MaxHP):0.##}");
-				EditorGUILayout.LabelField("Break", $"{vitals.BreakGage:0.##} / {stats.GetStat(StatInfo.BreakGage):0.##}");
+				EditorGUILayout.LabelField("HP", $"{vitals.Hp:0.##} / {stats.GetStat(Stat.Stat_MaxHp):0.##}");
 			}
 
 			EditorGUILayout.LabelField("IsDead", unit.IsDead.ToString());
 			EditorGUILayout.Space();
 
-			// 최종 스탯만 나열 (구성요소 _Base/_Add/_Ratio/_Amp 는 제외)
-			Array values = Enum.GetValues(typeof(StatInfo));
+			// 최종 스탯 나열 — 레이어(StatDetail)가 아니라 결과(Stat)만 보여준다.
+			Array values = Enum.GetValues(typeof(Stat));
 			for (int i = 0; i < values.Length; i++)
 			{
-				StatInfo stat = (StatInfo)values.GetValue(i);
-				if (IsFinalStat(stat) == false)
+				Stat stat = (Stat)values.GetValue(i);
+				if (stat == Stat.None)
 				{
 					continue;
 				}
@@ -110,7 +109,7 @@ namespace ProjectOne.Editor
 
 			EditorGUI.indentLevel++;
 
-			IReadOnlyList<SkillInfo> all = skills.GetAll();
+			IReadOnlyList<EDT.Skill> all = skills.GetAll();
 			if (all == null || all.Count == 0)
 			{
 				EditorGUILayout.LabelField("없음");
@@ -119,7 +118,7 @@ namespace ProjectOne.Editor
 			{
 				for (int i = 0; i < all.Count; i++)
 				{
-					SkillInfo id = all[i];
+					EDT.Skill id = all[i];
 					string state = skills.IsOnCooldown(id) ? $"CD {skills.GetRemainingCooldown(id):0.0}s" : "Ready";
 					EditorGUILayout.LabelField(id.ToString(), state);
 				}
@@ -145,7 +144,7 @@ namespace ProjectOne.Editor
 
 			EditorGUI.indentLevel++;
 
-			IReadOnlyList<BuffInfo> active = buffs.GetActive();
+			IReadOnlyList<EDT.Buff> active = buffs.GetActive();
 			if (active == null || active.Count == 0)
 			{
 				EditorGUILayout.LabelField("없음");
@@ -154,7 +153,7 @@ namespace ProjectOne.Editor
 			{
 				for (int i = 0; i < active.Count; i++)
 				{
-					BuffInfo id = active[i];
+					EDT.Buff id = active[i];
 					BuffRuntime rt = buffs.GetRuntime(id);
 					if (rt == null)
 					{
@@ -164,9 +163,14 @@ namespace ProjectOne.Editor
 
 					string tag = rt.IsDebuff ? "디버프" : "버프";
 					string remain = rt.IsInfinite ? "∞" : $"{rt.RemainingDuration:0.0}s";
-					if (rt.IntervalSec > 0f)
+					if (rt.TickInterval > 0f)
 					{
-						remain += $" (주기 {rt.IntervalSec:0.0}s)";
+						remain += $" (주기 {rt.TickInterval:0.0}s)";
+					}
+
+					if (rt.Stack > 1)
+					{
+						remain += $" x{rt.Stack}";
 					}
 
 					EditorGUILayout.LabelField($"[{tag}] {id}", remain);
@@ -174,41 +178,6 @@ namespace ProjectOne.Editor
 			}
 
 			EditorGUI.indentLevel--;
-		}
-
-		// StatContainer.BuildPartMap 과 동일한 분류: 접미사를 뗀 그룹명이 다른 StatInfo 면 구성요소(part)로 제외.
-		static bool IsFinalStat(StatInfo t)
-		{
-			if (t == StatInfo.None)
-			{
-				return false;
-			}
-
-			string n = t.ToString();
-			string group = null;
-			if (n.EndsWith("_Base"))
-			{
-				group = n.Substring(0, n.Length - 5);
-			}
-			else if (n.EndsWith("_Add"))
-			{
-				group = n.Substring(0, n.Length - 4);
-			}
-			else if (n.EndsWith("_Ratio"))
-			{
-				group = n.Substring(0, n.Length - 6);
-			}
-			else if (n.EndsWith("_Amp"))
-			{
-				group = n.Substring(0, n.Length - 4);
-			}
-
-			if (group == null)
-			{
-				return true;
-			}
-
-			return Enum.TryParse(group, out StatInfo _) == false;
 		}
 	}
 }

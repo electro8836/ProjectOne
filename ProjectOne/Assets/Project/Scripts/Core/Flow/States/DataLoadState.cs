@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Event;
@@ -32,7 +32,7 @@ namespace ProjectOne.Flow
 			// 로드 완료 — DevTester 등 후처리가 이 시점에 Account 를 오버라이드할 수 있다.
 			EventManager.Instance.Publish(new DataLoadedEvent());
 
-			GameFlow.Instance.ChangeStateAsync(new LobbyState()).Forget();
+			GameFlow.Instance.ChangeStateAsync(new TownState()).Forget();
 		}
 
 		// GetUserData 호출을 콜백 → UniTask 로 래핑(NetworkManager 변경 없이 State 측에서 변환).
@@ -59,14 +59,9 @@ namespace ProjectOne.Flow
 					Account.Instance.SetInventory(data.inventory);
 				}
 
-				if (data.character != null)
+				if (data.loadout != null)
 				{
-					Account.Instance.SetCharacter(data.character);
-				}
-
-				if (data.cardSkill != null)
-				{
-					Account.Instance.SetCardSkill(data.cardSkill);
+					Account.Instance.SetLoadout(data.loadout);
 				}
 
 				if (data.clearedDungeons != null)

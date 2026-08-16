@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using EDT;
 using ProjectOne.Utils;
 using ProjectOne.Unit;
@@ -31,8 +31,6 @@ namespace ProjectOne.Dungeon
 
 		private DropObjectType _type;
 		private DropObjectPool _ownerPool;
-		// MagicEssence 1회 획득량 (스폰 시 주입)
-		private int _essenceAmount;
 		// 같은 프레임 다중 트리거로 이중 반환되는 것 방지
 		private bool _isReleased;
 		// 이동/트리거 감지용 Kinematic Rigidbody2D (static 콜라이더 이동 시 충돌 트리 재빌드 회피)
@@ -46,11 +44,10 @@ namespace ProjectOne.Dungeon
 		}
 
 		// DropObjectPool.Spawn() 이 위치 설정 → Initialize() → OnActivate() 순서로 호출
-		public void Initialize(DropObjectType type, DropObjectPool pool, int essenceAmount)
+		public void Initialize(DropObjectType type, DropObjectPool pool)
 		{
 			_type = type;
 			_ownerPool = pool;
-			_essenceAmount = essenceAmount;
 			_isReleased = false;
 			_homingSpeed = _homingStartSpeed;
 		}
@@ -122,15 +119,7 @@ namespace ProjectOne.Dungeon
 			switch (_type)
 			{
 			case DropObjectType.HealOrb:
-				hero.Vitals.ModifyHp(hero.Stats.GetStat(StatInfo.MaxHP) * RestoreRatio);
-				break;
-
-			case DropObjectType.StaminaOrb:
-				hero.Vitals.ModifyStamina(hero.Stats.GetStat(StatInfo.MaxStamina) * RestoreRatio);
-				break;
-
-			case DropObjectType.MagicEssence:
-				DungeonRunState.Instance.AddEssence(_essenceAmount);
+				hero.Vitals.ModifyHp(hero.Stats.GetStat(Stat.Stat_MaxHp) * RestoreRatio);
 				break;
 			}
 		}

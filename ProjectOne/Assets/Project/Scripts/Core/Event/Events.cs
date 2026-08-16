@@ -1,4 +1,4 @@
-using ProjectOne.Unit;
+﻿using ProjectOne.Unit;
 using EDT;
 using System;
 using UnityEngine;
@@ -7,12 +7,12 @@ namespace ProjectOne.Event
 {
 		public struct ResourceChangeEvent
 		{
-				public readonly EDT.CurrencyInfo CurrencyType;
+				public readonly EDT.Currency CurrencyType;
 				public readonly int PreviousAmount;
 				public readonly int CurrentAmount;
 				public readonly int Delta;
 
-				public ResourceChangeEvent(EDT.CurrencyInfo currencyType, int previousAmount, int currentAmount)
+				public ResourceChangeEvent(EDT.Currency currencyType, int previousAmount, int currentAmount)
 				{
 						this.CurrencyType = currencyType;
 						this.PreviousAmount = previousAmount;
@@ -53,24 +53,13 @@ namespace ProjectOne.Event
 				}
 		}
 
-		// 던전 임시재화(MagicEssence) 수량 변경 알림. BattleHUD EssenceCount 위젯이 구독해 표시를 갱신한다.
-		public readonly struct DungeonEssenceChangedEvent
-		{
-				public readonly int Amount;
-
-				public DungeonEssenceChangedEvent(int amount)
-				{
-						this.Amount = amount;
-				}
-		}
-
 		// 스킬 실행 시작 알림 (직접 시전 / OnHit 프록 / Casting 시작 포함). 전투로그/이펙트/디버그 등에서 구독.
 		public readonly struct SkillCastEvent
 		{
 				public readonly UnitBase Caster;
-				public readonly SkillInfo SkillId;
+				public readonly EDT.Skill SkillId;
 
-				public SkillCastEvent(UnitBase caster, SkillInfo skillId)
+				public SkillCastEvent(UnitBase caster, EDT.Skill skillId)
 				{
 						this.Caster = caster;
 						this.SkillId = skillId;
@@ -81,11 +70,11 @@ namespace ProjectOne.Event
 		public readonly struct SkillProcAtTargetEvent
 		{
 				public readonly UnitBase Caster;
-				public readonly SkillInfo SkillId;
+				public readonly EDT.Skill SkillId;
 				public readonly Vector2 Position;   // 피격자 HitCenter
 				public readonly Vector2 Facing;     // 캐스터→피격자 방향
 
-				public SkillProcAtTargetEvent(UnitBase caster, SkillInfo skillId, Vector2 position, Vector2 facing)
+				public SkillProcAtTargetEvent(UnitBase caster, EDT.Skill skillId, Vector2 position, Vector2 facing)
 				{
 						this.Caster = caster;
 						this.SkillId = skillId;
@@ -102,29 +91,14 @@ namespace ProjectOne.Event
 				public readonly int Damage;
 				public readonly int SkillId;   // DamageInfo.SkillID (0=평타 등)
 				public readonly bool IsCritical;
-				public readonly bool IsSuperCritical;
 
-				public DamageTakenEvent(UnitBase target, UnitBase attacker, int damage, int skillId, bool isCritical, bool isSuperCritical)
+				public DamageTakenEvent(UnitBase target, UnitBase attacker, int damage, int skillId, bool isCritical)
 				{
 						this.Target = target;
 						this.Attacker = attacker;
 						this.Damage = damage;
 						this.SkillId = skillId;
 						this.IsCritical = isCritical;
-						this.IsSuperCritical = isSuperCritical;
-				}
-		}
-
-		// 가드브레이크 발동 알림. 피격 유닛 위로 브레이크 UI를 띄우는 등에서 구독.
-		public readonly struct GuardBreakTriggeredEvent
-		{
-				public readonly UnitBase Victim;
-				public readonly UnitBase Attacker;
-
-				public GuardBreakTriggeredEvent(UnitBase victim, UnitBase attacker)
-				{
-						this.Victim = victim;
-						this.Attacker = attacker;
 				}
 		}
 
@@ -189,81 +163,51 @@ namespace ProjectOne.Event
 		{
 		}
 
-		// 인벤토리 변경 알림 (획득/합성/강화수치 변경). 인벤토리 UI 등에서 구독.
+		// 스택 아이템 수량 변경 알림 (재료·소모품·수집품). 인벤토리 UI 등에서 구독.
 		public readonly struct InventoryChangeEvent
 		{
 				public readonly int ItemId;
 				public readonly int Count;
-				public readonly int EnhanceLevel;
 
-				public InventoryChangeEvent(int itemId, int count, int enhanceLevel)
+				public InventoryChangeEvent(int itemId, int count)
 				{
 						this.ItemId = itemId;
 						this.Count = count;
-						this.EnhanceLevel = enhanceLevel;
 				}
 		}
 
-		// 장착 프리셋 슬롯 변경 알림 (ItemId=0 은 해제). 캐릭터별 장착이므로 CharacterId 포함. 장비 UI 등에서 구독.
+		// 장비 인스턴스 변경 알림 (획득/소멸/강화/승급). Uid=0 이면 목록 전체를 다시 그리라는 뜻.
+		public readonly struct EquipmentChangeEvent
+		{
+				public readonly long Uid;
+
+				public EquipmentChangeEvent(long uid)
+				{
+						this.Uid = uid;
+				}
+		}
+
+		// 장착 슬롯 변경 알림 (Uid=0 은 해제). 캐릭터는 하나뿐이므로 슬롯만 싣는다. 장비 UI 등에서 구독.
 		public readonly struct PresetChangeEvent
 		{
-				public readonly int CharacterId;
-				public readonly EquipmentTypes Slot;
-				public readonly int ItemId;
+				public readonly EquipSlotTypes Slot;
+				public readonly long Uid;
 
-				public PresetChangeEvent(int characterId, EquipmentTypes slot, int itemId)
+				public PresetChangeEvent(EquipSlotTypes slot, long uid)
 				{
-						this.CharacterId = characterId;
 						this.Slot = slot;
-						this.ItemId = itemId;
+						this.Uid = uid;
 				}
 		}
 
-		// 캐릭터 변경 알림 (획득/선택/등급 변경). 캐릭터 목록/선택 UI 등에서 구독.
+		// 캐릭터 변경 알림 (레벨업/경험치 변경). 캐릭터 정보 UI 등에서 구독.
 		public readonly struct CharacterChangeEvent
 		{
-				public readonly int CharacterId;
-
-				public CharacterChangeEvent(int characterId)
-				{
-						this.CharacterId = characterId;
-				}
 		}
 
 		// 오버레이 스택이 비었을 때 알림 (UIManager가 마지막 오버레이를 닫은 직후 발행).
 		// 로비 탭 그룹 등에서 구독해 탭 선택을 해제한다.
 		public readonly struct OverlayClosedEvent
 		{
-		}
-
-		// 로비 카드스킬 보유/강화 변경 알림 (획득/강화). 로비 카드스킬 목록 UI 등에서 구독.
-		public readonly struct CardSkillChangedEvent
-		{
-				public readonly int CardSkillId;
-				public readonly int OwnedCount;
-				public readonly int EnchantLevel;
-
-				public CardSkillChangedEvent(int cardSkillId, int ownedCount, int enchantLevel)
-				{
-						this.CardSkillId = cardSkillId;
-						this.OwnedCount = ownedCount;
-						this.EnchantLevel = enchantLevel;
-				}
-		}
-
-		// 던전 카드스킬 장착슬롯 변경 알림 (구매/판매/레벨업). 던전 구매창 UI 등에서 구독.
-		// SlotIndex=-1 은 전체 갱신 요청.
-		public readonly struct CardSkillSlotChangedEvent
-		{
-				public readonly int SlotIndex;
-				public readonly int CardSkillId;
-				public readonly int Level;
-
-				public CardSkillSlotChangedEvent(int slotIndex, int cardSkillId, int level)
-				{
-						this.SlotIndex = slotIndex;
-						this.CardSkillId = cardSkillId;
-						this.Level = level;
-				}
 		}
 }

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.Unit;
@@ -13,11 +13,9 @@ namespace ProjectOne.UI
 		[SerializeField] private float _offsetY = 0.0f;		// 콜라이더 반지름 위로 추가로 올릴 거리
 		[SerializeField] private Color _normalColor = Color.white;
 		[SerializeField] private Color _criticalColor = new Color(1f, 0.55f, 0f, 1f);			// 주황
-		[SerializeField] private Color _superCriticalColor = new Color(1f, 0.1f, 0.1f, 1f);	// 빨강(초크리)
 
 		[SerializeField] private Color _heroNormalColor = new Color(1f, 0.2f, 0.2f, 1f);		// 빨강(Hero 피격)
 		[SerializeField] private Color _heroCriticalColor = new Color(1f, 0.2f, 0.8f, 1f);		// 자홍(Hero 크리)
-		[SerializeField] private Color _heroSuperCriticalColor = new Color(0.7f, 0.1f, 1f, 1f);	// 보라(Hero 초크리)
 
 		[SerializeField] private float _stackSpacing = 0.35f;		// 동시 데미지 간 세로 간격(월드 단위)
 		[SerializeField] private int _maxStack = 5;					// 스택 최대 칸 수(초과 시 0부터 순환)
@@ -87,15 +85,11 @@ namespace ProjectOne.UI
 			Color color;
 			if (isHero)
 			{
-				color = e.IsSuperCritical ? _heroSuperCriticalColor
-					  : e.IsCritical      ? _heroCriticalColor
-					  :                     _heroNormalColor;
+				color = e.IsCritical ? _heroCriticalColor : _heroNormalColor;
 			}
 			else
 			{
-				color = e.IsSuperCritical ? _superCriticalColor
-					  : e.IsCritical      ? _criticalColor
-					  :                     _normalColor;
+				color = e.IsCritical ? _criticalColor : _normalColor;
 			}
 
 			_pool.Spawn(worldPos, e.Damage.ToString(), color);

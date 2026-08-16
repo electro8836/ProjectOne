@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using EDT;
 using ProjectOne.Unit;
 
@@ -12,7 +12,7 @@ namespace ProjectOne.Projectile
 		public Vector3 startPos;      // 발사 시작 위치(월드)
 
 		public UnitBase caster;       // 발사자 — faction 판정·효과 귀속
-		public SkillInfo skillId;     // 발동 스킬 — 효과 귀속
+		public EDT.Skill skillId;         // 발동 스킬 — 효과 귀속
 		public SkillEffect hitEffect; // 적중 시 적용할 효과
 		public UnitBase target;       // 유도 궤적용 타겟 (직선이면 미사용)
 		public float hitRadius;       // 임팩트 AoE 반경 (0=단일 타겟, >0=원형 범위 적용)

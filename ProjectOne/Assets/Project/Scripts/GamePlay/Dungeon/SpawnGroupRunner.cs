@@ -1,29 +1,32 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
-using ProjectOne.Map;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Dungeon
 {
-	// 신규 Table_MonsterSpawn(GroupID 묶음)을 실제 소환으로 구동한다.
-	// - SpawnPoint: 맵 프리팹 하위 게임오브젝트 이름 → 그 위치 반경 SpawnRadius 안에 랜덤 배치(없으면 원점 폴백)
-	// - SpawnAllCount: 즉시 소환
-	// - SpawnStepCount / SpawnStepDelay: ct 취소(=클리어) 전까지 SpawnStepDelay 마다 SpawnStepCount 만큼 지속 소환
+	// Table_MonsterSpawn(GroupID 묶음)을 실제 소환으로 구동한다.
+	//
+	// 신규 스키마는 `GroupID / MonsterID / Level / Count` 뿐이다.
+	// 구버전의 `SpawnPoint`(위치) · `SpawnStepCount`/`SpawnStepDelay`(지속 소환) 컬럼이 사라졌다.
+	//
+	// **위치는 씬(맵 프리팹)의 던전 슬롯이 소유한다** (몬스터 설계 7장 — 익명 슬롯).
+	// 슬롯 컴포넌트는 STEP 8에서 만들고, 그때까지는 히어로 주변에 배치한다.
 	internal static class SpawnGroupRunner
 	{
-		// 스폰포인트 기준 랜덤 배치 반경 (임시 — 추후 SpawnPoint 클래스로 대체)
-		private const float SpawnRadius = 1f;
+		// 슬롯이 없을 때 히어로 주변 배치 반경
+		private const float FallbackSpawnRadius = 4f;
 
-		// GroupID 필터링용 임시 버퍼 (Dictionary 전체 순회 회피용 재사용)
+		// 같은 지점에 겹치지 않도록 개체마다 흩뿌리는 반경
+		private const float ScatterRadius = 1f;
+
+		// GroupID 필터링용 재사용 버퍼 (Dictionary 전체 순회 회피)
 		private static readonly List<Table_MonsterSpawn.Row> _rowBuffer = new List<Table_MonsterSpawn.Row>();
 
-		// 그룹의 모든 행을 소환한다. 즉시분(SpawnAllCount)은 호출 즉시 소환하고,
-		// 지속분(SpawnStep)은 백그라운드로 ct 취소 시까지 계속 소환한다(호출자는 클리어 시 ct 를 취소).
-		public static void SpawnGroup(int groupId, CancellationToken ct)
+		// 그룹의 모든 행을 즉시 소환한다.
+		// levelOverride > 0 이면 MonsterSpawn.Level 대신 그 값을 쓴다 (DungeonStage.MonsterLevel).
+		public static void SpawnGroup(int groupId, int levelOverride, CancellationToken ct)
 		{
 			if (groupId <= 0)
 			{
@@ -33,6 +36,9 @@ namespace ProjectOne.Dungeon
 			_rowBuffer.Clear();
 			_rowBuffer.AddRange(Table_MonsterSpawn.All().Values);
 
+			Vector3 basePos = resolveBasePos();
+			bool matched = false;
+
 			for (int i = 0; i < _rowBuffer.Count; i++)
 			{
 				Table_MonsterSpawn.Row row = _rowBuffer[i];
@@ -41,59 +47,52 @@ namespace ProjectOne.Dungeon
 					continue;
 				}
 
-				Vector3 basePos = resolveSpawnPos(row.SpawnPoint);
-
-				// 즉시 소환
-				for (int n = 0; n < row.SpawnAllCount; n++)
+				matched = true;
+				int level = (levelOverride > 0) ? levelOverride : row.Level;
+				if (level <= 0)
 				{
-					MonsterSpawnManager.Instance.SpawnOneShot(row.MonsterID, randomAround(basePos));
+					level = 1;
 				}
 
-				// 지속 소환 (클리어 전까지 반복)
-				if (row.SpawnStepCount > 0 && row.SpawnStepDelay > 0f)
+				int count = (row.Count > 0) ? row.Count : 1;
+				for (int n = 0; n < count; n++)
 				{
-					spawnStepLoopAsync(row.MonsterID, row.SpawnStepCount, row.SpawnStepDelay, basePos, ct).Forget();
+					MonsterSpawnManager.Instance.SpawnOneShot(row.MonsterID, level, randomAround(basePos));
 				}
+			}
+
+			if (matched == false)
+			{
+				Debug.LogWarning($"[SpawnGroupRunner] GroupID {groupId} 에 해당하는 MonsterSpawn 행이 없습니다.");
 			}
 		}
 
-		// SpawnStepDelay 마다 SpawnStepCount 만큼 소환. ct 취소 시 종료(미관측 예외 방지: SuppressCancellationThrow).
-		private static async UniTaskVoid spawnStepLoopAsync(int monsterId, int stepCount, float stepDelay, Vector3 basePos, CancellationToken ct)
+		// TODO(STEP 8) — 맵의 던전 슬롯(SlotIndex)을 찾아 그 위치를 쓴다.
+		// 지금은 히어로 앞쪽에 배치한다.
+		private static Vector3 resolveBasePos()
 		{
-			while (true)
+			if (UnitContainer.HasInstance == false)
 			{
-				bool canceled = await UniTask.Delay(TimeSpan.FromSeconds(stepDelay), ignoreTimeScale: false, PlayerLoopTiming.Update, ct).SuppressCancellationThrow();
-				if (canceled == true)
-				{
-					return;
-				}
-
-				for (int n = 0; n < stepCount; n++)
-				{
-					MonsterSpawnManager.Instance.SpawnOneShot(monsterId, randomAround(basePos));
-				}
+				return Vector3.zero;
 			}
-		}
 
-		// 스폰포인트 이름을 맵에서 해석. 없으면 경고 후 원점 폴백.
-		private static Vector3 resolveSpawnPos(string spawnPoint)
-		{
-			if (MapManager.HasInstance == true)
+			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
 			{
-				Transform t = MapManager.Instance.GetSpawnPoint(spawnPoint);
-				if (t != null)
+				UnitBase hero = heroes[i];
+				if (hero != null)
 				{
-					return t.position;
+					Vector2 offset = Random.insideUnitCircle.normalized * FallbackSpawnRadius;
+					return hero.transform.position + new Vector3(offset.x, offset.y, 0f);
 				}
 			}
 
-			Debug.LogWarning($"[SpawnGroupRunner] 스폰포인트 '{spawnPoint}' 를 맵에서 찾지 못함 → 원점 폴백");
 			return Vector3.zero;
 		}
 
 		private static Vector3 randomAround(Vector3 center)
 		{
-			Vector2 val = UnityEngine.Random.insideUnitCircle * SpawnRadius;
+			Vector2 val = Random.insideUnitCircle * ScatterRadius;
 			return center + new Vector3(val.x, val.y, 0f);
 		}
 	}

@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
@@ -8,7 +8,6 @@ using ProjectOne.Event;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
 using ProjectOne.Buff;
-using ProjectOne.Aura;
 using ProjectOne.Unit.AI;
 using ProjectOne.UserData;
 
@@ -25,8 +24,8 @@ namespace ProjectOne.Unit
 		// 장비 장착 Aspect — 무상태이므로 단일 인스턴스 재사용 (Register 는 중복 방지됨)
 		private readonly EquipmentAspect _equipmentAspect = new EquipmentAspect();
 
-		// 던전 카드스킬 Aspect — 무상태(슬롯은 DungeonRunState 보유). 슬롯이 비면 no-op
-		private readonly CardSkillAspect _cardSkillAspect = new CardSkillAspect();
+		// 히어로 프리팹 Addressable 주소 — 캐릭터가 하나뿐이라 테이블이 아닌 부트에서 주입받는다.
+		private string _heroPrefabAddress = string.Empty;
 
 		private static int _nextInstanceId = 1;
 
@@ -36,61 +35,47 @@ namespace ProjectOne.Unit
 		{
 		}
 
+		// 부트 시점에 GameBootstrapper 가 인스펙터 값으로 설정한다.
+		public void SetHeroPrefabAddress(string address)
+		{
+			_heroPrefabAddress = address;
+		}
+
 		public async UniTask<UnitBase> CreateAsync(UnitType type, int id, Vector3 pos, Faction faction = Faction.None, CancellationToken ct = default(CancellationToken))
 		{
 			switch (type)
 			{
 			case UnitType.Hero:
-				return await CreateHeroAsync(id, pos, (faction == Faction.None) ? Faction.Player : faction, false, ct);
+				return await CreateHeroAsync(pos, (faction == Faction.None) ? Faction.Player : faction, false, ct);
 			case UnitType.Monster:
-				return await CreateMonsterAsync(id, pos, (faction == Faction.None) ? Faction.Enemy : faction, ct);
+				return await CreateMonsterAsync(id, 1, pos, (faction == Faction.None) ? Faction.Enemy : faction, ct);
 			default:
 				Debug.LogError($"[UnitFactory] 지원하지 않는 UnitType: {type}");
 				return null;
 			}
 		}
 
-		// autoControl=true 면 자동전투 AI 두뇌 주입(NPC/PVP), false 면 플레이어 직접조작(HeroController 유지)
-		public async UniTask<Hero> CreateHeroAsync(int characterId, Vector3 pos, Faction faction = Faction.Player, bool autoControl = false, CancellationToken ct = default(CancellationToken))
+		// autoControl=true 면 자동전투 AI 두뇌 주입, false 면 플레이어 직접조작(HeroController 유지)
+		public async UniTask<Hero> CreateHeroAsync(Vector3 pos, Faction faction = Faction.Player, bool autoControl = false, CancellationToken ct = default(CancellationToken))
 		{
-			Table_Character.Row row = Table_Character.Get(characterId);
-			if (row == null)
-			{
-				Debug.LogError($"[UnitFactory] Table_Character.Get({characterId}) == null");
-				return null;
-			}
-
-			string skinAddress = string.Empty;
-			if (row.SkinID > 0)
-			{
-				Table_SkinInfo.Row row2 = Table_SkinInfo.Get(row.SkinID);
-				if (row2 != null)
-				{
-					skinAddress = row2.Path;
-				}
-			}
-
-			Hero hero = await SpawnAndComposeAsync<Hero>(UnitType.Hero, row.Path, row.Name, row, skinAddress, pos, faction, autoControl, ct);
+			Hero hero = await SpawnAndComposeAsync<Hero>(UnitType.Hero, _heroPrefabAddress, "Hero", pos, faction, autoControl, ct);
 			if (hero == null)
 			{
 				return null;
 			}
 
 			HeroAspectRegistry.Instance.Register(_equipmentAspect);
-			HeroAspectRegistry.Instance.Register(_cardSkillAspect);
 			HeroAspectRegistry.Instance.ApplyAll(hero);
 
-			// 장비/레벨업 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전
+			// 장비/레벨 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전
 			hero.Vitals.InitHp();
-			hero.Vitals.InitBreakGage();
-			hero.Vitals.InitStamina();
 
 			hero.RefreshAnimationStats();
-			EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), characterId));
+			EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), 0));
 			return hero;
 		}
 
-		public async UniTask<Monster> CreateMonsterAsync(int monsterId, Vector3 pos, Faction faction = Faction.Enemy, CancellationToken ct = default(CancellationToken))
+		public async UniTask<Monster> CreateMonsterAsync(int monsterId, int level, Vector3 pos, Faction faction = Faction.Enemy, CancellationToken ct = default(CancellationToken))
 		{
 			MonsterPool monsterPool = await MonsterPoolHub.Instance.GetOrCreatePoolAsync(monsterId, ct);
 			if (monsterPool == null)
@@ -98,10 +83,39 @@ namespace ProjectOne.Unit
 				return null;
 			}
 
-			Monster monster = monsterPool.Spawn(pos);
+			Monster monster = monsterPool.Spawn(pos, level);
 			monster.RefreshAnimationStats();
 			EventManager.Instance.Publish(new UnitSpawnedEvent(monster, UnitType.Monster, monster.GetID(), monsterId));
 			return monster;
+		}
+
+		// 풀에서 꺼낸 몬스터의 레벨을 확정하고 스탯을 다시 만든다.
+		// 같은 몬스터라도 스폰마다 레벨이 다를 수 있어(MonsterSpawn.Level / DungeonStage.MonsterLevel)
+		// 풀 생성 시점의 1레벨 스탯을 그대로 쓸 수 없다.
+		public void ApplyMonsterLevel(UnitBase unit, int monsterId, int level)
+		{
+			if (unit == null)
+			{
+				return;
+			}
+
+			int lv = level > 0 ? level : 1;
+			if (unit.Level == lv)
+			{
+				return;		// 직전 스폰과 같은 레벨 — 재구성 불필요
+			}
+
+			Table_Monster.Row row = Table_Monster.Get(monsterId);
+			int statGroupId = row?.StatGroupID ?? 0;
+
+			StatContainer stats = StatContainerFactory.ForMonster(statGroupId, lv);
+			unit.SetLevel(lv);
+			unit.SetStats(stats);
+
+			// Vitals 는 StatContainer 참조를 들고 있으므로 함께 교체한다.
+			Vitals vitals = new Vitals(stats);
+			vitals.InitHp();
+			unit.SetVitals(vitals);
 		}
 
 		public void ReleaseMonster(Monster monster)
@@ -116,11 +130,11 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		private async UniTask<T> SpawnAndComposeAsync<T>(UnitType unitType, string prefabAddress, string displayName, Table_Character.Row charRow, string skinAddress, Vector3 pos, Faction faction, bool autoControl, CancellationToken ct) where T : UnitBase
+		private async UniTask<T> SpawnAndComposeAsync<T>(UnitType unitType, string prefabAddress, string displayName, Vector3 pos, Faction faction, bool autoControl, CancellationToken ct) where T : UnitBase
 		{
 			if (string.IsNullOrEmpty(prefabAddress))
 			{
-				Debug.LogError($"[UnitFactory] 프리팹 Address 비어있음 (id={charRow.ID})");
+				Debug.LogError("[UnitFactory] 히어로 프리팹 Address 비어있음 — GameBootstrapper 인스펙터를 확인하세요.");
 				return null;
 			}
 
@@ -133,7 +147,6 @@ namespace ProjectOne.Unit
 
 			Transform root = UnitContainer.Instance.GetRoot(unitType);
 			GameObject val2 = Object.Instantiate<GameObject>(val, pos, Quaternion.identity, root);
-			val2.name = $"{displayName}_{charRow.ID}";
 			T unit = val2.GetComponent<T>();
 			if (unit == null)
 			{
@@ -142,30 +155,22 @@ namespace ProjectOne.Unit
 				return null;
 			}
 
-			ComposeHero(unit, charRow, faction, autoControl);
-			if (!string.IsNullOrEmpty(skinAddress))
-			{
-				await ApplySkinAsync(unit, skinAddress, ct);
-			}
-
+			ComposeHero(unit, faction, autoControl);
+			val2.name = $"{displayName}_{unit.GetID()}";
 			return unit;
 		}
 
 		// 공통 구성 — 스탯/체력/버프/스킬컨테이너/이동체 초기화. 스킬 등록·인디케이터는 호출자가 수행.
-		private void ComposeBase(UnitBase unit, int tableId, int baseStatId, Faction faction)
+		private void ComposeBase(UnitBase unit, int tableId, int level, StatContainer stats, Faction faction)
 		{
 			unit.SetIDs(_nextInstanceId++, tableId);
-			StatContainer stats = StatContainerFactory.FromBaseStatID(baseStatId);
+			unit.SetLevel(level);
 			unit.SetStats(stats);
 			Vitals vitals = new Vitals(stats);
 			vitals.InitHp();
-			vitals.InitBreakGage();
-			vitals.InitStamina();
 			unit.SetVitals(vitals);
 			BuffContainer buffContainer = new BuffContainer(unit);
 			unit.SetBuffContainer(buffContainer);
-			AuraContainer auraContainer = new AuraContainer(unit);
-			unit.SetAuraContainer(auraContainer);
 			SkillContainer skillContainer = new SkillContainer(unit);
 			unit.SetSkillContainer(skillContainer);
 			UnitMover component = unit.GetComponent<UnitMover>();
@@ -177,31 +182,23 @@ namespace ProjectOne.Unit
 			unit.SetFaction(faction);
 		}
 
-		// 몬스터 구성 — SkillSet 기반 스킬 등록 (MonsterPool 에서 호출)
-		public void ComposeUnit(UnitBase unit, int tableId, int baseStatId, int skillSetId, Faction faction)
+		// 몬스터 구성 — Monster.SkillIDs 기반 스킬 등록 (MonsterPool 에서 호출)
+		public void ComposeUnit(UnitBase unit, int monsterId, int statGroupId, int level, Faction faction)
 		{
-			ComposeBase(unit, tableId, baseStatId, faction);
-			RegisterBaseSkills(unit.SkillContainer, skillSetId);
+			ComposeBase(unit, monsterId, level, StatContainerFactory.ForMonster(statGroupId, level), faction);
+			RegisterMonsterSkills(unit.SkillContainer, monsterId);
 			RefreshSkillIndicator(unit);
 		}
 
-		// 히어로 구성 — SkillSet 기반 스킬 등록. autoControl 이면 자동전투 두뇌 주입 + 입력 컨트롤러 비활성화.
-		private void ComposeHero(UnitBase unit, Table_Character.Row row, Faction faction, bool autoControl)
+		// 히어로 구성 — 캐릭터 레벨 기준 기본 스탯 + 자동전투 두뇌(옵션).
+		private void ComposeHero(UnitBase unit, Faction faction, bool autoControl)
 		{
-			ComposeBase(unit, row.ID, row.BaseStatID, faction);
+			// 캐릭터 레벨은 스폰 시 확정 (실시간 반영 아님)
+			int level = Account.Instance.Loadout.Level;
+			ComposeBase(unit, 0, level, StatContainerFactory.ForCharacter(level), faction);
 
-			// 캐릭터 레벨 산출 (미보유/AI 등은 1) — 실시간 아님, 스폰 시 확정
-			int level = 1;
-			OwnedCharacter oc = Account.Instance.Loadout.GetOwned(row.ID);
-			if (oc != null)
-			{
-				level = oc.level;
-			}
-
-			// 레벨업 스탯 영구 가산
-			applyLevelupStats(unit, row, level);
-
-			registerTraitSkills(unit.SkillContainer, row, level);
+			// TODO(STEP 7) — 보유 스킬 등록은 무기 마스터리가 소유한다.
+			// WeaponMastery.NormalAttackSkill(평타) + 스킬 트리의 SkillGrant 노드로 습득한 스킬.
 			RefreshSkillIndicator(unit);
 
 			if (autoControl == true)
@@ -225,94 +222,19 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		// 특성슬롯(TraitGroup_1~5) 기반 스킬 등록 — 캐릭터 레벨이 ReqLv 에 도달한 슬롯만, 슬롯 레벨에 맞는 SkillID_N.
-		// (기본공격은 Table_SkillInfo.IsBasicAttack 으로 식별되므로 슬롯 위치를 따로 구분하지 않는다.)
-		private static void registerTraitSkills(SkillContainer sc, Table_Character.Row row, int level)
+		// 몬스터 보유 스킬 등록 — Monster.SkillIDs 배열 전체.
+		// 어느 것이 기본공격인지는 배열 순서가 아니라 Skill.SkillCategory=Normal 로 판정한다.
+		private static void RegisterMonsterSkills(SkillContainer sc, int monsterId)
 		{
-			registerTraitSkill(sc, row.TraitGroup_1, 1, row.ID, level);
-			registerTraitSkill(sc, row.TraitGroup_2, 2, row.ID, level);
-			registerTraitSkill(sc, row.TraitGroup_3, 3, row.ID, level);
-			registerTraitSkill(sc, row.TraitGroup_4, 4, row.ID, level);
-			registerTraitSkill(sc, row.TraitGroup_5, 5, row.ID, level);
-		}
-
-		private static void registerTraitSkill(SkillContainer sc, int traitGroupId, int slotIndex, int characterId, int level)
-		{
-			if (traitGroupId <= 0)
+			Table_Monster.Row row = Table_Monster.Get(monsterId);
+			if (row == null || row.SkillIDs == null)
 			{
 				return;
 			}
 
-			Table_CharacterTrait.Row trait = Table_CharacterTrait.Get(traitGroupId);
-			if (trait == null || level < trait.ReqLv)
+			for (int i = 0; i < row.SkillIDs.Length; i++)
 			{
-				return;	// 미해금
-			}
-
-			int slotLevel = Account.Instance.Loadout.GetTraitLevel(characterId, slotIndex);
-			SkillInfo skill = TraitSkillResolver.SkillForLevel(trait, slotLevel);
-			sc.Register(skill, SourceBase);
-		}
-
-		// 레벨업 스탯 영구 가산 — 레벨업당 LevelupStat 만큼, 총 (level-1)배
-		private static void applyLevelupStats(UnitBase unit, Table_Character.Row row, int level)
-		{
-			if (row.LevelupStatID <= 0 || level <= 1)
-			{
-				return;
-			}
-
-			Table_LevelupStat.Row lv = Table_LevelupStat.Get(row.LevelupStatID);
-			if (lv == null)
-			{
-				return;
-			}
-
-			int times = level - 1;
-			addLevelupStat(unit.Stats, lv.StatID_1, lv.StatValue_1 * times);
-			addLevelupStat(unit.Stats, lv.StatID_2, lv.StatValue_2 * times);
-			addLevelupStat(unit.Stats, lv.StatID_3, lv.StatValue_3 * times);
-			addLevelupStat(unit.Stats, lv.StatID_4, lv.StatValue_4 * times);
-		}
-
-		private static void addLevelupStat(StatContainer stats, StatInfo type, float total)
-		{
-			if (type == StatInfo.None || total == 0f)
-			{
-				return;
-			}
-
-			stats.AddBase(type, total);
-		}
-
-		private static void RegisterBaseSkills(SkillContainer sc, int skillSetId)
-		{
-			if (skillSetId <= 0)
-			{
-				return;
-			}
-			Table_SkillSet.Row row = Table_SkillSet.Get(skillSetId);
-			if (row == null)
-			{
-				return;
-			}
-			sc.Register(row.BaseAttackSkill, "Base");
-			sc.Register(row.Skill_1, "Base");
-			sc.Register(row.Skill_2, "Base");
-			sc.Register(row.Skill_3, "Base");
-			sc.Register(row.Skill_4, "Base");
-		}
-
-		private static async UniTask ApplySkinAsync(UnitBase unit, string skinAddress, CancellationToken ct)
-		{
-			RuntimeAnimatorController val = await ResourceManager.Instance.AcquireAsync<RuntimeAnimatorController>(skinAddress, ct);
-			if (!(val == null))
-			{
-				UnitAnimator component = unit.GetComponent<UnitAnimator>();
-				if (component != null)
-				{
-					component.SetController(val);
-				}
+				sc.Register(row.SkillIDs[i], SourceBase);
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EDT;
@@ -13,7 +13,7 @@ namespace ProjectOne.UI
 		[Serializable]
 		public class GradeColor
 		{
-			public ItemGradeTypes grade = ItemGradeTypes.None;
+			public ItemGradeType grade = ItemGradeType.None;
 			public Color bgMask = Color.white;
 			public Color gradient = Color.white;
 			public Color glow = Color.white;
@@ -22,7 +22,7 @@ namespace ProjectOne.UI
 		[SerializeField] private List<GradeColor> _colors = new List<GradeColor>();
 
 		// 등급에 해당하는 색상 묶음. 없으면 첫 항목(또는 기본값) 반환.
-		public GradeColor Get(ItemGradeTypes grade)
+		public GradeColor Get(ItemGradeType grade)
 		{
 			for (int i = 0; i < _colors.Count; i++)
 			{

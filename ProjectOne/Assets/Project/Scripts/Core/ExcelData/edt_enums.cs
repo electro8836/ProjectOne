@@ -3,58 +3,47 @@ using System.Collections.Generic;
 
 namespace EDT {
 
-    public enum CardSkillGrade {
+    public enum BuffStackPolicy {
         None,
-        Uncommon,
-        Rare,
-        Epic,
-        Legendary,
-        Mythic,
+        Refresh,
+        Independent,
+        Extend,
+        Ignore,
     }
 
-    public enum CharacterTypes {
+    public enum ActionBlockType {
         None,
-        Class_Melee,
-        Class_Ranged,
-        Class_Mage,
+        Move,
+        Turn,
+        Attack,
+        Cast,
     }
 
-    public enum CharacterUnlockState {
+    public enum ConsumeEffect {
         None,
-        Free,
-        Currency,
+        Skill,
+        Reward,
+        SkillPoint,
     }
 
-    public enum CharacterGrade {
-        None,
-        Star_01,
-        Star_02,
-        Star_03,
-        Star_04,
-        Star_05,
-    }
-
-    public enum ConsumableType {
-        None,
-        Potion,
-        Scroll,
-        ItemBox,
-    }
-
-    public enum EquipmentTypes {
+    public enum EquipSlotTypes {
         None,
         Weapon,
+        Helmet,
         Armor,
-        Accessory,
+        Gloves,
+        Boots,
+        Ring,
+        Amulet,
+        Relic,
     }
 
-    public enum ItemGradeTypes {
+    public enum WeaponType {
         None,
-        Normal,
-        Magic,
-        Rare,
-        Epic,
-        Legendary,
+        Greatsword,
+        RuneSword,
+        CrossBow,
+        DualPistols,
     }
 
     public enum GachaTypes {
@@ -63,61 +52,166 @@ namespace EDT {
         Skill,
     }
 
-    public enum MapModeType {
+    public enum ItemMainCategory {
         None,
-        Defense,
-        BuildingDestroy,
-        Capture,
-        Breakthrough,
-        BossBattle,
+        Equipment,
+        Material,
+        Consumable,
+        Collection,
     }
 
-    public enum DropObjectType {
+    public enum ItemSubCategory {
         None,
-        HealOrb,
-        StaminaOrb,
-        MagicEssence,
+        Weapon,
+        Armor,
+        Accessory,
+        Relic,
+        Crafting,
+        Enhance,
+        Usable,
+        Box,
+        SkillBook,
+        Costume,
     }
 
-    public enum MaterialType {
-        None,
-        Enchant,
-        Craft,
-    }
-
-    public enum MaterialGradeType {
+    public enum ItemGradeType {
         None,
         Normal,
         Magic,
         Rare,
         Epic,
         Legendary,
+        Mythic,
     }
 
-    public enum MonsterTypes {
+    public enum DropTier {
+        None,
+        Tier_1,
+        Tier_2,
+        Tier_3,
+    }
+
+    public enum MapType {
+        None,
+        Town,
+        Stage,
+        Dungeon,
+    }
+
+    public enum WeaponRangeType {
+        None,
+        Melee,
+        Ranged,
+    }
+
+    public enum SkillPointSourceType {
+        None,
+        MasteryLevel,
+        Item,
+        Achievement,
+    }
+
+    public enum MonsterType {
         None,
         Normal,
         Elite,
         Boss,
     }
 
-    public enum RewardTypes {
+    public enum MonsterAIType {
         None,
-        Equipment,
-        Material,
-        Skill,
+        Melee,
+        Ranged,
+        Stationary,
+        Boss,
+    }
+
+    public enum AggroType {
+        None,
+        Aggressive,
+        Neutral,
+    }
+
+    public enum NpcType {
+        None,
+        Shop,
+        Blacksmith,
+        Storage,
+        Portal,
+    }
+
+    public enum DialogTriggerType {
+        None,
+        Default,
+        QuestAccept,
+        QuestProgress,
+        QuestComplete,
+    }
+
+    public enum OptionTypes {
+        None,
+        Stat,
+        SkillGrant,
+        SkillLevel,
+        Modifier,
+    }
+
+    public enum QuestCategory {
+        None,
+        Main,
+        Sub,
+    }
+
+    public enum QuestAcceptType {
+        None,
+        Auto,
+        Npc,
+        UI,
+    }
+
+    public enum QuestCompleteType {
+        None,
+        Auto,
+        Npc,
+        UI,
+    }
+
+    public enum QuestTargetType {
+        None,
+        KillMonster,
+        EquipItemGrade,
+        EquipItemLevel,
+        Talk,
+        DungeonClear,
+        ReachLevel,
+    }
+
+    public enum RewardType {
+        None,
+        Item,
+        ItemPool,
         Currency,
+    }
+
+    public enum SkillCategoryTypes {
+        None,
+        Normal,
+        Active,
+        Passive,
     }
 
     public enum SkillCastingTypes {
         None,
         Instant,
-        OnHitCaster,
-        OnHitTarget,
-        OnHitTaken,
-        Passive,
         Casting,
+        OnHit,
+        OnCombo,
+        OnCrit,
+        OnDamaged,
+        OnLowHP,
+        OnKill,
         Aura,
+        Passive,
     }
 
     public enum SkillApplyTarget {
@@ -128,433 +222,355 @@ namespace EDT {
         All,
     }
 
-    public enum SkillScanType {
+    public enum SkillScanTypes {
         None,
-        Target,
         Circle,
         Sector,
         Line,
-        Donut,
-    }
-
-    public enum SkillDamageType {
-        None,
-        Physical,
-        Magical,
-        Pure,
+        Target,
     }
 
     public enum SkillEffectTypes {
         None,
         Damage,
-        ActivateBuff,
-        DeactivateBuff,
-        IncreaseAttribute,
-        DecreaseAttribute,
-        SpawnProjectile,
-        ActivateAura,
+        Heal,
+        Buff,
+        StatChange,
+        Projectile,
+        Summon,
+        Force,
+        CooldownReduce,
+        BuffConsume,
     }
 
-    public enum SkillAnchorType {
+    public enum SkillEffectOrigin {
         None,
-        Root,
-        Center,
+        Caster,
+        Target,
+        Attacker,
+        Victim,
+        Owner,
+        Location,
     }
 
-    public enum UIZOrder {
+    public enum SkillModifierScope {
         None,
-        Background,
-        Hud,
-        View,
-        Popup,
-        Tooltip,
-        Feedback,
-        Notice,
-        Loading,
-        Fade,
-        Interaction,
-        DevConsole,
+        Skill,
+        Effect,
+        Projectile,
+        Summon,
+        Buff,
     }
 
-    public enum UIEventIDs {
+    public enum ModifierOperator {
         None,
-        Confirm,
-        Cancel,
-        Close,
-        Select,
-        Btn1,
-        Btn2,
-        Btn3,
-        Btn4,
+        Replace,
+        Append,
+        Set,
+        Add,
+        Ratio,
     }
 
-    public enum CurrencyInfo {
+    public enum ParamDefValueTypes {
+        None,
+        Float,
+        Int,
+        Bool,
+        SkillID,
+        EffectID,
+        ProjectileID,
+        SummonID,
+        BuffID,
+        StatID,
+        StatDetailID,
+        ForceType,
+    }
+
+    public enum ForceType {
+        None,
+        Push,
+        Pull,
+    }
+
+    public enum StatCategory {
+        None,
+        Offensive,
+        Defensive,
+        Utility,
+    }
+
+    public enum StatDetailTypes {
+        None,
+        Base,
+        Add,
+        Ratio,
+        Amp,
+    }
+
+    public enum StatValueTypes {
+        None,
+        Flat,
+        Percent,
+    }
+
+    public enum SummonAIType {
+        None,
+        Stationary,
+        Follow,
+        Chase,
+        Wander,
+        Orbit,
+    }
+
+    public enum Buff {
+        None,
+    }
+
+    public enum Currency {
         None,
         Gold,
-        Ruby,
         Dia,
+        Ruby,
     }
 
-    public enum SkillInfo {
+    public enum EquipEnhanceTier {
         None,
-        SKILL_MONSTER_ATK_MELEE_01,
-        SKILL_MONSTER_ATK_RANGE_01,
-        SKILL_MONSTER_MATK_RANGE_01,
-        SKILL_BREAK,
-        SKILL_DASH_01,
-        SKILL_DASH_ATTACK_01,
-        SKILL_CASTING_ATTACK_01,
-        SKILL_CASTING_ATTACK_02,
-        SKILL_CASTING_ATTACK_03,
-        SKILL_DAMAGE_IMMUNITY,
-        SKILL_PROJECTILE_ATTACK_01,
-        SKILL_PROJECTILE_ATTACK_02,
-        SKILL_PROJECTILE_ATTACK_03,
-        SKILL_HERO_01_SLOT1_LV1,
-        SKILL_HERO_01_SLOT1_LV2,
-        SKILL_HERO_01_SLOT1_LV3,
-        SKILL_HERO_01_SLOT1_LV4,
-        SKILL_HERO_01_SLOT1_LV5,
-        SKILL_HERO_01_SLOT2_LV1,
-        SKILL_HERO_01_SLOT2_LV2,
-        SKILL_HERO_01_SLOT2_LV3,
-        SKILL_HERO_01_SLOT2_LV4,
-        SKILL_HERO_01_SLOT2_LV5,
-        SKILL_HERO_01_SLOT3_LV1,
-        SKILL_HERO_01_SLOT3_LV2,
-        SKILL_HERO_01_SLOT3_LV3,
-        SKILL_HERO_01_SLOT3_LV4,
-        SKILL_HERO_01_SLOT3_LV5,
-        SKILL_HERO_01_SLOT4_LV1,
-        SKILL_HERO_01_SLOT4_LV2,
-        SKILL_HERO_01_SLOT4_LV3,
-        SKILL_HERO_01_SLOT4_LV4,
-        SKILL_HERO_01_SLOT4_LV5,
-        SKILL_HERO_01_SLOT5_LV1,
-        SKILL_HERO_01_SLOT5_LV2,
-        SKILL_HERO_01_SLOT5_LV3,
-        SKILL_HERO_01_SLOT5_LV4,
-        SKILL_HERO_01_SLOT5_LV5,
-        SKILL_CARD_01_LV1,
-        SKILL_CARD_01_LV2,
-        SKILL_CARD_01_LV3,
-        SKILL_CARD_01_LV4,
-        SKILL_CARD_01_LV5,
-        SKILL_CARD_02_LV1,
-        SKILL_CARD_02_LV2,
-        SKILL_CARD_02_LV3,
-        SKILL_CARD_02_LV4,
-        SKILL_CARD_02_LV5,
-        SKILL_CARD_03_LV1,
-        SKILL_CARD_03_LV2,
-        SKILL_CARD_03_LV3,
-        SKILL_CARD_03_LV4,
-        SKILL_CARD_03_LV5,
-        SKILL_CARD_04_LV1,
-        SKILL_CARD_04_LV2,
-        SKILL_CARD_04_LV3,
-        SKILL_CARD_04_LV4,
-        SKILL_CARD_04_LV5,
-        SKILL_CARD_05_LV1,
-        SKILL_CARD_05_LV2,
-        SKILL_CARD_05_LV3,
-        SKILL_CARD_05_LV4,
-        SKILL_CARD_05_LV5,
-        SKILL_CARD_06_LV1,
-        SKILL_CARD_06_LV2,
-        SKILL_CARD_06_LV3,
-        SKILL_CARD_06_LV4,
-        SKILL_CARD_06_LV5,
-        SKILL_CARD_07_LV1,
-        SKILL_CARD_07_LV2,
-        SKILL_CARD_07_LV3,
-        SKILL_CARD_07_LV4,
-        SKILL_CARD_07_LV5,
-        SKILL_CARD_08_LV1,
-        SKILL_CARD_08_LV2,
-        SKILL_CARD_08_LV3,
-        SKILL_CARD_08_LV4,
-        SKILL_CARD_08_LV5,
-        SKILL_CARD_09_LV1,
-        SKILL_CARD_09_LV2,
-        SKILL_CARD_09_LV3,
-        SKILL_CARD_09_LV4,
-        SKILL_CARD_09_LV5,
-        SKILL_CARD_10_LV1,
-        SKILL_CARD_10_LV2,
-        SKILL_CARD_10_LV3,
-        SKILL_CARD_10_LV4,
-        SKILL_CARD_10_LV5,
+        Tier_1,
+        Tier_2,
+        Tier_3,
+        Tier_4,
+        Tier_5,
+        Tier_6,
+    }
+
+    public enum EquipPurity {
+        None,
+        Purity_1,
+        Purity_2,
+        Purity_3,
+        Purity_4,
+        Purity_5,
+    }
+
+    public enum Dungeon {
+        None,
+        Gold,
+        Exp,
+    }
+
+    public enum WeaponMastery {
+        None,
+        Mastery_GreatSword,
+        Mastery_RuneSword,
+        Mastery_CrossBow,
+        Mastery_DualPistols,
+    }
+
+    public enum SkillPoint {
+        None,
+        SkillPoint_Level,
+        SkillPoint_Item,
+        SkillPoint_Achievement,
+    }
+
+    public enum Option {
+        None,
+        OPT_ATK_ADD,
+        OPT_ATK_RATIO,
+        OPT_ATK_AMP,
+        OPT_DAMAGE_BONUS_ADD,
+        OPT_MELEE_DAMAGE_BONUS_ADD,
+        OPT_RANGE_DAMAGE_BONUS_ADD,
+        OPT_ATK_SPEED_ADD,
+        OPT_CRIT_RATE_ADD,
+        OPT_CRIT_DAMAGE_ADD,
+        OPT_FINAL_DAMAGE_AMP_ADD,
+        OPT_BOSS_DAMAGE_BONUS_ADD,
+        OPT_DEF_PEN_ADD,
+        OPT_MAX_HP_ADD,
+        OPT_MAX_HP_RATIO,
+        OPT_MAX_HP_AMP,
+        OPT_HP_REGEN_ADD,
+        OPT_HP_REGEN_RATIO,
+        OPT_HP_REGEN_AMP,
+        OPT_DEF_ADD,
+        OPT_DEF_RATIO,
+        OPT_DEF_AMP,
+        OPT_DAMAGE_REDUCTION_ADD,
+        OPT_LIFE_ON_HIT_ADD,
+        OPT_LIFE_ON_HIT_RATIO,
+        OPT_LIFE_ON_HIT_AMP,
+        OPT_EVASION_RATE_ADD,
+        OPT_BLOCK_RATE_ADD,
+        OPT_MOVE_SPEED_BONUS_ADD,
+        OPT_EXP_BONUS_ADD,
+        OPT_PICKUP_RANGE_ADD,
+        OPT_GOLD_DROP_BONUS_ADD,
+        OPT_DAMAGE_TAKEN_AMP_ADD,
+    }
+
+    public enum Projectile {
+        None,
+    }
+
+    public enum Skill {
+        None,
+        Skill_GreatSword_Attack,
+        Skill_GreatSword_Active_01,
+        Skill_GreatSword_Passive_01,
+        Skill_RuneSword_Attack,
+        Skill_RuneSword_Active_01,
+        Skill_RuneSword_Passive_01,
+        Skill_CrossBow_Attack,
+        Skill_CrossBow_Active_01,
+        Skill_CrossBow_Passive_01,
+        Skill_DualPistols_Attack,
+        Skill_DualPistols_Active_01,
+        Skill_DualPistols_Passive_01,
     }
 
     public enum SkillEffect {
         None,
-        SE_TAKE_DAMAGE_01,
-        SE_TAKE_DAMAGE_02,
-        SE_TAKE_DAMAGE_03,
-        SE_TAKE_DAMAGE_04,
-        SE_TAKE_DAMAGE_05,
-        SE_MONSTER_PHYSICAL_DAMAGE_01,
-        SE_MONSTER_MAGICAL_DAMAGE_01,
-        SE_TAKE_DAMAGE_06,
-        SE_TAKE_DAMAGE_07,
-        SE_TAKE_DAMAGE_08,
-        SE_ACTIVATE_BUFF_MOVESPEED_01,
-        SE_INCREASE_MOVESPEED_01,
-        SE_ACTIVATE_BUFF_ATTACKSPEED_01,
-        SE_INCREASE_ATTACKSPEED_01,
-        SE_ACTIVATE_DEBUFF_MOVESPEED_01,
-        SE_DECREASE_MOVESPEED_01,
-        SE_TAKE_DAMAGE_101,
-        SE_ACTIVATE_DEBUFF_BREAK_01,
-        SE_ACTIVATE_DEBUFF_BREAK_02,
-        SE_DECREASE_DAMAGETAKEN,
-        SE_DASH_ATTACK_DAMAGE_01,
-        SE_CASTING_DAMAGE_01,
-        SE_CASTING_DAMAGE_02,
-        SE_CASTING_DAMAGE_03,
-        SE_ACTIVATE_BUFF_DAMAGE_IMMUNITY,
-        SE_SPAWNPOJECTILE_01,
-        SE_SPAWNPOJECTILE_02,
-        SE_SPAWNPOJECTILE_03,
-        SE_PROJECTILE_DAMAGE_01,
-        SE_HERO_01_SLOT1_DAMAGE_01,
-        SE_HERO_01_SLOT1_DAMAGE_02,
-        SE_HERO_01_SLOT1_DAMAGE_03,
-        SE_HERO_01_SLOT1_DAMAGE_04,
-        SE_HERO_01_SLOT1_DAMAGE_05,
-        SE_HERO_01_SLOT2_DAMAGE_01,
-        SE_HERO_01_SLOT2_DAMAGE_02,
-        SE_HERO_01_SLOT2_DAMAGE_03,
-        SE_HERO_01_SLOT2_DAMAGE_04,
-        SE_HERO_01_SLOT2_DAMAGE_05,
-        SE_HERO_01_SLOT3_INCREASE_MOVESPEED_01,
-        SE_HERO_01_SLOT3_INCREASE_MOVESPEED_02,
-        SE_HERO_01_SLOT3_INCREASE_MOVESPEED_03,
-        SE_HERO_01_SLOT3_INCREASE_MOVESPEED_04,
-        SE_HERO_01_SLOT3_INCREASE_MOVESPEED_05,
-        SE_HERO_01_SLOT3_INCREASE_ATTACKSPEED_01,
-        SE_HERO_01_SLOT3_INCREASE_ATTACKSPEED_02,
-        SE_HERO_01_SLOT3_INCREASE_ATTACKSPEED_03,
-        SE_HERO_01_SLOT3_INCREASE_ATTACKSPEED_04,
-        SE_HERO_01_SLOT3_INCREASE_ATTACKSPEED_05,
-        SE_HERO_01_SLOT4_ACTIVATE_AURA_01,
-        SE_HERO_01_SLOT4_ACTIVATE_AURA_02,
-        SE_HERO_01_SLOT4_ACTIVATE_AURA_03,
-        SE_HERO_01_SLOT4_ACTIVATE_AURA_04,
-        SE_HERO_01_SLOT4_ACTIVATE_AURA_05,
-        SE_HERO_01_SLOT4_INCREASE_ATTACKRATIO_01,
-        SE_HERO_01_SLOT4_INCREASE_ATTACKRATIO_02,
-        SE_HERO_01_SLOT4_INCREASE_ATTACKRATIO_03,
-        SE_HERO_01_SLOT4_INCREASE_ATTACKRATIO_04,
-        SE_HERO_01_SLOT4_INCREASE_ATTACKRATIO_05,
-        SE_HERO_01_SLOT4_DAMAGE_01,
-        SE_HERO_01_SLOT4_DAMAGE_02,
-        SE_HERO_01_SLOT4_DAMAGE_03,
-        SE_HERO_01_SLOT4_DAMAGE_04,
-        SE_HERO_01_SLOT4_DAMAGE_05,
-        SE_HERO_01_SLOT5_DAMAGE_01,
-        SE_HERO_01_SLOT5_DAMAGE_02,
-        SE_HERO_01_SLOT5_DAMAGE_03,
-        SE_HERO_01_SLOT5_DAMAGE_04,
-        SE_HERO_01_SLOT5_DAMAGE_05,
     }
 
-    public enum BuffInfo {
+    public enum SkillModifier {
         None,
-        BUFF_MOVESPEED_01,
-        BUFF_ATTACKSPEED_01,
-        DEBUFF_MOVESPEED_01,
-        DEBUFF_STUN,
-        DEBUFF_SILENCE,
-        DEBUFF_BINDING,
-        DEBUFF_BREAK,
-        BUFF_DAMAGE_IMMUNITY,
     }
 
-    public enum AuraInfo {
+    public enum Stat {
         None,
-        AURA_HERO_01_SLOT4_01,
-        AURA_HERO_01_SLOT4_02,
-        AURA_HERO_01_SLOT4_03,
-        AURA_HERO_01_SLOT4_04,
-        AURA_HERO_01_SLOT4_05,
+        Stat_Atk,
+        Stat_AtkSpeed,
+        Stat_CritRate,
+        Stat_CritDamage,
+        Stat_DamageBonus,
+        Stat_MeleeDamageBonus,
+        Stat_RangeDamageBonus,
+        Stat_BossDamageBonus,
+        Stat_FinalDamageAmp,
+        Stat_DefPen,
+        Stat_MaxHp,
+        Stat_HpRegen,
+        Stat_Def,
+        Stat_DamageReduction,
+        Stat_LifeOnHit,
+        Stat_EvasionRate,
+        Stat_BlockRate,
+        Stat_MoveSpeedBonus,
+        Stat_ExpBonus,
+        Stat_PickupRange,
+        Stat_GoldDropBonus,
+        Stat_DamageTakenAmp,
     }
 
-    public enum StatInfo {
+    public enum StatDetail {
         None,
-        ATK,
-        ATK_Base,
-        ATK_Add,
-        ATK_Ratio,
-        ATK_Amp,
-        Pen_Physical,
-        MATK,
-        MATK_Base,
-        MATK_Add,
-        MATK_Ratio,
-        MATK_Amp,
-        Pen_Magic,
-        CritRate,
-        CritRate_Base,
-        CritRate_Add,
-        CritDam,
-        CritDam_Base,
-        CritDam_Add,
-        SuperCritRate,
-        SuperCritRate_Base,
-        SuperCritRate_Add,
-        SuperCritDam,
-        SuperCritDam_Base,
-        SuperCritDam_Add,
-        MaxHP,
-        MaxHP_Base,
-        MaxHP_Add,
-        MaxHP_Ratio,
-        MaxHP_Amp,
-        DEF,
-        DEF_Base,
-        DEF_Add,
-        DEF_Ratio,
-        MDEF,
-        MDEF_Base,
-        MDEF_Add,
-        MDEF_Ratio,
-        HpRecovery,
-        HpRecovery_Base,
-        HpRecovery_Add,
-        HpRecovery_Ratio,
-        LifeSteal_Ratio,
-        SpellVamp_Ratio,
-        DamageReduction,
-        DamageReduction_Base,
-        DamageReduction_Add,
-        DamageTakenAmp,
-        DamageTakenAmp_Base,
-        DamageTakenAmp_Add,
-        AtkSpeed,
-        AtkSpeed_Base,
-        AtkSpeed_Add,
-        AtkSpeed_Ratio,
-        MoveSpeed,
-        MoveSpeed_Base,
-        MoveSpeed_Add,
-        MoveSpeed_Ratio,
-        BreakGage,
-        BreakGage_Base,
-        BreakGage_Add,
-        BreakGage_Ratio,
-        BreakGage_Amp,
-        BreakDamage,
-        BreakDamage_Base,
-        BreakDamage_Add,
-        BreakDamage_Ratio,
-        BreakDamage_Amp,
-        BreakRecovery,
-        BreakRecovery_Base,
-        BreakRecovery_Add,
-        BreakRecovery_Ratio,
-        BreakRecovery_Amp,
-        KnockBack,
-        KnockBack_Base,
-        KnockBack_Add,
-        KnockBack_Ratio,
-        KnockBackResist,
-        KnockBackResist_Base,
-        KnockBackResist_Add,
-        KnockBackResist_Ratio,
-        MaxStamina,
-        MaxStamina_Base,
-        MaxStamina_Add,
-        MaxStamina_Ratio,
-        MaxStamina_Amp,
-        StaminaRegen,
-        StaminaRegen_Base,
-        StaminaRegen_Add,
-        StaminaRegen_Ratio,
-        StaminaRegen_Amp,
-        StaminaSteal,
-        StaminaSteal_Base,
-        StaminaSteal_Add,
-        StaminaSteal_Ratio,
-        StaminaSteal_Amp,
-        Block,
-        Block_Base,
-        Block_Add,
-        DamBoss_Ratio,
-        DamNormal_Ratio,
-        GoldBonus_Ratio,
-        ExpBonus_Ratio,
-        ItemDrop_Ratio,
+        StatDetail_Atk_Base,
+        StatDetail_Atk_Add,
+        StatDetail_Atk_Ratio,
+        StatDetail_Atk_Amp,
+        StatDetail_AtkSpeed_Base,
+        StatDetail_AtkSpeed_Add,
+        StatDetail_CritRate_Base,
+        StatDetail_CritRate_Add,
+        StatDetail_CritDamage_Base,
+        StatDetail_CritDamage_Add,
+        StatDetail_DamageBonus_Base,
+        StatDetail_DamageBonus_Add,
+        StatDetail_MeleeDamageBonus_Base,
+        StatDetail_MeleeDamageBonus_Add,
+        StatDetail_RangeDamageBonus_Base,
+        StatDetail_RangeDamageBonus_Add,
+        StatDetail_BossDamageBonus_Base,
+        StatDetail_BossDamageBonus_Add,
+        StatDetail_FinalDamageAmp_Base,
+        StatDetail_FinalDamageAmp_Add,
+        StatDetail_DefPen_Base,
+        StatDetail_DefPen_Add,
+        StatDetail_MaxHp_Base,
+        StatDetail_MaxHp_Add,
+        StatDetail_MaxHp_Ratio,
+        StatDetail_MaxHp_Amp,
+        StatDetail_HpRegen_Base,
+        StatDetail_HpRegen_Add,
+        StatDetail_HpRegen_Ratio,
+        StatDetail_HpRegen_Amp,
+        StatDetail_Def_Base,
+        StatDetail_Def_Add,
+        StatDetail_Def_Ratio,
+        StatDetail_Def_Amp,
+        StatDetail_DamageReduction_Base,
+        StatDetail_DamageReduction_Add,
+        StatDetail_LifeOnHit_Base,
+        StatDetail_LifeOnHit_Add,
+        StatDetail_LifeOnHit_Ratio,
+        StatDetail_LifeOnHit_Amp,
+        StatDetail_EvasionRate_Base,
+        StatDetail_EvasionRate_Add,
+        StatDetail_BlockRate_Base,
+        StatDetail_BlockRate_Add,
+        StatDetail_MoveSpeedBonus_Base,
+        StatDetail_MoveSpeedBonus_Add,
+        StatDetail_ExpBonus_Base,
+        StatDetail_ExpBonus_Add,
+        StatDetail_PickupRange_Base,
+        StatDetail_PickupRange_Add,
+        StatDetail_GoldDropBonus_Base,
+        StatDetail_GoldDropBonus_Add,
+        StatDetail_DamageTakenAmp_Base,
+        StatDetail_DamageTakenAmp_Add,
     }
 
-    public enum UIWidgetPath {
+    public enum Summon {
         None,
-        IntroBG,
-        IntroHUD,
-        LegalNotice,
-        LoginBG,
-        LoginHUD,
-        LoginServerList,
-        LoginNotice,
-        MainHUD,
-        PlayerStats,
-        SkillSlot,
-        WorldMap,
-        Inventory,
-        ItemTooltip,
-        SkillTree,
-        SkillTooltip,
-        DamageText,
-        SystemNotice,
-        LoadingScreen,
-        FadeEffect,
-        DragVisual,
-        GameCursor,
-        DevConsole,
     }
 
     public enum TableType {
         None,
-        TableCardSkill,
-        TableCardSkillEnchant,
-        TableCharacter,
-        TableLevelExp,
-        TableUnlockCondition,
-        TableLevelupCost,
-        TableCharacterTrait,
+        TableBuff,
+        TableCharacterStat,
+        TableCharacterLevelExp,
         TableConsumable,
-        TableCurrencyInfo,
+        TableCurrency,
         TableEquipment,
-        TableEnchant,
-        TableCraft,
+        TableEquipOption,
+        TableEquipEnhance,
+        TableEquipEnhanceTier,
+        TableEquipPromotion,
+        TableEquipQuality,
+        TableEquipPurity,
+        TableEquipGradeWeight,
         TableGachaInfo,
         TableGacha_Equipment,
+        TableItem,
+        TableMap,
+        TableAct,
+        TableMapStage,
         TableDungeon,
-        TableStageGroup,
-        TableStage,
-        TableDungeonReward,
-        TableMapData,
-        TableMonsterSpawn,
-        TableDropObject,
-        TableMaterial,
+        TableDungeonStage,
+        TableWeaponMastery,
+        TableSkillTreeNode,
+        TableSkillPoint,
+        TableMasteryLevelExp,
         TableMonster,
-        TableMonsterPhase,
-        TableRewardItem,
-        TableReward_Eqiupment,
-        TableReward_Material,
-        TableReward_CardSkill,
-        TableReward_Currency,
-        TableSkillInfo,
+        TableMonsterStat,
+        TableMonsterAI,
+        TableMonsterSpawn,
+        TableNpc,
+        TableNpcSpawn,
+        TableNpcDialog,
+        TableOption,
+        TableProjectile,
+        TableQuest,
+        TableReward,
+        TableRewardItemPool,
+        TableSkill,
         TableSkillEffect,
-        TableSkillSet,
-        TableBuffInfo,
-        TableAuraInfo,
-        TableSkinInfo,
-        TableStatInfo,
-        TableBaseStat,
-        TableLevelupStat,
-        TableUIWidgetPath,
+        TableSkillModifier,
+        TableSkillParamDef,
+        TableStat,
+        TableStatDetail,
+        TableSummon,
     }
 
 }

@@ -1,15 +1,24 @@
+using System.Collections.Generic;
 using EDT;
 using UnityEngine;
+using ProjectOne.Items;
+using ProjectOne.Shared;
 using ProjectOne.UserData;
 
 namespace ProjectOne.Unit
 {
-	// 캐릭터별 장착(OwnedCharacter.preset)의 장비 스탯/스킬을 Hero 에 적용/제거하는 Aspect.
-	// - 스폰된 Hero 의 characterId(GetTableID) 로 해당 캐릭터의 장착을 찾아 적용
-	// - source 태그 "Equipment" 로 일괄 부착/해제
+	// 장착 장비의 옵션을 Hero 에 적용/제거하는 Aspect (아이템 설계 5.3 의 [4] 계층).
+	//
+	// 슬롯 8칸을 순회하며 각 인스턴스의 옵션을 계산하고, Option → StatDetail / Skill 로 풀어 적용한다.
+	// source 태그 "Equipment" 로 일괄 부착하므로 해제는 RemoveAllFromSource 한 번이면 끝난다.
+	//
+	// Modifier 타입 옵션은 스탯 식에 들어가지 않고 스킬 리졸브 파이프라인으로 전달된다 — STEP 7.
 	public sealed class EquipmentAspect : IHeroAspect
 	{
 		const string Source = "Equipment";
+
+		// 슬롯마다 새로 할당하지 않도록 재사용. Aspect 적용은 메인 스레드 단일 경로다.
+		private readonly List<EquipmentOptionCalculator.Resolved> _buffer = new List<EquipmentOptionCalculator.Resolved>(8);
 
 		public HeroAspectStage Stage => HeroAspectStage.Equipment;
 
@@ -17,20 +26,26 @@ namespace ProjectOne.Unit
 
 		public void ApplyTo(Hero hero)
 		{
-			if (hero == null)
+			if (hero == null || hero.Stats == null)
 			{
 				return;
 			}
 
-			OwnedCharacter oc = Account.Instance.Loadout.GetOwned(hero.GetTableID());
-			if (oc == null)
+			Loadout loadout = Account.Instance.Loadout;
+			for (int slot = 1; slot < LoadoutDto.SlotCount; slot++)
 			{
-				return;
-			}
+				EquipmentInstance instance = loadout.GetEquipped((EquipSlotTypes)slot);
+				if (instance == null)
+				{
+					continue;
+				}
 
-			applySlot(hero, oc.preset.weaponItemId);
-			applySlot(hero, oc.preset.armorItemId);
-			applySlot(hero, oc.preset.accessoryItemId);
+				EquipmentOptionCalculator.Collect(instance, _buffer);
+				for (int i = 0; i < _buffer.Count; i++)
+				{
+					apply(hero, _buffer[i]);
+				}
+			}
 		}
 
 		public void RemoveFrom(Hero hero)
@@ -51,82 +66,36 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		private void applySlot(Hero hero, int itemId)
+		// ── 내부 ──────────────────────────────────────────────────────
+
+		private void apply(Hero hero, EquipmentOptionCalculator.Resolved resolved)
 		{
-			if (itemId <= 0)
+			OptionCatalog.Entry entry;
+			if (OptionCatalog.TryGet(resolved.option, out entry) == false)
 			{
+				Debug.LogWarning($"[EquipmentAspect] 정의되지 않은 옵션: {resolved.option}");
 				return;
 			}
 
-			Table_Equipment.Row row = Table_Equipment.Get(itemId);
-			if (row == null)
+			switch (entry.type)
 			{
-				return;
+				case OptionTypes.Stat:
+					hero.Stats.AddModifier(entry.statDetail, resolved.value, Source);
+					break;
+
+				case OptionTypes.SkillGrant:
+					if (hero.SkillContainer != null)
+					{
+						hero.SkillContainer.Register(entry.skill, Source);
+					}
+
+					break;
+
+				case OptionTypes.SkillLevel:
+				case OptionTypes.Modifier:
+					// 스킬 레벨·변형은 리졸브 파이프라인이 소유한다 — STEP 7 에서 연결한다.
+					break;
 			}
-
-			applyStat(hero, row.StatOptionType_1, row.StatOptionValue_1);
-			applyStat(hero, row.StatOptionType_2, row.StatOptionValue_2);
-			applyStat(hero, row.StatOptionType_3, row.StatOptionValue_3);
-			applySkill(hero, row.SkillOption_1);
-			applySkill(hero, row.SkillOption_2);
-
-			applyEnchant(hero, row);
-		}
-
-		// 강화 수치(Inventory.GetEnhanceLevel) 반영 — StepStat × 강화레벨, UnlockLv 도달 시 UnlockSkill 부여
-		private void applyEnchant(Hero hero, Table_Equipment.Row equip)
-		{
-			if (equip.EnchantInfo <= 0)
-			{
-				return;
-			}
-
-			Table_Enchant.Row enchant = Table_Enchant.Get(equip.EnchantInfo);
-			if (enchant == null)
-			{
-				return;
-			}
-
-			int level = Account.Instance.Inventory.GetEnhanceLevel(equip.ID);
-			if (level <= 0)
-			{
-				return;
-			}
-
-			applyStat(hero, enchant.StepStatOptionType_1, enchant.StepStatOptionValue_1 * level);
-			applyStat(hero, enchant.StepStatOptionType_2, enchant.StepStatOptionValue_2 * level);
-
-			if (enchant.UnlockLv > 0 && level >= enchant.UnlockLv)
-			{
-				applySkill(hero, enchant.UnlockSkill);
-			}
-		}
-
-		private void applyStat(Hero hero, StatInfo type, float value)
-		{
-			if (type == StatInfo.None || value == 0f || hero.Stats == null)
-			{
-				return;
-			}
-
-			// AddModifier 는 _Add/_Ratio/_Amp 만 허용 — 부적합 타입은 예외 대신 경고 후 무시
-			if (hero.Stats.CanAddModifier(type) == false)
-			{
-				Debug.LogWarning($"[EquipmentAspect] 장비 옵션 스탯 타입이 모디파이어 불가: {type} (_Add/_Ratio/_Amp 만 허용)");
-				return;
-			}
-
-			hero.Stats.AddModifier(type, value, Source);
-		}
-
-		private void applySkill(Hero hero, SkillInfo skillOption)
-		{
-			if (skillOption == SkillInfo.None || hero.SkillContainer == null)
-			{
-				return;
-			}
-
-			hero.SkillContainer.Register(skillOption, Source);
 		}
 	}
 }

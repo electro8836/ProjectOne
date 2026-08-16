@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using EDT;
 using ProjectOne.Utils;
 
@@ -37,11 +37,11 @@ namespace ProjectOne.Dungeon
 		}
 
 		// 외부 API — 순서(Get → 위치 설정 → Initialize → OnActivate)를 내부에서 보장
-		public DropObject Spawn(Vector3 pos, int essenceAmount)
+		public DropObject Spawn(Vector3 pos)
 		{
 			DropObject drop = GetFromPool();
 			drop.transform.position = pos;
-			drop.Initialize(_type, this, essenceAmount);
+			drop.Initialize(_type, this);
 			drop.OnActivate();
 			return drop;
 		}

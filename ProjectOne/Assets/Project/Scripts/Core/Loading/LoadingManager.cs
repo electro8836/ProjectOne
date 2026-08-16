@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Resources;
@@ -32,24 +32,30 @@ namespace ProjectOne.Loading
 		}
 
 		// ── 흐름별 단계 구성 (진행률/텍스트 단일 기준) ──────────────────
-		private static readonly PhaseRange[] ToLobbyPhases =
+		private static readonly PhaseRange[] ToTownPhases =
 		{
 			new PhaseRange(LoadingPhase.Patch,      0.00f, 0.30f, "리소스 다운로드중..."),
 			new PhaseRange(LoadingPhase.ServerData, 0.30f, 0.70f, "유저 데이터 로드중..."),
-			new PhaseRange(LoadingPhase.SceneLoad,  0.70f, 0.90f, "로비 화면 준비중..."),
-			new PhaseRange(LoadingPhase.SceneReady, 0.90f, 1.00f, "로비에 진입중..."),
+			new PhaseRange(LoadingPhase.SceneLoad,  0.70f, 0.90f, "마을 화면 준비중..."),
+			new PhaseRange(LoadingPhase.SceneReady, 0.90f, 1.00f, "마을에 진입중..."),
 		};
 
-		private static readonly PhaseRange[] ToBattlePhases =
+		private static readonly PhaseRange[] ReturnTownPhases =
+		{
+			new PhaseRange(LoadingPhase.SceneLoad,  0.00f, 0.70f, "마을 화면 준비중..."),
+			new PhaseRange(LoadingPhase.SceneReady, 0.70f, 1.00f, "마을에 진입중..."),
+		};
+
+		private static readonly PhaseRange[] ToFieldPhases =
+		{
+			new PhaseRange(LoadingPhase.SceneLoad,  0.00f, 0.70f, "지역 데이터 준비중..."),
+			new PhaseRange(LoadingPhase.SceneReady, 0.70f, 1.00f, "지역에 진입중..."),
+		};
+
+		private static readonly PhaseRange[] ToDungeonPhases =
 		{
 			new PhaseRange(LoadingPhase.SceneLoad,  0.00f, 0.70f, "던전 데이터 준비중..."),
 			new PhaseRange(LoadingPhase.SceneReady, 0.70f, 1.00f, "던전에 진입중..."),
-		};
-
-		private static readonly PhaseRange[] ReturnToLobbyPhases =
-		{
-			new PhaseRange(LoadingPhase.SceneLoad,  0.00f, 0.70f, "로비 화면 준비중"),
-			new PhaseRange(LoadingPhase.SceneReady, 0.70f, 1.00f, "로비에 진입중..."),
 		};
 
 		[SerializeField] private string _loadingAddress = "LoadingUI";
@@ -149,12 +155,14 @@ namespace ProjectOne.Loading
 		{
 			switch (flow)
 			{
-				case LoadingFlow.ToBattle:
-					return ToBattlePhases;
-				case LoadingFlow.ReturnToLobby:
-					return ReturnToLobbyPhases;
+				case LoadingFlow.ReturnTown:
+					return ReturnTownPhases;
+				case LoadingFlow.ToField:
+					return ToFieldPhases;
+				case LoadingFlow.ToDungeon:
+					return ToDungeonPhases;
 				default:
-					return ToLobbyPhases;
+					return ToTownPhases;
 			}
 		}
 	}

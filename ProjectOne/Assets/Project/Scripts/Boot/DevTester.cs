@@ -4,23 +4,29 @@ using EDT;
 using ProjectOne.Utils;
 using ProjectOne.Currency;
 using ProjectOne.Event;
+using ProjectOne.Items;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
 
 namespace ProjectOne.Boot
 {
 	// 개발/테스트용 객체 (MonoSingleton, 부트씬 1개 배치).
-	// - 최초 실행(Awake)에 인스펙터 구성값으로 메모리 Repository 를 끼워 개발 데이터를 주입한다("사용안함" 체크 시 생략).
-	// - 게임 진행 중에는 Account 의 아이템/재료/재화/캐릭터 경험치를 주기적으로 인스펙터에 표시한다(읽기 전용 뷰).
-	// 모든 Awake 는 Start 보다 먼저 실행되므로 GameBootstrapper.Start(흐름 시작) 이전에 주입이 끝난다.
+	// - 데이터 로드 완료 후 인스펙터 구성값으로 Account 를 덮어써 개발 데이터를 주입한다("사용안함" 체크 시 생략).
+	// - 게임 진행 중에는 Account 의 아이템/재화/캐릭터 레벨을 주기적으로 인스펙터에 표시한다(읽기 전용 뷰).
+	// 모든 Awake 는 Start 보다 먼저 실행되므로 GameBootstrapper.Start(흐름 시작) 이전에 구독이 끝난다.
 	public class DevTester : MonoSingleton<DevTester>
 	{
-		// 장착 슬롯 1칸 설정 — 아이템 ID 와 강화 레벨
+		// 장착 슬롯 1칸 설정 — 장비 인스턴스 1개를 만들어 그 슬롯에 끼운다.
+		// slot 은 검증용이 아니라 표기용이다. 실제 착용 슬롯은 Equipment 테이블이 소유한다.
 		[System.Serializable]
 		public struct DevSlot
 		{
+			public EquipSlotTypes slot;
 			public int itemId;
-			public int enhanceLevel;
+			public ItemGradeType grade;
+			public int level;
+			public EquipPurity purity;
+			public int quality;
 		}
 
 		// ── 인스펙터 표시용 뷰 항목 (읽기 전용) ──────────────────────
@@ -30,45 +36,43 @@ namespace ProjectOne.Boot
 			public int itemId;
 			public string name;
 			public int count;
-			public int enhanceLevel;
+		}
+
+		[System.Serializable]
+		public struct EquipmentView
+		{
+			public long uid;
+			public string name;
+			public ItemGradeType grade;
+			public int level;
+			public EquipSlotTypes equippedSlot;
 		}
 
 		[System.Serializable]
 		public struct CurrencyView
 		{
-			public CurrencyInfo type;
+			public EDT.Currency type;
 			public int amount;
-		}
-
-		[System.Serializable]
-		public struct CharacterView
-		{
-			public int characterId;
-			public string name;
-			public int level;
-			public int exp;
 		}
 
 		[Header("사용안함 — 체크 시 서버/로컬 데이터 사용")]
 		[SerializeField] private bool _disabled;
 
 		[Header("캐릭터")]
-		[SerializeField] private int _characterId;
 		[SerializeField] private int _characterLevel = 1;
 
-		[Header("장착 슬롯")]
-		[SerializeField] private DevSlot _weapon;
-		[SerializeField] private DevSlot _armor;
-		[SerializeField] private DevSlot _accessory;
+		[Header("장착 슬롯 (슬롯 종류 + 아이템 ID)")]
+		[SerializeField] private List<DevSlot> _equipSlots = new List<DevSlot>();
 
 		[Header("런타임 조회 (읽기 전용)")]
 		[SerializeField] private float _viewRefreshInterval = 0.5f;
-		[SerializeField] private List<CharacterView> _viewCharacters = new List<CharacterView>();
+		[SerializeField] private int _viewCharacterLevel;
+		[SerializeField] private int _viewCharacterExp;
 		[SerializeField] private List<CurrencyView> _viewCurrencies = new List<CurrencyView>();
 		[SerializeField] private List<ItemView> _viewItems = new List<ItemView>();
-		[SerializeField] private List<ItemView> _viewMaterials = new List<ItemView>();
+		[SerializeField] private List<EquipmentView> _viewEquipments = new List<EquipmentView>();
 
-		private CurrencyInfo[] _currencyTypes;
+		private EDT.Currency[] _currencyTypes;
 		private float _viewTimer;
 		private System.Action<DataLoadedEvent> _onDataLoaded;
 
@@ -80,7 +84,7 @@ namespace ProjectOne.Boot
 				return;
 			}
 
-			_currencyTypes = (CurrencyInfo[])System.Enum.GetValues(typeof(CurrencyInfo));
+			_currencyTypes = (EDT.Currency[])System.Enum.GetValues(typeof(EDT.Currency));
 
 			// 서버 없이 실행할 때 개발 데이터를 넣는 용도. 데이터 로드 완료(DataLoadedEvent) 후
 			// Account 를 직접 오버라이드한다(인메모리, 비영속).
@@ -121,91 +125,96 @@ namespace ProjectOne.Boot
 				return;
 			}
 
-			if (_characterId <= 0)
-			{
-				Debug.LogWarning("[DevTester] _characterId 가 설정되지 않아 개발 데이터를 주입하지 않습니다. (서버/로컬 데이터로 진행)");
-				return;
-			}
-
 			Account.Instance.SetInventory(buildInventory());
-			Account.Instance.SetCharacter(buildCharacter());
+			Account.Instance.SetLoadout(buildLoadout());
 			Account.Instance.SetSkill(new SkillDto());
-			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Character:" + _characterId + ", Level:" + _characterLevel);
+			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel + ", 장착:" + _equipSlots.Count + "칸");
 		}
 
 		private InventoryDto buildInventory()
 		{
 			InventoryDto inventory = new InventoryDto();
-			addOwnedItem(inventory, _weapon);
-			addOwnedItem(inventory, _armor);
-			addOwnedItem(inventory, _accessory);
+			for (int i = 0; i < _equipSlots.Count; i++)
+			{
+				DevSlot src = _equipSlots[i];
+				if (src.itemId <= 0)
+				{
+					continue;
+				}
+
+				Table_Equipment.Row row = Table_Equipment.Get(src.itemId);
+				if (row == null)
+				{
+					Debug.LogWarning("[DevTester] Equipment 행이 없는 아이템 — 건너뜁니다: " + src.itemId);
+					continue;
+				}
+
+				EquipmentInstanceDto dto = new EquipmentInstanceDto();
+				dto.uid = devUid(i);
+				dto.itemId = src.itemId;
+				dto.grade = (int)(src.grade != ItemGradeType.None ? src.grade : ItemGradeType.Normal);
+				dto.level = src.level > 0 ? src.level : 1;
+				dto.purity = (int)(src.purity != EquipPurity.None ? src.purity : EquipPurity.Purity_3);
+				dto.quality = src.quality;
+				dto.equippedSlot = (int)row.EquipSlotType;
+				inventory.equipments.Add(dto);
+			}
+
+			inventory.nextEquipmentUid = devUid(_equipSlots.Count);
 			return inventory;
 		}
 
-		private static void addOwnedItem(InventoryDto inventory, DevSlot slot)
+		private LoadoutDto buildLoadout()
 		{
-			if (slot.itemId <= 0)
+			LoadoutDto dto = new LoadoutDto();
+			dto.level = _characterLevel > 0 ? _characterLevel : 1;
+			dto.exp = 0;
+			for (int i = 0; i < _equipSlots.Count; i++)
 			{
-				return;
+				DevSlot src = _equipSlots[i];
+				if (src.itemId <= 0)
+				{
+					continue;
+				}
+
+				// 착용 슬롯은 인스펙터 값이 아니라 테이블이 정한다 — 오타로 엉뚱한 칸에 끼는 것을 막는다.
+				Table_Equipment.Row row = Table_Equipment.Get(src.itemId);
+				if (row == null || row.EquipSlotType == EquipSlotTypes.None)
+				{
+					continue;
+				}
+
+				if ((int)row.EquipSlotType >= LoadoutDto.SlotCount)
+				{
+					continue;
+				}
+
+				dto.slots[(int)row.EquipSlotType] = devUid(i);
 			}
 
-			OwnedItemDto item = new OwnedItemDto();
-			item.itemId = slot.itemId;
-			item.count = 1;
-			item.enhanceLevel = slot.enhanceLevel;
-			inventory.items.Add(item);
+			return dto;
 		}
 
-		private CharacterDto buildCharacter()
+		// 개발 데이터 UID — 인스펙터 순서에 1:1 대응시켜 재현 가능하게 둔다.
+		private static long devUid(int index)
 		{
-			EquipPresetDto preset = new EquipPresetDto();
-			preset.weaponItemId = _weapon.itemId;
-			preset.armorItemId = _armor.itemId;
-			preset.accessoryItemId = _accessory.itemId;
-
-			OwnedCharacterDto oc = new OwnedCharacterDto();
-			oc.characterId = _characterId;
-			oc.grade = 1;
-			oc.level = _characterLevel;
-			oc.exp = 0;
-			oc.awakenLevel = 0;
-			oc.dupCount = 0;
-			oc.preset = preset;
-
-			CharacterDto character = new CharacterDto();
-			character.characters.Add(oc);
-			character.selectedCharacterId = _characterId;
-			return character;
+			return index + 1;
 		}
 
 		// ── 런타임 조회 뷰 갱신 ───────────────────────────────────────
 
 		private void rebuildViews()
 		{
-			rebuildCharacters();
+			rebuildCharacter();
 			rebuildCurrencies();
 			rebuildInventory();
 		}
 
-		private void rebuildCharacters()
+		private void rebuildCharacter()
 		{
-			_viewCharacters.Clear();
-			IReadOnlyList<OwnedCharacter> characters = Account.Instance.Loadout.GetAll();
-			for (int i = 0; i < characters.Count; i++)
-			{
-				OwnedCharacter oc = characters[i];
-				if (oc == null)
-				{
-					continue;
-				}
-
-				CharacterView view = new CharacterView();
-				view.characterId = oc.characterId;
-				view.name = characterName(oc.characterId);
-				view.level = oc.level;
-				view.exp = oc.exp;
-				_viewCharacters.Add(view);
-			}
+			Loadout loadout = Account.Instance.Loadout;
+			_viewCharacterLevel = loadout.Level;
+			_viewCharacterExp = loadout.Exp;
 		}
 
 		private void rebuildCurrencies()
@@ -218,8 +227,8 @@ namespace ProjectOne.Boot
 
 			for (int i = 0; i < _currencyTypes.Length; i++)
 			{
-				CurrencyInfo type = _currencyTypes[i];
-				if (type == CurrencyInfo.None)
+				EDT.Currency type = _currencyTypes[i];
+				if (type == EDT.Currency.None)
 				{
 					continue;
 				}
@@ -233,9 +242,10 @@ namespace ProjectOne.Boot
 
 		private void rebuildInventory()
 		{
+			Inventory inventory = Account.Instance.Inventory;
+
 			_viewItems.Clear();
-			_viewMaterials.Clear();
-			IReadOnlyList<OwnedItem> items = Account.Instance.Inventory.GetAll();
+			IReadOnlyList<OwnedItem> items = inventory.GetAllItems();
 			for (int i = 0; i < items.Count; i++)
 			{
 				OwnedItem owned = items[i];
@@ -244,33 +254,30 @@ namespace ProjectOne.Boot
 					continue;
 				}
 
-				Table_Material.Row material = Table_Material.Get(owned.itemId);
-				if (material != null)
-				{
-					_viewMaterials.Add(makeItemView(owned, material.Name));
-					continue;
-				}
+				Table_Item.Row row = Table_Item.Get(owned.itemId);
 
-				Table_Equipment.Row equip = Table_Equipment.Get(owned.itemId);
-				string name = (equip != null) ? equip.Name : string.Empty;
-				_viewItems.Add(makeItemView(owned, name));
+				ItemView view = new ItemView();
+				view.itemId = owned.itemId;
+				view.name = (row != null) ? row.Name : string.Empty;
+				view.count = owned.count;
+				_viewItems.Add(view);
 			}
-		}
 
-		private static ItemView makeItemView(OwnedItem owned, string name)
-		{
-			ItemView view = new ItemView();
-			view.itemId = owned.itemId;
-			view.name = name;
-			view.count = owned.count;
-			view.enhanceLevel = owned.enhanceLevel;
-			return view;
-		}
+			_viewEquipments.Clear();
+			IReadOnlyList<EquipmentInstance> equipments = inventory.GetAllEquipments();
+			for (int i = 0; i < equipments.Count; i++)
+			{
+				EquipmentInstance instance = equipments[i];
+				Table_Item.Row row = instance.Item;
 
-		private static string characterName(int characterId)
-		{
-			Table_Character.Row row = Table_Character.Get(characterId);
-			return (row != null) ? row.Name : string.Empty;
+				EquipmentView view = new EquipmentView();
+				view.uid = instance.uid;
+				view.name = (row != null) ? row.Name : string.Empty;
+				view.grade = instance.grade;
+				view.level = instance.level;
+				view.equippedSlot = instance.equippedSlot;
+				_viewEquipments.Add(view);
+			}
 		}
 	}
 }

@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using UnityEngine;
 using EDT;
 using ProjectOne.Network;
@@ -64,7 +64,7 @@ namespace ProjectOne.Boot
 				Account.Instance.Inventory.Add(data.itemIds[i]);
 			}
 
-			Account.Instance.Wallet.SetAmount((CurrencyInfo)data.currencyId, data.remainingAmount);
+			Account.Instance.Wallet.SetAmount((EDT.Currency)data.currencyId, data.remainingAmount);
 
 			StringBuilder sb = new StringBuilder();
 			sb.Append("[GachaTest] 성공 — 소모:").Append(data.spentAmount);

@@ -1,8 +1,7 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using EDT;
 using ProjectOne.Event;
 using ProjectOne.Resources;
 using ProjectOne.Unit;
@@ -10,20 +9,18 @@ using ProjectOne.Utils;
 
 namespace ProjectOne.Dungeon
 {
-	// 던전 드랍오브젝트 매니저(전투씬 수명). 스테이지 진입 시 해당 스테이지의
-	// DropObjectGroupID 로 드랍 후보 행을 모으고 타입별 풀을 사전 생성한다.
-	// 몬스터 사망(UnitDiedEvent) 시 죽은 몬스터의 MonsterType 과 일치하는 행을
-	// DropChance 확률로 굴려 MinCount~MaxCount 개를 사망 위치에 스폰한다.
-	// 단, MagicEssence(재화)는 1개만 스폰하고 MinCount~MaxCount 를 1회 획득량으로 쓴다.
+	// 던전 드랍오브젝트 매니저(전투씬 수명). 타입별 풀 생성/정리와 사망 위치 스폰을 담당한다.
+	//
+	// TODO(STEP 10) — 드랍 규칙 미구현.
+	// 구 Table_DropObject 가 사라지고 보상은 Reward / RewardItemPool 로 통합되었다.
+	// 스테이지별 드랍 후보 수집과 확률 판정은 보상 시스템 작업에서 다시 붙인다.
+	// 풀 생성·정리·산포 스폰 인프라는 그대로 재사용한다.
 	public sealed class DropManager : MonoSingleton<DropManager>
 	{
 		// 드랍 산포 반경 (사망 위치 주변)
 		private const float ScatterRadius = 0.5f;
 
 		[Header("풀 용량")]
-		// MagicEssence 는 대량 드랍되므로 큰 용량
-		[SerializeField] private int _essencePoolCapacity = 64;
-		// 그 외 드랍 타입 기본 용량
 		[SerializeField] private int _defaultPoolCapacity = 16;
 
 		protected override bool Persistent => false;
@@ -31,12 +28,6 @@ namespace ProjectOne.Dungeon
 		// 타입별 풀 / 풀 프리팹 주소(해제용)
 		private readonly Dictionary<DropObjectType, DropObjectPool> _pools = new Dictionary<DropObjectType, DropObjectPool>();
 		private readonly Dictionary<DropObjectType, string> _poolPaths = new Dictionary<DropObjectType, string>();
-
-		// 현재 스테이지 드랍 후보 행 (그룹 매칭)
-		private readonly List<Table_DropObject.Row> _currentGroupRows = new List<Table_DropObject.Row>();
-
-		// Table_DropObject.All() 순회용 재사용 버퍼 (Dictionary 직접 순회 회피)
-		private readonly List<Table_DropObject.Row> _allBuffer = new List<Table_DropObject.Row>();
 
 		protected override void Awake()
 		{
@@ -50,52 +41,18 @@ namespace ProjectOne.Dungeon
 			base.OnDestroy();
 		}
 
-		// 스테이지 진입 시 호출 — 이전 스테이지 풀을 정리하고 새 그룹의 후보 행 수집 + 타입별 풀 사전 생성.
-		public async UniTask PrepareStageAsync(int groupId, CancellationToken ct)
+		// 스테이지 진입 시 호출 — 이전 스테이지 풀을 정리한다.
+		// 드랍 후보 수집과 풀 사전 생성은 STEP 10 에서 Reward 기반으로 다시 붙인다.
+		public UniTask PrepareStageAsync(int groupId, CancellationToken ct)
 		{
 			clearPools();
-			_currentGroupRows.Clear();
-
-			if (groupId <= 0)
-			{
-				return;
-			}
-
-			// 그룹 매칭 행 수집
-			_allBuffer.Clear();
-			_allBuffer.AddRange(Table_DropObject.All().Values);
-			for (int i = 0; i < _allBuffer.Count; i++)
-			{
-				Table_DropObject.Row row = _allBuffer[i];
-				if (row.GroupID == groupId)
-				{
-					_currentGroupRows.Add(row);
-				}
-			}
-
-			// 등장 타입별 풀 사전 생성 (첫 사망 시 히치 제거)
-			for (int i = 0; i < _currentGroupRows.Count; i++)
-			{
-				Table_DropObject.Row row = _currentGroupRows[i];
-				if (row.DropObjectType == DropObjectType.None || string.IsNullOrEmpty(row.Path))
-				{
-					continue;
-				}
-
-				if (_pools.ContainsKey(row.DropObjectType) == true)
-				{
-					continue;
-				}
-
-				await createPoolAsync(row.DropObjectType, row.Path, ct);
-			}
+			return UniTask.CompletedTask;
 		}
 
-		// 던전 종료 시 호출 — 풀/후보 행 일괄 정리.
+		// 던전 종료 시 호출 — 풀 일괄 정리.
 		public void Clear()
 		{
 			clearPools();
-			_currentGroupRows.Clear();
 		}
 
 		private void onUnitDied(UnitDiedEvent evt)
@@ -105,47 +62,19 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			Table_Monster.Row monster = Table_Monster.Get(evt.TableID);
-			if (monster == null)
+			// TODO(STEP 10) — 드랍 판정 미구현. spawnDrop 으로 사망 위치에 스폰한다.
+		}
+
+		// 지정 타입 드랍을 사망 위치 주변에 스폰한다. 풀이 없으면 아무 일도 하지 않는다.
+		private void spawnDrop(DropObjectType type, Vector2 center)
+		{
+			DropObjectPool pool;
+			if (_pools.TryGetValue(type, out pool) == false || pool == null)
 			{
 				return;
 			}
 
-			MonsterTypes mt = monster.MonsterType;
-			for (int i = 0; i < _currentGroupRows.Count; i++)
-			{
-				Table_DropObject.Row row = _currentGroupRows[i];
-				if (row.MonsterType != mt)
-				{
-					continue;
-				}
-
-				if (Random.Range(0f, 100f) >= row.DropChance)
-				{
-					continue;
-				}
-
-				DropObjectPool pool;
-				if (_pools.TryGetValue(row.DropObjectType, out pool) == false || pool == null)
-				{
-					continue;
-				}
-
-				if (row.DropObjectType == DropObjectType.MagicEssence)
-				{
-					// 재화는 1개만 드랍하고, 개수 범위를 1회 획득량으로 사용
-					int amount = Random.Range(row.MinCount, row.MaxCount + 1);
-					pool.Spawn(randomAround(evt.Position), amount);
-				}
-				else
-				{
-					int count = Random.Range(row.MinCount, row.MaxCount + 1);
-					for (int n = 0; n < count; n++)
-					{
-						pool.Spawn(randomAround(evt.Position), 1);
-					}
-				}
-			}
+			pool.Spawn(randomAround(center));
 		}
 
 		private async UniTask createPoolAsync(DropObjectType type, string path, CancellationToken ct)
@@ -206,11 +135,6 @@ namespace ProjectOne.Dungeon
 
 		private int capacityFor(DropObjectType type)
 		{
-			if (type == DropObjectType.MagicEssence)
-			{
-				return _essencePoolCapacity;
-			}
-
 			return _defaultPoolCapacity;
 		}
 

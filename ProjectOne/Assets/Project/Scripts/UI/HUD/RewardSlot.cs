@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,27 +25,10 @@ namespace ProjectOne.UI
 		// 참조카운트 해제용 아이콘 주소 추적 (아틀라스 스프라이트는 null 로 두어 대상 제외)
 		private string _iconAddress;
 
-		public async UniTask BindAsync(int rewardItemId, int count, bool isBonus, CancellationToken ct)
-		{
-			if (_countText != null)
-			{
-				_countText.text = count.ToString();
-			}
-
-			if (_bonus != null)
-			{
-				_bonus.SetActive(isBonus);
-			}
-
-			Table_RewardItem.Row item = Table_RewardItem.Get(rewardItemId);
-			await setIconAsync(item != null ? item.Icon : string.Empty, ct);
-		}
-
-		// 아이템 모드 — 서버가 확정한 실제 아이템을 타입/등급 색상으로 표시한다(던전 결과창용).
+		// 아이템 모드 — 서버가 확정한 실제 획득을 등급 색상과 함께 표시한다(던전 결과창용).
 		// 색상 테이블은 호출자(DungeonResultUI)가 주입한다.
 		public async UniTask BindItemAsync(int rewardType, int itemId, int count, bool isBonus,
-			GradeColorTable equipmentColors, MaterialGradeColorTable materialColors, CardSkillGradeColorTable cardSkillColors,
-			CancellationToken ct)
+			GradeColorTable gradeColors, CancellationToken ct)
 		{
 			if (_countText != null)
 			{
@@ -58,45 +41,25 @@ namespace ProjectOne.UI
 			}
 
 			string iconAddress = string.Empty;
-			switch ((RewardTypes)rewardType)
+			switch ((RewardType)rewardType)
 			{
-			case RewardTypes.Equipment:
+			case RewardType.Item:
+			case RewardType.ItemPool:
 			{
-				Table_Equipment.Row row = Table_Equipment.Get(itemId);
+				// 장비·재료·소모품이 Item 테이블 하나로 통합되어 등급 축도 Item.Grade 하나뿐이다.
+				Table_Item.Row row = Table_Item.Get(itemId);
 				if (row != null)
 				{
-					applyGradeColors(equipmentColors != null ? equipmentColors.Get(row.Grade) : null);
+					applyGradeColors(gradeColors != null ? gradeColors.Get(row.Grade) : null);
 					iconAddress = row.Icon;
 				}
 
 				break;
 			}
-			case RewardTypes.Material:
-			{
-				Table_Material.Row row = Table_Material.Get(itemId);
-				if (row != null)
-				{
-					applyMaterialColors(materialColors != null ? materialColors.Get(row.MaterialGrade) : null);
-					iconAddress = row.Icon;
-				}
-
-				break;
-			}
-			case RewardTypes.Skill:
-			{
-				Table_CardSkill.Row row = Table_CardSkill.Get(itemId);
-				if (row != null)
-				{
-					applyCardSkillColors(cardSkillColors != null ? cardSkillColors.Get(row.CardGrade) : null);
-					iconAddress = row.Icon;
-				}
-
-				break;
-			}
-			case RewardTypes.Currency:
+			case RewardType.Currency:
 			{
 				// 재화는 등급이 없어 색상은 프리팹 기본값 그대로 두고 아이콘/수량만 표시한다.
-				Table_CurrencyInfo.Row row = Table_CurrencyInfo.Get((CurrencyInfo)itemId);
+				Table_Currency.Row row = Table_Currency.Get((EDT.Currency)itemId);
 				if (row != null)
 				{
 					iconAddress = row.Icon;
@@ -109,7 +72,7 @@ namespace ProjectOne.UI
 			await setIconAsync(iconAddress, ct);
 		}
 
-		// 장비 등급 색상 — Bg_Mask/Gradient/Glow 3개에 색을 적용한다(모두 활성).
+		// 등급 색상 — Bg_Mask/Gradient/Glow 3개에 색을 적용한다(모두 활성).
 		private void applyGradeColors(GradeColorTable.GradeColor gc)
 		{
 			if (gc == null)
@@ -120,39 +83,6 @@ namespace ProjectOne.UI
 			setColor(_bgMask, gc.bgMask, true);
 			setColor(_gradient, gc.gradient, true);
 			setColor(_glow, gc.glow, true);
-		}
-
-		// 재료 등급 색상 — 장비와 동일하게 3개에 적용한다.
-		private void applyMaterialColors(MaterialGradeColorTable.GradeColor gc)
-		{
-			if (gc == null)
-			{
-				return;
-			}
-
-			setColor(_bgMask, gc.bgMask, true);
-			setColor(_gradient, gc.gradient, true);
-			setColor(_glow, gc.glow, true);
-		}
-
-		// 카드스킬 등급 색상 — Bg_Mask 만 색을 적용하고 Gradient/Glow 는 비활성화한다.
-		private void applyCardSkillColors(CardSkillGradeColorTable.GradeColor gc)
-		{
-			if (gc == null)
-			{
-				return;
-			}
-
-			setColor(_bgMask, gc.bgMask, true);
-			if (_gradient != null)
-			{
-				_gradient.gameObject.SetActive(false);
-			}
-
-			if (_glow != null)
-			{
-				_glow.gameObject.SetActive(false);
-			}
 		}
 
 		private static void setColor(Image target, Color color, bool active)

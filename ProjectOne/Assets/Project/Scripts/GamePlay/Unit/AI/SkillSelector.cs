@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EDT;
 using ProjectOne.Skill;
@@ -19,23 +19,23 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			IReadOnlyList<SkillInfo> all = sc.GetAll();
+			IReadOnlyList<EDT.Skill> all = sc.GetAll();
 			for (int i = 0; i < all.Count; i++)
 			{
-				SkillInfo id = all[i];
-				Table_SkillInfo.Row row = Table_SkillInfo.Get(id);
+				EDT.Skill id = all[i];
+				Table_Skill.Row row = Table_Skill.Get(id);
 				if (row == null)
 				{
 					continue;
 				}
 
-				// 기본공격은 폴백용으로 보류, 패시브/온힛은 직접 시전 대상 아님
-				if (row.IsBasicAttack == true)
+				// 평타는 폴백용으로 보류, 조건 발동형·상시형은 직접 시전 대상 아님
+				if (row.SkillCategory == SkillCategoryTypes.Normal)
 				{
 					continue;
 				}
 
-				if (row.CastingType == SkillCastingTypes.Passive || row.CastingType == SkillCastingTypes.Aura || row.CastingType == SkillCastingTypes.OnHitCaster || row.CastingType == SkillCastingTypes.OnHitTarget)
+				if (SkillContainer.IsDirectCastable(row.CastingType) == false)
 				{
 					continue;
 				}
@@ -63,13 +63,13 @@ namespace ProjectOne.Unit.AI
 			}
 
 			// 폴백 — 기본 공격 (범위 내 적이 있을 때만)
-			SkillInfo basic = sc.GetBasicAttack();
-			if (basic == SkillInfo.None)
+			EDT.Skill basic = sc.GetBasicAttack();
+			if (basic == EDT.Skill.None)
 			{
 				return;
 			}
 
-			Table_SkillInfo.Row basicRow = Table_SkillInfo.Get(basic);
+			Table_Skill.Row basicRow = Table_Skill.Get(basic);
 			if (basicRow == null || sc.IsOnCooldown(basic) == true)
 			{
 				return;
@@ -83,9 +83,9 @@ namespace ProjectOne.Unit.AI
 
 		// 스킬의 실제 ScanType 범위(caster.Facing 기준) 안에 시전 가능한 적이 1명 이상 있는지 — SkillExecutor 와 동일 경로.
 		// 발사체 스킬이면 경로상 차단 벽이 없는(시야 확보된) 적이 1명이라도 있어야 한다(벽에 대고 헛스킬 방지).
-		private static bool HasEnemyInRange(UnitBase self, Table_SkillInfo.Row row)
+		private static bool HasEnemyInRange(UnitBase self, Table_Skill.Row row)
 		{
-			List<UnitBase> scanned = TargetResolver.ScanByType(row.ScanType, row.ScanParam1, row.ScanParam2, self);
+			List<UnitBase> scanned = TargetResolver.ScanByType(row.ScanType, row.ScanRange, row.ScanParam, self);
 			List<UnitBase> enemies = TargetResolver.FilterByApplyTarget(scanned, SkillApplyTarget.Enemy, self);
 			if (enemies.Count == 0)
 			{
@@ -111,19 +111,13 @@ namespace ProjectOne.Unit.AI
 			return false;
 		}
 
-		// 스킬의 효과 슬롯 중 하나라도 SpawnProjectile 이면 발사체 스킬 (MonsterApproachBehavior 의 정지/접근 판정에서도 사용)
-		internal static bool IsProjectileSkill(Table_SkillInfo.Row row)
+		// 효과 슬롯 중 하나라도 Projectile 이면 발사체 스킬 (MonsterApproachBehavior 의 정지/접근 판정에서도 사용)
+		internal static bool IsProjectileSkill(Table_Skill.Row row)
 		{
-			return IsSpawnProjectile(row.StartEffect)
-				|| IsSpawnProjectile(row.Effect_0)
-				|| IsSpawnProjectile(row.Effect_1)
-				|| IsSpawnProjectile(row.Effect_2)
-				|| IsSpawnProjectile(row.Effect_3)
-				|| IsSpawnProjectile(row.Effect_4)
-				|| IsSpawnProjectile(row.FinishEffect);
+			return IsProjectileEffect(row.EffectID_01) || IsProjectileEffect(row.EffectID_02);
 		}
 
-		private static bool IsSpawnProjectile(SkillEffect id)
+		private static bool IsProjectileEffect(SkillEffect id)
 		{
 			if (id == SkillEffect.None)
 			{
@@ -131,7 +125,7 @@ namespace ProjectOne.Unit.AI
 			}
 
 			Table_SkillEffect.Row row = Table_SkillEffect.Get(id);
-			return row != null && row.EffectType == SkillEffectTypes.SpawnProjectile;
+			return row != null && row.EffectType == SkillEffectTypes.Projectile;
 		}
 	}
 }

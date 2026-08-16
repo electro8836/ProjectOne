@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -14,7 +14,6 @@ namespace ProjectOne.Test
 		[System.Serializable]
 		public struct HeroEntry
 		{
-			public int characterId;          // Table_Character ID
 			public Vector3 position;
 			public Faction faction;          // None 이면 Player 기본
 			public bool autoControl;         // true 면 자동전투 AI, false 면 플레이어 직접조작
@@ -24,6 +23,7 @@ namespace ProjectOne.Test
 		public struct MonsterEntry
 		{
 			public int monsterId;            // Table_Monster ID
+			public int level;                // 스폰 레벨 (0 이하면 1)
 			public Vector3 position;
 			public Faction faction;          // None 이면 Enemy 기본
 		}
@@ -57,7 +57,7 @@ namespace ProjectOne.Test
 		// 맵 로드/플로우필드 초기화는 MapManager 가 전담 (TilemapGrid 직렬화 참조 사용)
 		async UniTask LoadMapAsync(CancellationToken ct)
 		{
-			bool ok = await MapManager.Instance.LoadMapAsync(MapAddress, ct);
+			bool ok = await MapManager.Instance.LoadMapByAddressAsync(MapAddress, ct);
 			if (ok == false)
 			{
 				Debug.LogError($"[MapTestSpawner] 맵 로드 실패: {MapAddress}");
@@ -75,7 +75,7 @@ namespace ProjectOne.Test
 					f = Faction.Player;
 				}
 
-				await UnitFactory.Instance.CreateHeroAsync(e.characterId, e.position, f, e.autoControl, ct);
+				await UnitFactory.Instance.CreateHeroAsync(e.position, f, e.autoControl, ct);
 			}
 
 			for (int i = 0; i < _monsters.Count; i++)
@@ -87,7 +87,7 @@ namespace ProjectOne.Test
 					f = Faction.Enemy;
 				}
 
-				await UnitFactory.Instance.CreateMonsterAsync(e.monsterId, e.position, f, ct);
+				await UnitFactory.Instance.CreateMonsterAsync(e.monsterId, e.level, e.position, f, ct);
 			}
 		}
 

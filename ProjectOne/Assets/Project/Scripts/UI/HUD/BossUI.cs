@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -58,7 +58,7 @@ namespace ProjectOne.UI
 		// 현재 보스 HP를 슬라이더(퍼센트)/텍스트(현재/최대)에 반영
 		private void refreshHp()
 		{
-			float max = _boss.Stats.GetStat(StatInfo.MaxHP);
+			float max = _boss.Stats.GetStat(Stat.Stat_MaxHp);
 			float hp = _boss.Vitals.Hp;
 			_hpSlider.value = (max > 0f) ? (hp / max) : 0f;
 			_hpText.text = Mathf.CeilToInt(hp) + "/" + Mathf.CeilToInt(max);
@@ -72,7 +72,7 @@ namespace ProjectOne.UI
 			}
 
 			Table_Monster.Row row = Table_Monster.Get(evt.TableID);
-			if (row == null || row.MonsterType != MonsterTypes.Boss)
+			if (row == null || row.MonsterType != MonsterType.Boss)
 			{
 				return;
 			}

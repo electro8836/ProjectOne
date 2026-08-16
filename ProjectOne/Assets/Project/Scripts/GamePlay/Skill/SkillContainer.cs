@@ -1,49 +1,57 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using EDT;
+using UnityEngine;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Skill
 {
-	// 지연 예약 항목의 디스패치 종류
-	public enum PendingKind
-	{
-		CastAttackMotion,  // 캐스팅: 공격모션 + VFX + SFX 전환 (캐스팅 종료 MotionEffectTime 초 전)
-		ApplyEffects       // 효과 적용 (캐스팅 종료 시점, 또는 비캐스팅 MotionEffectTime 대기 종료 후)
-	}
-
 	// 유닛이 보유한 스킬을 등록/해제/발동/조회 (POCO)
-	// - UnitBase.LateUpdate 에서 Tick(dt) 위임 호출
+	// - UnitBase.ManualTick 에서 Tick(dt) 위임 호출
+	//
+	// 지연 모델이 신규 설계에서 바뀌었다. 구조는 "스킬 1개 = 지연 1개"였으나
+	// 이제 효과마다 EffectTime 이 달라 예약 항목이 효과 단위다 (설계 4.2 · 5.1).
 	public sealed class SkillContainer
 	{
 		// 지연 발동 예약 — 코루틴 대신 Tick 에서 카운트다운 (동시 다수 스킬 부하/할당 회피)
 		struct PendingEffect
 		{
 			public float remaining;
-			public SkillInfo id;
-			public PendingKind kind;
+			public EDT.Skill skillId;
+			public SkillEffect effectId;
+			public List<UnitBase> targets;	// 예약 시점의 탐색 결과 스냅샷
 		}
 
 		// 캐스팅 중 이동/스킬 차단에 쓰는 차단 키
 		const string CastingKey = "Casting";
 
 		readonly UnitBase _owner;
-		readonly Dictionary<SkillInfo, SkillRuntime> _byId = new Dictionary<SkillInfo, SkillRuntime>();
+		readonly Dictionary<EDT.Skill, SkillRuntime> _byId = new Dictionary<EDT.Skill, SkillRuntime>();
 		readonly List<SkillRuntime> _ordered = new List<SkillRuntime>(8);
-		readonly List<SkillInfo> _idView = new List<SkillInfo>(8);
+		readonly List<EDT.Skill> _idView = new List<EDT.Skill>(8);
 		readonly List<PendingEffect> _pending = new List<PendingEffect>(8);
 
-		// OnHitTarget 발동 시 명중 적 목록의 안정 스냅샷 (TriggerOnHitSkills 내 프록 재진입 대비)
-		readonly List<UnitBase> _onHitTargets = new List<UnitBase>(8);
+		// 대상 스냅샷 재사용 풀 — 예약이 소비되면 반납한다(프레임당 할당 회피)
+		readonly Stack<List<UnitBase>> _targetListPool = new Stack<List<UnitBase>>(8);
 
-		// 캐스팅(시전) 진행 중 여부 — 시전 시작 시 true, 발동/취소 시 false
+		// Aura 스킬의 다음 틱까지 남은 시간 (Skill → remaining)
+		readonly Dictionary<EDT.Skill, float> _auraTimers = new Dictionary<EDT.Skill, float>();
+
+		// OnLowHP 검사 주기 카운터
+		float _lowHpCheckTimer;
+
+		// 콤보 카운터 — 캐릭터당 1개. Normal 스킬 시전 시 +1, 리셋 없음 (설계 2.2)
+		int _comboCount;
+		public int ComboCount => _comboCount;
+
+		// 캐스팅(시전) 진행 중 여부
 		bool _isCasting;
 		public bool IsCasting => _isCasting;
 
-		// 현재 캐스팅 중인 스킬 ID — 인디케이터가 자기 항목 종료를 정확히 판단하도록 노출 (미캐스팅 시 None)
-		SkillInfo _castingId = SkillInfo.None;
-		public SkillInfo CastingSkillId => _castingId;
+		// 현재 캐스팅 중인 스킬 ID — 인디케이터가 자기 항목 종료를 판단하도록 노출
+		EDT.Skill _castingId = EDT.Skill.None;
+		public EDT.Skill CastingSkillId => _castingId;
 
-		// 활성 코드 스킬(behavior) 슬롯 — 매 프레임 Tick 으로 진행, 종료/취소 시 비움 (없으면 null)
+		// 활성 코드 스킬(behavior) 슬롯 — 매 프레임 Tick 으로 진행, 종료/취소 시 비움
 		ISkillBehavior _activeBehavior;
 		public bool IsRunningBehavior => _activeBehavior != null;
 
@@ -57,16 +65,17 @@ namespace ProjectOne.Skill
 			get { return _owner; }
 		}
 
-		// 보유 스킬 등록 (source 미지정 = 영구)
-		public void Register(SkillInfo id)
+		// ── 등록 / 해제 ───────────────────────────────────────────────
+
+		public void Register(EDT.Skill id)
 		{
 			Register(id, string.Empty);
 		}
 
 		// source 태그 부착 등록 — RemoveAllFromSource 로 일괄 해제 가능
-		public void Register(SkillInfo id, string source)
+		public void Register(EDT.Skill id, string source)
 		{
-			if (id == SkillInfo.None || _byId.ContainsKey(id) == true)
+			if (id == EDT.Skill.None || _byId.ContainsKey(id) == true)
 			{
 				return;
 			}
@@ -75,14 +84,18 @@ namespace ProjectOne.Skill
 			_byId.Add(id, rt);
 			_ordered.Add(rt);
 
-			// Passive/Aura 는 등록 즉시 상시 적용 (모션/쿨타임 없음)
-			if (rt.CastingType == SkillCastingTypes.Passive || rt.CastingType == SkillCastingTypes.Aura)
+			// Passive 는 등록 즉시 1회 적용, Aura 는 주기 타이머를 건다 (설계 2.2)
+			if (rt.CastingType == SkillCastingTypes.Passive)
 			{
 				SkillExecutor.ApplyPassive(id, _owner);
 			}
+			else if (rt.CastingType == SkillCastingTypes.Aura)
+			{
+				_auraTimers[id] = 0f;	// 등록 즉시 첫 틱
+			}
 		}
 
-		public void Unregister(SkillInfo id)
+		public void Unregister(EDT.Skill id)
 		{
 			SkillRuntime rt;
 			if (_byId.TryGetValue(id, out rt) == false)
@@ -92,10 +105,10 @@ namespace ProjectOne.Skill
 
 			_byId.Remove(id);
 			_ordered.Remove(rt);
+			_auraTimers.Remove(id);
 		}
 
-		// 특정 source 로 등록된 스킬 전체 해제
-		readonly List<SkillInfo> _removeBuffer = new List<SkillInfo>(4);
+		readonly List<EDT.Skill> _removeBuffer = new List<EDT.Skill>(4);
 		public void RemoveAllFromSource(string source)
 		{
 			if (string.IsNullOrEmpty(source) == true)
@@ -120,8 +133,10 @@ namespace ProjectOne.Skill
 			_removeBuffer.Clear();
 		}
 
-		// 쿨타임/사망 체크 후 발동. 성공 시 true.
-		public bool TryCast(SkillInfo id)
+		// ── 시전 ──────────────────────────────────────────────────────
+
+		// 쿨타임/차단 체크 후 발동. 성공 시 true.
+		public bool TryCast(EDT.Skill id)
 		{
 			if (_owner == null || _owner.IsDead == true)
 			{
@@ -140,8 +155,7 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			// Passive(상시 적용) / Aura(등록 시 부착) / OnHit 계열(적중 시 확률 발동) 은 직접 시전 대상 아님
-			if (rt.CastingType == SkillCastingTypes.Passive || rt.CastingType == SkillCastingTypes.Aura || rt.CastingType == SkillCastingTypes.OnHitCaster || rt.CastingType == SkillCastingTypes.OnHitTarget)
+			if (IsDirectCastable(rt.CastingType) == false)
 			{
 				return false;
 			}
@@ -151,39 +165,36 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			// 스테미나 비용 게이트 — MaxStamina 를 가진 유닛(영웅)만 제약, 부족하면 쿨타임 소모 없이 실패
-			Table_SkillInfo.Row row = Table_SkillInfo.Get(id);
-			int staminaCost = (row != null) ? row.StaminaCost : 0;
-			if (staminaCost > 0 && _owner.Stats != null && _owner.Vitals != null)
+			float useSpeed = rt.GetUseSpeed(getAtkSpeed());
+			SkillExecutor.Execute(id, _owner, useSpeed);
+
+			// 평타 시전 횟수를 센다 — 적중 여부와 무관하다 (설계 2.2)
+			if (rt.IsNormal == true)
 			{
-				if (_owner.Stats.GetStat(StatInfo.MaxStamina) > 0f && _owner.Vitals.Stamina < staminaCost)
-				{
-					return false;
-				}
+				_comboCount++;
+				TriggerOnCombo();
 			}
 
-			SkillExecutor.Execute(id, _owner);
-
-			// 발동 성공 — 스테미나 차감 (MaxStamina 0 이면 Clamp 로 0 유지, 무해)
-			if (staminaCost > 0 && _owner.Vitals != null)
-			{
-				_owner.Vitals.ModifyStamina(-staminaCost);
-			}
-
-			if (rt.IsBasicAttack && _owner.Stats != null)
-			{
-				float atkSpeed = _owner.Stats.GetStat(StatInfo.AtkSpeed);
-				rt.StartCooldown(atkSpeed > 0f ? rt.Cooltime / atkSpeed : rt.Cooltime);
-			}
-			else
-			{
-				rt.StartCooldown();
-			}
+			rt.StartCooldown(useSpeed);
 			return true;
 		}
 
-		// 보유 스킬 ID 목록 — 내부 캐시 리스트 재구성 후 반환
-		public IReadOnlyList<SkillInfo> GetAll()
+		// 직접 눌러 시전할 수 있는 방식인가 — 조건 발동형과 상시형은 제외한다.
+		public static bool IsDirectCastable(SkillCastingTypes type)
+		{
+			switch (type)
+			{
+				case SkillCastingTypes.Instant:
+				case SkillCastingTypes.Casting:
+					return true;
+				default:
+					return false;
+			}
+		}
+
+		// ── 조회 ──────────────────────────────────────────────────────
+
+		public IReadOnlyList<EDT.Skill> GetAll()
 		{
 			_idView.Clear();
 			for (int i = 0; i < _ordered.Count; i++)
@@ -194,7 +205,7 @@ namespace ProjectOne.Skill
 			return _idView;
 		}
 
-		public bool IsOnCooldown(SkillInfo id)
+		public bool IsOnCooldown(EDT.Skill id)
 		{
 			SkillRuntime rt;
 			if (_byId.TryGetValue(id, out rt) == false)
@@ -205,7 +216,7 @@ namespace ProjectOne.Skill
 			return rt.IsOnCooldown;
 		}
 
-		public float GetRemainingCooldown(SkillInfo id)
+		public float GetRemainingCooldown(EDT.Skill id)
 		{
 			SkillRuntime rt;
 			if (_byId.TryGetValue(id, out rt) == false)
@@ -213,11 +224,18 @@ namespace ProjectOne.Skill
 				return 0f;
 			}
 
-			return rt.RemainingCooltime;
+			return rt.RemainingCooldown;
+		}
+
+		public SkillRuntime GetRuntime(EDT.Skill id)
+		{
+			SkillRuntime rt;
+			_byId.TryGetValue(id, out rt);
+			return rt;
 		}
 
 		// 고유(Special) 스킬 여부 — AI 자동전투 셀렉터에서 제외 판정용
-		public bool IsSpecial(SkillInfo id)
+		public bool IsSpecial(EDT.Skill id)
 		{
 			SkillRuntime rt;
 			if (_byId.TryGetValue(id, out rt) == false)
@@ -228,60 +246,52 @@ namespace ProjectOne.Skill
 			return rt.Source == "Special";
 		}
 
-		// 보유 스킬 중 기본 공격(IsBasicAttack) 스킬 — AI 탐지반경/폴백 공격용. 없으면 None.
-		public SkillInfo GetBasicAttack()
+		// 보유 스킬 중 평타 — 배열 순서가 아니라 SkillCategory 로 판정한다 (설계 3장·몬스터 3장)
+		public EDT.Skill GetBasicAttack()
 		{
 			for (int i = 0; i < _ordered.Count; i++)
 			{
-				Table_SkillInfo.Row row = Table_SkillInfo.Get(_ordered[i].Id);
-				if (row != null && row.IsBasicAttack == true)
+				if (_ordered[i].IsNormal == true)
 				{
 					return _ordered[i].Id;
 				}
 			}
 
-			return SkillInfo.None;
+			return EDT.Skill.None;
 		}
 
-		// 보유 스킬 중 자동 시전 대상(Passive/OnHit/Special 제외)이며 사거리가 있는(ScanParam1>0) 스킬의 최소 사거리.
-		// AI 정지 거리 기준 — 가장 짧은 사거리까지 접근해야 보유 스킬 전부가 사거리 안에 들어 시전 가능해진다. 없으면 -1.
+		// 자동 시전 대상 스킬들의 최소 사거리 — AI 정지 거리 기준. 없으면 -1.
 		public float GetMinSkillRange()
 		{
 			float min = -1f;
 			for (int i = 0; i < _ordered.Count; i++)
 			{
 				SkillRuntime rt = _ordered[i];
-				if (rt.CastingType == SkillCastingTypes.Passive
-					|| rt.CastingType == SkillCastingTypes.Aura
-					|| rt.CastingType == SkillCastingTypes.OnHitCaster
-					|| rt.CastingType == SkillCastingTypes.OnHitTarget)
+				if (IsDirectCastable(rt.CastingType) == false || rt.Source == "Special")
 				{
 					continue;
 				}
 
-				if (rt.Source == "Special")
+				Table_Skill.Row row = Table_Skill.Get(rt.Id);
+				if (row == null || row.ScanRange <= 0f)
 				{
 					continue;
 				}
 
-				Table_SkillInfo.Row row = Table_SkillInfo.Get(rt.Id);
-				if (row == null || row.ScanParam1 <= 0f)
+				if (min < 0f || row.ScanRange < min)
 				{
-					continue;
-				}
-
-				if (min < 0f || row.ScanParam1 < min)
-				{
-					min = row.ScanParam1;
+					min = row.ScanRange;
 				}
 			}
 
 			return min;
 		}
 
+		// ── 갱신 ──────────────────────────────────────────────────────
+
 		public void Tick(float dt)
 		{
-			// 활성 코드 스킬 진행 — 자체 종료 조건(거리 도달·막힘 등) 충족 시 OnEnd 후 슬롯 비움
+			// 활성 코드 스킬 진행 — 자체 종료 조건 충족 시 OnEnd 후 슬롯 비움
 			if (_activeBehavior != null && _activeBehavior.Tick(dt) == true)
 			{
 				EndBehavior();
@@ -292,34 +302,202 @@ namespace ProjectOne.Skill
 				_ordered[i].Tick(dt);
 			}
 
-			// 지연 예약 카운트다운 — 역순 순회 + 스왑 제거
-			for (int i = _pending.Count - 1; i >= 0; i--)
+			tickAuras(dt);
+			tickLowHp(dt);
+			tickPending(dt);
+		}
+
+		// Aura — Cooldown 을 무시하고 CastingParam(TickInterval) 마다 스킬 전체를 재실행한다 (설계 2.2)
+		readonly List<EDT.Skill> _auraBuffer = new List<EDT.Skill>(4);
+		void tickAuras(float dt)
+		{
+			if (_auraTimers.Count == 0 || _owner == null || _owner.IsDead == true)
 			{
-				PendingEffect p = _pending[i];
-				p.remaining -= dt;
-				if (p.remaining <= 0f)
+				return;
+			}
+
+			_auraBuffer.Clear();
+			Dictionary<EDT.Skill, float>.Enumerator e = _auraTimers.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				_auraBuffer.Add(e.Current.Key);
+			}
+
+			for (int i = 0; i < _auraBuffer.Count; i++)
+			{
+				EDT.Skill id = _auraBuffer[i];
+				SkillRuntime rt;
+				if (_byId.TryGetValue(id, out rt) == false)
 				{
-					int last = _pending.Count - 1;
-					_pending[i] = _pending[last];
-					_pending.RemoveAt(last);
-					dispatch(p.id, p.kind);
+					continue;
 				}
-				else
+
+				float remaining = _auraTimers[id] - dt;
+				if (remaining > 0f)
 				{
-					_pending[i] = p;
+					_auraTimers[id] = remaining;
+					continue;
+				}
+
+				// TickInterval 이 0이면 매 프레임 실행이 되어버린다. 데이터 오류로 보고 건너뛴다.
+				float interval = rt.CastingParam;
+				if (interval <= 0f)
+				{
+					Debug.LogError($"[SkillContainer] Aura 스킬의 TickInterval(CastingParam)이 0 이하 — EDT.Skill:{id}");
+					_auraTimers[id] = 1f;
+					continue;
+				}
+
+				_auraTimers[id] = interval;
+				SkillExecutor.Execute(id, _owner, 1f);
+			}
+		}
+
+		// OnLowHP — 체력 비율이 임계 이하일 때 발동. 검사 주기는 코드 상수다.
+		void tickLowHp(float dt)
+		{
+			_lowHpCheckTimer -= dt;
+			if (_lowHpCheckTimer > 0f)
+			{
+				return;
+			}
+
+			_lowHpCheckTimer = SkillConstants.LOWHP_CHECK_INTERVAL;
+
+			if (_owner == null || _owner.IsDead == true || _owner.Stats == null || _owner.Vitals == null)
+			{
+				return;
+			}
+
+			float maxHp = _owner.Stats.GetStat(Stat.Stat_MaxHp);
+			if (maxHp <= 0f)
+			{
+				return;
+			}
+
+			float ratio = _owner.Vitals.Hp / maxHp;
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				SkillRuntime rt = _ordered[i];
+				if (rt.CastingType != SkillCastingTypes.OnLowHP || rt.CanCast() == false)
+				{
+					continue;
+				}
+
+				if (ratio <= rt.CastingParam)
+				{
+					SkillExecutor.Execute(rt.Id, _owner, 1f);
+					rt.StartCooldown(1f);
 				}
 			}
 		}
 
-		// 넉백 등 경직 발생 시 호출 — 예약된 모든 지연 효과를 취소
+		void tickPending(float dt)
+		{
+			// 역순 순회 + 스왑 제거
+			for (int i = _pending.Count - 1; i >= 0; i--)
+			{
+				PendingEffect p = _pending[i];
+				p.remaining -= dt;
+				if (p.remaining > 0f)
+				{
+					_pending[i] = p;
+					continue;
+				}
+
+				int last = _pending.Count - 1;
+				_pending[i] = _pending[last];
+				_pending.RemoveAt(last);
+				dispatch(p);
+			}
+		}
+
+		// 넉백 등 경직 발생 시 호출 — 예약된 모든 지연 효과를 취소 (설계 4.6)
 		public void CancelPendingEffects()
 		{
+			for (int i = 0; i < _pending.Count; i++)
+			{
+				releaseTargetList(_pending[i].targets);
+			}
+
 			_pending.Clear();
 		}
 
-		// 코드 스킬(behavior) 시작 — SkillExecutor 가 리플렉션으로 생성한 behavior 를 슬롯에 얹고 구동 시작.
-		// 이동/스킬 차단은 behavior 가 스스로 BlockMove/BlockSkill 로 제어 (대시 등), 컨테이너는 슬롯·Tick·취소만 담당.
-		public void BeginBehavior(SkillInfo id, ISkillBehavior behavior)
+		// ── 지연 예약 ─────────────────────────────────────────────────
+
+		// SkillExecutor 가 효과 1개의 지연 발동을 예약한다. delay <= 0 이면 즉시 실행.
+		// targets 는 호출자의 버퍼일 수 있으므로 내부에서 복사해 스냅샷으로 보관한다.
+		public void ScheduleEffect(float delay, EDT.Skill skillId, SkillEffect effectId, List<UnitBase> targets)
+		{
+			PendingEffect p;
+			p.remaining = delay;
+			p.skillId = skillId;
+			p.effectId = effectId;
+			p.targets = rentTargetList(targets);
+
+			if (delay <= 0f)
+			{
+				dispatch(p);
+				return;
+			}
+
+			_pending.Add(p);
+		}
+
+		void dispatch(PendingEffect p)
+		{
+			SkillExecutor.RunEffect(p.skillId, p.effectId, _owner, p.targets);
+			releaseTargetList(p.targets);
+
+			// 캐스팅 스킬은 마지막 효과가 나간 뒤 차단을 푼다.
+			if (_isCasting == true && p.skillId == _castingId && hasPendingFor(_castingId) == false)
+			{
+				EndCasting();
+			}
+		}
+
+		bool hasPendingFor(EDT.Skill id)
+		{
+			for (int i = 0; i < _pending.Count; i++)
+			{
+				if (_pending[i].skillId == id)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		List<UnitBase> rentTargetList(List<UnitBase> source)
+		{
+			List<UnitBase> list = (_targetListPool.Count > 0) ? _targetListPool.Pop() : new List<UnitBase>(8);
+			list.Clear();
+			if (source != null)
+			{
+				for (int i = 0; i < source.Count; i++)
+				{
+					list.Add(source[i]);
+				}
+			}
+
+			return list;
+		}
+
+		void releaseTargetList(List<UnitBase> list)
+		{
+			if (list == null)
+			{
+				return;
+			}
+
+			list.Clear();
+			_targetListPool.Push(list);
+		}
+
+		// ── 코드 스킬 (behavior) ──────────────────────────────────────
+
+		public void BeginBehavior(EDT.Skill id, ISkillBehavior behavior)
 		{
 			if (behavior == null)
 			{
@@ -337,7 +515,6 @@ namespace ProjectOne.Skill
 			behavior.OnStart();
 		}
 
-		// 넉백/스턴 등으로 코드 스킬 취소 — OnEnd 로 차단/override 해제 후 슬롯 비움
 		public void CancelBehavior()
 		{
 			if (_activeBehavior == null)
@@ -360,16 +537,17 @@ namespace ProjectOne.Skill
 			behavior.OnEnd();
 		}
 
-		// 캐스팅 시작 — 시전 시간(castTime) 동안 이동/스킬을 차단.
-		// 종료 motionLead 초 전에 공격모션, 종료 시점에 효과 적용을 예약한다.
-		public void BeginCasting(float castTime, float motionLead, SkillInfo id)
+		// ── 캐스팅 ────────────────────────────────────────────────────
+
+		// 캐스팅 시작 — 시전 시간 동안 이동/스킬을 차단하고 조준을 고정한다.
+		// 신규 스키마는 모션이 AnimName 하나뿐이라 "캐스팅 종료 직전 공격모션 전환" 예약은 없다.
+		public void BeginCasting(float castTime, EDT.Skill id)
 		{
 			_isCasting = true;
 			_castingId = id;
 			_owner.BlockMove(CastingKey);
 			_owner.BlockSkill(CastingKey);
 
-			// 캐스팅 모션 진입 — 공격모션 전환(CastAttackMotion) 전까지 IsCasting(Bool) 유지
 			UnitAnimator animator = _owner.GetComponent<UnitAnimator>();
 			if (animator != null)
 			{
@@ -381,10 +559,6 @@ namespace ProjectOne.Skill
 			{
 				_owner.Mover.SetFacingLocked(true);
 			}
-
-			float lead = UnityEngine.Mathf.Clamp(motionLead, 0f, castTime);
-			Schedule(castTime - lead, id, PendingKind.CastAttackMotion);
-			Schedule(castTime, id, PendingKind.ApplyEffects);
 		}
 
 		// 넉백 등으로 캐스팅 취소 — 예약된 발동을 제거하고 차단 해제 (쿨타임은 그대로 소모)
@@ -399,7 +573,6 @@ namespace ProjectOne.Skill
 			CancelPendingEffects();
 		}
 
-		// 캐스팅 종료 — 이동/스킬 차단 해제
 		void EndCasting()
 		{
 			if (_isCasting == false)
@@ -408,101 +581,125 @@ namespace ProjectOne.Skill
 			}
 
 			_isCasting = false;
-			_castingId = SkillInfo.None;
+			_castingId = EDT.Skill.None;
 			_owner.UnblockMove(CastingKey);
 			_owner.UnblockSkill(CastingKey);
 
-			// 캐스팅 모션 해제 — 정상 종료/취소/사망 모두 이 경로를 거친다
 			UnitAnimator animator = _owner.GetComponent<UnitAnimator>();
 			if (animator != null)
 			{
 				animator.SetCasting(false);
 			}
 
-			// 조준 고정 해제
 			if (_owner.Mover != null)
 			{
 				_owner.Mover.SetFacingLocked(false);
 			}
 		}
 
-		// SkillExecutor 가 지연 발동을 예약 — delay <= 0 이면 즉시 디스패치
-		public void Schedule(float delay, SkillInfo id, PendingKind kind)
-		{
-			if (delay <= 0f)
-			{
-				dispatch(id, kind);
-				return;
-			}
+		// ── 조건 발동 (트리거) ────────────────────────────────────────
 
-			_pending.Add(new PendingEffect { remaining = delay, id = id, kind = kind });
+		// OnHitTrigger=TRUE 인 효과가 적중했을 때 호출 — OnHit 스킬을 확률 발동한다.
+		public void TriggerOnHit()
+		{
+			triggerByChance(SkillCastingTypes.OnHit);
 		}
 
-		void dispatch(SkillInfo id, PendingKind kind)
+		// 치명타 발생 시 (OnHitTrigger=TRUE 인 효과에서만)
+		public void TriggerOnCrit()
 		{
-			if (kind == PendingKind.CastAttackMotion)
-			{
-				// 캐스팅 종료 MotionEffectTime 초 전 — 캐스팅모션 종료 후 공격모션 재생 (효과는 ApplyEffects 시점)
-				UnitAnimator animator = _owner.GetComponent<UnitAnimator>();
-				if (animator != null)
-				{
-					animator.SetCasting(false);
-				}
-
-				SkillExecutor.RunCastAttackMotion(id, _owner);
-			}
-			else
-			{
-				// 효과 적용 — 캐스팅이면 시작 시점 facing 이 잠긴 상태로 스캔한 뒤 캐스팅 종료(차단/facing/인디케이터 해제)
-				SkillExecutor.RunApplyEffects(id, _owner);
-				EndCasting();
-			}
+			triggerByChance(SkillCastingTypes.OnCrit);
 		}
 
-		// IsOnHitTrigger 공격 적중 시 호출 — 보유한 OnHit 계열 스킬 발동 (쿨타임 없음, 확률로만).
-		// - OnHitCaster : 공격당 1회 확률 판정 → 캐스터 기준 발동
-		// - OnHitTarget : 명중한 적(hitEnemies)마다 개별 확률 판정 → 해당 적 위치에서 발동
-		public void TriggerOnHitSkills(List<UnitBase> hitEnemies)
+		// 피격 시 — OnHitTrigger 와 무관하게 동작한다 (설계 2.2)
+		public void TriggerOnDamaged()
+		{
+			triggerByChance(SkillCastingTypes.OnDamaged);
+		}
+
+		// 적 처치 시 — 수단 무관. 광역으로 3명을 처치하면 3회 호출된다.
+		public void TriggerOnKill()
+		{
+			triggerByChance(SkillCastingTypes.OnKill);
+		}
+
+		// n번째 평타마다 발동. 카운터는 캐릭터당 1개를 공유하고 각 스킬이 count % n 으로 판정한다.
+		void TriggerOnCombo()
 		{
 			if (_owner == null || _owner.IsDead == true)
 			{
 				return;
 			}
 
-			// 프록 Execute 가 호출자 버퍼(SkillExecutor._onHitEnemies)를 덮어쓸 수 있어 안정 스냅샷으로 복사
-			_onHitTargets.Clear();
-			for (int i = 0; i < hitEnemies.Count; i++)
+			for (int i = 0; i < _ordered.Count; i++)
 			{
-				_onHitTargets.Add(hitEnemies[i]);
+				SkillRuntime rt = _ordered[i];
+				if (rt.CastingType != SkillCastingTypes.OnCombo || rt.CanCast() == false)
+				{
+					continue;
+				}
+
+				int period = Mathf.RoundToInt(rt.CastingParam);
+				if (period <= 0)
+				{
+					continue;
+				}
+
+				if (_comboCount % period == 0)
+				{
+					SkillExecutor.Execute(rt.Id, _owner, 1f);
+					rt.StartCooldown(1f);
+				}
+			}
+		}
+
+		void triggerByChance(SkillCastingTypes type)
+		{
+			if (_owner == null || _owner.IsDead == true)
+			{
+				return;
 			}
 
 			for (int i = 0; i < _ordered.Count; i++)
 			{
 				SkillRuntime rt = _ordered[i];
-				if (rt.CastingType == SkillCastingTypes.OnHitCaster)
+				if (rt.CastingType != type || rt.CanCast() == false)
 				{
-					if (UnityEngine.Random.Range(0, 100) < rt.CastingParam)
-					{
-						SkillExecutor.Execute(rt.Id, _owner);
-					}
+					continue;
 				}
-				else if (rt.CastingType == SkillCastingTypes.OnHitTarget)
-				{
-					for (int j = 0; j < _onHitTargets.Count; j++)
-					{
-						UnitBase victim = _onHitTargets[j];
-						if (victim == null || victim.IsDead == true)
-						{
-							continue;
-						}
 
-						if (UnityEngine.Random.Range(0, 100) < rt.CastingParam)
-						{
-							SkillExecutor.ExecuteAtTarget(rt.Id, _owner, victim);
-						}
-					}
+				// 모든 확률은 0~1 배율이다 (설계 3.3)
+				if (Random.value >= rt.CastingParam)
+				{
+					continue;
 				}
+
+				SkillExecutor.Execute(rt.Id, _owner, 1f);
+				rt.StartCooldown(1f);
 			}
+		}
+
+		// CooldownReduce 효과가 호출 — 대상이 쿨다운 중이 아니면 무시된다.
+		public void ReduceCooldown(EDT.Skill id, float ratio, float flatValue)
+		{
+			SkillRuntime rt;
+			if (_byId.TryGetValue(id, out rt) == false)
+			{
+				return;
+			}
+
+			// 회복량 = (최대 쿨타임 × Ratio) + FlatValue (설계 5.10)
+			rt.ReduceCooldown(rt.Cooldown * ratio + flatValue);
+		}
+
+		float getAtkSpeed()
+		{
+			if (_owner == null || _owner.Stats == null)
+			{
+				return 1f;
+			}
+
+			return _owner.Stats.GetStat(Stat.Stat_AtkSpeed);
 		}
 	}
 }

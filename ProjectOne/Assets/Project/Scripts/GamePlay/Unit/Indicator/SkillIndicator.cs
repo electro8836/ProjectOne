@@ -1,13 +1,14 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Settings;
+using ProjectOne.Skill;
 
 namespace ProjectOne.Unit
 {
-	// 스킬 발동 시 해당 스킬의 범위 형태(원/타겟/부채꼴/직선/도넛)를
+	// 스킬 발동 시 해당 스킬의 범위 형태(원/타겟/부채꼴/직선)를
 	// 짧은 시간 동안만 표시했다가 사라지게 하는 인디케이터.
 	// 스킬마다 자식 메시 오브젝트를 미리 만들어 두고 재사용한다.
 	// 여러 스킬이 동시에 발동되면 각 항목이 독립적으로 동시 표시된다.
@@ -16,11 +17,11 @@ namespace ProjectOne.Unit
 		// 스킬별 인디케이터 1개를 표현하는 항목
 		private sealed class Item
 		{
-			public SkillInfo id;
+			public EDT.Skill id;
 			public Transform tr;
 			public Mesh mesh;         // 빌드한 범위 메시 — 트랜션트(피격자 위치 표시)가 재사용
 			public bool needsFacing;  // 부채꼴/직선은 facing 방향으로 회전
-			public float showTime;    // 표시 시작 예정 시각 (발동 + MotionEffectTime)
+			public float showTime;    // 표시 시작 예정 시각 (발동 + 첫 효과 지연)
 			public float hideTime;    // 숨김 예정 시각 (showTime + _displayDuration)
 			public bool active;       // 처리 중(표시 대기 또는 표시)
 			public bool visible;      // 메시가 실제 보이는 중
@@ -59,7 +60,7 @@ namespace ProjectOne.Unit
 		private Material _material;
 		private Material _fillMaterial;
 		private readonly List<Item> _items = new List<Item>(8);
-		private readonly Dictionary<SkillInfo, Item> _byId = new Dictionary<SkillInfo, Item>();
+		private readonly Dictionary<EDT.Skill, Item> _byId = new Dictionary<EDT.Skill, Item>();
 		private int _activeCount;
 		private readonly List<Transient> _transients = new List<Transient>(8);
 		private int _activeTransients;
@@ -132,7 +133,7 @@ namespace ProjectOne.Unit
 
 		// 캐릭터 스킬 구성/변경 시 외부에서 호출. 기존 항목을 모두 정리하고
 		// 표시 가능한 스킬(비패시브 + 범위형)만 자식 인디케이터를 미리 생성한다.
-		public void SetSkills(IReadOnlyList<SkillInfo> skillIds)
+		public void SetSkills(IReadOnlyList<EDT.Skill> skillIds)
 		{
 			Clear();
 			if (skillIds == null)
@@ -178,15 +179,70 @@ namespace ProjectOne.Unit
 			_activeTransients = 0;
 		}
 
-		// 단일 스킬에 대한 자식 인디케이터를 미리 생성한다 (비패시브 + 범위형만).
-		private void TryAddItem(SkillInfo id)
+		// 스킬의 첫 효과가 나가는 시점(초). 신규 스키마는 효과마다 EffectTime 이 달라
+		// 스킬 단위 지연이 없으므로, 인디케이터는 가장 이른 효과 시점을 기준으로 표시한다.
+		private float GetFirstEffectDelay(EDT.Skill id)
 		{
-			if (id == SkillInfo.None || _byId.ContainsKey(id) == true)
+			Table_Skill.Row row = Table_Skill.Get(id);
+			if (row == null)
+			{
+				return 0f;
+			}
+
+			float useSpeed = 1f;
+			if (_owner != null && _owner.SkillContainer != null)
+			{
+				SkillRuntime rt = _owner.SkillContainer.GetRuntime(id);
+				if (rt != null)
+				{
+					float actionTime = rt.GetActionTime(rt.IsNormal && _owner.Stats != null
+						? rt.GetUseSpeed(_owner.Stats.GetStat(Stat.Stat_AtkSpeed))
+						: useSpeed);
+					return actionTime * GetEarliestEffectTime(row);
+				}
+			}
+
+			return 0f;
+		}
+
+		private static float GetEarliestEffectTime(Table_Skill.Row row)
+		{
+			float earliest = -1f;
+			earliest = MinEffectTime(earliest, row.EffectID_01);
+			earliest = MinEffectTime(earliest, row.EffectID_02);
+			return earliest < 0f ? 0f : earliest;
+		}
+
+		private static float MinEffectTime(float current, SkillEffect id)
+		{
+			if (id == SkillEffect.None)
+			{
+				return current;
+			}
+
+			Table_SkillEffect.Row effect = Table_SkillEffect.Get(id);
+			if (effect == null)
+			{
+				return current;
+			}
+
+			if (current < 0f || effect.EffectTime < current)
+			{
+				return effect.EffectTime;
+			}
+
+			return current;
+		}
+
+		// 단일 스킬에 대한 자식 인디케이터를 미리 생성한다 (비패시브 + 범위형만).
+		private void TryAddItem(EDT.Skill id)
+		{
+			if (id == EDT.Skill.None || _byId.ContainsKey(id) == true)
 			{
 				return;
 			}
 
-			Table_SkillInfo.Row row = Table_SkillInfo.Get(id);
+			Table_Skill.Row row = Table_Skill.Get(id);
 			if (row == null || row.CastingType == SkillCastingTypes.Passive)
 			{
 				return;
@@ -198,8 +254,8 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			// 히어로(평타 전용)는 IsBasicAttack 스킬만 인디케이터 생성
-			if (_basicAttackOnly == true && row.IsBasicAttack == false)
+			// 히어로(평타 전용)는 평타만 인디케이터 생성
+			if (_basicAttackOnly == true && row.SkillCategory != SkillCategoryTypes.Normal)
 			{
 				return;
 			}
@@ -210,7 +266,7 @@ namespace ProjectOne.Unit
 				return;  // None 등 표시 대상 아님
 			}
 
-			Mesh mesh = builder.Build(row.ScanParam1, row.ScanParam2, _segments, _ringThickness);
+			Mesh mesh = builder.Build(row.ScanRange, row.ScanParam, _segments, _ringThickness);
 
 			bool isCasting = (row.CastingType == SkillCastingTypes.Casting);
 
@@ -218,7 +274,7 @@ namespace ProjectOne.Unit
 			item.id = id;
 			item.mesh = mesh;
 			item.tr = CreateMeshChild("Indicator_" + id.ToString(), mesh, _material, _sortingOrder);
-			item.needsFacing = (row.ScanType == SkillScanType.Sector || row.ScanType == SkillScanType.Line);
+			item.needsFacing = (row.ScanType == SkillScanTypes.Sector || row.ScanType == SkillScanTypes.Line);
 			item.showTime = 0f;
 			item.hideTime = 0f;
 			item.active = false;
@@ -290,9 +346,9 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			// 비캐스팅: 효과가 적용되는 시점(발동 + MotionEffectTime)에 맞춰 표시 예약 — 위치/회전은 표시 시점에 갱신
-			Table_SkillInfo.Row row = Table_SkillInfo.Get(evt.SkillId);
-			float delay = (row != null) ? Mathf.Max(0f, row.MotionEffectTime) : 0f;
+			// 비캐스팅: 효과가 적용되는 시점에 맞춰 표시 예약 — 위치/회전은 표시 시점에 갱신.
+			// 신규 스키마는 효과마다 EffectTime 이 달라 스킬 단위 지연이 없다. 첫 효과의 시점을 기준으로 잡는다.
+			float delay = GetFirstEffectDelay(evt.SkillId);
 			item.showTime = Time.time + delay;
 			item.hideTime = item.showTime + _displayDuration;
 			// 매 시전마다 표시 시점에 현재 방향으로 재정렬하도록 예약 (공속이 빨라 표시가 겹쳐도 갱신됨)
@@ -396,7 +452,7 @@ namespace ProjectOne.Unit
 					continue;
 				}
 
-				// 표시 시작/갱신(MotionEffectTime 경과) — 이 시점의 중심/방향으로 갱신 후 출력.
+				// 표시 시작/갱신(효과 지연 경과) — 이 시점의 중심/방향으로 갱신 후 출력.
 				// visible 여부와 무관하게 새 시전이 들어올 때마다(refreshPending) 다시 정렬한다.
 				if (now >= item.showTime && item.refreshPending == true)
 				{

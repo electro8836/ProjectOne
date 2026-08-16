@@ -1,72 +1,310 @@
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using EDT;
 using ProjectOne.Utils;
 using ProjectOne.Resources;
 
 namespace ProjectOne.Map
 {
-	// 맵 로드/수명/플로우필드 질의를 전담하는 Battle 수명 매니저.
+	// 맵 로드/수명/플로우필드 질의를 전담하는 전투 수명 매니저.
+	//
+	// 필드(4.Field)는 **액트 하나의 스테이지 그리드맵을 전부 동시에 로드**하므로 여러 개를 함께 보유한다.
+	// 던전(5.Dungeon)은 단계마다 하나만 쓴다 — 같은 구조로 1개만 로드하면 된다.
+	//
+	// 배치 좌표는 테이블이 아니라 코드가 정한다:
+	//   ( (스테이지Order - 1) × Spacing,  (액트Order - 1) × Spacing,  0 )
+	//
 	// 플로우필드 계산(좌표/통행/BFS)만 담당 — "누구를 향해 베이크할지"는 호출자(전투 규칙)가 정한다.
 	public class MapManager : MonoSingleton<MapManager>
 	{
-		// 전투 전용 — 전투씬 수명에만 존재(로비 등으로 따라가지 않음)
+		// 그리드맵끼리 절대 겹치지 않도록 띄우는 간격
+		public const float MapSpacing = 10000f;
+
+		// 전투 전용 — 전투씬 수명에만 존재(마을 등으로 따라가지 않음)
 		protected override bool Persistent => false;
 
-		private GameObject _mapInstance;
-		private TilemapGrid _current;
-
-		public bool HasMap => _current != null;
-		public TilemapGrid Current => _current;
-
-		// 맵 프리팹을 인스턴스화하고 플로우필드를 초기화한다. 성공 시 true.
-		public async UniTask<bool> LoadMapAsync(string mapPrefabAddress, CancellationToken ct = default)
+		private sealed class Entry
 		{
-			if (string.IsNullOrEmpty(mapPrefabAddress))
+			public GameObject instance;
+			public TilemapGrid grid;
+			public Vector3 origin;
+		}
+
+		// Map.ID → 로드된 그리드맵
+		private readonly Dictionary<int, Entry> _byMapId = new Dictionary<int, Entry>();
+
+		// 좌표 질의가 매번 딕셔너리를 순회하지 않도록 리스트로도 들고 있는다.
+		private readonly List<Entry> _ordered = new List<Entry>(8);
+
+		// 마지막으로 질의된 그리드 — 히어로는 대개 한 그리드 안에 머무르므로 캐시가 거의 항상 적중한다.
+		private Entry _lastHit;
+
+		public bool HasMap => _ordered.Count > 0;
+
+		// 현재 히어로가 있는(=마지막으로 질의된) 그리드. 없으면 첫 번째.
+		public TilemapGrid Current
+		{
+			get
 			{
-				Debug.LogError("[MapManager] 맵 주소가 비어 있음");
+				if (_lastHit != null)
+				{
+					return _lastHit.grid;
+				}
+
+				return _ordered.Count > 0 ? _ordered[0].grid : null;
+			}
+		}
+
+		// ── 로드 / 언로드 ─────────────────────────────────────────────
+
+		// 단일 맵 로드 — 던전이 쓴다. 기존 맵은 전부 언로드한다.
+		public async UniTask<bool> LoadMapAsync(int mapId, CancellationToken ct = default)
+		{
+			UnloadAll();
+			return await loadOneAsync(mapId, Vector3.zero, ct);
+		}
+
+		// 주소로 직접 로드 — 테이블을 거치지 않는 개발/테스트 경로.
+		public async UniTask<bool> LoadMapByAddressAsync(string address, CancellationToken ct = default)
+		{
+			UnloadAll();
+			return await instantiateAsync(address, Vector3.zero, 0, ct);
+		}
+
+		// 액트 단위 로드 — 그 액트에 속한 MapStage 전부를 좌표 규칙대로 배치한다.
+		public async UniTask<bool> LoadActAsync(int actId, CancellationToken ct = default)
+		{
+			UnloadAll();
+
+			Table_Act.Row act = Table_Act.Get(actId);
+			if (act == null)
+			{
+				Debug.LogError($"[MapManager] Table_Act.Get({actId}) == null");
 				return false;
 			}
 
-			UnloadMap();
-
-			GameObject mapGo = await AddressableHelper.InstantiateAsync(mapPrefabAddress, null, true, ct);
-
-			TilemapGrid tilemapGrid = mapGo.GetComponent<TilemapGrid>();
-			if (tilemapGrid == null)
+			List<Table_MapStage.Row> stages = new List<Table_MapStage.Row>();
+			Dictionary<int, Table_MapStage.Row> all = Table_MapStage.All();
+			Dictionary<int, Table_MapStage.Row>.Enumerator e = all.GetEnumerator();
+			while (e.MoveNext() == true)
 			{
-				Debug.LogError($"[MapManager] 맵 프리팹에 TilemapGrid 없음: {mapPrefabAddress}");
+				if (e.Current.Value.ActID == actId)
+				{
+					stages.Add(e.Current.Value);
+				}
+			}
+
+			if (stages.Count == 0)
+			{
+				Debug.LogError($"[MapManager] 액트 {actId} 에 속한 MapStage 가 없습니다.");
+				return false;
+			}
+
+			bool anyLoaded = false;
+			for (int i = 0; i < stages.Count; i++)
+			{
+				Table_MapStage.Row stage = stages[i];
+				Vector3 origin = GetStageOrigin(act.Order, stage.Order);
+
+				// MapStage 는 Map 과 ID 를 공유한다 (맵 설계 8장).
+				bool ok = await loadOneAsync(stage.ID, origin, ct);
+				anyLoaded |= ok;
+			}
+
+			return anyLoaded;
+		}
+
+		// 배치 좌표 규칙 — 액트는 Y축, 스테이지는 X축으로 나열한다.
+		public static Vector3 GetStageOrigin(int actOrder, int stageOrder)
+		{
+			float x = (stageOrder - 1) * MapSpacing;
+			float y = (actOrder - 1) * MapSpacing;
+			return new Vector3(x, y, 0f);
+		}
+
+		// Map.ID 로 그 맵이 배치된 원점을 돌려준다. 로드돼 있지 않으면 테이블에서 계산한다.
+		public Vector3 GetOriginOfMap(int mapId)
+		{
+			Entry entry;
+			if (_byMapId.TryGetValue(mapId, out entry) == true)
+			{
+				return entry.origin;
+			}
+
+			Table_MapStage.Row stage = Table_MapStage.Get(mapId);
+			if (stage == null)
+			{
+				return Vector3.zero;
+			}
+
+			Table_Act.Row act = Table_Act.Get(stage.ActID);
+			return GetStageOrigin(act != null ? act.Order : 1, stage.Order);
+		}
+
+		private async UniTask<bool> loadOneAsync(int mapId, Vector3 origin, CancellationToken ct)
+		{
+			Table_Map.Row map = Table_Map.Get(mapId);
+			if (map == null)
+			{
+				Debug.LogError($"[MapManager] Table_Map.Get({mapId}) == null");
+				return false;
+			}
+
+			// 그리드맵 프리팹 Addressable 주소.
+			string address = map.MapPrefab;
+			if (string.IsNullOrEmpty(address) == true)
+			{
+				Debug.LogWarning($"[MapManager] Map {mapId} 의 프리팹 주소가 비어 있습니다 — 건너뜁니다.");
+				return false;
+			}
+
+			return await instantiateAsync(address, origin, mapId, ct);
+		}
+
+		private async UniTask<bool> instantiateAsync(string address, Vector3 origin, int mapId, CancellationToken ct)
+		{
+			GameObject mapGo = await AddressableHelper.InstantiateAsync(address, null, true, ct);
+			if (mapGo == null)
+			{
+				Debug.LogWarning($"[MapManager] 그리드맵 프리팹을 찾지 못했습니다: {address}");
+				return false;
+			}
+
+			TilemapGrid grid = mapGo.GetComponent<TilemapGrid>();
+			if (grid == null)
+			{
+				Debug.LogError($"[MapManager] 맵 프리팹에 TilemapGrid 없음: {address}");
 				AddressableHelper.ReleaseInstance(mapGo);
 				return false;
 			}
 
-			tilemapGrid.InitializeFlowField();
-			_mapInstance = mapGo;
-			_current = tilemapGrid;
+			// 배치 후에 플로우필드를 초기화해야 셀 좌표가 최종 위치 기준으로 계산된다.
+			mapGo.transform.position = origin;
+			grid.InitializeFlowField();
+
+			Entry entry = new Entry();
+			entry.instance = mapGo;
+			entry.grid = grid;
+			entry.origin = origin;
+
+			if (mapId > 0)
+			{
+				_byMapId[mapId] = entry;
+			}
+
+			_ordered.Add(entry);
 			return true;
 		}
 
-		public void UnloadMap()
+		public void UnloadAll()
 		{
-			if (_mapInstance != null)
+			for (int i = 0; i < _ordered.Count; i++)
 			{
-				AddressableHelper.ReleaseInstance(_mapInstance);
-				_mapInstance = null;
+				if (_ordered[i].instance != null)
+				{
+					AddressableHelper.ReleaseInstance(_ordered[i].instance);
+				}
 			}
 
-			_current = null;
+			_ordered.Clear();
+			_byMapId.Clear();
+			_lastHit = null;
+		}
+
+		// 하위 호환 — 던전 종료 시 호출된다.
+		public void UnloadMap()
+		{
+			UnloadAll();
+		}
+
+		// ── 좌표 질의 ─────────────────────────────────────────────────
+
+		// 좌표를 담당하는 그리드를 찾는다. 못 찾으면 마지막 적중분(또는 첫 번째)으로 폴백.
+		private TilemapGrid resolve(Vector2 worldPos)
+		{
+			if (_lastHit != null && _lastHit.grid != null && _lastHit.grid.ContainsWorldPos(worldPos) == true)
+			{
+				return _lastHit.grid;
+			}
+
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				Entry entry = _ordered[i];
+				if (entry.grid != null && entry.grid.ContainsWorldPos(worldPos) == true)
+				{
+					_lastHit = entry;
+					return entry.grid;
+				}
+			}
+
+			return Current;
+		}
+
+		// 주어진 월드 위치를 플로우필드 타겟으로 재베이크.
+		// 히어로가 있는 그리드에만 베이크한다 — 액트 전체를 한 필드로 다루면 빈 공간까지 계산하게 된다.
+		public void BakeFlowField(Vector2 targetWorldPos)
+		{
+			TilemapGrid grid = resolve(targetWorldPos);
+			if (grid != null)
+			{
+				grid.BakeFlowField(targetWorldPos);
+			}
+		}
+
+		public Vector2 GetFlowDirection(Vector2 worldPos)
+		{
+			TilemapGrid grid = resolve(worldPos);
+			return grid != null ? grid.GetFlowDirection(worldPos) : Vector2.zero;
+		}
+
+		// 반지름 radius 인 원을 장애물 밖으로 밀어낸 위치를 반환 (맵 없으면 그대로)
+		public Vector2 ResolveWallCollision(Vector2 pos, float radius)
+		{
+			TilemapGrid grid = resolve(pos);
+			return grid != null ? grid.ResolveWallCollision(pos, radius) : pos;
+		}
+
+		public Vector3Int WorldToCell(Vector2 worldPos)
+		{
+			TilemapGrid grid = resolve(worldPos);
+			return grid != null ? grid.WorldToCell(worldPos) : default;
+		}
+
+		// 해당 월드 위치가 발사체 차단 셀인지 (맵 없으면 차단 없음)
+		public bool IsProjectileBlocked(Vector2 worldPos)
+		{
+			TilemapGrid grid = resolve(worldPos);
+			return grid != null ? grid.IsProjectileBlocked(worldPos) : false;
+		}
+
+		// 두 월드점 사이 발사체 경로 시야 확보 여부 (맵 없으면 항상 확보)
+		//
+		// 서로 다른 그리드에 걸친 사격은 10000 간격 때문에 사실상 발생하지 않는다.
+		// 출발점 기준 그리드로 판정한다.
+		public bool HasLineOfSight(Vector2 from, Vector2 to)
+		{
+			TilemapGrid grid = resolve(from);
+			return grid != null ? grid.HasLineOfSight(from, to) : true;
 		}
 
 		// 맵 프리팹 하위에서 이름으로 스폰포인트 Transform 을 찾는다(재귀 탐색). 없으면 null.
-		// MonsterSpawn.SpawnPoint(게임오브젝트 이름)로 소환 위치를 해석할 때 사용한다.
-		public Transform GetSpawnPoint(string spawnPointName)
+		// 여러 그리드가 공존하므로 어느 맵에서 찾을지 함께 받는다.
+		public Transform GetSpawnPoint(int mapId, string spawnPointName)
 		{
-			if (_mapInstance == null || string.IsNullOrEmpty(spawnPointName))
+			Entry entry;
+			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.instance == null)
 			{
 				return null;
 			}
 
-			return findChildRecursive(_mapInstance.transform, spawnPointName);
+			if (string.IsNullOrEmpty(spawnPointName) == true)
+			{
+				return null;
+			}
+
+			return findChildRecursive(entry.instance.transform, spawnPointName);
 		}
 
 		private static Transform findChildRecursive(Transform parent, string name)
@@ -87,43 +325,6 @@ namespace ProjectOne.Map
 			}
 
 			return null;
-		}
-
-		// 주어진 월드 위치를 플로우필드 타겟으로 재베이크 (호출자가 베이크 시점을 결정)
-		public void BakeFlowField(Vector2 targetWorldPos)
-		{
-			if (_current != null)
-			{
-				_current.BakeFlowField(targetWorldPos);
-			}
-		}
-
-		public Vector2 GetFlowDirection(Vector2 worldPos)
-		{
-			return _current != null ? _current.GetFlowDirection(worldPos) : Vector2.zero;
-		}
-
-		// 반지름 radius 인 원을 장애물 밖으로 밀어낸 위치를 반환 (맵 없으면 그대로)
-		public Vector2 ResolveWallCollision(Vector2 pos, float radius)
-		{
-			return _current != null ? _current.ResolveWallCollision(pos, radius) : pos;
-		}
-
-		public Vector3Int WorldToCell(Vector2 worldPos)
-		{
-			return _current != null ? _current.WorldToCell(worldPos) : default;
-		}
-
-		// 해당 월드 위치가 발사체 차단 셀인지 (맵 없으면 차단 없음)
-		public bool IsProjectileBlocked(Vector2 worldPos)
-		{
-			return _current != null ? _current.IsProjectileBlocked(worldPos) : false;
-		}
-
-		// 두 월드점 사이 발사체 경로 시야 확보 여부 (맵 없으면 항상 확보)
-		public bool HasLineOfSight(Vector2 from, Vector2 to)
-		{
-			return _current != null ? _current.HasLineOfSight(from, to) : true;
 		}
 	}
 }

@@ -7,34 +7,30 @@ namespace EDT {
     public static class Table_Dungeon
     {
         public class Row {
-            public int ID { get; set; } = 0;
+            public Dungeon ID { get; set; } = Dungeon.None;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
-            public string RecommandedLvText { get; set; } = string.Empty;
-            public int TotalStageCount { get; set; } = 0;
-            public int StageGroupID_1 { get; set; } = 0;
-            public int StageGroupID_2 { get; set; } = 0;
-            public int StageGroupID_3 { get; set; } = 0;
-            public int StageGroupID_4 { get; set; } = 0;
-            public int StageGroupID_5 { get; set; } = 0;
-            public int ExtraStageGroupID { get; set; } = 0;
-            public int ClearExp { get; set; } = 0;
-            public int ExtraClearExp { get; set; } = 0;
+            public int DefaultEnterCount { get; set; } = 0;
+            public int MaxEnterCount { get; set; } = 0;
+            public Currency RevivalCostType { get; set; } = Currency.None;
+            public int RevivalCost { get; set; } = 0;
+            public int RevivalCostStep { get; set; } = 0;
+            public int MaxRevivalCount { get; set; } = 0;
         }
 
         public const string Filename = "edt_dungeon.bytes";
         public const TableType Type = TableType.TableDungeon;
-        static Dictionary<int, Row> _all = new Dictionary<int, Row>();
+        static Dictionary<Dungeon, Row> _all = new Dictionary<Dungeon, Row>();
 
-        public static Row Get( int id )
+        public static Row Get( Dungeon id )
         {
             Row row = null;
             _all.TryGetValue( id, out row );
             return row;
         }
 
-        public static Dictionary<int, Row> All()
+        public static Dictionary<Dungeon, Row> All()
         {
             return _all;
         }
@@ -43,20 +39,16 @@ namespace EDT {
         {
             try {
                 Row row = new Row();
-                row.ID = reader.ReadInt32();
+                row.ID = (Dungeon)reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
-                row.RecommandedLvText = reader.ReadString();
-                row.TotalStageCount = reader.ReadInt32();
-                row.StageGroupID_1 = reader.ReadInt32();
-                row.StageGroupID_2 = reader.ReadInt32();
-                row.StageGroupID_3 = reader.ReadInt32();
-                row.StageGroupID_4 = reader.ReadInt32();
-                row.StageGroupID_5 = reader.ReadInt32();
-                row.ExtraStageGroupID = reader.ReadInt32();
-                row.ClearExp = reader.ReadInt32();
-                row.ExtraClearExp = reader.ReadInt32();
+                row.DefaultEnterCount = reader.ReadInt32();
+                row.MaxEnterCount = reader.ReadInt32();
+                row.RevivalCostType = (Currency)reader.ReadInt32();
+                row.RevivalCost = reader.ReadInt32();
+                row.RevivalCostStep = reader.ReadInt32();
+                row.MaxRevivalCount = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

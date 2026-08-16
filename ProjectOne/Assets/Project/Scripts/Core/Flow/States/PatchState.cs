@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -22,7 +22,7 @@ namespace ProjectOne.Flow
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
 			// 로딩 화면 표시 — 여기부터 로비 진입까지 여러 State 를 가로질러 유지된다(ToLobby 흐름).
-			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToLobby, ct);
+			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToTown, ct);
 
 			PatchConfig config = AssetBundleLoader.Instance.Config;
 			if (config == null || config.DownloadLabels.Count == 0)

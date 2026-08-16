@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using EDT;
+using ProjectOne.Items;
 
 namespace ProjectOne.UI
 {
@@ -73,9 +74,9 @@ namespace ProjectOne.UI
 		}
 
 		// UIManager 가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
-		public UniTask ShowAsync(int itemId, CancellationToken ct)
+		public UniTask ShowAsync(long uid, CancellationToken ct)
 		{
-			return _presenter.ShowAsync(itemId, ct);
+			return _presenter.ShowAsync(uid, ct);
 		}
 
 		// Presenter 가 첫 렌더(아이콘 로드)를 끝낸 뒤 호출 — 채워진 상태로 한 번에 표시.
@@ -93,20 +94,20 @@ namespace ProjectOne.UI
 
 		// ── Presenter 가 호출하는 표시 API ─────────────────────────────────
 
-		public void SetInfo(Table_Equipment.Row row)
+		// 등급은 Item 테이블이 아니라 장비 인스턴스가 소유하므로 따로 받는다.
+		public void SetInfo(Table_Item.Row row, ItemGradeType grade)
 		{
-			applyGradeColor(row.Grade);
+			applyGradeColor(grade);
 			_nameText.text = row.Name;
-			_gradeText.text = row.Grade.ToString();
+			_gradeText.text = grade.ToString();
 			_descText.text = row.Desc;
 		}
 
-		// ItemSlotRoot 에 인벤토리 슬롯을 생성해 등급/아이콘/레벨/개수를 표시하되,
-		// 미보유(Unlock)·장착(Focus) 표시는 숨긴다.
-		public async UniTask BindItemSlotAsync(Table_Equipment.Row row, bool owned, int count, int level, CancellationToken ct)
+		// ItemSlotRoot 에 인벤토리 슬롯을 생성해 등급/아이콘/레벨/순도를 표시하되, 장착(Focus) 표시는 숨긴다.
+		public async UniTask BindItemSlotAsync(Table_Item.Row row, EquipmentInstance instance, CancellationToken ct)
 		{
 			EquipmentSlot slot = Instantiate(_inventorySlotPrefab, _itemSlotRoot);
-			await slot.Bind(row, owned, count, level, false, _gradeColors, ct);
+			await slot.Bind(instance, false, _gradeColors, ct);
 			slot.HideStatusObjects();
 		}
 
@@ -149,7 +150,7 @@ namespace ProjectOne.UI
 
 		// ── 내부 ──────────────────────────────────────────────────────────
 
-		private void applyGradeColor(ItemGradeTypes grade)
+		private void applyGradeColor(ItemGradeType grade)
 		{
 			GradeColorTable.GradeColor gc = _gradeColors.Get(grade);
 			_topBg.color = gc.bgMask;	// 연한 색

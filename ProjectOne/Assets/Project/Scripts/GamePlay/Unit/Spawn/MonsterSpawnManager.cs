@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -108,7 +108,7 @@ namespace ProjectOne.Unit
 
 		// 1회성 소환 — 충원(sustain) 없이 한 마리만 즉시 스폰한다. 웨이브/레이드 모드용.
 		// 활성 수는 호출 즉시 증가하므로, 소환이 아직 끝나기 전에도 ActiveCount 에 반영된다.
-		public void SpawnOneShot(int monsterId, Vector3 pos)
+		public void SpawnOneShot(int monsterId, int level, Vector3 pos)
 		{
 			if (monsterId <= 0)
 			{
@@ -116,13 +116,13 @@ namespace ProjectOne.Unit
 			}
 
 			_oneShotAlive++;
-			spawnOneShot(monsterId, pos).Forget();
+			spawnOneShot(monsterId, level, pos).Forget();
 		}
 
-		private async UniTaskVoid spawnOneShot(int monsterId, Vector3 pos)
+		private async UniTaskVoid spawnOneShot(int monsterId, int level, Vector3 pos)
 		{
 			CancellationToken cancellationTokenOnDestroy = this.GetCancellationTokenOnDestroy();
-			Monster monster = await UnitFactory.Instance.CreateMonsterAsync(monsterId, pos, Faction.Enemy, cancellationTokenOnDestroy);
+			Monster monster = await UnitFactory.Instance.CreateMonsterAsync(monsterId, level, pos, Faction.Enemy, cancellationTokenOnDestroy);
 			if (monster == null)
 			{
 				_oneShotAlive--;
@@ -180,7 +180,7 @@ namespace ProjectOne.Unit
 			data.aliveCount++;
 			Vector3 pos = data.RandomPosition();
 			CancellationToken cancellationTokenOnDestroy = this.GetCancellationTokenOnDestroy();
-			Monster monster = await UnitFactory.Instance.CreateMonsterAsync(data.monsterId, pos, Faction.Enemy, cancellationTokenOnDestroy);
+			Monster monster = await UnitFactory.Instance.CreateMonsterAsync(data.monsterId, 1, pos, Faction.Enemy, cancellationTokenOnDestroy);
 			if (monster == null)
 			{
 				data.aliveCount--;
