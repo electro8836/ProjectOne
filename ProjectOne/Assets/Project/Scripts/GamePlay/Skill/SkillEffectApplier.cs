@@ -46,7 +46,20 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			Table_SkillEffect.Row row = Table_SkillEffect.Get(effectId);
+			// 리졸브 사본에서 먼저 찾는다 — 모디파이어가 반영된 값을 써야 한다 (설계 11.1).
+			// 연쇄(ChainEffectIDs)로 딸려온 효과는 스킬의 효과 목록에 없으므로 테이블로 폴백한다.
+			Table_SkillEffect.Row row = null;
+			ResolvedSkill resolved = caster.Resolve(skillId);
+			if (resolved != null)
+			{
+				row = resolved.FindEffect(effectId);
+			}
+
+			if (row == null)
+			{
+				row = Table_SkillEffect.Get(effectId);
+			}
+
 			if (row == null)
 			{
 				Debug.LogError($"[SkillEffectApplier] SkillEffect 행 없음 — Effect:{effectId}");

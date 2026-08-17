@@ -178,6 +178,26 @@ namespace ProjectOne.Unit
 			Level = level > 0 ? level : 1;
 		}
 
+		// 몬스터 등급 — 데미지 계산 [4]의 보스 보너스 판정에 쓴다. 히어로는 None.
+		public virtual EDT.MonsterType MonsterType
+		{
+			get { return EDT.MonsterType.None; }
+		}
+
+		// 근접/원거리 성향 — 데미지 계산 [4]에서 어느 보너스를 쓸지 결정한다 (스킬 설계 10.4).
+		// 몬스터는 두 스탯을 쓰지 않으므로 None 이 기본이다. Hero 만 장착 무기의 마스터리 값을 돌려준다.
+		public virtual EDT.WeaponRangeType RangeType
+		{
+			get { return EDT.WeaponRangeType.None; }
+		}
+
+		// 스킬 리졸브 — 모디파이어 출처가 없는 유닛은 테이블 원본을 그대로 본다 (설계 11.2).
+		// 사본을 만들지 않으므로 스폰마다 할당이 생기지 않는다. Hero 만 SkillResolver 캐시를 경유한다.
+		public virtual ResolvedSkill Resolve(EDT.Skill id)
+		{
+			return ResolvedSkill.CreatePassthrough(id);
+		}
+
 		public void SetFaction(Faction f)
 		{
 			_faction = f;
@@ -323,6 +343,12 @@ namespace ProjectOne.Unit
 			if (!IsDead)
 			{
 				EventManager.Instance.Publish(new DamageTakenEvent(this, info.Attacker, info.Damage, info.SkillID, info.IsCritical));
+
+				// 비선공 몬스터는 맞아야 반응한다 (몬스터 설계 2장 AggroType.Neutral).
+				if (_brain != null)
+				{
+					_brain.OnDamaged(info.Attacker);
+				}
 
 				if (_animator != null)
 				{

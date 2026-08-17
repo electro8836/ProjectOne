@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -25,6 +26,62 @@ namespace ProjectOne.Map
 		private Vector2 _cellOrigin;     // _boundsMin 셀의 중심 월드좌표
 
 		[SerializeField] bool DEV_ShowDrawGizmos = false;
+
+		// ── 스폰 마커 (설계 7장) ──────────────────────────────────────
+		//
+		// 이름 문자열 탐색 대신 컴포넌트로 수집한다. 프리팹 인스턴스화 직후 1회만 훑으면 되고,
+		// 유니티가 복제 시 이름에 "(1)" 을 붙여도 아무 영향이 없다.
+		private MonsterSpawnPoint[] _spawnPoints;
+		private DungeonSpawnSlot[] _slots;
+		private MapAnchor _anchor;
+
+		public IReadOnlyList<MonsterSpawnPoint> SpawnPoints
+		{
+			get
+			{
+				ensureMarkers();
+				return _spawnPoints;
+			}
+		}
+
+		// SlotIndex 오름차순. 던전 매니저가 이 순서로 채운다.
+		public IReadOnlyList<DungeonSpawnSlot> Slots
+		{
+			get
+			{
+				ensureMarkers();
+				return _slots;
+			}
+		}
+
+		// 히어로 시작/부활 지점. 마커가 없으면 null — 호출자가 그리드 중심으로 폴백한다.
+		public MapAnchor Anchor
+		{
+			get
+			{
+				ensureMarkers();
+				return _anchor;
+			}
+		}
+
+		private void ensureMarkers()
+		{
+			if (_spawnPoints != null)
+			{
+				return;
+			}
+
+			_spawnPoints = this.GetComponentsInChildren<MonsterSpawnPoint>(true);
+			_slots = this.GetComponentsInChildren<DungeonSpawnSlot>(true);
+			_anchor = this.GetComponentInChildren<MapAnchor>(true);
+
+			System.Array.Sort(_slots, compareSlotIndex);
+		}
+
+		private static int compareSlotIndex(DungeonSpawnSlot a, DungeonSpawnSlot b)
+		{
+			return a.SlotIndex.CompareTo(b.SlotIndex);
+		}
 
 		public void InitializeFlowField()
 		{

@@ -44,7 +44,7 @@ namespace ProjectOne.Dungeon
 				EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, false, 0f, false));
 
 				_spawnCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-				SpawnGroupRunner.SpawnGroup(groupId, levelOverride, _spawnCts.Token);
+				SpawnGroupRunner.SpawnGroup(groupId, levelOverride);
 
 				// 이 웨이브 몬스터 전멸까지 대기
 				await UniTask.WaitUntil(AreMonstersCleared, PlayerLoopTiming.Update, ct);

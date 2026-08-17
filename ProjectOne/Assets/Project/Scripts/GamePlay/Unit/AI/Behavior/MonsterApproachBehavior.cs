@@ -65,6 +65,12 @@ namespace ProjectOne.Unit.AI
 
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
+			// 스폰 자리에서 너무 벗어났으면 전투를 접고 복귀한다 (몬스터 설계 5장)
+			if (MonsterAiCommon.TickLeash(self, bb) == true)
+			{
+				return;
+			}
+
 			// 판단 주기 도래 시에만 타겟/정지·접근 상태/접근 방향을 재계산 (무거운 탐색을 분산)
 			_decisionAccum += dt;
 			bool decide = _decisionAccum >= _decisionInterval;
@@ -167,8 +173,8 @@ namespace ProjectOne.Unit.AI
 		// 주기적 의사결정 — 타겟 탐색, 정지/재접근 전환(히스테리시스+시야), 접근 방향 산출
 		private void Decide(UnitBase self, Blackboard bb)
 		{
-			UnitBase target = FindNearestEnemyHero(self);
-			bb.Target = target;
+			// DetectRange · AggroType 을 따른다 — 예전처럼 맵 끝까지 보지 않는다.
+			UnitBase target = MonsterAiCommon.AcquireTarget(self, bb);
 			if (target == null)
 			{
 				return;
@@ -227,36 +233,7 @@ namespace ProjectOne.Unit.AI
 			_cachedApproachDir = approach;
 		}
 
-		// 살아있는 적대 히어로 중 가장 가까운 대상
-		private static UnitBase FindNearestEnemyHero(UnitBase self)
-		{
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
-			UnitBase nearest = null;
-			float nearestSqr = float.MaxValue;
-			Vector2 selfPos = self.CachedPos;
-			for (int i = 0; i < heroes.Count; i++)
-			{
-				UnitBase h = heroes[i];
-				if (h == null || h.IsDead == true)
-				{
-					continue;
-				}
-
-				if (TargetResolver.IsEnemy(self.Faction, h.Faction) == false)
-				{
-					continue;
-				}
-
-				float sqr = (h.CachedPos - selfPos).sqrMagnitude;
-				if (sqr < nearestSqr)
-				{
-					nearestSqr = sqr;
-					nearest = h;
-				}
-			}
-
-			return nearest;
-		}
+		// 타겟 탐색은 MonsterAiCommon.AcquireTarget 이 소유한다 — 3종 behavior 가 같은 규칙을 쓴다.
 
 		// 기본공격 스킬 행 — 없으면 null
 		private static Table_Skill.Row GetBasicAttackRow(UnitBase self)
@@ -273,7 +250,8 @@ namespace ProjectOne.Unit.AI
 				return null;
 			}
 
-			return Table_Skill.Get(basic);
+			ProjectOne.Skill.ResolvedSkill resolved = self.Resolve(basic);
+			return (resolved != null) ? resolved.Row : null;
 		}
 
 		// 정지 사거리 — 보유 스킬 중 최소 사거리. 그 거리까지 접근해야 보유 스킬 전부가 사거리 안에 들어 시전 가능해진다.

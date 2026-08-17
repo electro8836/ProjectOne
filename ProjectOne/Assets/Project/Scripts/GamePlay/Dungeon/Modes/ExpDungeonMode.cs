@@ -43,7 +43,7 @@ namespace ProjectOne.Dungeon
 				if (sinceSpawn >= RespawnInterval)
 				{
 					sinceSpawn = 0f;
-					SpawnGroupRunner.SpawnGroup(groupId, levelOverride, _spawnCts.Token);
+					SpawnGroupRunner.SpawnGroup(groupId, levelOverride);
 				}
 
 				await UniTask.Yield(PlayerLoopTiming.Update, ct);

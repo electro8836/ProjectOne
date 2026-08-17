@@ -93,7 +93,8 @@ namespace ProjectOne.Unit
 
 				case OptionTypes.SkillLevel:
 				case OptionTypes.Modifier:
-					// 스킬 레벨·변형은 리졸브 파이프라인이 소유한다 — STEP 7 에서 연결한다.
+					// 스킬 레벨·변형은 스탯 식에 들어가지 않는다. SkillResolver 가 장비를 직접 훑어
+					// 모디파이어를 수집하므로(설계 11.1 [4]) 여기서는 아무것도 하지 않는다.
 					break;
 			}
 		}

@@ -81,6 +81,14 @@ namespace ProjectOne.Skill
 			}
 
 			SkillRuntime rt = new SkillRuntime(id, source);
+
+			// 쿨타임·모션 길이도 모디파이어 대상이므로 리졸브 값으로 덮는다.
+			ResolvedSkill resolved = _owner.Resolve(id);
+			if (resolved != null && resolved.IsValid == true)
+			{
+				rt.ReadFrom(resolved.Row);
+			}
+
 			_byId.Add(id, rt);
 			_ordered.Add(rt);
 
@@ -106,6 +114,20 @@ namespace ProjectOne.Skill
 			_byId.Remove(id);
 			_ordered.Remove(rt);
 			_auraTimers.Remove(id);
+		}
+
+		// 리졸브가 무효화된 뒤 등록된 스킬의 사이클 값만 다시 읽는다.
+		// 런타임을 재생성하지 않는 이유 — 진행 중인 쿨타임이 날아가면 장비 교체가 쿨타임 리셋 수단이 된다.
+		public void RefreshFromResolve()
+		{
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				ResolvedSkill resolved = _owner.Resolve(_ordered[i].Id);
+				if (resolved != null && resolved.IsValid == true)
+				{
+					_ordered[i].ReadFrom(resolved.Row);
+				}
+			}
 		}
 
 		readonly List<EDT.Skill> _removeBuffer = new List<EDT.Skill>(4);
@@ -272,15 +294,16 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				Table_Skill.Row row = Table_Skill.Get(rt.Id);
-				if (row == null || row.ScanRange <= 0f)
+				// ScanRange 는 모디파이어 대상이므로 리졸브 결과를 봐야 한다("사거리 +20%" 옵션).
+				ResolvedSkill resolved = _owner.Resolve(rt.Id);
+				if (resolved == null || resolved.IsValid == false || resolved.Row.ScanRange <= 0f)
 				{
 					continue;
 				}
 
-				if (min < 0f || row.ScanRange < min)
+				if (min < 0f || resolved.Row.ScanRange < min)
 				{
-					min = row.ScanRange;
+					min = resolved.Row.ScanRange;
 				}
 			}
 

@@ -33,11 +33,18 @@ namespace ProjectOne.Skill
 		{
 			Id = id;
 			Source = source ?? string.Empty;
+			ReadFrom(Table_Skill.Get(id));
+		}
 
-			Table_Skill.Row row = Table_Skill.Get(id);
+		// 테이블 행 또는 리졸브 사본에서 사이클 계산에 필요한 값만 읽어 온다.
+		//
+		// 리졸브가 무효화돼도 런타임을 새로 만들지 않고 이 메서드로 값만 갱신한다 —
+		// 재생성하면 진행 중인 쿨타임이 초기화되어 무기 교체가 쿨타임 리셋 수단이 된다.
+		public void ReadFrom(Table_Skill.Row row)
+		{
 			if (row == null)
 			{
-				Debug.LogError($"[SkillRuntime] Table_Skill.Get({id}) == null");
+				Debug.LogError($"[SkillRuntime] Table_Skill 행 없음 — EDT.Skill:{Id}");
 				return;
 			}
 

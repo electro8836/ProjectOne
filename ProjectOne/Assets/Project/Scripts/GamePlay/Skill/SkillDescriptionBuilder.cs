@@ -10,14 +10,22 @@ namespace ProjectOne.Skill
 	// 연쇄는 "적중 시 추가로" 일어나는 것이므로 들여쓰기 대신 접속 문구로 잇는다.
 	public static class SkillDescriptionBuilder
 	{
+		// 테이블 원본 기준 설명 — 소유자가 없는 화면(도감 등)이 쓴다.
 		public static string Build(EDT.Skill skillId)
 		{
-			Table_Skill.Row row = Table_Skill.Get(skillId);
-			if (row == null)
+			return Build(ResolvedSkill.CreatePassthrough(skillId));
+		}
+
+		// 리졸브 결과 기준 설명 — 플레이어가 실제로 보는 수치와 일치한다.
+		// 트리·장비 옵션이 붙은 뒤의 사거리·쿨타임·계수를 그대로 읽는다.
+		public static string Build(ResolvedSkill resolved)
+		{
+			if (resolved == null || resolved.IsValid == false)
 			{
 				return string.Empty;
 			}
 
+			Table_Skill.Row row = resolved.Row;
 			StringBuilder sb = new StringBuilder(256);
 
 			string prefix = castingPrefix(row.CastingType);
@@ -32,8 +40,11 @@ namespace ProjectOne.Skill
 				sb.Append(range).Append(' ');
 			}
 
-			appendEffect(sb, row.EffectID_01, 0);
-			appendEffect(sb, row.EffectID_02, 0);
+			// Append 로 붙은 효과까지 포함하려면 테이블 슬롯이 아니라 리졸브 목록을 순회해야 한다.
+			for (int i = 0; i < resolved.Effects.Count; i++)
+			{
+				appendEffectRow(sb, resolved.Effects[i], 0);
+			}
 
 			if (row.Cooldown > 0f)
 			{
@@ -52,8 +63,13 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			Table_SkillEffect.Row row = Table_SkillEffect.Get(effectId);
-			if (row == null)
+			// 연쇄 효과는 리졸브 목록에 없으므로 테이블에서 읽는다.
+			appendEffectRow(sb, Table_SkillEffect.Get(effectId), depth);
+		}
+
+		static void appendEffectRow(StringBuilder sb, Table_SkillEffect.Row row, int depth)
+		{
+			if (row == null || depth > SkillConstants.CHAIN_DEPTH_LIMIT)
 			{
 				return;
 			}

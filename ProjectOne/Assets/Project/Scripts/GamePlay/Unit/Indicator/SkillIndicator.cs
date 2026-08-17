@@ -183,55 +183,44 @@ namespace ProjectOne.Unit
 		// 스킬 단위 지연이 없으므로, 인디케이터는 가장 이른 효과 시점을 기준으로 표시한다.
 		private float GetFirstEffectDelay(EDT.Skill id)
 		{
-			Table_Skill.Row row = Table_Skill.Get(id);
-			if (row == null)
+			if (_owner == null || _owner.SkillContainer == null)
 			{
 				return 0f;
 			}
 
-			float useSpeed = 1f;
-			if (_owner != null && _owner.SkillContainer != null)
+			ResolvedSkill resolved = _owner.Resolve(id);
+			if (resolved == null || resolved.IsValid == false)
 			{
-				SkillRuntime rt = _owner.SkillContainer.GetRuntime(id);
-				if (rt != null)
+				return 0f;
+			}
+
+			SkillRuntime rt = _owner.SkillContainer.GetRuntime(id);
+			if (rt == null)
+			{
+				return 0f;
+			}
+
+			float useSpeed = (rt.IsNormal && _owner.Stats != null)
+				? rt.GetUseSpeed(_owner.Stats.GetStat(Stat.Stat_AtkSpeed))
+				: 1f;
+
+			return rt.GetActionTime(useSpeed) * GetEarliestEffectTime(resolved);
+		}
+
+		// Append 로 붙은 효과도 포함해야 하므로 리졸브 결과의 효과 목록을 본다.
+		private static float GetEarliestEffectTime(ResolvedSkill resolved)
+		{
+			float earliest = -1f;
+			for (int i = 0; i < resolved.Effects.Count; i++)
+			{
+				float time = resolved.Effects[i].EffectTime;
+				if (earliest < 0f || time < earliest)
 				{
-					float actionTime = rt.GetActionTime(rt.IsNormal && _owner.Stats != null
-						? rt.GetUseSpeed(_owner.Stats.GetStat(Stat.Stat_AtkSpeed))
-						: useSpeed);
-					return actionTime * GetEarliestEffectTime(row);
+					earliest = time;
 				}
 			}
 
-			return 0f;
-		}
-
-		private static float GetEarliestEffectTime(Table_Skill.Row row)
-		{
-			float earliest = -1f;
-			earliest = MinEffectTime(earliest, row.EffectID_01);
-			earliest = MinEffectTime(earliest, row.EffectID_02);
 			return earliest < 0f ? 0f : earliest;
-		}
-
-		private static float MinEffectTime(float current, SkillEffect id)
-		{
-			if (id == SkillEffect.None)
-			{
-				return current;
-			}
-
-			Table_SkillEffect.Row effect = Table_SkillEffect.Get(id);
-			if (effect == null)
-			{
-				return current;
-			}
-
-			if (current < 0f || effect.EffectTime < current)
-			{
-				return effect.EffectTime;
-			}
-
-			return current;
 		}
 
 		// 단일 스킬에 대한 자식 인디케이터를 미리 생성한다 (비패시브 + 범위형만).
@@ -242,11 +231,14 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			Table_Skill.Row row = Table_Skill.Get(id);
-			if (row == null || row.CastingType == SkillCastingTypes.Passive)
+			// 범위 메시를 리졸브 값으로 그려야 "사거리 +20%" 옵션이 표시에도 반영된다.
+			ResolvedSkill resolved = (_owner != null) ? _owner.Resolve(id) : ResolvedSkill.CreatePassthrough(id);
+			if (resolved == null || resolved.IsValid == false || resolved.Row.CastingType == SkillCastingTypes.Passive)
 			{
 				return;
 			}
+
+			Table_Skill.Row row = resolved.Row;
 
 			// 몬스터(캐스팅 전용)는 Casting 스킬만 인디케이터 생성
 			if (_castingOnly == true && row.CastingType != SkillCastingTypes.Casting)

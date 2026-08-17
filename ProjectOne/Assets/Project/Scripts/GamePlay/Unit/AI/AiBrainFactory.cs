@@ -1,4 +1,4 @@
-﻿using EDT;
+using EDT;
 
 namespace ProjectOne.Unit.AI
 {
@@ -11,11 +11,34 @@ namespace ProjectOne.Unit.AI
 			return new AiBrain(hero, new HeroAutoBehavior());
 		}
 
-		// 몬스터: 히어로로 접근 이동 + 사거리 내 스킬 자동 시전.
-		// 일반/엘리트/보스 모두 현재는 접근형 — 보스 전용 BossBehavior 는 3단계까지 폴백.
-		public static AiBrain CreateForMonster(UnitBase monster, MonsterType type)
+		// 몬스터: MonsterAI.AIType 이 FSM/BT 선택까지 겸한다 (몬스터 설계 5장).
+		// row 가 null 이면(AIGroupID 미지정 등) 근접 접근형으로 폴백한다 — 경고는 MonsterCatalog 가 낸다.
+		public static AiBrain CreateForMonster(UnitBase monster, Table_MonsterAI.Row row)
 		{
-			return new AiBrain(monster, new MonsterApproachBehavior());
+			IAiBehavior behavior = createBehavior(row);
+			AiBrain brain = new AiBrain(monster, behavior);
+			brain.Blackboard.ApplyAI(row);
+			return brain;
+		}
+
+		private static IAiBehavior createBehavior(Table_MonsterAI.Row row)
+		{
+			MonsterAIType type = (row != null) ? row.AIType : MonsterAIType.None;
+
+			switch (type)
+			{
+				case MonsterAIType.Ranged:
+					return new MonsterRangedBehavior();
+
+				case MonsterAIType.Stationary:
+					return new MonsterStationaryBehavior();
+
+				case MonsterAIType.Boss:
+					return new BossBehavior();
+			}
+
+			// Melee 와 None(데이터 누락) 은 접근형
+			return new MonsterApproachBehavior();
 		}
 	}
 }

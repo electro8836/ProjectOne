@@ -5,6 +5,7 @@ using UnityEngine;
 using EDT;
 using ProjectOne.Loading;
 using ProjectOne.Map;
+using ProjectOne.Monsters;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Field
@@ -28,6 +29,9 @@ namespace ProjectOne.Field
 
 		private Hero _hero;
 
+		// 스폰 포인트 수집 + 개체 단위 리젠. 필드 전용이다(던전에는 리젠이 없다).
+		private FieldMonsterSpawner _spawner;
+
 		// 플로우필드 재베이크 임계값 — 기준 히어로가 다른 셀로 이동했을 때만 재계산
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
@@ -43,6 +47,11 @@ namespace ProjectOne.Field
 
 			GameObject go = new GameObject("FieldDirector");
 			_instance = go.AddComponent<FieldDirector>();
+			_instance._spawner = go.AddComponent<FieldMonsterSpawner>();
+
+			// 처치 경험치 지급기는 이벤트 구독형이라 킬이 나기 전에 살아 있어야 한다.
+			// MonoSingleton 이 접근 시점에 자동 생성하므로 여기서 한 번 건드린다.
+			MonsterKillReward.Instance.Touch();
 			return _instance;
 		}
 
@@ -147,6 +156,12 @@ namespace ProjectOne.Field
 			await MapManager.Instance.LoadActAsync(actId, ct);
 			_currentActId = actId;
 			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
+
+			// 맵이 떠야 스폰 포인트를 찾을 수 있다.
+			if (_spawner != null)
+			{
+				_spawner.BeginAct(actId);
+			}
 		}
 
 		private void moveHeroToStage(int stageId)

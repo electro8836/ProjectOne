@@ -23,11 +23,15 @@ namespace ProjectOne.Unit.AI
 			for (int i = 0; i < all.Count; i++)
 			{
 				EDT.Skill id = all[i];
-				Table_Skill.Row row = Table_Skill.Get(id);
-				if (row == null)
+
+				// 사거리·탐색 형태는 모디파이어 대상이므로 리졸브 결과로 판단해야 한다.
+				ResolvedSkill resolved = self.Resolve(id);
+				if (resolved == null || resolved.IsValid == false)
 				{
 					continue;
 				}
+
+				Table_Skill.Row row = resolved.Row;
 
 				// 평타는 폴백용으로 보류, 조건 발동형·상시형은 직접 시전 대상 아님
 				if (row.SkillCategory == SkillCategoryTypes.Normal)
@@ -69,13 +73,13 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			Table_Skill.Row basicRow = Table_Skill.Get(basic);
-			if (basicRow == null || sc.IsOnCooldown(basic) == true)
+			ResolvedSkill basicResolved = self.Resolve(basic);
+			if (basicResolved == null || basicResolved.IsValid == false || sc.IsOnCooldown(basic) == true)
 			{
 				return;
 			}
 
-			if (HasEnemyInRange(self, basicRow) == true)
+			if (HasEnemyInRange(self, basicResolved.Row) == true)
 			{
 				sc.TryCast(basic);
 			}

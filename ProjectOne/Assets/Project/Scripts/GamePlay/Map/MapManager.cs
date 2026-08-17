@@ -289,42 +289,79 @@ namespace ProjectOne.Map
 			return grid != null ? grid.HasLineOfSight(from, to) : true;
 		}
 
-		// 맵 프리팹 하위에서 이름으로 스폰포인트 Transform 을 찾는다(재귀 탐색). 없으면 null.
-		// 여러 그리드가 공존하므로 어느 맵에서 찾을지 함께 받는다.
-		public Transform GetSpawnPoint(int mapId, string spawnPointName)
+		// ── 스폰 마커 조회 (몬스터 설계 7장) ──────────────────────────
+		//
+		// 구 GetSpawnPoint(mapId, name) 은 이름 문자열 재귀 탐색이었다. 설계가 그 방식을
+		// 폐기했고(복제 시 유니티가 "(1)" 을 붙여 조용히 깨진다) 호출자도 없어 삭제했다.
+
+		private static readonly List<MonsterSpawnPoint> _emptySpawnPoints = new List<MonsterSpawnPoint>();
+		private static readonly List<DungeonSpawnSlot> _emptySlots = new List<DungeonSpawnSlot>();
+
+		// 필드 스폰 포인트. 맵이 없으면 빈 목록(널 아님).
+		public IReadOnlyList<MonsterSpawnPoint> GetSpawnPoints(int mapId)
 		{
 			Entry entry;
-			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.instance == null)
+			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.grid == null)
 			{
-				return null;
+				return _emptySpawnPoints;
 			}
 
-			if (string.IsNullOrEmpty(spawnPointName) == true)
-			{
-				return null;
-			}
-
-			return findChildRecursive(entry.instance.transform, spawnPointName);
+			return entry.grid.SpawnPoints;
 		}
 
-		private static Transform findChildRecursive(Transform parent, string name)
+		// 던전 슬롯 — SlotIndex 오름차순.
+		public IReadOnlyList<DungeonSpawnSlot> GetSlots(int mapId)
 		{
-			for (int i = 0; i < parent.childCount; i++)
+			Entry entry;
+			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.grid == null)
 			{
-				Transform child = parent.GetChild(i);
-				if (child.name == name)
-				{
-					return child;
-				}
-
-				Transform found = findChildRecursive(child, name);
-				if (found != null)
-				{
-					return found;
-				}
+				return _emptySlots;
 			}
 
-			return null;
+			return entry.grid.Slots;
+		}
+
+		// 현재 로드된 첫 맵의 던전 슬롯 — 던전은 맵이 하나뿐이라 ID 없이 접근할 수 있다.
+		public IReadOnlyList<DungeonSpawnSlot> GetSlotsOfCurrentMap()
+		{
+			if (_ordered.Count == 0 || _ordered[0].grid == null)
+			{
+				return _emptySlots;
+			}
+
+			return _ordered[0].grid.Slots;
+		}
+
+		// 히어로 시작/부활 지점. 마커가 없으면 그리드 중심으로 폴백한다.
+		public Vector3 GetAnchorPosition(int mapId)
+		{
+			Entry entry;
+			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.grid == null)
+			{
+				return Vector3.zero;
+			}
+
+			MapAnchor anchor = entry.grid.Anchor;
+			if (anchor != null)
+			{
+				return anchor.Position;
+			}
+
+			Vector2 center = entry.grid.WorldCenter;
+			return new Vector3(center.x, center.y, 0f);
+		}
+
+		// 스폰 위치를 통행 가능한 자리로 보정한다 — 벽 속 스폰을 막는다.
+		public Vector3 ResolveSpawnPosition(Vector3 desired, float unitRadius)
+		{
+			TilemapGrid grid = resolve(desired);
+			if (grid == null)
+			{
+				return desired;
+			}
+
+			Vector2 fixedPos = grid.ResolveWallCollision(new Vector2(desired.x, desired.y), unitRadius);
+			return new Vector3(fixedPos.x, fixedPos.y, desired.z);
 		}
 	}
 }

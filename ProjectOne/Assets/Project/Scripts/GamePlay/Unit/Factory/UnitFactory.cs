@@ -23,6 +23,7 @@ namespace ProjectOne.Unit
 
 		// 장비 장착 Aspect — 무상태이므로 단일 인스턴스 재사용 (Register 는 중복 방지됨)
 		private readonly EquipmentAspect _equipmentAspect = new EquipmentAspect();
+		private readonly MasteryAspect _masteryAspect = new MasteryAspect();
 
 		// 히어로 프리팹 Addressable 주소 — 캐릭터가 하나뿐이라 테이블이 아닌 부트에서 주입받는다.
 		private string _heroPrefabAddress = string.Empty;
@@ -65,10 +66,14 @@ namespace ProjectOne.Unit
 			}
 
 			HeroAspectRegistry.Instance.Register(_equipmentAspect);
+			HeroAspectRegistry.Instance.Register(_masteryAspect);
 			HeroAspectRegistry.Instance.ApplyAll(hero);
 
 			// 장비/레벨 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전
 			hero.Vitals.InitHp();
+
+			// 보유 스킬은 MasteryAspect 가 등록하므로 인디케이터 갱신은 ApplyAll 이후여야 한다.
+			RefreshSkillIndicator(hero);
 
 			hero.RefreshAnimationStats();
 			EventManager.Instance.Publish(new UnitSpawnedEvent(hero, UnitType.Hero, hero.GetID(), 0));
@@ -197,9 +202,8 @@ namespace ProjectOne.Unit
 			int level = Account.Instance.Loadout.Level;
 			ComposeBase(unit, 0, level, StatContainerFactory.ForCharacter(level), faction);
 
-			// TODO(STEP 7) — 보유 스킬 등록은 무기 마스터리가 소유한다.
-			// WeaponMastery.NormalAttackSkill(평타) + 스킬 트리의 SkillGrant 노드로 습득한 스킬.
-			RefreshSkillIndicator(unit);
+			// 보유 스킬(평타 + 트리 습득분)은 MasteryAspect 가 등록한다.
+			// Aspect 는 CreateHeroAsync 의 ApplyAll 에서 돌기 때문에 여기서는 아무것도 하지 않는다.
 
 			if (autoControl == true)
 			{
@@ -212,14 +216,27 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 히어로는 평타만, 몬스터는 캐스팅 스킬만 인디케이터를 띄운다.
+		// 유닛 타입으로 분기하지 않으면 몬스터에도 히어로 설정이 들어간다
+		// (MonsterSpawnManager 가 나중에 덮어써서 드러나지 않았을 뿐이다).
 		private static void RefreshSkillIndicator(UnitBase unit)
 		{
 			SkillIndicator skillIndicator = unit.GetComponent<SkillIndicator>();
-			if (skillIndicator != null)
+			if (skillIndicator == null)
+			{
+				return;
+			}
+
+			if (unit.GetUnitType() == UnitType.Hero)
 			{
 				skillIndicator.ConfigureForHero();
-				skillIndicator.SetSkills(unit.SkillContainer.GetAll());
 			}
+			else
+			{
+				skillIndicator.ConfigureForMonster(false);
+			}
+
+			skillIndicator.SetSkills(unit.SkillContainer.GetAll());
 		}
 
 		// 몬스터 보유 스킬 등록 — Monster.SkillIDs 배열 전체.

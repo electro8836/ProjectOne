@@ -68,6 +68,9 @@ namespace ProjectOne.Dungeon
 
 			GameObject go = new GameObject("DungeonDirector");
 			_instance = go.AddComponent<DungeonDirector>();
+
+			// 처치 경험치 지급기는 이벤트 구독형이라 킬이 나기 전에 살아 있어야 한다.
+			ProjectOne.Monsters.MonsterKillReward.Instance.Touch();
 			return _instance;
 		}
 
@@ -429,7 +432,8 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			Account.Instance.Loadout.SetExp(resp.exp);
+			// 캐릭터는 서버 권위값, 마스터리는 증가분만 적립된다 (마스터리 설계 5.2).
+			Account.Instance.SetExpAuthoritative(resp.exp);
 
 			if (resp.rewards == null)
 			{

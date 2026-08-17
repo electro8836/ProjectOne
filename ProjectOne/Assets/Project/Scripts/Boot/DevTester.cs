@@ -5,6 +5,7 @@ using ProjectOne.Utils;
 using ProjectOne.Currency;
 using ProjectOne.Event;
 using ProjectOne.Items;
+using ProjectOne.Mastery;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
 
@@ -27,6 +28,14 @@ namespace ProjectOne.Boot
 			public int level;
 			public EquipPurity purity;
 			public int quality;
+		}
+
+		// 마스터리 1종의 개발 진행도 — 레벨만 지정하면 누적 경험치를 역산해 넣는다.
+		[System.Serializable]
+		public struct DevMastery
+		{
+			public WeaponMastery mastery;
+			public int level;
 		}
 
 		// ── 인스펙터 표시용 뷰 항목 (읽기 전용) ──────────────────────
@@ -63,6 +72,9 @@ namespace ProjectOne.Boot
 
 		[Header("장착 슬롯 (슬롯 종류 + 아이템 ID)")]
 		[SerializeField] private List<DevSlot> _equipSlots = new List<DevSlot>();
+
+		[Header("마스터리 진행도 (무기 + 레벨)")]
+		[SerializeField] private List<DevMastery> _masteries = new List<DevMastery>();
 
 		[Header("런타임 조회 (읽기 전용)")]
 		[SerializeField] private float _viewRefreshInterval = 0.5f;
@@ -127,8 +139,30 @@ namespace ProjectOne.Boot
 
 			Account.Instance.SetInventory(buildInventory());
 			Account.Instance.SetLoadout(buildLoadout());
-			Account.Instance.SetSkill(new SkillDto());
+			Account.Instance.SetMastery(buildMastery());
 			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel + ", 장착:" + _equipSlots.Count + "칸");
+		}
+
+		// 마스터리 레벨은 누적 경험치에서 파생되므로, 원하는 레벨의 누적값을 역으로 넣는다.
+		private MasteryDto buildMastery()
+		{
+			MasteryDto dto = new MasteryDto();
+			for (int i = 0; i < _masteries.Count; i++)
+			{
+				DevMastery src = _masteries[i];
+				if (src.mastery == WeaponMastery.None || src.level <= 0)
+				{
+					continue;
+				}
+
+				MasteryProgressDto entry = new MasteryProgressDto();
+				entry.masteryId = (int)src.mastery;
+				entry.level = src.level;
+				entry.totalExp = MasteryCatalog.GetMasteryTotalExp(src.level);
+				dto.masteries.Add(entry);
+			}
+
+			return dto;
 		}
 
 		private InventoryDto buildInventory()

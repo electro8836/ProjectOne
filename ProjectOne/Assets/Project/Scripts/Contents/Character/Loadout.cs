@@ -15,8 +15,9 @@ namespace ProjectOne.UserData
 	// 영속은 서버(Backnd 함수)가 담당, 변경 시 알림만 발행.
 	public sealed class Loadout
 	{
-		// EquipmentAspect 와 동일한 source 태그
+		// EquipmentAspect / MasteryAspect 와 동일한 source 태그
 		private const string EquipmentSource = "Equipment";
+		private const string MasterySource = "Mastery";
 
 		// 인덱스 = EquipSlotTypes 정수값. 0번(None)은 사용하지 않는다. 0 = 미장착.
 		private readonly long[] _slots = new long[LoadoutDto.SlotCount];
@@ -167,6 +168,13 @@ namespace ProjectOne.UserData
 			}
 		}
 
+		// 마스터리(트리 투자·초기화)가 바뀌었을 때 활성 Hero 를 다시 굽는다.
+		// 히어로 참조를 들고 있는 곳이 여기뿐이라 진입점을 함께 둔다.
+		public void ReapplyMastery()
+		{
+			reapplyHero();
+		}
+
 		// 장착 중인 장비가 바뀌었으면(강화·승급 등) 활성 Hero 의 장비 Aspect 를 즉시 갱신한다.
 		public void ReapplyEquipped(long uid)
 		{
@@ -248,16 +256,30 @@ namespace ProjectOne.UserData
 			reapplyHero();
 		}
 
-		// 활성 Hero 의 장비 Aspect 즉시 갱신 (없으면 다음 스폰 시 ApplyAll 에서 반영)
+		// 활성 Hero 의 Aspect 즉시 갱신 (없으면 다음 스폰 시 ApplyAll 에서 반영).
+		//
+		// 무기를 바꾸면 마스터리가 통째로 교체되므로 장비 Aspect 만으로는 부족하다 —
+		// 평타·트리·근접성향이 전부 마스터리 소유다 (마스터리 설계 4.2).
+		// 리졸브 캐시도 함께 버린다 (스킬 설계 11.4 — 무기 교체는 가장 무거운 무효화 이벤트다).
 		private void reapplyHero()
 		{
 			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				Hero hero = heroes[i] as Hero;
-				if (hero != null)
+				if (hero == null)
 				{
-					HeroAspectRegistry.Instance.Reapply(hero, EquipmentSource);
+					continue;
+				}
+
+				hero.SkillResolver.Invalidate();
+				HeroAspectRegistry.Instance.Reapply(hero, EquipmentSource);
+				HeroAspectRegistry.Instance.Reapply(hero, MasterySource);
+
+				// Mastery 출처가 아닌 스킬(장비 SkillGrant 등)의 사이클 값도 다시 읽어야 한다.
+				if (hero.SkillContainer != null)
+				{
+					hero.SkillContainer.RefreshFromResolve();
 				}
 			}
 		}

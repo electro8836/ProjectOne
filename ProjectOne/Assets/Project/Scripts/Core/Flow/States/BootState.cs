@@ -8,6 +8,8 @@ using ProjectOne.Resources;
 using ProjectOne.Settings;
 using ProjectOne.Dungeon;
 using ProjectOne.Items;
+using ProjectOne.Mastery;
+using ProjectOne.Monsters;
 using ProjectOne.Skill;
 using ProjectOne.Unit.Stats;
 
@@ -39,6 +41,9 @@ namespace ProjectOne.Flow
 			SkillParamCatalog.Build();
 			OptionCatalog.Build();
 			EquipmentCatalog.Build();
+			MasteryCatalog.Build();
+			SkillModifierCatalog.Build();
+			MonsterCatalog.Build();
 			DungeonProgress.Build();
 
 			// 2) SFX 클립 일괄 프리로드 (Addressables 라벨 "SFX") — 첫 재생 끊김 방지

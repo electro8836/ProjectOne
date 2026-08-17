@@ -22,12 +22,17 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			Table_Skill.Row row = Table_Skill.Get(id);
-			if (row == null)
+			// 리졸브를 거친 사본을 쓴다 — 테이블 원본은 절대 읽고 쓰지 않는다 (설계 11.2).
+			ResolvedSkill resolved = caster.Resolve(id);
+			if (resolved == null || resolved.IsValid == false)
 			{
 				Debug.LogError($"[SkillExecutor] EDT.Skill 행 없음 — EDT.Skill:{id}");
 				return;
 			}
+
+			// Replace 모디파이어가 스킬 자체를 교체했을 수 있다. 이후 경로는 교체된 ID 를 쓴다.
+			id = resolved.Id;
+			Table_Skill.Row row = resolved.Row;
 
 			// 스킬 실행 시작 알림 — 모든 실행 경로의 단일 지점
 			EventManager.Instance.Publish(new SkillCastEvent(caster, id));
@@ -50,12 +55,12 @@ namespace ProjectOne.Skill
 				// 캐스팅 시간은 공속의 영향을 받지 않는다 (설계 4.7).
 				caster.SkillContainer.BeginCasting(row.CastingParam, id);
 				playSkillPresentation(row, caster, useSpeed);
-				scheduleEffects(row, id, caster, useSpeed, row.CastingParam);
+				scheduleEffects(resolved, caster, useSpeed, row.CastingParam);
 				return;
 			}
 
 			playSkillPresentation(row, caster, useSpeed);
-			scheduleEffects(row, id, caster, useSpeed, 0f);
+			scheduleEffects(resolved, caster, useSpeed, 0f);
 		}
 
 		// Passive — 모션/딜레이/쿨타임 없이 효과만 상시 적용
@@ -66,14 +71,14 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			Table_Skill.Row row = Table_Skill.Get(id);
-			if (row == null)
+			ResolvedSkill resolved = caster.Resolve(id);
+			if (resolved == null || resolved.IsValid == false)
 			{
 				Debug.LogError($"[SkillExecutor] EDT.Skill 행 없음 — EDT.Skill:{id}");
 				return;
 			}
 
-			scheduleEffects(row, id, caster, 1f, 0f);
+			scheduleEffects(resolved, caster, 1f, 0f);
 		}
 
 		// SkillContainer 예약 디스패치 진입점 — 효과 1개를 대상 스냅샷에 적용한다.
@@ -90,39 +95,29 @@ namespace ProjectOne.Skill
 		// ── 내부 ──────────────────────────────────────────────────────
 
 		// 탐색 1회 → 효과별 지연 예약. extraDelay 는 캐스팅 시간처럼 사이클 앞에 붙는 고정 지연이다.
-		static void scheduleEffects(Table_Skill.Row row, EDT.Skill id, UnitBase caster, float useSpeed, float extraDelay)
+		//
+		// 효과 목록은 리졸브 결과가 소유한다 — 테이블은 2슬롯이지만 Append 모디파이어로 늘어날 수 있다.
+		static void scheduleEffects(ResolvedSkill resolved, UnitBase caster, float useSpeed, float extraDelay)
 		{
 			if (caster.SkillContainer == null)
 			{
 				return;
 			}
 
+			Table_Skill.Row row = resolved.Row;
+
 			// scanned 는 TargetResolver 내부 버퍼 직참조 — ScheduleEffect 가 즉시 복사해 스냅샷을 만든다.
 			List<UnitBase> scanned = TargetResolver.ScanByType(row.ScanType, row.ScanRange, row.ScanParam, caster);
 
-			SkillRuntime rt = caster.SkillContainer.GetRuntime(id);
+			SkillRuntime rt = caster.SkillContainer.GetRuntime(resolved.Id);
 			float actionTime = (rt != null) ? rt.GetActionTime(useSpeed) : 0f;
 
-			scheduleOne(row.EffectID_01, id, caster, scanned, actionTime, extraDelay);
-			scheduleOne(row.EffectID_02, id, caster, scanned, actionTime, extraDelay);
-		}
-
-		static void scheduleOne(SkillEffect effectId, EDT.Skill skillId, UnitBase caster, List<UnitBase> targets, float actionTime, float extraDelay)
-		{
-			if (effectId == SkillEffect.None)
+			for (int i = 0; i < resolved.Effects.Count; i++)
 			{
-				return;
+				Table_SkillEffect.Row effect = resolved.Effects[i];
+				float delay = extraDelay + actionTime * effect.EffectTime;
+				caster.SkillContainer.ScheduleEffect(delay, resolved.Id, effect.ID, scanned);
 			}
-
-			Table_SkillEffect.Row effect = Table_SkillEffect.Get(effectId);
-			if (effect == null)
-			{
-				Debug.LogError($"[SkillExecutor] SkillEffect 행 없음 — EDT.Skill:{skillId} Effect:{effectId}");
-				return;
-			}
-
-			float delay = extraDelay + actionTime * effect.EffectTime;
-			caster.SkillContainer.ScheduleEffect(delay, skillId, effectId, targets);
 		}
 
 		// 시전 연출 — Replace 정책. 새 사이클이 시작되면 이전 것을 즉시 밀어낸다 (설계 4.8).

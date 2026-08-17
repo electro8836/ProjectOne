@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using EDT;
+using ProjectOne.Monsters;
 using ProjectOne.Utils;
 using ProjectOne.Unit.AI;
 
@@ -40,8 +41,11 @@ namespace ProjectOne.Unit
 			UnitFactory.Instance.ComposeUnit(component, _monsterId, statGroupId, 1, Faction.Enemy);
 			val.name = string.Format("{0}_{1}", (row != null) ? row.Name : "Monster", component.GetID());
 
-			// 몬스터 타입별 자동전투 두뇌 주입 (접근형 — 보스도 3단계까지 폴백)
-			AiBrain brain = AiBrainFactory.CreateForMonster(component, row?.MonsterType ?? MonsterType.Normal);
+			component.SetMonsterType(row?.MonsterType ?? MonsterType.None);
+
+			// AIType 이 FSM/BT 선택까지 겸한다 (몬스터 설계 5장).
+			// AIGroupID 가 비었으면 row 가 null 이고 접근형으로 폴백한다 — 경고는 MonsterCatalog 가 낸다.
+			AiBrain brain = AiBrainFactory.CreateForMonster(component, MonsterCatalog.GetAI(_monsterId));
 			if (brain != null)
 			{
 				component.SetBrain(brain);
@@ -57,6 +61,9 @@ namespace ProjectOne.Unit
 			Monster fromPool = GetFromPool();
 			UnitFactory.Instance.ApplyMonsterLevel(fromPool, _monsterId, level);
 			fromPool.OnSpawnReset(pos);
+
+			// 리쉬(복귀)와 필드 리젠의 기준점 — 풀 재사용이므로 스폰마다 다시 찍는다.
+			fromPool.SetSpawnOrigin(pos);
 			fromPool.OnActivate();
 			return fromPool;
 		}

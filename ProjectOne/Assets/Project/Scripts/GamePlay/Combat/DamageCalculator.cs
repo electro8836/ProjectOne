@@ -58,9 +58,27 @@ namespace ProjectOne.Combat
 			}
 
 			// [4] 피해 보너스 — 합연산 레이어.
-			// TODO(STEP 7) — 근접/원거리 보너스는 WeaponMastery.RangeType 이 결정한다.
-			// 보스 보너스도 몬스터 등급 판정이 STEP 8 에서 붙는다. 그때까지 두 항은 0이다.
+			//
+			// 근접/원거리는 장착 무기의 WeaponMastery.RangeType 이 결정하며 스킬별 구분은 없다 (설계 10.4).
+			// 원거리 무기로 근접 모션 스킬을 써도 원거리 보너스를 받는다.
+			// 몬스터는 두 스탯을 쓰지 않으므로 RangeType 이 None 이고 이 항이 0이다.
 			float bonus = a.GetStat(Stat.Stat_DamageBonus);
+			switch (attacker.RangeType)
+			{
+				case WeaponRangeType.Melee:
+					bonus += a.GetStat(Stat.Stat_MeleeDamageBonus);
+					break;
+				case WeaponRangeType.Ranged:
+					bonus += a.GetStat(Stat.Stat_RangeDamageBonus);
+					break;
+			}
+
+			// 보스 보너스 — 대상이 보스 등급일 때만 (몬스터 설계 2장).
+			if (target.MonsterType == MonsterType.Boss)
+			{
+				bonus += a.GetStat(Stat.Stat_BossDamageBonus);
+			}
+
 			damage *= 1f + bonus;
 
 			// [5] 방어 감쇄 — 제산식. K 의 기준은 공격자 레벨이다.

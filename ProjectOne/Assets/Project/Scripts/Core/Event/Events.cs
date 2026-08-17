@@ -21,15 +21,24 @@ namespace ProjectOne.Event
 				}
 		}
 		
+		// 몬스터 처치 알림 — 경험치·드랍 지급과 퀘스트 킬카운트가 구독한다.
+		//
+		// UnitDiedEvent 와 나누는 이유는 "처치"가 사망의 부분집합이기 때문이다.
+		// 스테이지 전환 시 잔존 정리(ClearAlive)는 풀 반환이라 사망도 처치도 아니고,
+		// 히어로 사망은 UnitDiedEvent 이지만 처치 보상 대상이 아니다.
+		//
+		// 킬 크레딧(가해자)을 싣지 않는다 — 싱글플레이 + 히어로 1명이라 판별할 것이 없다.
 		public readonly struct MonsterKillEvent
 		{
-				public readonly int MonsterType;
 				public readonly int MonsterID;
+				public readonly int Level;
+				public readonly Vector2 Position;
 
-				MonsterKillEvent(int monsterType, int monsterID)
+				public MonsterKillEvent(int monsterID, int level, Vector2 position)
 				{
-						this.MonsterType = monsterType;
 						this.MonsterID = monsterID;
+						this.Level = level;
+						this.Position = position;
 				}
 		}
 
@@ -203,6 +212,18 @@ namespace ProjectOne.Event
 		// 캐릭터 변경 알림 (레벨업/경험치 변경). 캐릭터 정보 UI 등에서 구독.
 		public readonly struct CharacterChangeEvent
 		{
+		}
+
+		// 마스터리 변경 알림 (노드 투자 / 트리 초기화 / 레벨업).
+		// 리졸브 캐시와 스탯 캐시를 함께 무효화해야 하는 지점이다 (스킬 설계 11.4).
+		public readonly struct MasteryChangeEvent
+		{
+				public readonly WeaponMastery Mastery;
+
+				public MasteryChangeEvent(WeaponMastery mastery)
+				{
+						this.Mastery = mastery;
+				}
 		}
 
 		// 오버레이 스택이 비었을 때 알림 (UIManager가 마지막 오버레이를 닫은 직후 발행).
