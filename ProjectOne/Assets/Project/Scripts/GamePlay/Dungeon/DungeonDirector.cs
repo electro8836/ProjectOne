@@ -5,6 +5,7 @@ using UnityEngine;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Flow;
+using ProjectOne.Items;
 using ProjectOne.Loading;
 using ProjectOne.Map;
 using ProjectOne.UI;
@@ -15,6 +16,7 @@ using ProjectOne.Utils;
 using ProjectOne.UserData;
 using ProjectOne.Network;
 using ProjectOne.Shared;
+using ProjectOne.Summons;
 
 namespace ProjectOne.Dungeon
 {
@@ -299,6 +301,9 @@ namespace ProjectOne.Dungeon
 				// 최고 클리어 단계 갱신 — 다음 단계 해금과 퀘스트 판정의 근거다.
 				DungeonProgress.MarkStageCleared(_ctx.DungeonType, _ctx.Stage);
 
+				// 퀘스트(QuestTargetType.DungeonClear)가 최고 클리어 단계를 다시 보게 하는 지점이다.
+				EventManager.Instance.Publish(new DungeonStageClearedEvent(_ctx.DungeonType, _ctx.Stage));
+
 				beginClearRequestIfNeeded();
 				DungeonClearResponse resp = await _clearTask;
 				applyClearResponse(resp);
@@ -449,7 +454,7 @@ namespace ProjectOne.Dungeon
 				{
 				case RewardType.Item:
 				case RewardType.ItemPool:
-					Account.Instance.Inventory.Add(g.itemId, g.count);
+					grantItemFromServer(g.itemId, g.count);
 					break;
 				case RewardType.Currency:
 				{
@@ -458,6 +463,40 @@ namespace ProjectOne.Dungeon
 					Account.Instance.Wallet.SetAmount(type, current + g.count);
 					break;
 				}
+				}
+			}
+		}
+
+		// 서버가 준 아이템을 인벤토리에 넣는다.
+		//
+		// 장비는 스택이 아니라 인스턴스 단위이므로 Inventory.Add 로 넣으면 안 된다 (아이템 설계 4장).
+		// STEP 6 에서 장비가 UID 단위가 되면서 생긴 불일치를 여기서 바로잡는다.
+		//
+		// **한계 — 서버가 등급을 내려주지 못한다.** GrantedRewardDto 에 등급·순도·품질·uid 가 없어
+		// 클라가 Item.Grade 기준으로 인스턴스를 만든다. 이건 설계가 금지한 "등급 자동 폴백"이 아니라
+		// **DTO 스키마의 한계**다. DTO 확장은 STEP 14 에서 하며, 그때 이 분기를 제거한다.
+		private static void grantItemFromServer(int itemId, int count)
+		{
+			if (itemId <= 0 || count <= 0)
+			{
+				return;
+			}
+
+			if (Table_Equipment.Get(itemId) == null)
+			{
+				Account.Instance.Inventory.Add(itemId, count);
+				return;
+			}
+
+			Table_Item.Row item = Table_Item.Get(itemId);
+			ItemGradeType grade = (item != null && item.Grade != ItemGradeType.None) ? item.Grade : ItemGradeType.Normal;
+
+			for (int i = 0; i < count; i++)
+			{
+				EquipmentInstance instance = EquipmentFactory.CreateFixed(itemId, grade);
+				if (instance != null)
+				{
+					Account.Instance.Inventory.AddEquipment(instance);
 				}
 			}
 		}
@@ -478,7 +517,13 @@ namespace ProjectOne.Dungeon
 				MonsterSpawnManager.Instance.Clear();
 			}
 
+			if (SummonManager.HasInstance == true)
+			{
+				SummonManager.Instance.ReleaseAll();
+			}
+
 			MonsterPoolHub.Instance.Clear();
+			SummonPoolHub.Instance.Clear();
 
 			if (DropManager.HasInstance == true)
 			{

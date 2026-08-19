@@ -34,11 +34,15 @@ namespace ProjectOne.Event
 				public readonly int Level;
 				public readonly Vector2 Position;
 
-				public MonsterKillEvent(int monsterID, int level, Vector2 position)
+				// 지역 드랍 그룹 (MonsterSpawn.RewardGroupID). 고유 드랍은 Monster 원형이 갖고 있어 싣지 않는다.
+				public readonly int SpawnRewardGroupID;
+
+				public MonsterKillEvent(int monsterID, int level, Vector2 position, int spawnRewardGroupID)
 				{
 						this.MonsterID = monsterID;
 						this.Level = level;
 						this.Position = position;
+						this.SpawnRewardGroupID = spawnRewardGroupID;
 				}
 		}
 
@@ -230,5 +234,44 @@ namespace ProjectOne.Event
 		// 로비 탭 그룹 등에서 구독해 탭 선택을 해제한다.
 		public readonly struct OverlayClosedEvent
 		{
+		}
+
+		// 소모품 사용 시도 결과. 실패해도 발행된다 — 쿨다운 표시·실패 안내가 같은 지점에서 갱신된다.
+		public readonly struct ConsumableUsedEvent
+		{
+				public readonly int ItemId;
+				public readonly Consumables.ConsumableUseResult Result;
+
+				public ConsumableUsedEvent(int itemId, Consumables.ConsumableUseResult result)
+				{
+						this.ItemId = itemId;
+						this.Result = result;
+				}
+		}
+
+		// 퀘스트 상태 변경 (수락 / 진행도 갱신 / 완료 / 포기).
+		// 퀘스트 마커와 HUD 는 이 이벤트로만 갱신한다 — 매 프레임 순회 금지 (퀘스트 설계 5.5).
+		public readonly struct QuestChangeEvent
+		{
+				public readonly int QuestId;
+
+				public QuestChangeEvent(int questId)
+				{
+						this.QuestId = questId;
+				}
+		}
+
+		// 던전 단계 클리어. QuestTargetType.DungeonClear 판정의 입구다.
+		// 최고 클리어 단계 갱신(DungeonProgress)과 같은 시점에 발행된다.
+		public readonly struct DungeonStageClearedEvent
+		{
+				public readonly EDT.Dungeon DungeonType;
+				public readonly int Stage;
+
+				public DungeonStageClearedEvent(EDT.Dungeon dungeonType, int stage)
+				{
+						this.DungeonType = dungeonType;
+						this.Stage = stage;
+				}
 		}
 }

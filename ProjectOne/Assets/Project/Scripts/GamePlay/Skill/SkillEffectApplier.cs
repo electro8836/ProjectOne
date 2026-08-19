@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
+using ProjectOne.Summons;
 using ProjectOne.Audio;
 using ProjectOne.Combat;
 using ProjectOne.Buff;
@@ -46,23 +48,9 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			// 리졸브 사본에서 먼저 찾는다 — 모디파이어가 반영된 값을 써야 한다 (설계 11.1).
-			// 연쇄(ChainEffectIDs)로 딸려온 효과는 스킬의 효과 목록에 없으므로 테이블로 폴백한다.
-			Table_SkillEffect.Row row = null;
-			ResolvedSkill resolved = caster.Resolve(skillId);
-			if (resolved != null)
-			{
-				row = resolved.FindEffect(effectId);
-			}
-
+			Table_SkillEffect.Row row = resolveRow(effectId, caster, skillId);
 			if (row == null)
 			{
-				row = Table_SkillEffect.Get(effectId);
-			}
-
-			if (row == null)
-			{
-				Debug.LogError($"[SkillEffectApplier] SkillEffect 행 없음 — Effect:{effectId}");
 				return;
 			}
 
@@ -78,20 +66,19 @@ namespace ProjectOne.Skill
 					succeeded = applyDamage(row, caster, skillId, targets);
 					break;
 				case SkillEffectTypes.Heal:
-					succeeded = applyHeal(row, caster, targets);
+					succeeded = applyHeal(row, caster, skillId, targets);
 					break;
 				case SkillEffectTypes.Buff:
 					succeeded = applyBuff(row, caster, skillId, targets);
 					break;
 				case SkillEffectTypes.StatChange:
-					succeeded = applyStatChange(row, targets);
+					succeeded = applyStatChange(row, caster, targets);
 					break;
 				case SkillEffectTypes.Projectile:
 					succeeded = applyProjectile(row, caster, skillId, targets);
 					break;
 				case SkillEffectTypes.Summon:
-					// TODO(STEP 13) — 소환물 시스템 미구현.
-					Debug.LogWarning($"[SkillEffectApplier] Summon 효과는 아직 구현되지 않았습니다 — Effect:{row.ID}");
+					succeeded = applySummon(row, caster, targets);
 					break;
 				case SkillEffectTypes.Force:
 					succeeded = applyForce(row, caster, targets);
@@ -133,6 +120,122 @@ namespace ProjectOne.Skill
 			Apply(effectId, caster, skillId, enemies, 0);
 		}
 
+		// 리졸브 사본에서 먼저 찾는다 — 모디파이어가 반영된 값을 써야 한다 (설계 11.1).
+		// 연쇄(ChainEffectIDs)로 딸려온 효과는 스킬의 효과 목록에 없으므로 테이블로 폴백한다.
+		static Table_SkillEffect.Row resolveRow(SkillEffect effectId, UnitBase caster, EDT.Skill skillId)
+		{
+			Table_SkillEffect.Row row = null;
+			ResolvedSkill resolved = caster.Resolve(skillId);
+			if (resolved != null)
+			{
+				row = resolved.FindEffect(effectId);
+			}
+
+			if (row == null)
+			{
+				row = Table_SkillEffect.Get(effectId);
+			}
+
+			if (row == null)
+			{
+				Debug.LogError($"[SkillEffectApplier] SkillEffect 행 없음 — Effect:{effectId}");
+			}
+
+			return row;
+		}
+
+		// ── 반복 예약 진입점 (SkillContainer 의 예약 큐가 호출) ────────
+		//
+		// 효과 전체(Apply)를 다시 돌리지 않는 이유 — 탐색·연쇄(ChainEffectIDs)·연출까지 반복된다.
+		// 반복해야 하는 것은 "때리기 / 회복하기 / 쏘기" 뿐이다.
+
+		// 다단히트의 2타 이후. 타격마다 치명타를 개별 판정한다 (설계 10.6).
+		public static void RunDamageHit(SkillEffect effectId, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets)
+		{
+			if (caster == null || caster.IsDead == true || targets == null)
+			{
+				return;
+			}
+
+			Table_SkillEffect.Row row = resolveRow(effectId, caster, skillId);
+			if (row == null)
+			{
+				return;
+			}
+
+			DamageParams p;
+			if (SkillEffectParams.TryParseDamage(row, out p) == false)
+			{
+				return;
+			}
+
+			for (int i = 0; i < targets.Count; i++)
+			{
+				UnitBase target = targets[i];
+
+				// 이미 죽은 대상의 남은 타격은 버린다 — 사망 판정이 중복된다.
+				if (target == null || target.IsDead == true || target == caster)
+				{
+					continue;
+				}
+
+				dealDamage(caster, target, skillId, row, p);
+			}
+		}
+
+		// 지속 회복의 2틱 이후. 회복량은 매 틱 재계산한다(시전자 스탯이 변할 수 있다).
+		public static void RunHealTick(SkillEffect effectId, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets)
+		{
+			if (caster == null || caster.IsDead == true || targets == null)
+			{
+				return;
+			}
+
+			Table_SkillEffect.Row row = resolveRow(effectId, caster, skillId);
+			if (row == null)
+			{
+				return;
+			}
+
+			HealParams p;
+			if (SkillEffectParams.TryParseHeal(row, out p) == false)
+			{
+				return;
+			}
+
+			healOnce(caster, targets, p);
+		}
+
+		// 연속 발사의 2발 이후. shotIndex 는 부채꼴 각도를 유지하기 위한 회차다.
+		public static void RunProjectileShot(SkillEffect effectId, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets, int shotIndex)
+		{
+			if (caster == null || caster.IsDead == true)
+			{
+				return;
+			}
+
+			Table_SkillEffect.Row row = resolveRow(effectId, caster, skillId);
+			if (row == null)
+			{
+				return;
+			}
+
+			ProjectileParams p;
+			if (SkillEffectParams.TryParseProjectile(row, out p) == false)
+			{
+				return;
+			}
+
+			Table_Projectile.Row projectile = Table_Projectile.Get(p.RefID);
+			if (projectile == null)
+			{
+				return;
+			}
+
+			UnitBase target = pickAliveTarget(targets);
+			launchShot(caster, target, skillId, projectile, p, shotIndex);
+		}
+
 		// ── EffectOrigin 해석 (설계 2.6) ──────────────────────────────
 
 		static List<UnitBase> resolveOrigin(SkillEffectOrigin origin, UnitBase caster, List<UnitBase> scanned, int depth)
@@ -143,9 +246,12 @@ namespace ProjectOne.Skill
 			switch (origin)
 			{
 				case SkillEffectOrigin.Caster:
-				case SkillEffectOrigin.Owner:
-					// 소환물 체계가 없는 동안 Owner 는 시전자와 같다 (STEP 13에서 분리).
 					buffer.Add(caster);
+					break;
+
+				case SkillEffectOrigin.Owner:
+					// 소환물이 쓰면 주인, 그 외에는 시전자 자신이다 (설계 2.6).
+					buffer.Add((caster.Owner != null) ? caster.Owner : caster);
 					break;
 
 				case SkillEffectOrigin.Target:
@@ -193,17 +299,30 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				// 다단히트는 ①②의 예외 — 의도된 반복이다 (설계 5.8).
-				// HitInterval 은 고정값이며 공속의 영향을 받지 않는다.
-				for (int hit = 0; hit < p.HitCount; hit++)
+				anyHit |= dealDamage(caster, target, skillId, row, p);
+			}
+
+			// 다단히트는 ①②의 예외 — 의도된 반복이다 (설계 5.8).
+			// HitInterval 은 고정값이며 공속의 영향을 받지 않는다.
+			// 2타 이후는 예약 큐가 대상 스냅샷을 그대로 물고 반복한다.
+			if (p.HitCount > 1 && p.HitInterval > 0f && caster.SkillContainer != null)
+			{
+				caster.SkillContainer.ScheduleRepeat(SkillContainer.PendingKind.DamageHit,
+					p.HitInterval, p.HitInterval, p.HitCount - 1, 1, skillId, row.ID, targets);
+			}
+			else if (p.HitCount > 1)
+			{
+				// 간격이 0이면 예약할 이유가 없다 — 같은 프레임에 마저 때린다.
+				for (int hit = 1; hit < p.HitCount; hit++)
 				{
-					if (hit == 0)
+					for (int i = 0; i < targets.Count; i++)
 					{
-						anyHit |= dealDamage(caster, target, skillId, row, p);
-					}
-					else
-					{
-						// TODO — 다단히트 지연 발동. 현재는 첫 타만 적용하고 나머지는 즉시 처리한다.
+						UnitBase target = targets[i];
+						if (target == null || target.IsDead == true || target == caster)
+						{
+							continue;
+						}
+
 						anyHit |= dealDamage(caster, target, skillId, row, p);
 					}
 				}
@@ -253,7 +372,7 @@ namespace ProjectOne.Skill
 			return true;
 		}
 
-		static bool applyHeal(Table_SkillEffect.Row row, UnitBase caster, List<UnitBase> targets)
+		static bool applyHeal(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets)
 		{
 			HealParams p;
 			if (SkillEffectParams.TryParseHeal(row, out p) == false || targets.Count == 0)
@@ -261,6 +380,23 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
+			if (healOnce(caster, targets, p) == false)
+			{
+				return false;
+			}
+
+			// 지속 회복 — 2틱 이후는 예약 큐가 반복한다. 회복량은 틱마다 다시 계산된다.
+			if (p.TickCount > 1 && p.TickInterval > 0f && caster.SkillContainer != null)
+			{
+				caster.SkillContainer.ScheduleRepeat(SkillContainer.PendingKind.HealTick,
+					p.TickInterval, p.TickInterval, p.TickCount - 1, 1, skillId, row.ID, targets);
+			}
+
+			return true;
+		}
+
+		static bool healOnce(UnitBase caster, List<UnitBase> targets, in HealParams p)
+		{
 			int amount = DamageCalculator.CalculateHeal(caster, p.ScaleStat, p.Ratio, p.FlatValue);
 			if (amount <= 0)
 			{
@@ -275,7 +411,6 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				// TODO — TickCount > 1 인 지속 회복은 버프 틱으로 표현하는 편이 자연스럽다. STEP 13 이후 정리.
 				target.Vitals.ModifyHp(amount);
 			}
 
@@ -312,7 +447,7 @@ namespace ProjectOne.Skill
 			return anyApplied;
 		}
 
-		static bool applyStatChange(Table_SkillEffect.Row row, List<UnitBase> targets)
+		static bool applyStatChange(Table_SkillEffect.Row row, UnitBase caster, List<UnitBase> targets)
 		{
 			StatChangeParams p;
 			if (SkillEffectParams.TryParseStatChange(row, out p) == false || targets.Count == 0)
@@ -336,16 +471,22 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				// TODO — Duration > 0 인 한시 변경은 버프로 표현해야 회수 경로가 생긴다.
-				// 지금은 영구(Duration=0) 만 적용하고 한시는 경고한다.
-				if (p.Duration > 0f)
-				{
-					Debug.LogWarning($"[SkillEffectApplier] 지속시간이 있는 StatChange 는 Buff 로 표현하세요 — Effect:{row.ID}");
-					continue;
-				}
-
-				target.Stats.AddModifier(p.StatDetailID, p.Value, row.ID.ToString());
+				StatModifier mod = target.Stats.AddModifier(p.StatDetailID, p.Value, row.ID.ToString());
 				anyApplied = true;
+
+				// Duration > 0 이면 시한부다. 회수를 시전자의 예약 큐에 걸어
+				// 시전자가 죽거나 씬이 바뀌면 예약도 함께 사라지게 한다.
+				if (p.Duration > 0f && mod != null)
+				{
+					if (caster.SkillContainer != null)
+					{
+						caster.SkillContainer.ScheduleModifierRemoval(p.Duration, target, mod);
+					}
+					else
+					{
+						Debug.LogWarning($"[SkillEffectApplier] 한시 StatChange 회수 경로 없음 — 영구 적용됩니다. Effect:{row.ID}");
+					}
+				}
 			}
 
 			return anyApplied;
@@ -366,30 +507,105 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			UnitBase target = (targets.Count > 0) ? targets[0] : null;
+			UnitBase target = pickAliveTarget(targets);
+
+			// Interval 이 0이면 Count 개를 같은 프레임에 부채꼴로 뿌린다.
+			if (p.Interval <= 0f)
+			{
+				for (int i = 0; i < p.Count; i++)
+				{
+					launchShot(caster, target, skillId, projectile, p, i);
+				}
+
+				return true;
+			}
+
+			// Interval 이 있으면 한 발씩 순차 발사한다. 2발 이후는 예약 큐가 맡는다.
+			launchShot(caster, target, skillId, projectile, p, 0);
+
+			if (p.Count > 1 && caster.SkillContainer != null)
+			{
+				caster.SkillContainer.ScheduleRepeat(SkillContainer.PendingKind.ProjectileShot,
+					p.Interval, p.Interval, p.Count - 1, 1, skillId, row.ID, targets);
+			}
+
+			return true;
+		}
+
+		// shotIndex 로 부채꼴 각도를 계산한다 — 순차 발사에서도 각도가 유지되어야 한다.
+		static void launchShot(UnitBase caster, UnitBase target, EDT.Skill skillId,
+			Table_Projectile.Row projectile, in ProjectileParams p, int shotIndex)
+		{
 			Vector2 origin = caster.HitCenter;
 			Vector2 baseDir = resolveFacing(caster, target, origin);
 
-			// Count 개를 Angle 간격으로 분산 발사한다. Interval 은 연속 발사 간격(0=동시).
 			float half = (p.Count - 1) * 0.5f;
-			for (int i = 0; i < p.Count; i++)
+			float angle = (p.Angle != 0f) ? (shotIndex - half) * p.Angle : 0f;
+			Vector2 dir = (angle != 0f) ? (Vector2)(Quaternion.Euler(0f, 0f, angle) * baseDir) : baseDir;
+
+			ProjectileData data = default(ProjectileData);
+			data.direction = new Vector3(dir.x, dir.y, 0f);
+			data.startPos = new Vector3(origin.x, origin.y, caster.transform.position.z);
+			data.caster = caster;
+			data.skillId = skillId;
+			data.hitEffect = projectile.HitEffectID_1;
+			data.target = target;
+			data.hitRadius = projectile.ExplodeRadius;
+			data.speedRate = (p.SpeedRate > 0f) ? p.SpeedRate : 1f;
+
+			ProjectileManager.Instance.Launch(projectile.PrefabPath, data);
+		}
+
+		static UnitBase pickAliveTarget(List<UnitBase> targets)
+		{
+			if (targets == null)
 			{
-				float angle = (p.Angle != 0f) ? (i - half) * p.Angle : 0f;
-				Vector2 dir = (angle != 0f) ? (Vector2)(Quaternion.Euler(0f, 0f, angle) * baseDir) : baseDir;
-
-				ProjectileData data = default(ProjectileData);
-				data.direction = new Vector3(dir.x, dir.y, 0f);
-				data.startPos = new Vector3(origin.x, origin.y, caster.transform.position.z);
-				data.caster = caster;
-				data.skillId = skillId;
-				data.hitEffect = projectile.HitEffectID_1;
-				data.target = target;
-				data.hitRadius = projectile.ExplodeRadius;
-
-				// TODO(STEP 13) — Interval(연속 발사)·SpeedRate·Pierce·Accel 은 투사체 재작업에서 붙인다.
-				ProjectileManager.Instance.Launch(projectile.PrefabPath, data);
+				return null;
 			}
 
+			for (int i = 0; i < targets.Count; i++)
+			{
+				if (targets[i] != null && targets[i].IsDead == false)
+				{
+					return targets[i];
+				}
+			}
+
+			return null;
+		}
+
+		// 소환 (설계 7장). Radius 는 소환물이 쓸 스킬의 ScanRange=0 을 채우는 값으로도 상속된다 (설계 3.5).
+		static bool applySummon(Table_SkillEffect.Row row, UnitBase caster, List<UnitBase> targets)
+		{
+			SummonParams p;
+			if (SkillEffectParams.TryParseSummon(row, out p) == false)
+			{
+				return false;
+			}
+
+			if (p.RefID == EDT.Summon.None)
+			{
+				Debug.LogError($"[SkillEffectApplier] Summon 효과에 RefID 가 없습니다 — Effect:{row.ID}");
+				return false;
+			}
+
+			if (Table_Summon.Get(p.RefID) == null)
+			{
+				Debug.LogError($"[SkillEffectApplier] Summon 행 없음 — Effect:{row.ID} RefID:{p.RefID}");
+				return false;
+			}
+
+			// EffectOrigin 이 Target/Location 이면 그 자리에, Caster/Owner 면 시전자 자리에 놓인다.
+			Vector3 center = caster.transform.position;
+			if (targets.Count > 0 && targets[0] != null && targets[0] != caster)
+			{
+				center = targets[0].transform.position;
+			}
+
+			int count = (p.Count > 0) ? p.Count : 1;
+			SummonManager.Instance.SpawnAsync(caster, p.RefID, count, p.Duration, p.Radius, center).Forget();
+
+			// 프리팹 로드가 남아 있어도 "소환을 걸었다"는 성공이다 — ChainEffectIDs 가 이어져야 한다.
 			return true;
 		}
 

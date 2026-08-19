@@ -2,6 +2,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 using ProjectOne.Loading;
+using ProjectOne.Town;
 using ProjectOne.UI;
 
 namespace ProjectOne.Flow
@@ -28,6 +29,10 @@ namespace ProjectOne.Flow
 
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 0f);
 			await SceneHud.LoadAsync(HudAddress, ct);
+
+			// 마을 맵 + NPC 배치. 씬은 비어 있고 코드가 띄운다 (맵 설계 8장).
+			TownDirector director = TownDirector.EnsureInstance();
+			await director.Begin(ct);
 
 			// 씬 준비 — 마을 오브젝트의 Awake/Start 가 Account 데이터로 구성되도록 1프레임 대기 후 해제.
 			await UniTask.NextFrame(ct);

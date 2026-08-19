@@ -1,4 +1,5 @@
 using ProjectOne.Mastery;
+using ProjectOne.Quests;
 using ProjectOne.Shared;
 using ProjectOne.Utils;
 
@@ -11,6 +12,7 @@ namespace ProjectOne.UserData
 		public Inventory Inventory { get; private set; }
 		public Loadout Loadout { get; private set; }
 		public MasteryBook Mastery { get; private set; }
+		public QuestBook Quests { get; private set; }
 		public ClearedDungeons ClearedDungeons { get; private set; }
 		public Wallet Wallet { get; private set; }
 
@@ -19,6 +21,7 @@ namespace ProjectOne.UserData
 			Inventory = new Inventory(null);
 			Loadout = new Loadout(null);
 			Mastery = new MasteryBook(null);
+			Quests = new QuestBook(null);
 			ClearedDungeons = new ClearedDungeons(null);
 			Wallet = new Wallet(null);
 		}
@@ -37,6 +40,11 @@ namespace ProjectOne.UserData
 		public void SetMastery(MasteryDto data)
 		{
 			Mastery = new MasteryBook(data);
+		}
+
+		public void SetQuests(QuestDto data)
+		{
+			Quests = new QuestBook(data);
 		}
 
 		public void SetClearedDungeons(ClearedDungeonsDto data)

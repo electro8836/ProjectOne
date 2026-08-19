@@ -6,6 +6,7 @@ using EDT;
 using ProjectOne.Loading;
 using ProjectOne.Map;
 using ProjectOne.Monsters;
+using ProjectOne.Npcs;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Field
@@ -32,6 +33,9 @@ namespace ProjectOne.Field
 		// 스폰 포인트 수집 + 개체 단위 리젠. 필드 전용이다(던전에는 리젠이 없다).
 		private FieldMonsterSpawner _spawner;
 
+		// NPC 배치. 필드 맵에도 NpcSpawn 행이 걸릴 수 있다 (MapID 는 MapType 을 가리지 않는다).
+		private NpcSpawner _npcSpawner;
+
 		// 플로우필드 재베이크 임계값 — 기준 히어로가 다른 셀로 이동했을 때만 재계산
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
@@ -48,6 +52,7 @@ namespace ProjectOne.Field
 			GameObject go = new GameObject("FieldDirector");
 			_instance = go.AddComponent<FieldDirector>();
 			_instance._spawner = go.AddComponent<FieldMonsterSpawner>();
+			_instance._npcSpawner = go.AddComponent<NpcSpawner>();
 
 			// 처치 경험치 지급기는 이벤트 구독형이라 킬이 나기 전에 살아 있어야 한다.
 			// MonoSingleton 이 접근 시점에 자동 생성하므로 여기서 한 번 건드린다.
@@ -161,6 +166,12 @@ namespace ProjectOne.Field
 			if (_spawner != null)
 			{
 				_spawner.BeginAct(actId);
+			}
+
+			if (_npcSpawner != null)
+			{
+				_npcSpawner.Clear();
+				_npcSpawner.Refresh(ct);
 			}
 		}
 

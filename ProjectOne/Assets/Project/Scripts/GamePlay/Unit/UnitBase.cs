@@ -16,7 +16,8 @@ namespace ProjectOne.Unit
 	{
 		None,
 		Hero,
-		Monster
+		Monster,
+		Summon
 	}
 
 	public enum Faction
@@ -189,6 +190,12 @@ namespace ProjectOne.Unit
 		public virtual EDT.WeaponRangeType RangeType
 		{
 			get { return EDT.WeaponRangeType.None; }
+		}
+
+		// 소환 주인 — 소환물만 값을 돌려준다. EffectOrigin.Owner 해석의 유일한 근거다 (설계 2.6).
+		public virtual UnitBase Owner
+		{
+			get { return null; }
 		}
 
 		// 스킬 리졸브 — 모디파이어 출처가 없는 유닛은 테이블 원본을 그대로 본다 (설계 11.2).

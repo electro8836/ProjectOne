@@ -23,6 +23,10 @@ namespace ProjectOne.Unit.Stats
 
 		private static readonly Dictionary<Stat, Clamp> _clamps = new Dictionary<Stat, Clamp>();
 
+		// Stat → 그 스탯의 Base 레이어 StatDetail. 소환물 스탯 상속이 쓴다.
+		// InheritStatType 은 결과(Stat)로 적혀 있는데 값을 넣는 입구는 언제나 StatDetail 이라 역참조가 필요하다.
+		private static readonly Dictionary<Stat, StatDetail> _baseDetailMap = new Dictionary<Stat, StatDetail>();
+
 		private static bool _built;
 
 		public static bool IsBuilt
@@ -35,6 +39,7 @@ namespace ProjectOne.Unit.Stats
 		{
 			_partMap.Clear();
 			_clamps.Clear();
+			_baseDetailMap.Clear();
 
 			Dictionary<StatDetail, Table_StatDetail.Row> details = Table_StatDetail.All();
 			Dictionary<StatDetail, Table_StatDetail.Row>.Enumerator de = details.GetEnumerator();
@@ -53,6 +58,11 @@ namespace ProjectOne.Unit.Stats
 				}
 
 				_partMap[row.ID] = new StatPart(row.StatID, row.StatDetailType);
+
+				if (row.StatDetailType == StatDetailTypes.Base)
+				{
+					_baseDetailMap[row.StatID] = row.ID;
+				}
 			}
 
 			Dictionary<Stat, Table_Stat.Row> stats = Table_Stat.All();
@@ -92,6 +102,12 @@ namespace ProjectOne.Unit.Stats
 			}
 
 			return _partMap.TryGetValue(detail, out part);
+		}
+
+		// Stat → Base 레이어 StatDetail. 소환물의 InheritStatType 해석에 쓴다.
+		public static bool TryGetBaseDetail(Stat stat, out StatDetail detail)
+		{
+			return _baseDetailMap.TryGetValue(stat, out detail);
 		}
 
 		// 최종 스탯에 클램프를 1회 적용한다. Min/Max 가 0이면 그 방향의 제한이 없다.

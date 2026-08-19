@@ -30,7 +30,8 @@ namespace ProjectOne.Unit.AI
 				return null;
 			}
 
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			// 후보 유형은 Blackboard 가 정한다 — 몬스터는 히어로를, 소환물은 몬스터를 노린다.
+			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(bb.TargetUnitType);
 			float detectSqr = bb.DetectRange * bb.DetectRange;
 			float bestSqr = float.MaxValue;
 			UnitBase best = null;

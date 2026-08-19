@@ -46,10 +46,50 @@ namespace ProjectOne.Flow
 
 			_current = next;
 
-			bool enterCancelled = await next.EnterAsync(ct).SuppressCancellationThrow();
-			if (enterCancelled) { return; }
+			bool entered = await enterGuardedAsync(next, ct);
+			if (entered == false) { return; }
 
 			EventManager.Instance.Publish(new GameStateChangedEvent(next.GetType()));
+		}
+
+		// 전이 예외를 여기서 잡는다 — 프로젝트 규칙(try-catch 금지)에서 의도적으로 벗어난 유일한 지점이다.
+		//
+		// 각 상태는 EnterAsync 를 .Forget() 체인으로 호출하므로 예외가 관측되지 않고,
+		// 증상이 "아무 메시지 없이 로딩 화면 고착"이라 원인을 추적할 수 없다.
+		// SuppressCancellationThrow() 는 OperationCanceledException 만 삼키므로 나머지를 덮지 못한다.
+		//
+		// 삼키지 않는다 — 예외 전문을 남기고 로딩만 걷어 다음 조작이 가능한 상태로 되돌린다.
+		private static async UniTask<bool> enterGuardedAsync(IGameState next, CancellationToken ct)
+		{
+			try
+			{
+				bool cancelled = await next.EnterAsync(ct).SuppressCancellationThrow();
+				return cancelled == false;
+			}
+			catch (System.Exception e)
+			{
+				Debug.LogError($"[GameFlow] 상태 진입 실패 — {next.GetType().Name}");
+				Debug.LogException(e);
+
+				await hideLoadingAsync();
+				return false;
+			}
+		}
+
+		// 로딩이 떠 있으면 걷는다. 이게 없으면 예외 이후 화면이 영구 고착된다.
+		private static async UniTask hideLoadingAsync()
+		{
+			if (Loading.LoadingManager.HasInstance == false)
+			{
+				return;
+			}
+
+			if (Loading.LoadingManager.Instance.IsShowing == false)
+			{
+				return;
+			}
+
+			await Loading.LoadingManager.Instance.HideAsync().SuppressCancellationThrow();
 		}
 	}
 }

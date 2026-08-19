@@ -33,6 +33,7 @@ namespace ProjectOne.Map
 		// 유니티가 복제 시 이름에 "(1)" 을 붙여도 아무 영향이 없다.
 		private MonsterSpawnPoint[] _spawnPoints;
 		private DungeonSpawnSlot[] _slots;
+		private NpcSpawnPoint[] _npcPoints;
 		private MapAnchor _anchor;
 
 		public IReadOnlyList<MonsterSpawnPoint> SpawnPoints
@@ -51,6 +52,16 @@ namespace ProjectOne.Map
 			{
 				ensureMarkers();
 				return _slots;
+			}
+		}
+
+		// NPC 배치 마커. 테이블(NpcSpawn.SpawnPointID)이 이 중에서 자리를 찾는다.
+		public IReadOnlyList<NpcSpawnPoint> NpcPoints
+		{
+			get
+			{
+				ensureMarkers();
+				return _npcPoints;
 			}
 		}
 
@@ -73,6 +84,7 @@ namespace ProjectOne.Map
 
 			_spawnPoints = this.GetComponentsInChildren<MonsterSpawnPoint>(true);
 			_slots = this.GetComponentsInChildren<DungeonSpawnSlot>(true);
+			_npcPoints = this.GetComponentsInChildren<NpcSpawnPoint>(true);
 			_anchor = this.GetComponentInChildren<MapAnchor>(true);
 
 			System.Array.Sort(_slots, compareSlotIndex);

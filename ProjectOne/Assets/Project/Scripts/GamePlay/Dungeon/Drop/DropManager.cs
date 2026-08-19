@@ -11,10 +11,12 @@ namespace ProjectOne.Dungeon
 {
 	// 던전 드랍오브젝트 매니저(전투씬 수명). 타입별 풀 생성/정리와 사망 위치 스폰을 담당한다.
 	//
-	// TODO(STEP 10) — 드랍 규칙 미구현.
-	// 구 Table_DropObject 가 사라지고 보상은 Reward / RewardItemPool 로 통합되었다.
-	// 스테이지별 드랍 후보 수집과 확률 판정은 보상 시스템 작업에서 다시 붙인다.
-	// 풀 생성·정리·산포 스폰 인프라는 그대로 재사용한다.
+	// **보상 지급은 여기가 아니다.** RewardGranter 가 처치 즉시 인벤토리에 넣는다(사용자 결정) —
+	// 바닥에 떨어뜨렸다가 줍는 연출은 보류 상태다.
+	//
+	// 이 클래스는 그 연출을 나중에 붙일 때를 위한 인프라(풀 생성·정리·산포 스폰)로 남겨 둔다.
+	// 되살리려면 (1) 드랍 프리팹 제작 (2) DropObject 에 아이템 페이로드 추가
+	// (3) 여기서 RewardGranter 결과를 받아 스폰 — 세 가지가 필요하다.
 	public sealed class DropManager : MonoSingleton<DropManager>
 	{
 		// 드랍 산포 반경 (사망 위치 주변)
@@ -42,7 +44,7 @@ namespace ProjectOne.Dungeon
 		}
 
 		// 스테이지 진입 시 호출 — 이전 스테이지 풀을 정리한다.
-		// 드랍 후보 수집과 풀 사전 생성은 STEP 10 에서 Reward 기반으로 다시 붙인다.
+		// 드랍 연출이 보류라 후보 수집·풀 사전 생성은 아직 없다.
 		public UniTask PrepareStageAsync(int groupId, CancellationToken ct)
 		{
 			clearPools();
@@ -62,7 +64,8 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			// TODO(STEP 10) — 드랍 판정 미구현. spawnDrop 으로 사망 위치에 스폰한다.
+			// 지급은 MonsterKillReward 가 MonsterKillEvent 로 처리한다.
+			// 연출을 붙이게 되면 여기서 spawnDrop 으로 사망 위치에 스폰한다.
 		}
 
 		// 지정 타입 드랍을 사망 위치 주변에 스폰한다. 풀이 없으면 아무 일도 하지 않는다.

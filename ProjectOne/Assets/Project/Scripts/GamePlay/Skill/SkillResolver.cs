@@ -284,8 +284,25 @@ namespace ProjectOne.Skill
 				return resolved.FindEffect(mod.scopeEffect) != null;
 			}
 
-			// Projectile / Summon / Buff 는 해당 시스템이 붙을 때 연결한다 (STEP 13).
+			// Projectile / Summon / Buff 는 리졸브 사본에 들어 있지 않다 — 사본은 스킬과 효과만 뜬다.
+			// 이 세 시트의 컬럼을 직접 바꾸는 모디파이어는 원본 테이블을 건드려야 해서 지원하지 않는다.
+			// 대신 Scope=Effect + ParamKey=RefID 로 "어떤 투사체/소환물을 쓰는가"를 바꾸는 경로가 열려 있다 (설계 9.4).
+			warnUnsupportedScope(mod);
 			return false;
+		}
+
+		// 같은 모디파이어로 매 리졸브마다 로그가 쌓이지 않게 1회만 알린다.
+		private readonly HashSet<int> _warnedScopes = new HashSet<int>();
+
+		private void warnUnsupportedScope(BakedModifier mod)
+		{
+			if (_warnedScopes.Add((int)mod.id) == false)
+			{
+				return;
+			}
+
+			Debug.LogWarning($"[SkillResolver] Scope={mod.scope} 모디파이어는 적용되지 않습니다 — SkillModifier:{mod.id}. "
+				+ "Scope=Effect + ParamKey=RefID 로 참조를 바꾸세요 (설계 9.4).");
 		}
 
 		private string slotKey(BakedModifier mod)

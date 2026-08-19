@@ -27,6 +27,7 @@ namespace ProjectOne.Field
 		{
 			public int monsterId;
 			public int level;
+			public int rewardGroupId;	// MonsterSpawn.RewardGroupID (지역 드랍)
 			public Vector3 origin;
 
 			public int instanceId;		// 살아있는 개체. 0이면 비어 있음
@@ -121,6 +122,7 @@ namespace ProjectOne.Field
 					Slot slot = new Slot();
 					slot.monsterId = row.MonsterID;
 					slot.level = level;
+					slot.rewardGroupId = row.RewardGroupID;
 					slot.origin = resolveOrigin(point);
 					_slots.Add(slot);
 				}
@@ -164,7 +166,7 @@ namespace ProjectOne.Field
 
 		private async UniTaskVoid spawnAsync(Slot slot)
 		{
-			Monster monster = await MonsterSpawnManager.Instance.SpawnOneShotAsync(slot.monsterId, slot.level, slot.origin);
+			Monster monster = await MonsterSpawnManager.Instance.SpawnOneShotAsync(slot.monsterId, slot.level, slot.origin, slot.rewardGroupId);
 			if (monster == null)
 			{
 				slot.instanceId = 0;

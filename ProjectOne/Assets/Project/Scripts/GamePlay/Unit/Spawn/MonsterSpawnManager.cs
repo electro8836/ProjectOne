@@ -72,14 +72,15 @@ namespace ProjectOne.Unit
 		}
 
 		// 한 마리 스폰. 위치는 호출자가 정한다 — 필드는 스폰 포인트, 던전은 슬롯.
-		public void SpawnOneShot(int monsterId, int level, Vector3 pos)
+		// rewardGroupId 는 MonsterSpawn.RewardGroupID(지역 드랍)다. 0 이면 지역 드랍이 없다.
+		public void SpawnOneShot(int monsterId, int level, Vector3 pos, int rewardGroupId = 0)
 		{
-			SpawnOneShotAsync(monsterId, level, pos).Forget();
+			SpawnOneShotAsync(monsterId, level, pos, rewardGroupId).Forget();
 		}
 
 		// 생성된 개체를 돌려주는 형태. 필드 리젠은 어느 슬롯의 몬스터인지 알아야 하므로 이쪽을 쓴다.
 		// UnitSpawnedEvent 로 되받으면 동시 스폰 시 요청과 결과가 어긋난다.
-		public async UniTask<Monster> SpawnOneShotAsync(int monsterId, int level, Vector3 pos)
+		public async UniTask<Monster> SpawnOneShotAsync(int monsterId, int level, Vector3 pos, int rewardGroupId = 0)
 		{
 			if (monsterId <= 0)
 			{
@@ -96,6 +97,9 @@ namespace ProjectOne.Unit
 				_alive--;
 				return null;
 			}
+
+			// 풀 재사용이므로 스폰마다 덮어써야 한다.
+			monster.SetSpawnRewardGroup(rewardGroupId);
 
 			_active[monster.GetID()] = monster;
 

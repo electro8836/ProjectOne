@@ -26,6 +26,16 @@ namespace ProjectOne.Unit.Stats
 		// 출처(source)별 modifier 인덱스 — 빈 source는 등록 안 함
 		readonly Dictionary<string, List<StatModifier>> _bySource = new Dictionary<string, List<StatModifier>>();
 
+		int _version;
+
+		// 값이 한 번이라도 바뀌면 증가한다. 소환물이 주인 스탯 변경을 감지하는 용도다.
+		// 이벤트를 쓰지 않는 이유 — 장비 교체 한 번에 모디파이어가 수십 개 붙는데,
+		// 이벤트면 그때마다 소환물 전체가 재계산된다. 버전 비교는 틱당 int 비교 한 번이다.
+		public int Version
+		{
+			get { return _version; }
+		}
+
 		// === Base 채널 (영구 성장: 캐릭터/몬스터 기본 스탯, 레벨 성장) ===
 
 		public void SetBase(StatDetail detail, float value)
@@ -256,7 +266,7 @@ namespace ProjectOne.Unit.Stats
 			}
 		}
 
-		static void ApplyDelta(Bucket b, StatDetailTypes kind, float delta)
+		void ApplyDelta(Bucket b, StatDetailTypes kind, float delta)
 		{
 			switch (kind)
 			{
@@ -268,6 +278,7 @@ namespace ProjectOne.Unit.Stats
 			}
 
 			b.Dirty = true;
+			_version++;
 		}
 	}
 }

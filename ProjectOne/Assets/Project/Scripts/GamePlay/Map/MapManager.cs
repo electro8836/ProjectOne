@@ -27,6 +27,7 @@ namespace ProjectOne.Map
 
 		private sealed class Entry
 		{
+			public int mapId;
 			public GameObject instance;
 			public TilemapGrid grid;
 			public Vector3 origin;
@@ -165,7 +166,10 @@ namespace ProjectOne.Map
 
 		private async UniTask<bool> instantiateAsync(string address, Vector3 origin, int mapId, CancellationToken ct)
 		{
-			GameObject mapGo = await AddressableHelper.InstantiateAsync(address, null, true, ct);
+			// Try 계열을 쓴다 — InstantiateAsync 는 미등록 주소에서 예외를 던지는데, 아래 null 분기가
+			// 그걸 기대하고 있어 경고 경로가 죽는다. 맵 프리팹 미등록은 콘텐츠 제작 중 흔한 상태라
+			// 여기서 흐름 전체가 죽으면 로딩 화면이 영구 고착된다.
+			GameObject mapGo = await AddressableHelper.TryInstantiateAsync(address, null, true, ct);
 			if (mapGo == null)
 			{
 				Debug.LogWarning($"[MapManager] 그리드맵 프리팹을 찾지 못했습니다: {address}");
@@ -185,6 +189,7 @@ namespace ProjectOne.Map
 			grid.InitializeFlowField();
 
 			Entry entry = new Entry();
+			entry.mapId = mapId;
 			entry.instance = mapGo;
 			entry.grid = grid;
 			entry.origin = origin;
@@ -296,6 +301,7 @@ namespace ProjectOne.Map
 
 		private static readonly List<MonsterSpawnPoint> _emptySpawnPoints = new List<MonsterSpawnPoint>();
 		private static readonly List<DungeonSpawnSlot> _emptySlots = new List<DungeonSpawnSlot>();
+		private static readonly List<NpcSpawnPoint> _emptyNpcPoints = new List<NpcSpawnPoint>();
 
 		// 필드 스폰 포인트. 맵이 없으면 빈 목록(널 아님).
 		public IReadOnlyList<MonsterSpawnPoint> GetSpawnPoints(int mapId)
@@ -307,6 +313,54 @@ namespace ProjectOne.Map
 			}
 
 			return entry.grid.SpawnPoints;
+		}
+
+		// NPC 배치 마커. 맵이 없으면 빈 목록(널 아님).
+		public IReadOnlyList<NpcSpawnPoint> GetNpcSpawnPoints(int mapId)
+		{
+			Entry entry;
+			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.grid == null)
+			{
+				return _emptyNpcPoints;
+			}
+
+			return entry.grid.NpcPoints;
+		}
+
+		// 현재 로드된 맵 ID 목록 — NPC 배치가 맵 단위로 순회한다.
+		public void CollectLoadedMapIds(List<int> buffer)
+		{
+			buffer.Clear();
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				if (_ordered[i].mapId > 0)
+				{
+					buffer.Add(_ordered[i].mapId);
+				}
+			}
+		}
+
+		// 좌표가 속한 맵의 ID. 어느 그리드에도 안 들어가면 0.
+		//
+		// 퀘스트의 지역 한정 처치(KillMonster / QuestParam_3)가 쓴다 — 그리드가 10000 간격으로
+		// 떨어져 있어 좌표만으로 어느 지역인지 확정된다.
+		public int GetMapIdAt(Vector2 worldPos)
+		{
+			if (_lastHit != null && _lastHit.grid != null && _lastHit.grid.ContainsWorldPos(worldPos) == true)
+			{
+				return _lastHit.mapId;
+			}
+
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				Entry entry = _ordered[i];
+				if (entry.grid != null && entry.grid.ContainsWorldPos(worldPos) == true)
+				{
+					return entry.mapId;
+				}
+			}
+
+			return 0;
 		}
 
 		// 던전 슬롯 — SlotIndex 오름차순.

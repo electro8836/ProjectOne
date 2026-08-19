@@ -21,6 +21,41 @@ namespace ProjectOne.Unit.AI
 			return brain;
 		}
 
+		// 소환물: Table_Summon.AIType 이 behavior 를 정한다 (설계 7.5).
+		// row 가 null 이면 고정형으로 폴백한다 — 움직이지 않는 쪽이 안전하다.
+		public static AiBrain CreateForSummon(UnitBase summon, Table_Summon.Row row)
+		{
+			IAiBehavior behavior = createSummonBehavior(row);
+			AiBrain brain = new AiBrain(summon, behavior);
+			brain.Blackboard.ApplySummon(row);
+			return brain;
+		}
+
+		private static IAiBehavior createSummonBehavior(Table_Summon.Row row)
+		{
+			SummonAIType type = (row != null) ? row.AIType : SummonAIType.None;
+
+			switch (type)
+			{
+				case SummonAIType.Follow:
+					return new SummonFollowBehavior();
+
+				case SummonAIType.Chase:
+					return new SummonChaseBehavior();
+
+				case SummonAIType.Wander:
+					return new SummonWanderBehavior();
+
+				case SummonAIType.Orbit:
+					// 설계 2.11 — 예약된 값이다. 데이터에 들어오면 즉시 드러내야 한다.
+					UnityEngine.Debug.LogError($"[AiBrainFactory] SummonAIType.Orbit 은 예약 값입니다 — Summon:{(row != null ? row.ID.ToString() : "null")}");
+					break;
+			}
+
+			// Stationary 와 None(데이터 누락) 은 고정형. 몬스터와 같은 behavior 를 쓴다.
+			return new MonsterStationaryBehavior();
+		}
+
 		private static IAiBehavior createBehavior(Table_MonsterAI.Row row)
 		{
 			MonsterAIType type = (row != null) ? row.AIType : MonsterAIType.None;

@@ -30,6 +30,17 @@ namespace ProjectOne.Unit.AI
 		// 스폰 원점으로 복귀하는 중 — 복귀 중에는 타겟을 다시 잡지 않는다.
 		public bool Returning;
 
+		// ── 소환물 전용 ───────────────────────────────────────────────
+		// 소환물은 앵커가 고정 좌표가 아니라 "주인"이다. Anchor 를 매 틱 주인 위치로 갱신해
+		// TickLeash 를 그대로 재사용한다 (Table_Summon.ReturnDistance 가 LeashRange 다).
+
+		public UnitBase SummonOwner;
+
+		public float FollowDistance;
+
+		// 타겟 후보 유형 — 몬스터는 히어로를, 소환물은 몬스터를 노린다.
+		public UnitType TargetUnitType = UnitType.Hero;
+
 		public void ApplyAI(Table_MonsterAI.Row row)
 		{
 			if (row == null)
@@ -44,6 +55,26 @@ namespace ProjectOne.Unit.AI
 			DetectRange = (row.DetectRange > 0f) ? row.DetectRange : DefaultDetectRange;
 			LeashRange = (row.LeashRange > 0f) ? row.LeashRange : DefaultLeashRange;
 		}
+
+		// 소환물용 — 소환물은 AggroType 이 없다. 언제나 선공이고 대상은 몬스터다.
+		public void ApplySummon(Table_Summon.Row row)
+		{
+			Aggro = AggroType.Aggressive;
+			TargetUnitType = UnitType.Monster;
+			DetectRange = DefaultDetectRange;
+
+			if (row == null)
+			{
+				LeashRange = DefaultLeashRange;
+				FollowDistance = DefaultFollowDistance;
+				return;
+			}
+
+			LeashRange = (row.ReturnDistance > 0f) ? row.ReturnDistance : DefaultLeashRange;
+			FollowDistance = (row.FollowDistance > 0f) ? row.FollowDistance : DefaultFollowDistance;
+		}
+
+		public const float DefaultFollowDistance = 3f;
 
 		// 스폰/리스폰 시 초기화. 앵커는 그 자리에 고정된다.
 		public void ResetForSpawn(Vector2 spawnOrigin)

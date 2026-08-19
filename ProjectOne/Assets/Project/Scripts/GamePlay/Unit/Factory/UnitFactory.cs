@@ -195,6 +195,30 @@ namespace ProjectOne.Unit
 			RefreshSkillIndicator(unit);
 		}
 
+		// 소환물 구성 — 소환물은 자기 스탯 그룹이 없다. 전 스탯이 주인 비율 상속에서 온다 (설계 7.4).
+		// 따라서 여기서는 빈 컨테이너만 붙이고, 값 주입은 SummonUnit 이 매 틱 주인 버전을 보고 한다.
+		public void ComposeSummon(SummonUnit unit, Table_Summon.Row row, Faction faction)
+		{
+			ComposeBase(unit, 0, 1, StatContainerFactory.ForMonster(0, 1), faction);
+
+			if (row == null)
+			{
+				return;
+			}
+
+			if (row.SkillID_1 != EDT.Skill.None)
+			{
+				unit.SkillContainer.Register(row.SkillID_1, SourceBase);
+			}
+
+			if (row.SkillID_2 != EDT.Skill.None)
+			{
+				unit.SkillContainer.Register(row.SkillID_2, SourceBase);
+			}
+
+			RefreshSkillIndicator(unit);
+		}
+
 		// 히어로 구성 — 캐릭터 레벨 기준 기본 스탯 + 자동전투 두뇌(옵션).
 		private void ComposeHero(UnitBase unit, Faction faction, bool autoControl)
 		{

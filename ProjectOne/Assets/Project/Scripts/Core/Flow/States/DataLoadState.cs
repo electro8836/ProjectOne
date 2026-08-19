@@ -4,6 +4,7 @@ using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.Loading;
 using ProjectOne.Network;
+using ProjectOne.Quests;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
 
@@ -31,6 +32,10 @@ namespace ProjectOne.Flow
 
 			// 로드 완료 — DevTester 등 후처리가 이 시점에 Account 를 오버라이드할 수 있다.
 			EventManager.Instance.Publish(new DataLoadedEvent());
+
+			// 저장된 진행도로 시작하고 자동 수락 퀘스트를 훑는다. DataLoadedEvent 이후여야
+			// DevTester 의 오버라이드(레벨 등)가 활성화 조건에 반영된다.
+			QuestTracker.Instance.OnDataLoaded();
 
 			GameFlow.Instance.ChangeStateAsync(new TownState()).Forget();
 		}

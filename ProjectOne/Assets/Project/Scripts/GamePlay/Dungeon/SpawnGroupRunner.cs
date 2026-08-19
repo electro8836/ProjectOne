@@ -63,7 +63,7 @@ namespace ProjectOne.Dungeon
 					Vector3 pos = resolvePosition(slots, slotCursor);
 					slotCursor++;
 
-					MonsterSpawnManager.Instance.SpawnOneShot(row.MonsterID, level, pos);
+					MonsterSpawnManager.Instance.SpawnOneShot(row.MonsterID, level, pos, row.RewardGroupID);
 				}
 			}
 		}

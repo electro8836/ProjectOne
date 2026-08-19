@@ -21,6 +21,11 @@ namespace ProjectOne.Unit
 
 		private MonsterType _monsterType = MonsterType.None;
 
+		// 지역 드랍 그룹 — MonsterSpawn.RewardGroupID (보상 설계 9장).
+		// 같은 몬스터라도 어느 스폰 조합에서 나왔느냐에 따라 드랍이 달라지므로 스폰 시점에 주입한다.
+		// 고유 드랍(Monster.RewardGroupID)은 원형이 소유하므로 여기 두지 않는다.
+		public int SpawnRewardGroupId { get; private set; }
+
 		public override UnitType GetUnitType()
 		{
 			return UnitType.Monster;
@@ -41,6 +46,12 @@ namespace ProjectOne.Unit
 		public void SetMonsterType(MonsterType type)
 		{
 			_monsterType = type;
+		}
+
+		// 지역 드랍 그룹 주입 — 스폰마다 바뀐다(풀 재사용이므로 매번 덮어써야 한다).
+		public void SetSpawnRewardGroup(int groupId)
+		{
+			SpawnRewardGroupId = groupId;
 		}
 
 		public void TakeDamage(in DamageInfo info)
@@ -64,7 +75,7 @@ namespace ProjectOne.Unit
 
 			if (wasAlive == true)
 			{
-				EventManager.Instance.Publish(new MonsterKillEvent(GetTableID(), Level, HitCenter));
+				EventManager.Instance.Publish(new MonsterKillEvent(GetTableID(), Level, HitCenter, SpawnRewardGroupId));
 			}
 		}
 

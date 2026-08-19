@@ -2,6 +2,7 @@
 using EDT;
 using UnityEngine;
 using ProjectOne.Unit;
+using ProjectOne.Unit.Stats;
 
 namespace ProjectOne.Skill
 {
@@ -12,13 +13,37 @@ namespace ProjectOne.Skill
 	// 이제 효과마다 EffectTime 이 달라 예약 항목이 효과 단위다 (설계 4.2 · 5.1).
 	public sealed class SkillContainer
 	{
+		// 예약 항목이 무엇을 하는가.
+		//
+		// 다단히트 · 지속 회복 · 투사체 연속 발사는 "N번을 간격 T로 반복"이라는 같은 문제다.
+		// 효과 전체를 다시 돌리면 탐색과 연쇄(ChainEffectIDs)까지 반복되므로, 반복 대상만 따로 부른다.
+		public enum PendingKind
+		{
+			Effect = 0,			// 효과 1개를 통째로 적용 (탐색 결과 스냅샷 대상)
+			DamageHit,			// 다단히트의 2타 이후
+			HealTick,			// 지속 회복의 2틱 이후
+			ProjectileShot,		// 연속 발사의 2발 이후
+			RemoveModifier		// 한시 StatChange 회수
+		}
+
 		// 지연 발동 예약 — 코루틴 대신 Tick 에서 카운트다운 (동시 다수 스킬 부하/할당 회피)
 		struct PendingEffect
 		{
+			public PendingKind kind;
 			public float remaining;
 			public EDT.Skill skillId;
 			public SkillEffect effectId;
 			public List<UnitBase> targets;	// 예약 시점의 탐색 결과 스냅샷
+
+			// 반복 예약 — 남은 횟수와 간격. repeat <= 1 이면 이번이 마지막이다.
+			public int repeat;
+			public float interval;
+
+			// 반복 회차 (0부터). 연속 발사가 부채꼴 각도를 계산할 때 쓴다.
+			public int index;
+
+			// RemoveModifier 전용 — 되돌릴 핸들
+			public StatModifier modifier;
 		}
 
 		// 캐스팅 중 이동/스킬 차단에 쓰는 차단 키
@@ -431,6 +456,20 @@ namespace ProjectOne.Skill
 				int last = _pending.Count - 1;
 				_pending[i] = _pending[last];
 				_pending.RemoveAt(last);
+
+				// 반복이 남았으면 대상 스냅샷을 넘겨 다시 예약한다. 스냅샷은 마지막 발동에서만 반납된다.
+				if (p.repeat > 1)
+				{
+					PendingEffect next = p;
+					next.repeat = p.repeat - 1;
+					next.index = p.index + 1;
+					next.remaining = p.interval;
+					_pending.Add(next);
+
+					dispatchWithoutRelease(p);
+					continue;
+				}
+
 				dispatch(p);
 			}
 		}
@@ -452,11 +491,13 @@ namespace ProjectOne.Skill
 		// targets 는 호출자의 버퍼일 수 있으므로 내부에서 복사해 스냅샷으로 보관한다.
 		public void ScheduleEffect(float delay, EDT.Skill skillId, SkillEffect effectId, List<UnitBase> targets)
 		{
-			PendingEffect p;
+			PendingEffect p = default(PendingEffect);
+			p.kind = PendingKind.Effect;
 			p.remaining = delay;
 			p.skillId = skillId;
 			p.effectId = effectId;
 			p.targets = rentTargetList(targets);
+			p.repeat = 1;
 
 			if (delay <= 0f)
 			{
@@ -467,15 +508,98 @@ namespace ProjectOne.Skill
 			_pending.Add(p);
 		}
 
+		// 반복 예약 — count 회를 interval 간격으로. 첫 발동은 delay 뒤다.
+		// 다단히트 2타 이후 / 지속 회복 2틱 이후 / 연속 발사 2발 이후가 이 경로를 쓴다.
+		public void ScheduleRepeat(PendingKind kind, float delay, float interval, int count, int startIndex,
+			EDT.Skill skillId, SkillEffect effectId, List<UnitBase> targets)
+		{
+			if (count <= 0)
+			{
+				return;
+			}
+
+			PendingEffect p = default(PendingEffect);
+			p.kind = kind;
+			p.remaining = delay;
+			p.interval = interval;
+			p.repeat = count;
+			p.index = startIndex;
+			p.skillId = skillId;
+			p.effectId = effectId;
+			p.targets = rentTargetList(targets);
+
+			_pending.Add(p);
+		}
+
+		// 한시 StatChange 회수 예약 — 소유자가 죽거나 씬이 바뀌면 큐와 함께 정리된다.
+		public void ScheduleModifierRemoval(float delay, UnitBase target, StatModifier modifier)
+		{
+			if (target == null || modifier == null || delay <= 0f)
+			{
+				return;
+			}
+
+			PendingEffect p = default(PendingEffect);
+			p.kind = PendingKind.RemoveModifier;
+			p.remaining = delay;
+			p.repeat = 1;
+			p.modifier = modifier;
+			p.targets = rentTargetList(null);
+			p.targets.Add(target);
+
+			_pending.Add(p);
+		}
+
 		void dispatch(PendingEffect p)
 		{
-			SkillExecutor.RunEffect(p.skillId, p.effectId, _owner, p.targets);
+			dispatchWithoutRelease(p);
 			releaseTargetList(p.targets);
 
 			// 캐스팅 스킬은 마지막 효과가 나간 뒤 차단을 푼다.
 			if (_isCasting == true && p.skillId == _castingId && hasPendingFor(_castingId) == false)
 			{
 				EndCasting();
+			}
+		}
+
+		// 반복 예약은 스냅샷을 다음 회차가 물려받으므로 여기서 반납하지 않는다.
+		void dispatchWithoutRelease(PendingEffect p)
+		{
+			switch (p.kind)
+			{
+				case PendingKind.Effect:
+					SkillExecutor.RunEffect(p.skillId, p.effectId, _owner, p.targets);
+					break;
+
+				case PendingKind.DamageHit:
+					SkillEffectApplier.RunDamageHit(p.effectId, _owner, p.skillId, p.targets);
+					break;
+
+				case PendingKind.HealTick:
+					SkillEffectApplier.RunHealTick(p.effectId, _owner, p.skillId, p.targets);
+					break;
+
+				case PendingKind.ProjectileShot:
+					SkillEffectApplier.RunProjectileShot(p.effectId, _owner, p.skillId, p.targets, p.index);
+					break;
+
+				case PendingKind.RemoveModifier:
+					removeModifier(p);
+					break;
+			}
+		}
+
+		private static void removeModifier(PendingEffect p)
+		{
+			if (p.targets.Count == 0)
+			{
+				return;
+			}
+
+			UnitBase target = p.targets[0];
+			if (target != null && target.Stats != null)
+			{
+				target.Stats.RemoveModifier(p.modifier);
 			}
 		}
 

@@ -17,15 +17,21 @@ namespace ProjectOne.Boot
 		[Header("히어로")]
 		[SerializeField] private string _heroPrefabAddress;
 
+		// 개발용 — 켜면 타이틀의 로그인 대기를 건너뛰고 빈 계정으로 진행한다.
+		// 서버 없이 씬 흐름과 콘텐츠를 확인할 때만 쓴다.
+		[Header("개발")]
+		[SerializeField] private bool _skipLogin;
+
 		private void Start()
 		{
 			// 앱 일시정지/종료 시 미저장 장착 변경을 flush 할 전역 컴포넌트 생성(1회).
 			LoadoutSyncFlusher.Ensure();
 
 			UnitFactory.Instance.SetHeroPrefabAddress(_heroPrefabAddress);
+			TitleState.SkipLogin = _skipLogin;
 
 			// 흐름의 첫 상태로 진입 — 이후 전이는 각 상태가 연쇄한다.
-			// 미관측 예외는 GameFlow.ChangeStateAsync 내부 try/catch가 흡수.
+			// 상태 진입 중 예외는 GameFlow.ChangeStateAsync 가 잡아 로그를 남기고 로딩을 걷는다.
 			GameFlow.Instance.ChangeStateAsync(new BootState()).Forget();
 		}
 	}

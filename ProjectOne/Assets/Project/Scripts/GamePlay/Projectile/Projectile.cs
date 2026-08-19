@@ -172,7 +172,9 @@ namespace ProjectOne.Projectile
 			// 이동 방식 초기화 — 회전은 Update 에서 궤적이 제공하는 facing 으로 매 프레임 갱신
 			if (_trajectory != null)
 			{
-				_trajectory.OnLaunch(data, _speed, _maxDistance, _lifeTime);
+				// SkillEffect 의 SpeedRate 로 프리팹 속도를 배율 조정한다 (설계 5.5).
+				float speed = (data.speedRate > 0f) ? _speed * data.speedRate : _speed;
+				_trajectory.OnLaunch(data, speed, _maxDistance, _lifeTime);
 			}
 		}
 

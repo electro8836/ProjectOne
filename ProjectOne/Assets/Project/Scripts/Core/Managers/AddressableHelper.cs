@@ -125,6 +125,34 @@ namespace ProjectOne.Resources
 			return await awaitInstanceHandle(handle, address, ct);
 		}
 
+		// InstantiateAsync 실패를 null 반환으로 변환 (호출부 try-catch 제거용). OCE는 그대로 전파.
+		// 미등록 주소가 흔한 경로 — 콘텐츠가 없다고 흐름 전체가 죽어서는 안 되는 곳 — 가 쓴다.
+		public static async UniTask<GameObject> TryInstantiateAsync(
+			string address,
+			Transform parent = null,
+			bool instantiateInWorldSpace = false,
+			CancellationToken ct = default)
+		{
+			if (string.IsNullOrEmpty(address))
+			{
+				return null;
+			}
+
+			try
+			{
+				return await InstantiateAsync(address, parent, instantiateInWorldSpace, ct);
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch (Exception e)
+			{
+				Debug.LogError($"[AddressableHelper] 인스턴스화 실패: {address} ({e.Message})");
+				return null;
+			}
+		}
+
 		public static async UniTask<GameObject> InstantiateAsync(
 			AssetReference reference,
 			Transform parent = null,

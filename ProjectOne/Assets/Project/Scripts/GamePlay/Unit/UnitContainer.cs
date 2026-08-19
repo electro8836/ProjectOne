@@ -31,6 +31,7 @@ namespace ProjectOne.Unit
 
 		Transform _heroesRoot;
 		Transform _monstersRoot;
+		Transform _summonsRoot;
 
 		// 외부 순회용 — 인덱스 for 사용 권장
 		public IReadOnlyList<UnitBase> All
@@ -49,6 +50,7 @@ namespace ProjectOne.Unit
 			base.Awake();
 			_heroesRoot   = CreateChild("Heroes");
 			_monstersRoot = CreateChild("Monsters");
+			_summonsRoot  = CreateChild("Summons");
 		}
 
 		Transform CreateChild(string name)
@@ -83,6 +85,7 @@ namespace ProjectOne.Unit
 			{
 				case UnitType.Hero:    return _heroesRoot;
 				case UnitType.Monster: return _monstersRoot;
+				case UnitType.Summon:  return _summonsRoot;
 				default:               return transform;  // None 등 미분류 — 컨테이너 루트 직속
 			}
 		}

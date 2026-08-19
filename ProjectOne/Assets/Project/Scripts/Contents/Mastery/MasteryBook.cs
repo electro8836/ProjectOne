@@ -113,6 +113,20 @@ namespace ProjectOne.Mastery
 			return true;
 		}
 
+		// 지식의 서 사용 (소모품 설계 5.3). 대상 마스터리는 호출자가 정한다 — 테이블에 없다.
+		// 가용 포인트가 늘어나는 것이므로 트리 변경과 같은 무효화 경로를 탄다.
+		public bool TryUseItemPoint(WeaponMastery id, int amount)
+		{
+			MasteryProgress progress = GetOrCreate(id);
+			if (progress == null || progress.TryUseItemPoint(amount) == false)
+			{
+				return false;
+			}
+
+			notifyChanged(id);
+			return true;
+		}
+
 		public void ResetTree(WeaponMastery id)
 		{
 			MasteryProgress progress = Find(id);
