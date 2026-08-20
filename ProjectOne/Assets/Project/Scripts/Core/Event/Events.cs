@@ -230,9 +230,9 @@ namespace ProjectOne.Event
 				}
 		}
 
-		// 오버레이 스택이 비었을 때 알림 (UIManager가 마지막 오버레이를 닫은 직후 발행).
-		// 로비 탭 그룹 등에서 구독해 탭 선택을 해제한다.
-		public readonly struct OverlayClosedEvent
+		// 열린 창이 모두 닫혔을 때 알림 (UIManager가 마지막 창을 닫은 직후 발행).
+		// 하단 탭 그룹 등에서 구독해 탭 선택을 해제한다.
+		public readonly struct WindowClosedEvent
 		{
 		}
 

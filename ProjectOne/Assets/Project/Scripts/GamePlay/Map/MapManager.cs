@@ -4,17 +4,18 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Utils;
+using ProjectOne.Event;
 using ProjectOne.Resources;
 
 namespace ProjectOne.Map
 {
 	// 맵 로드/수명/플로우필드 질의를 전담하는 전투 수명 매니저.
 	//
-	// 필드(4.Field)는 **액트 하나의 스테이지 그리드맵을 전부 동시에 로드**하므로 여러 개를 함께 보유한다.
+	// 필드(4.Field)는 **액트 하나의 필드 그리드맵을 전부 동시에 로드**하므로 여러 개를 함께 보유한다.
 	// 던전(5.Dungeon)은 단계마다 하나만 쓴다 — 같은 구조로 1개만 로드하면 된다.
 	//
 	// 배치 좌표는 테이블이 아니라 코드가 정한다:
-	//   ( (스테이지Order - 1) × Spacing,  (액트Order - 1) × Spacing,  0 )
+	//   ( (필드Order - 1) × Spacing,  (액트Order - 1) × Spacing,  0 )
 	//
 	// 플로우필드 계산(좌표/통행/BFS)만 담당 — "누구를 향해 베이크할지"는 호출자(전투 규칙)가 정한다.
 	public class MapManager : MonoSingleton<MapManager>
@@ -22,8 +23,9 @@ namespace ProjectOne.Map
 		// 그리드맵끼리 절대 겹치지 않도록 띄우는 간격
 		public const float MapSpacing = 10000f;
 
-		// 전투 전용 — 전투씬 수명에만 존재(마을 등으로 따라가지 않음)
-		protected override bool Persistent => false;
+		// 상시 매니저 — 마을·필드·던전이 모두 이 매니저를 거쳐 맵을 띄운다.
+		// 맵 로드와 청소의 유일한 주체이므로 씬과 함께 죽으면 안 된다.
+		protected override bool Persistent => true;
 
 		private sealed class Entry
 		{
@@ -41,6 +43,12 @@ namespace ProjectOne.Map
 
 		// 마지막으로 질의된 그리드 — 히어로는 대개 한 그리드 안에 머무르므로 캐시가 거의 항상 적중한다.
 		private Entry _lastHit;
+
+		// 씬에 배치된 컨테이너. 없으면 ensureContainer 가 매니저 자식으로 만들어 둔다.
+		private MapContainer _container;
+
+		// 매니저가 직접 만든 폴백 컨테이너인가.
+		private bool _ownsContainer;
 
 		public bool HasMap => _ordered.Count > 0;
 
@@ -74,7 +82,7 @@ namespace ProjectOne.Map
 			return await instantiateAsync(address, Vector3.zero, 0, ct);
 		}
 
-		// 액트 단위 로드 — 그 액트에 속한 MapStage 전부를 좌표 규칙대로 배치한다.
+		// 액트 단위 로드 — 그 액트에 속한 Field 전부를 좌표 규칙대로 배치한다.
 		public async UniTask<bool> LoadActAsync(int actId, CancellationToken ct = default)
 		{
 			UnloadAll();
@@ -86,41 +94,41 @@ namespace ProjectOne.Map
 				return false;
 			}
 
-			List<Table_MapStage.Row> stages = new List<Table_MapStage.Row>();
-			Dictionary<int, Table_MapStage.Row> all = Table_MapStage.All();
-			Dictionary<int, Table_MapStage.Row>.Enumerator e = all.GetEnumerator();
+			List<Table_Field.Row> fields = new List<Table_Field.Row>();
+			Dictionary<int, Table_Field.Row> all = Table_Field.All();
+			Dictionary<int, Table_Field.Row>.Enumerator e = all.GetEnumerator();
 			while (e.MoveNext() == true)
 			{
 				if (e.Current.Value.ActID == actId)
 				{
-					stages.Add(e.Current.Value);
+					fields.Add(e.Current.Value);
 				}
 			}
 
-			if (stages.Count == 0)
+			if (fields.Count == 0)
 			{
-				Debug.LogError($"[MapManager] 액트 {actId} 에 속한 MapStage 가 없습니다.");
+				Debug.LogError($"[MapManager] 액트 {actId} 에 속한 Field 가 없습니다.");
 				return false;
 			}
 
 			bool anyLoaded = false;
-			for (int i = 0; i < stages.Count; i++)
+			for (int i = 0; i < fields.Count; i++)
 			{
-				Table_MapStage.Row stage = stages[i];
-				Vector3 origin = GetStageOrigin(act.Order, stage.Order);
+				Table_Field.Row field = fields[i];
+				Vector3 origin = GetFieldOrigin(act.Order, field.Order);
 
-				// MapStage 는 Map 과 ID 를 공유한다 (맵 설계 8장).
-				bool ok = await loadOneAsync(stage.ID, origin, ct);
+				// Field 는 Map 과 ID 를 공유한다 (맵 설계 8장).
+				bool ok = await loadOneAsync(field.ID, origin, ct);
 				anyLoaded |= ok;
 			}
 
 			return anyLoaded;
 		}
 
-		// 배치 좌표 규칙 — 액트는 Y축, 스테이지는 X축으로 나열한다.
-		public static Vector3 GetStageOrigin(int actOrder, int stageOrder)
+		// 배치 좌표 규칙 — 액트는 Y축, 필드는 X축으로 나열한다.
+		public static Vector3 GetFieldOrigin(int actOrder, int fieldOrder)
 		{
-			float x = (stageOrder - 1) * MapSpacing;
+			float x = (fieldOrder - 1) * MapSpacing;
 			float y = (actOrder - 1) * MapSpacing;
 			return new Vector3(x, y, 0f);
 		}
@@ -134,14 +142,14 @@ namespace ProjectOne.Map
 				return entry.origin;
 			}
 
-			Table_MapStage.Row stage = Table_MapStage.Get(mapId);
-			if (stage == null)
+			Table_Field.Row field = Table_Field.Get(mapId);
+			if (field == null)
 			{
 				return Vector3.zero;
 			}
 
-			Table_Act.Row act = Table_Act.Get(stage.ActID);
-			return GetStageOrigin(act != null ? act.Order : 1, stage.Order);
+			Table_Act.Row act = Table_Act.Get(field.ActID);
+			return GetFieldOrigin(act != null ? act.Order : 1, field.Order);
 		}
 
 		private async UniTask<bool> loadOneAsync(int mapId, Vector3 origin, CancellationToken ct)
@@ -169,7 +177,8 @@ namespace ProjectOne.Map
 			// Try 계열을 쓴다 — InstantiateAsync 는 미등록 주소에서 예외를 던지는데, 아래 null 분기가
 			// 그걸 기대하고 있어 경고 경로가 죽는다. 맵 프리팹 미등록은 콘텐츠 제작 중 흔한 상태라
 			// 여기서 흐름 전체가 죽으면 로딩 화면이 영구 고착된다.
-			GameObject mapGo = await AddressableHelper.TryInstantiateAsync(address, null, true, ct);
+			// 컨테이너 자식으로 띄운다 — 씬에 배치된 컨테이너면 씬 전환이 곧 정리가 된다.
+			GameObject mapGo = await AddressableHelper.TryInstantiateAsync(address, ensureContainerRoot(), true, ct);
 			if (mapGo == null)
 			{
 				Debug.LogWarning($"[MapManager] 그리드맵 프리팹을 찾지 못했습니다: {address}");
@@ -201,6 +210,85 @@ namespace ProjectOne.Map
 
 			_ordered.Add(entry);
 			return true;
+		}
+
+		protected override void Awake()
+		{
+			base.Awake();
+			EventManager.Instance.Subscribe<GameStateChangedEvent>(onGameStateChanged);
+		}
+
+		// 씬의 MapContainer 가 Awake 에서 자기를 등록한다.
+		// 매니저가 만든 폴백이 이미 있으면 그것을 버리고 씬 것을 쓴다.
+		public void RegisterContainer(MapContainer container)
+		{
+			if (container == null || _container == container)
+			{
+				return;
+			}
+
+			if (_ownsContainer == true && _container != null)
+			{
+				Destroy(_container.gameObject);
+			}
+
+			_container = container;
+			_ownsContainer = false;
+		}
+
+		public void UnregisterContainer(MapContainer container)
+		{
+			if (_container == container)
+			{
+				_container = null;
+			}
+		}
+
+		// 컨테이너가 없으면 매니저 자식으로 하나 만든다.
+		// 씬에 배치하는 편이 낫지만, 하나를 빠뜨렸다고 맵 로드가 통째로 죽어서는 안 된다.
+		private Transform ensureContainerRoot()
+		{
+			if (_container != null)
+			{
+				return _container.transform;
+			}
+
+			GameObject go = new GameObject("MapContainer (auto)");
+			go.transform.SetParent(transform, false);
+			_container = go.AddComponent<MapContainer>();
+			_ownsContainer = true;
+			return _container.transform;
+		}
+
+		protected override void OnDestroy()
+		{
+			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
+
+			// 영속이라 씬 파괴가 대신 치워 주지 않는다. Addressable 인스턴스 핸들을 직접 해제한다.
+			UnloadAll();
+			base.OnDestroy();
+		}
+
+		// 맵이 필요 없는 상태로 나가면 비운다.
+		//
+		// 씬 수명이던 시절에는 씬 파괴가 맵을 함께 지웠다. 영속이 된 뒤로는 타이틀 같은 곳에서도
+		// 맵이 계속 렌더되므로 여기서 끊어야 한다.
+		// 맵 교체(마을↔필드↔던전)는 Load*Async 가 진입부에서 UnloadAll 을 부르므로 여기서 관여하지 않는다.
+		private void onGameStateChanged(GameStateChangedEvent e)
+		{
+			if (usesMap(e.StateType) == true)
+			{
+				return;
+			}
+
+			UnloadAll();
+		}
+
+		private static bool usesMap(System.Type stateType)
+		{
+			return stateType == typeof(Flow.TownState)
+				|| stateType == typeof(Flow.FieldState)
+				|| stateType == typeof(Flow.DungeonState);
 		}
 
 		public void UnloadAll()

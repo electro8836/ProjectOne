@@ -10,7 +10,7 @@ using ProjectOne.Resources;
 
 namespace ProjectOne.UI
 {
-	// 장비 화면의 View(MVP). UIManager.OpenOverlayAsync 로 오버레이 캔버스에 열린다.
+	// 장비 화면의 View(MVP). UIManager.OpenWindowAsync 로 오버레이 캔버스에 열린다.
 	// 표시(슬롯 풀/아이콘 캐시/그리기)와 입력 전달만 담당하고, 데이터 조회·정렬·장착 결정은 EquipmentPresenter 가 한다.
 	// (클래스명을 EquipmentUI 로 유지 — 프리펩이 이 스크립트 GUID 를 참조하므로 이름 변경 시 missing script 발생.)
 	public class EquipmentUI : UIScreen, IView

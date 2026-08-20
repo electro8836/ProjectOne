@@ -25,7 +25,7 @@ namespace ProjectOne.UI
 		// 탭이 열 화면의 Addressable 주소 (탭→화면 매핑은 코드에서 관리)
 		private const string EQUIPMENT_ADDRESS = "UI_Equipment";
 		private const string DUNGEON_ADDRESS = "UI_DungeonSelect";
-		private const string STAGE_SELECT_ADDRESS = "UI_StageSelect";
+		private const string FIELD_SELECT_ADDRESS = "UI_FieldSelect";
 
 		private void Awake()
 		{
@@ -34,7 +34,7 @@ namespace ProjectOne.UI
 
 			// 배타 선택은 TabGroup이 담당하고, 여기선 선택된 탭의 화면 처리만 한다.
 			_tabGroup.OnTabChanged += onTabChanged;
-			EventManager.Instance.Subscribe<OverlayClosedEvent>(onOverlayClosed);
+			EventManager.Instance.Subscribe<WindowClosedEvent>(onOverlayClosed);
 			EventManager.Instance.Subscribe<CharacterChangeEvent>(onCharacterChanged);
 
 			Debug.Log("마을 HUD 로드");
@@ -51,7 +51,7 @@ namespace ProjectOne.UI
 			_dungeonButton.OnClickEvent -= onDungeonClicked;
 
 			_tabGroup.OnTabChanged -= onTabChanged;
-			EventManager.Instance.Unsubscribe<OverlayClosedEvent>(onOverlayClosed);
+			EventManager.Instance.Unsubscribe<WindowClosedEvent>(onOverlayClosed);
 			EventManager.Instance.Unsubscribe<CharacterChangeEvent>(onCharacterChanged);
 		}
 
@@ -63,18 +63,18 @@ namespace ProjectOne.UI
 		// 열린 오버레이를 조용히 닫고(선택 유지), 선택된 탭에 연결된 화면을 연다.
 		private async UniTask tabFlowAsync(TownMenuTab tab)
 		{
-			await UIManager.Instance.CloseAllOverlaysAsync();
+			await UIManager.Instance.CloseAllWindowsAsync();
 
 			switch (tab)
 			{
 				case TownMenuTab.Equipment:
-					await UIManager.Instance.OpenOverlayAsync<EquipmentUI>(EQUIPMENT_ADDRESS, this.GetCancellationTokenOnDestroy());
+					await UIManager.Instance.OpenWindowAsync<EquipmentUI>(EQUIPMENT_ADDRESS, this.GetCancellationTokenOnDestroy());
 					break;
 			}
 		}
 
 		// 사용자가 화면을 닫아 오버레이 스택이 비면 탭 선택을 해제한다.
-		private void onOverlayClosed(OverlayClosedEvent e)
+		private void onOverlayClosed(WindowClosedEvent e)
 		{
 			_tabGroup.ClearSelection();
 		}
@@ -120,12 +120,12 @@ namespace ProjectOne.UI
 		// 포탈 — 액트를 고르고 스테이지를 골라 필드로 나간다.
 		private void onPortalClicked()
 		{
-			UIManager.Instance.OpenOverlayAsync<StageSelectUI>(STAGE_SELECT_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
+			UIManager.Instance.OpenWindowAsync<FieldSelectUI>(FIELD_SELECT_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 
 		private void onDungeonClicked()
 		{
-			UIManager.Instance.OpenOverlayAsync<DungeonSelectUI>(DUNGEON_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
+			UIManager.Instance.OpenWindowAsync<DungeonSelectUI>(DUNGEON_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 	}
 }

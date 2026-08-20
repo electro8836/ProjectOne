@@ -13,8 +13,6 @@ namespace ProjectOne.Flow
 	{
 		public const string SceneName = "3.Town";
 
-		// 마을 HUD — 씬에 박지 않고 Addressable 로 띄운다.
-		private const string HudAddress = "UI_TownHUD";
 
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
@@ -28,7 +26,11 @@ namespace ProjectOne.Flow
 			await SceneManager.LoadSceneAsync(SceneName).ToUniTask(Progress.Create<float>(onSceneLoadProgress), cancellationToken: ct);
 
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 0f);
-			await SceneHud.LoadAsync(HudAddress, ct);
+
+			// 전역 MainHUD — 씬별 HUD 를 두지 않고 이 하나가 씬을 가로질러 산다.
+			// **히어로 스폰(TownDirector.Begin)보다 먼저다.** 조이스틱이 UnitSpawnedEvent 로
+			// 히어로를 찾으므로 순서가 뒤집히면 이벤트를 놓친다.
+			await UIManager.Instance.EnsureMainHudAsync(ct);
 
 			// 마을 맵 + NPC 배치. 씬은 비어 있고 코드가 띄운다 (맵 설계 8장).
 			TownDirector director = TownDirector.EnsureInstance();
@@ -42,7 +44,6 @@ namespace ProjectOne.Flow
 
 		public UniTask ExitAsync()
 		{
-			SceneHud.Unload();
 			return UniTask.CompletedTask;
 		}
 

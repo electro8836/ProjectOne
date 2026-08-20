@@ -36,7 +36,7 @@ namespace ProjectOne.Skill
 			{
 				Vector2 hitCenter = useOverride ? centerOverride : caster.HitCenter;
 				Vector2 facing = useOverride ? facingOverride : GetFacing(caster);
-				IReadOnlyList<UnitBase> all = UnitContainer.Instance.All;
+				IReadOnlyList<UnitBase> all = UnitManager.Instance.All;
 				if (scanType == SkillScanTypes.Target)
 				{
 					// 대상 수 제한은 Target 전용이다. 범위 공격은 범위 안을 전부 타격한다 (설계 2.4).

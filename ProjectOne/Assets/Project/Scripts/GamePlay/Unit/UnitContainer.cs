@@ -1,84 +1,38 @@
-using System.Collections.Generic;
 using UnityEngine;
-using ProjectOne.Utils;
 
 namespace ProjectOne.Unit
 {
-	// 활성 유닛 컨테이너 (MonoSingleton) — 레지스트리 + Hierarchy 부모 통합 + 유닛 일괄 구동
-	// - 유닛은 OnEnable/OnDisable 에서 자기 자신을 등록/해제
-	// - GetRoot(type) 으로 Type별 부모 Transform 제공 → UnitFactory 가 스폰 시 부모로 사용
-	// - GetByType(type) 으로 Type별 활성 목록 캐시 노출 (적 탐지 등)
-	// - ClearAll/ClearByType 으로 씬 전환·전투 종료 시 일괄 정리
-	// - Fixed/LateUpdate 에서 UnitSimulator 를 구동 (캐시 갱신 / 분리 계산 / 전체 ManualTick)
-	// ExecutionOrder 를 앞당겨 캐시 갱신이 UnitMover.FixedUpdate 보다 먼저 일어나게 한다.
-	[DefaultExecutionOrder(-100)]
-	public class UnitContainer : MonoSingleton<UnitContainer>
+	// 씬에 배치하는 유닛 담을 그릇. 타입별 부모 Transform 만 소유한다.
+	//
+	// 매니저(UnitManager)와 나누는 이유 — 매니저는 레지스트리·시뮬레이션 상태를 들고 영속해야 하고,
+	// 실제 인스턴스는 씬과 함께 나고 죽어야 한다. 컨테이너가 씬에 있으면 씬 전환이 곧 정리라
+	// 명시적 청소를 빠뜨릴 여지가 없다.
+	//
+	// 씬에 배치하지 않아도 동작한다 — UnitManager 가 자기 자식으로 하나 만들어 쓴다.
+	public class UnitContainer : MonoBehaviour
 	{
-		// 전투 전용 — 전투씬 수명에만 존재(로비 등으로 따라가지 않음)
-		protected override bool Persistent => false;
+		private Transform _heroesRoot;
+		private Transform _monstersRoot;
+		private Transform _summonsRoot;
 
-		readonly List<UnitBase> _units = new List<UnitBase>(256);
-
-		// 유닛 일괄 구동 로직 (순수 클래스) — 컨테이너가 소유하고 직접 호출
-		readonly UnitSimulator _simulator = new UnitSimulator();
-
-		// 충돌 후보 조회용 공간 해시 — FixedUpdate 에서 프레임당 1회 Rebuild
-		readonly UnitSpatialHash _spatialHash = new UnitSpatialHash();
-
-		// Type별 활성 유닛 캐시 — enum 키, List 값. 둘 다 동적 컬렉션.
-		readonly Dictionary<UnitType, List<UnitBase>> _byType = new Dictionary<UnitType, List<UnitBase>>();
-		static readonly List<UnitBase> _empty = new List<UnitBase>(0);
-
-		Transform _heroesRoot;
-		Transform _monstersRoot;
-		Transform _summonsRoot;
-
-		// 외부 순회용 — 인덱스 for 사용 권장
-		public IReadOnlyList<UnitBase> All
+		private void Awake()
 		{
-			get { return _units; }
+			_heroesRoot   = ensureChild("Heroes");
+			_monstersRoot = ensureChild("Monsters");
+			_summonsRoot  = ensureChild("Summons");
+
+			UnitManager.Instance.RegisterContainer(this);
 		}
 
-		// 충돌 후보 조회용 공간 해시 — UnitMover 가 인접 유닛만 순회하는 데 사용
-		public UnitSpatialHash SpatialHash
+		private void OnDestroy()
 		{
-			get { return _spatialHash; }
+			// 종료 중이면 매니저를 새로 만들지 않는다.
+			if (UnitManager.HasInstance == true)
+			{
+				UnitManager.Instance.UnregisterContainer(this);
+			}
 		}
 
-		protected override void Awake()
-		{
-			base.Awake();
-			_heroesRoot   = CreateChild("Heroes");
-			_monstersRoot = CreateChild("Monsters");
-			_summonsRoot  = CreateChild("Summons");
-		}
-
-		Transform CreateChild(string name)
-		{
-			GameObject go = new GameObject(name);
-			go.transform.SetParent(transform, false);
-			return go.transform;
-		}
-
-		// 캐시 갱신 → 공간 해시 Rebuild → 모든 유닛 이동 일괄 구동
-		// (무버를 여기서 직접 구동 — per-MonoBehaviour FixedUpdate 콜백 오버헤드 제거)
-		void FixedUpdate()
-		{
-			_simulator.RefreshCache(_units);
-			_spatialHash.Rebuild(_units);
-			_simulator.TickMovers(_units, Time.fixedDeltaTime);
-		}
-
-		// 캐시 재갱신 → 공간 해시 Rebuild → 분리 배치 계산 → 전체 유닛 ManualTick
-		void LateUpdate()
-		{
-			_simulator.RefreshCache(_units);
-			_spatialHash.Rebuild(_units);
-			_simulator.ComputeSeparations(GetByType(UnitType.Monster), _spatialHash);
-			_simulator.TickAll(_units, Time.deltaTime);
-		}
-
-		// UnitFactory 가 Instantiate 시 부모로 사용
 		public Transform GetRoot(UnitType type)
 		{
 			switch (type)
@@ -86,117 +40,22 @@ namespace ProjectOne.Unit
 				case UnitType.Hero:    return _heroesRoot;
 				case UnitType.Monster: return _monstersRoot;
 				case UnitType.Summon:  return _summonsRoot;
-				default:               return transform;  // None 등 미분류 — 컨테이너 루트 직속
+				default:               return transform;	// None 등 미분류 — 컨테이너 직속
 			}
 		}
 
-		public void Register(UnitBase unit)
+		// 씬에서 미리 만들어 둔 자식이 있으면 그것을 쓴다(계층을 눈으로 구성할 수 있게).
+		private Transform ensureChild(string childName)
 		{
-			if (unit == null)
+			Transform found = transform.Find(childName);
+			if (found != null)
 			{
-				return;
+				return found;
 			}
 
-			// 중복 방지 — OnEnable 이 재호출되는 경로(씬 토글 등) 대비
-			for (int i = 0; i < _units.Count; i++)
-			{
-				if (_units[i] == unit)
-				{
-					return;
-				}
-			}
-
-			_units.Add(unit);
-
-			// Type별 캐시 동기화
-			UnitType type = unit.GetUnitType();
-			List<UnitBase> list;
-			if (_byType.TryGetValue(type, out list) == false)
-			{
-				list = new List<UnitBase>(64);
-				_byType[type] = list;
-			}
-
-			list.Add(unit);
-		}
-
-		public void Unregister(UnitBase unit)
-		{
-			if (unit == null)
-			{
-				return;
-			}
-
-			_units.Remove(unit);
-
-			// Type별 캐시 동기화
-			UnitType type = unit.GetUnitType();
-			List<UnitBase> list;
-			if (_byType.TryGetValue(type, out list) == true)
-			{
-				list.Remove(unit);
-			}
-		}
-
-		// Type별 활성 유닛 조회 — 캐시된 리스트 직접 반환 (호출자는 즉시 소비, 수정 금지)
-		public IReadOnlyList<UnitBase> GetByType(UnitType type)
-		{
-			List<UnitBase> list;
-			if (_byType.TryGetValue(type, out list) == false)
-			{
-				return _empty;
-			}
-
-			return list;
-		}
-
-		// 활성 유닛 전체 destroy. 파괴되면 OnDisable 에서 자동 Unregister 됨.
-		readonly List<UnitBase> _clearBuffer = new List<UnitBase>(256);
-		public void ClearAll()
-		{
-			_clearBuffer.Clear();
-			for (int i = 0; i < _units.Count; i++)
-			{
-				_clearBuffer.Add(_units[i]);
-			}
-
-			for (int i = 0; i < _clearBuffer.Count; i++)
-			{
-				UnitBase u = _clearBuffer[i];
-				if (u != null)
-				{
-					Object.Destroy(u.gameObject);
-				}
-			}
-
-			_clearBuffer.Clear();
-		}
-
-		// 특정 Type 만 destroy
-		public void ClearByType(UnitType type)
-		{
-			List<UnitBase> list;
-			if (_byType.TryGetValue(type, out list) == false)
-			{
-				return;
-			}
-
-			_clearBuffer.Clear();
-			for (int i = 0; i < list.Count; i++)
-			{
-				_clearBuffer.Add(list[i]);
-			}
-
-			for (int i = 0; i < _clearBuffer.Count; i++)
-			{
-				UnitBase u = _clearBuffer[i];
-				if (u != null)
-				{
-					Object.Destroy(u.gameObject);
-				}
-			}
-
-			_clearBuffer.Clear();
+			GameObject go = new GameObject(childName);
+			go.transform.SetParent(transform, false);
+			return go.transform;
 		}
 	}
 }

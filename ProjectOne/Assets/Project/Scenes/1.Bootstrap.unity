@@ -119,37 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &416201504
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 416201505}
-  m_Layer: 0
-  m_Name: UnitManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &416201505
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 416201504}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -80.21094, y: 134.50479, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &493909477
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -242,6 +211,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58a9da376ef8512439b91f705fd358a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Boot.GameBootstrapper
+  _heroPrefabAddress: Prefab_Hero
+  _skipLogin: 1
 --- !u!4 &543977141
 Transform:
   m_ObjectHideFlags: 0
@@ -343,22 +314,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Boot.DevDataInjector
   _disabled: 1
-  _characterId: 101
   _characterLevel: 1
-  _weapon:
-    itemId: 100005
-    enhanceLevel: 15
-  _armor:
-    itemId: 200015
-    enhanceLevel: 15
-  _accessory:
-    itemId: 300015
-    enhanceLevel: 15
+  _equipSlots: []
+  _masteries: []
   _viewRefreshInterval: 0.5
-  _viewCharacters: []
+  _viewCharacterLevel: 0
+  _viewCharacterExp: 0
   _viewCurrencies: []
   _viewItems: []
-  _viewMaterials: []
+  _viewEquipments: []
 --- !u!4 &1860655698
 Transform:
   m_ObjectHideFlags: 0
@@ -660,7 +624,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3564469622852702305, guid: 80301c3305882be4390a3597dfb553b5, type: 3}
       propertyPath: m_Name
-      value: UnitContainer
+      value: UnitManager
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -738,4 +702,3 @@ SceneRoots:
   - {fileID: 2145747172182817801}
   - {fileID: 850023650}
   - {fileID: 1860655698}
-  - {fileID: 416201505}

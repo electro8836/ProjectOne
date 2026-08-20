@@ -6,6 +6,7 @@ using ProjectOne.Audio;
 using ProjectOne.Data;
 using ProjectOne.Resources;
 using ProjectOne.Settings;
+using ProjectOne.UI;
 using ProjectOne.Consumables;
 using ProjectOne.Dungeon;
 using ProjectOne.Items;
@@ -36,6 +37,7 @@ namespace ProjectOne.Flow
 			// MonoSingleton.Awake 가 _instance 를 잡고 DontDestroyOnLoad 를 거므로 이후 Instance 가 이걸 찾는다.
 			// (이 시점 이전의 UIManager 접근은 BackndFunctionCaller 뿐이고 HasInstance 로 가드돼 있다.)
 			await AddressableHelper.TryInstantiateAsync(UIManagerAddress, null, false, ct);
+
 
 			// 1) 정적 테이블 일괄 로드 (Addressables 라벨	 "Tables" → 자동생성 EDT.Loader)
 			var (cancelled, ok) = await TableBootLoader.LoadAllAsync(ct).SuppressCancellationThrow();

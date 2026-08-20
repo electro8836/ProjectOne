@@ -96,7 +96,7 @@ namespace ProjectOne.UI
 			target.color = color;
 		}
 
-		// 아틀라스 우선(동기), 미포함 시 비동기 로드. StageSelectSlot/EquipmentSlot 패턴.
+		// 아틀라스 우선(동기), 미포함 시 비동기 로드. FieldSelectSlot/EquipmentSlot 패턴.
 		private async UniTask setIconAsync(string address, CancellationToken ct)
 		{
 			if (_icon == null || _iconAddress == address)

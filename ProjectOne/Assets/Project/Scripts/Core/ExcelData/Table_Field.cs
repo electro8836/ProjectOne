@@ -4,7 +4,7 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_MapStage
+    public static class Table_Field
     {
         public class Row {
             public int ID { get; set; } = 0;
@@ -14,8 +14,8 @@ namespace EDT {
             public int ReqQuestID { get; set; } = 0;
         }
 
-        public const string Filename = "edt_mapstage.bytes";
-        public const TableType Type = TableType.TableMapStage;
+        public const string Filename = "edt_field.bytes";
+        public const TableType Type = TableType.TableField;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )

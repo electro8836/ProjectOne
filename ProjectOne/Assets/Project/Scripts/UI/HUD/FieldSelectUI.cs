@@ -10,27 +10,27 @@ using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
-	// 포탈 UI — 액트를 고르고 그 액트의 스테이지를 고른다 (맵 설계 1.2).
+	// 포탈 UI — 액트를 고르고 그 액트의 필드를 고른다 (맵 설계 1.2).
 	//
-	// MapType=Stage 인 것만 다룬다. 마을과 던전은 목록에 섞이지 않는다.
+	// MapType=Field 인 것만 다룬다. 마을과 던전은 목록에 섞이지 않는다.
 	// 필드 안에서 열면 같은 액트는 즉시 이동, 다른 액트는 그리드맵 교체로 처리한다.
-	public class StageSelectUI : UIScreen
+	public class FieldSelectUI : UIScreen
 	{
 		[Header("액트")]
 		[SerializeField] private TMP_Text _actNameText;
 		[SerializeField] private UIButton _prevActButton;
 		[SerializeField] private UIButton _nextActButton;
 
-		[Header("스테이지 목록")]
-		[SerializeField] private Transform _stageGrid;
-		[SerializeField] private StageSelectSlot _slotPrefab;
+		[Header("필드 목록")]
+		[SerializeField] private Transform _fieldGrid;
+		[SerializeField] private FieldSelectSlot _slotPrefab;
 
 		[Header("닫기")]
 		[SerializeField] private UIButton _closeButton;
 
 		private readonly List<Table_Act.Row> _acts = new List<Table_Act.Row>();
-		private readonly List<Table_MapStage.Row> _stages = new List<Table_MapStage.Row>();
-		private readonly List<StageSelectSlot> _slots = new List<StageSelectSlot>();
+		private readonly List<Table_Field.Row> _fields = new List<Table_Field.Row>();
+		private readonly List<FieldSelectSlot> _slots = new List<FieldSelectSlot>();
 
 		private int _actIndex;
 
@@ -86,24 +86,24 @@ namespace ProjectOne.UI
 			return a.Order.CompareTo(b.Order);
 		}
 
-		private void collectStages(int actId)
+		private void collectFields(int actId)
 		{
-			_stages.Clear();
+			_fields.Clear();
 
-			Dictionary<int, Table_MapStage.Row> all = Table_MapStage.All();
-			Dictionary<int, Table_MapStage.Row>.Enumerator e = all.GetEnumerator();
+			Dictionary<int, Table_Field.Row> all = Table_Field.All();
+			Dictionary<int, Table_Field.Row>.Enumerator e = all.GetEnumerator();
 			while (e.MoveNext() == true)
 			{
 				if (e.Current.Value.ActID == actId)
 				{
-					_stages.Add(e.Current.Value);
+					_fields.Add(e.Current.Value);
 				}
 			}
 
-			_stages.Sort(compareStageOrder);
+			_fields.Sort(compareFieldOrder);
 		}
 
-		private static int compareStageOrder(Table_MapStage.Row a, Table_MapStage.Row b)
+		private static int compareFieldOrder(Table_Field.Row a, Table_Field.Row b)
 		{
 			return a.Order.CompareTo(b.Order);
 		}
@@ -123,7 +123,7 @@ namespace ProjectOne.UI
 			_prevActButton.gameObject.SetActive(_actIndex > 0);
 			_nextActButton.gameObject.SetActive(_actIndex < _acts.Count - 1);
 
-			collectStages(act.ID);
+			collectFields(act.ID);
 			rebuildSlots();
 		}
 
@@ -140,16 +140,16 @@ namespace ProjectOne.UI
 			_slots.Clear();
 
 			int level = Account.Instance.Loadout.Level;
-			for (int i = 0; i < _stages.Count; i++)
+			for (int i = 0; i < _fields.Count; i++)
 			{
-				Table_MapStage.Row stage = _stages[i];
-				Table_Map.Row map = Table_Map.Get(stage.ID);
+				Table_Field.Row field = _fields[i];
+				Table_Map.Row map = Table_Map.Get(field.ID);
 
 				// 입장 요구 레벨만 판정한다. ReqQuestID 판정은 퀘스트 시스템이 생기면 붙인다(STEP 12).
-				bool unlocked = level >= stage.ReqLevel;
+				bool unlocked = level >= field.ReqLevel;
 
-				StageSelectSlot slot = Instantiate(_slotPrefab, _stageGrid);
-				slot.Bind(stage.ID, (map != null) ? map.Name : stage.ID.ToString(), stage.ReqLevel, unlocked, onStageClicked);
+				FieldSelectSlot slot = Instantiate(_slotPrefab, _fieldGrid);
+				slot.Bind(field.ID, (map != null) ? map.Name : field.ID.ToString(), field.ReqLevel, unlocked, onFieldClicked);
 				_slots.Add(slot);
 			}
 		}
@@ -178,23 +178,23 @@ namespace ProjectOne.UI
 			refresh();
 		}
 
-		private void onStageClicked(int stageId)
+		private void onFieldClicked(int fieldId)
 		{
-			UIManager.Instance.CloseOverlayAsync().Forget();
+			UIManager.Instance.CloseWindowAsync().Forget();
 
 			// 필드 밖(마을)이면 씬 전환, 필드 안이면 씬 전환 없이 이동/교체.
 			if (FieldDirector.HasInstance == false)
 			{
-				GameFlow.Instance.ChangeStateAsync(new FieldState(stageId)).Forget();
+				GameFlow.Instance.ChangeStateAsync(new FieldState(fieldId)).Forget();
 				return;
 			}
 
-			FieldDirector.Instance.ChangeActAsync(stageId, this.GetCancellationTokenOnDestroy()).Forget();
+			FieldDirector.Instance.ChangeActAsync(fieldId, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 
 		private void onCloseClicked()
 		{
-			UIManager.Instance.CloseOverlayAsync().Forget();
+			UIManager.Instance.CloseWindowAsync().Forget();
 		}
 	}
 }

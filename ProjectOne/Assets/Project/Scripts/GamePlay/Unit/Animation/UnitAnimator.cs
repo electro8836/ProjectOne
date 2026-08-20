@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace ProjectOne.Unit
 {
@@ -21,14 +22,24 @@ namespace ProjectOne.Unit
 
 		private const float FacingDeadband = 0.05f;
 
+		// 좌우반전 대상. 인스펙터에서 UnitRoot 를 지정한다.
+		//
+		// 파츠 캐릭터(SpriteRenderer 30개)는 SpriteRenderer.flipX 로 뒤집을 수 없다 —
+		// 애니메이션이 각 파츠의 위치·회전으로 만들어지므로 계층 전체를 뒤집어야 한다.
+		[SerializeField]
+		private Transform _flipRoot;
+
 		[SerializeField]
 		private float _outlineWidth = 0.0002f;
 
+		// Stat_AtkSpeed 가 곧 애니메이션 배속이다 (스킬 설계 4.2 의 useSpeed 와 같은 개념).
 		[SerializeField]
-		private float _attackSpeedScale = 100f;
+		private float _attackSpeedScale = 1f;
 
+		// 기본 이속(UnitBase.BaseMoveSpeed = 3)에서 배속 1이 되도록 맞춘 계수.
+		// 이속이 빨라지면 걷는 애니메이션도 그만큼 비례해 빨라진다.
 		[SerializeField]
-		private float _moveSpeedScale = 100f;
+		private float _moveSpeedScale = 1f / UnitBase.BaseMoveSpeed;
 
 		[SerializeField]
 		private float _minMotionMul = 0.1f;
@@ -45,6 +56,9 @@ namespace ProjectOne.Unit
 		[SerializeField]
 		private float _yOffset = 0f;
 
+		// 컨트롤러에 존재하는 파라미터 해시 (Awake 에서 1회 수집)
+		private readonly HashSet<int> _parameterHashes = new HashSet<int>();
+
 		private int _lastSortOrder = int.MinValue;
 
 		private float _lastAttackSpeedMul = 1f;
@@ -59,21 +73,55 @@ namespace ProjectOne.Unit
 
 		private static readonly int HashHit = Animator.StringToHash("Hit");
 
-		private static readonly int HashHDead = Animator.StringToHash("Dead");
+		private static readonly int HashHDead = Animator.StringToHash("Die");
 
 		private static readonly int HashIsDead = Animator.StringToHash("IsDead");
 
+		// 캐스팅 모션은 아직 컨트롤러에 없다 — hasParameter 가드로 조용히 넘어간다.
 		private static readonly int HashIsCasting = Animator.StringToHash("IsCasting");
 
-		private static readonly int HashAttackSpeedMul = Animator.StringToHash("AttackSpeedMul");
+		private static readonly int HashAttackSpeedMul = Animator.StringToHash("AttackSpeedMod");
 
-		private static readonly int HashMoveSpeedMul = Animator.StringToHash("MoveSpeedMul");
+		private static readonly int HashMoveSpeedMul = Animator.StringToHash("MoveSpeedMod");
 
 		private void Awake()
 		{
 			_animator = this.GetComponentInChildren<Animator>();
 			_spriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
 			_mpb = new MaterialPropertyBlock();
+
+			// 미지정 프리팹은 애니메이터가 붙은 계층을 뒤집는다 — 대개 그것이 시각 루트다.
+			if (_flipRoot == null && _animator != null)
+			{
+				_flipRoot = _animator.transform;
+			}
+
+			cacheParameters();
+		}
+
+		// 컨트롤러에 실제로 존재하는 파라미터 해시를 모아 둔다.
+		//
+		// 없는 파라미터에 Set 을 부르면 유니티가 매 호출마다 경고를 낸다.
+		// 컨트롤러는 아트 자산이라 코드보다 늦게 완성되는 것이 정상이므로(캐스팅 모션 등),
+		// 없으면 조용히 건너뛰고 나중에 추가되면 자동으로 먹게 한다.
+		private void cacheParameters()
+		{
+			_parameterHashes.Clear();
+			if (_animator == null || _animator.runtimeAnimatorController == null)
+			{
+				return;
+			}
+
+			AnimatorControllerParameter[] parameters = _animator.parameters;
+			for (int i = 0; i < parameters.Length; i++)
+			{
+				_parameterHashes.Add(parameters[i].nameHash);
+			}
+		}
+
+		private bool hasParameter(int hash)
+		{
+			return _parameterHashes.Contains(hash);
 		}
 
 		// 발밑(피벗 하단) Y좌표를 정수 sortingOrder로 변환해 유닛 간 앞뒤 정렬을 결정한다.
@@ -91,7 +139,7 @@ namespace ProjectOne.Unit
 
 		public void SetMoving(bool isMoving)
 		{
-			if (_lastIsMoving != isMoving)
+			if (_lastIsMoving != isMoving && hasParameter(HashIsMoving) == true)
 			{
 				_lastIsMoving = isMoving;
 				_animator.SetBool(HashIsMoving, isMoving);
@@ -115,42 +163,73 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		private void ApplyFlip(bool flip)
+		// 스케일 X 부호로 뒤집는다. **+1 이 왼쪽**이다(원본 스프라이트가 좌향).
+		//
+		// 절대값을 유지하는 이유 — 프리팹마다 시각 루트의 배율이 다를 수 있고(몬스터 Model 은 0.8),
+		// 부호만 바꿔야 크기가 보존된다.
+		private void ApplyFlip(bool faceLeft)
 		{
-			if (_spriteRenderer.flipX != flip)
+			if (_flipRoot == null)
 			{
-				_spriteRenderer.flipX = flip;
+				return;
 			}
+
+			Vector3 scale = _flipRoot.localScale;
+			float magnitude = Mathf.Abs(scale.x);
+			float signed = faceLeft ? magnitude : -magnitude;
+
+			if (scale.x == signed)
+			{
+				return;
+			}
+
+			scale.x = signed;
+			_flipRoot.localScale = scale;
 		}
 
 		public void PlayAttack()
 		{
-			_animator.SetTrigger(HashAttack);
+			if (hasParameter(HashAttack) == true)
+			{
+				_animator.SetTrigger(HashAttack);
+			}
 		}
 
 		public void PlaySkill()
 		{
-			_animator.SetTrigger(HashSkill);
+			if (hasParameter(HashSkill) == true)
+			{
+				_animator.SetTrigger(HashSkill);
+			}
 		}
 
 		public void PlayMotion(string motionName)
 		{
-			if (!string.IsNullOrEmpty(motionName))
+			if (string.IsNullOrEmpty(motionName) == true)
 			{
-				_animator.SetTrigger(Animator.StringToHash(motionName));
+				return;
+			}
+
+			int hash = Animator.StringToHash(motionName);
+			if (hasParameter(hash) == true)
+			{
+				_animator.SetTrigger(hash);
 			}
 		}
 
 		// 캐스팅(시전) 지속 상태 설정 — 시작 시 true, 발동/취소/사망 시 false
 		public void SetCasting(bool isCasting)
 		{
-			_animator.SetBool(HashIsCasting, isCasting);
+			if (hasParameter(HashIsCasting) == true)
+			{
+				_animator.SetBool(HashIsCasting, isCasting);
+			}
 		}
 
 		public void SetAttackSpeed(float atkSpeed)
 		{
 			float num = Mathf.Clamp(atkSpeed * _attackSpeedScale, _minMotionMul, _maxMotionMul);
-			if (!Mathf.Approximately(_lastAttackSpeedMul, num))
+			if (!Mathf.Approximately(_lastAttackSpeedMul, num) && hasParameter(HashAttackSpeedMul) == true)
 			{
 				_lastAttackSpeedMul = num;
 				_animator.SetFloat(HashAttackSpeedMul, num);
@@ -160,7 +239,7 @@ namespace ProjectOne.Unit
 		public void SetMoveSpeed(float moveSpeed)
 		{
 			float num = Mathf.Clamp(moveSpeed * _moveSpeedScale, _minMotionMul, _maxMotionMul);
-			if (!Mathf.Approximately(_lastMoveSpeedMul, num))
+			if (!Mathf.Approximately(_lastMoveSpeedMul, num) && hasParameter(HashMoveSpeedMul) == true)
 			{
 				_lastMoveSpeedMul = num;
 				_animator.SetFloat(HashMoveSpeedMul, num);
@@ -169,19 +248,36 @@ namespace ProjectOne.Unit
 
 		public void PlayHit()
 		{
-			_animator.SetTrigger(HashHit);
+			if (hasParameter(HashHit) == true)
+			{
+				_animator.SetTrigger(HashHit);
+			}
 		}
 
 		public void PlayDead()
 		{
-			_animator.SetBool(HashIsDead, true);
-			_animator.SetTrigger(HashHDead);
+			if (hasParameter(HashIsDead) == true)
+			{
+				_animator.SetBool(HashIsDead, true);
+			}
+
+			if (hasParameter(HashHDead) == true)
+			{
+				_animator.SetTrigger(HashHDead);
+			}
 		}
 
 		public void ResetDead()
 		{
-			_animator.ResetTrigger(HashHDead);
-			_animator.SetBool(HashIsDead, false);
+			if (hasParameter(HashHDead) == true)
+			{
+				_animator.ResetTrigger(HashHDead);
+			}
+
+			if (hasParameter(HashIsDead) == true)
+			{
+				_animator.SetBool(HashIsDead, false);
+			}
 		}
 
 		private void OnValidate()

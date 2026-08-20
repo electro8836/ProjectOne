@@ -17,7 +17,8 @@ public class UnitMover : MonoBehaviour
 	private bool _facingLocked;   // 캐스팅 중 조준 고정 — SetFacing/자동 갱신 무시
 	private bool _overridePierce;   // override 이동 중 유닛 충돌 무시(벽만 차단) — 대시 공격 관통용
 	private bool _overrideBlocked;  // override 이동이 다음 위치로 갈 수 없어 막힌 상태(latch) — 코드 버프가 종료 판정에 사용
-	private readonly float _moveSpeedMultiplier = 0.1f;
+	// 넉백 배율 — SkillEffect 의 Power 를 실제 속도로 바꾸는 계수.
+	// 이동 배율(_moveSpeedMultiplier)은 제거했지만 이쪽은 데이터가 0행이라 기준 단위를 알 수 없어 남겨 둔다.
 	private readonly float _knockbackMultiplier = 0.1f;
 
 	// 공간 해시 조회 결과 재사용 버퍼 — 충돌 검사마다 채워 씀 (할당 방지)
@@ -29,7 +30,7 @@ public class UnitMover : MonoBehaviour
 	public bool MoveEnabled { get { return _moveEnabled; } }
 	public bool OverrideBlocked { get { return _overrideBlocked; } }
 
-	// UnitContainer.FixedUpdate 가 일괄 구동 — per-MonoBehaviour FixedUpdate 콜백 오버헤드 제거
+	// UnitManager.FixedUpdate 가 일괄 구동 — per-MonoBehaviour FixedUpdate 콜백 오버헤드 제거
 	public void ManualFixedTick(float dt)
 	{
 		// 우선순위: Override > Move + Impulse
@@ -139,13 +140,13 @@ public class UnitMover : MonoBehaviour
 	// 인접 유닛 후보를 _queryBuffer 에 채워 반환 (프레임당 1회 조회 후 충돌 판정들이 공유)
 	private List<UnitBase> QueryNeighbors(Vector2 center)
 	{
-		if (UnitContainer.Instance == null)
+		if (UnitManager.Instance == null)
 		{
 			_queryBuffer.Clear();
 			return _queryBuffer;
 		}
 
-		UnitContainer.Instance.SpatialHash.Query(center, _queryBuffer);
+		UnitManager.Instance.SpatialHash.Query(center, _queryBuffer);
 		return _queryBuffer;
 	}
 
@@ -253,9 +254,10 @@ public class UnitMover : MonoBehaviour
 		_effectiveDrag = _impulseDrag * safeMass;
 	}
 
+	// speed 가 곧 초당 이동 거리(월드 유닛)다. ApplyMovement 가 velocity * dt 로 적분한다.
 	public void Move(Vector2 direction, float speed)
 	{
-		_moveVelocity = direction.normalized * speed * _moveSpeedMultiplier;
+		_moveVelocity = direction.normalized * speed;
 	}
 
 	public void Stop()

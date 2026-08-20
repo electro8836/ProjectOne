@@ -55,17 +55,17 @@ namespace ProjectOne.Field
 			Clear();
 
 			int pointCount = 0;
-			Dictionary<int, Table_MapStage.Row> all = Table_MapStage.All();
-			Dictionary<int, Table_MapStage.Row>.Enumerator e = all.GetEnumerator();
+			Dictionary<int, Table_Field.Row> all = Table_Field.All();
+			Dictionary<int, Table_Field.Row>.Enumerator e = all.GetEnumerator();
 			while (e.MoveNext() == true)
 			{
-				Table_MapStage.Row stage = e.Current.Value;
-				if (stage.ActID != actId)
+				Table_Field.Row field = e.Current.Value;
+				if (field.ActID != actId)
 				{
 					continue;
 				}
 
-				pointCount += collectMap(stage.ID);
+				pointCount += collectMap(field.ID);
 			}
 
 			if (pointCount == 0)
@@ -84,7 +84,7 @@ namespace ProjectOne.Field
 
 		// ── 내부 ──────────────────────────────────────────────────────
 
-		// MapStage 는 Map 과 ID 를 공유한다 (맵 설계 8장).
+		// Field 는 Map 과 ID 를 공유한다 (맵 설계 8장).
 		private int collectMap(int mapId)
 		{
 			IReadOnlyList<MonsterSpawnPoint> points = MapManager.Instance.GetSpawnPoints(mapId);

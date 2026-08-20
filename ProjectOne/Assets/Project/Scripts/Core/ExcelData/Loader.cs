@@ -216,11 +216,11 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - MapStage
+            #region Table - Field
             {
-                CurrentFile = Table_MapStage.Filename;
+                CurrentFile = Table_Field.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_MapStage._parser ) == false ) {
+                if( Load( reader, Table_Field._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

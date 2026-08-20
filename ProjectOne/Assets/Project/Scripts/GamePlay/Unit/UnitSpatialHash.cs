@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ProjectOne.Unit
 {
-	// 유닛 공간 해시 (순수 C# 클래스 — UnitContainer 가 소유하고 FixedUpdate 에서 Rebuild).
+	// 유닛 공간 해시 (순수 C# 클래스 — UnitManager 가 소유하고 FixedUpdate 에서 Rebuild).
 	// 충돌/분리 핫 루프가 전체 유닛을 brute-force 순회하던 O(N²) 을, 인접 셀 후보만 보는 O(N·k) 로 낮춘다.
 	// CachedPos 기준으로 구축 — 기존 충돌 쿼리가 이미 CachedPos(프레임 시작 위치)로 동작하므로 의미가 일관된다.
 	public sealed class UnitSpatialHash

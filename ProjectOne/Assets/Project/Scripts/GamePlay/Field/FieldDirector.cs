@@ -13,11 +13,11 @@ namespace ProjectOne.Field
 {
 	// 필드(4.Field)의 오케스트레이터. 씬이 비어 있으므로 코드가 직접 생성한다.
 	//
-	// 액트 하나의 스테이지 그리드맵을 전부 로드해두고 그 안을 이동한다.
-	// - 같은 액트 안 스테이지 이동 → 로드 없음. 이미 떠 있으므로 위치만 옮긴다.
+	// 액트 하나의 필드 그리드맵을 전부 로드해두고 그 안을 이동한다.
+	// - 같은 액트 안 필드 이동 → 로드 없음. 이미 떠 있으므로 위치만 옮긴다.
 	// - 다른 액트로 이동 → 씬 전환 없이 로딩창 + 그리드맵 전량 교체.
 	//
-	// 스테이지 이동에서는 회복하지 않는다 — 액트 진행이 연속된 소모전이 되도록 (기반테이블 5.3).
+	// 필드 이동에서는 회복하지 않는다 — 액트 진행이 연속된 소모전이 되도록 (기반테이블 5.3).
 	public sealed class FieldDirector : MonoBehaviour
 	{
 		private static FieldDirector _instance;
@@ -25,8 +25,8 @@ namespace ProjectOne.Field
 		// 현재 로드된 액트
 		private int _currentActId;
 
-		// 현재 히어로가 있는 스테이지 (Map.ID)
-		private int _currentStageId;
+		// 현재 히어로가 있는 필드 (Map.ID)
+		private int _currentFieldId;
 
 		private Hero _hero;
 
@@ -40,7 +40,7 @@ namespace ProjectOne.Field
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
 		public int CurrentActId => _currentActId;
-		public int CurrentStageId => _currentStageId;
+		public int CurrentFieldId => _currentFieldId;
 
 		public static FieldDirector EnsureInstance()
 		{
@@ -72,54 +72,54 @@ namespace ProjectOne.Field
 			}
 		}
 
-		// 필드 진입 — 스테이지가 속한 액트를 통째로 로드하고 히어로를 그 스테이지에 놓는다.
-		public async UniTask Begin(int stageId, CancellationToken ct)
+		// 필드 진입 — 필드가 속한 액트를 통째로 로드하고 히어로를 그 필드에 놓는다.
+		public async UniTask Begin(int fieldId, CancellationToken ct)
 		{
-			Table_MapStage.Row stage = Table_MapStage.Get(stageId);
-			if (stage == null)
+			Table_Field.Row field = Table_Field.Get(fieldId);
+			if (field == null)
 			{
-				Debug.LogError($"[FieldDirector] Table_MapStage.Get({stageId}) == null");
+				Debug.LogError($"[FieldDirector] Table_Field.Get({fieldId}) == null");
 				return;
 			}
 
-			await loadActAsync(stage.ActID, ct);
+			await loadActAsync(field.ActID, ct);
 
-			_hero = await UnitFactory.Instance.CreateHeroAsync(GetStageCenter(stageId), Faction.Player, true, ct);
-			moveHeroToStage(stageId);
+			_hero = await UnitFactory.Instance.CreateHeroAsync(GetFieldCenter(fieldId), Faction.Player, true, ct);
+			moveHeroToField(fieldId);
 		}
 
-		// 같은 액트 안에서 스테이지 이동 — 로드가 없다. 회복도 없다.
-		public void MoveToStage(int stageId)
+		// 같은 액트 안에서 필드 이동 — 로드가 없다. 회복도 없다.
+		public void MoveToField(int fieldId)
 		{
-			Table_MapStage.Row stage = Table_MapStage.Get(stageId);
-			if (stage == null)
+			Table_Field.Row field = Table_Field.Get(fieldId);
+			if (field == null)
 			{
-				Debug.LogError($"[FieldDirector] Table_MapStage.Get({stageId}) == null");
+				Debug.LogError($"[FieldDirector] Table_Field.Get({fieldId}) == null");
 				return;
 			}
 
-			if (stage.ActID != _currentActId)
+			if (field.ActID != _currentActId)
 			{
-				Debug.LogError($"[FieldDirector] 다른 액트의 스테이지입니다 — ChangeActAsync 를 쓰세요. stage:{stageId}");
+				Debug.LogError($"[FieldDirector] 다른 액트의 필드입니다 — ChangeActAsync 를 쓰세요. field:{fieldId}");
 				return;
 			}
 
-			moveHeroToStage(stageId);
+			moveHeroToField(fieldId);
 		}
 
 		// 액트 전환 — 씬은 그대로 두고 로딩창만 띄운 뒤 그리드맵을 통째로 교체한다.
-		public async UniTask ChangeActAsync(int stageId, CancellationToken ct)
+		public async UniTask ChangeActAsync(int fieldId, CancellationToken ct)
 		{
-			Table_MapStage.Row stage = Table_MapStage.Get(stageId);
-			if (stage == null)
+			Table_Field.Row field = Table_Field.Get(fieldId);
+			if (field == null)
 			{
-				Debug.LogError($"[FieldDirector] Table_MapStage.Get({stageId}) == null");
+				Debug.LogError($"[FieldDirector] Table_Field.Get({fieldId}) == null");
 				return;
 			}
 
-			if (stage.ActID == _currentActId)
+			if (field.ActID == _currentActId)
 			{
-				MoveToStage(stageId);
+				MoveToField(fieldId);
 				return;
 			}
 
@@ -132,28 +132,28 @@ namespace ProjectOne.Field
 			}
 
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneLoad, 0f);
-			await loadActAsync(stage.ActID, ct);
+			await loadActAsync(field.ActID, ct);
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneLoad, 1f);
 
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 0f);
-			moveHeroToStage(stageId);
+			moveHeroToField(fieldId);
 			await UniTask.NextFrame(ct);
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 1f);
 
 			await LoadingManager.Instance.HideAsync();
 		}
 
-		// 스테이지의 그리드맵 중심 좌표. 히어로 배치 기준점이다.
-		public static Vector3 GetStageCenter(int stageId)
+		// 필드의 그리드맵 중심 좌표. 히어로 배치 기준점이다.
+		public static Vector3 GetFieldCenter(int fieldId)
 		{
-			Table_MapStage.Row stage = Table_MapStage.Get(stageId);
-			if (stage == null)
+			Table_Field.Row field = Table_Field.Get(fieldId);
+			if (field == null)
 			{
 				return Vector3.zero;
 			}
 
-			Table_Act.Row act = Table_Act.Get(stage.ActID);
-			return MapManager.GetStageOrigin(act != null ? act.Order : 1, stage.Order);
+			Table_Act.Row act = Table_Act.Get(field.ActID);
+			return MapManager.GetFieldOrigin(act != null ? act.Order : 1, field.Order);
 		}
 
 		private async UniTask loadActAsync(int actId, CancellationToken ct)
@@ -175,17 +175,17 @@ namespace ProjectOne.Field
 			}
 		}
 
-		private void moveHeroToStage(int stageId)
+		private void moveHeroToField(int fieldId)
 		{
-			_currentStageId = stageId;
+			_currentFieldId = fieldId;
 
 			if (_hero == null)
 			{
 				return;
 			}
 
-			// 그리드맵이 10000 간격으로 떨어져 있어 스테이지 이동은 곧 순간이동이다.
-			_hero.transform.position = GetStageCenter(stageId);
+			// 그리드맵이 10000 간격으로 떨어져 있어 필드 이동은 곧 순간이동이다.
+			_hero.transform.position = GetFieldCenter(fieldId);
 			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 		}
 

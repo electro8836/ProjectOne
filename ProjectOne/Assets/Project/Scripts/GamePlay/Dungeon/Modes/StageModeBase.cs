@@ -71,12 +71,12 @@ namespace ProjectOne.Dungeon
 
 		private static bool AllHeroesDead()
 		{
-			if (UnitContainer.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return false;
 			}
 
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			if (heroes.Count == 0)
 			{
 				return false;

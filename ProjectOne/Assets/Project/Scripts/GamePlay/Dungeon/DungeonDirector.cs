@@ -224,11 +224,11 @@ namespace ProjectOne.Dungeon
 
 			Time.timeScale = 0f;
 			bool revive = false;
-			DungeonContinueUI ui = await UIManager.Instance.OpenOverlayAsync<DungeonContinueUI>(DungeonContinueAddress, ct);
+			DungeonContinueUI ui = await UIManager.Instance.OpenWindowAsync<DungeonContinueUI>(DungeonContinueAddress, ct);
 			if (ui != null)
 			{
 				revive = await ui.WaitChoiceAsync(_dungeon.RevivalCostType, cost, max - used, max, ct);
-				await UIManager.Instance.CloseOverlayAsync(false);
+				await UIManager.Instance.CloseWindowAsync(false);
 			}
 
 			Time.timeScale = 1f;
@@ -247,12 +247,12 @@ namespace ProjectOne.Dungeon
 		// 사망 지점에서 부활 — 부활은 상황을 가리지 않고 전체 회복이다 (맵 설계 7.2).
 		private static void reviveHeroes()
 		{
-			if (UnitContainer.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return;
 			}
 
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase hero = heroes[i];
@@ -268,12 +268,12 @@ namespace ProjectOne.Dungeon
 
 		private static void healAllHeroes()
 		{
-			if (UnitContainer.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return;
 			}
 
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase hero = heroes[i];
@@ -322,7 +322,7 @@ namespace ProjectOne.Dungeon
 		// 결과창 — 서버 확정 보상을 보여주고, 다음 단계가 있으면 도전 여부를 묻는다.
 		private async UniTask showDungeonResultAsync(DungeonClearResponse resp, CancellationToken ct)
 		{
-			DungeonResultUI ui = await UIManager.Instance.OpenOverlayAsync<DungeonResultUI>(DungeonResultAddress, ct);
+			DungeonResultUI ui = await UIManager.Instance.OpenWindowAsync<DungeonResultUI>(DungeonResultAddress, ct);
 			if (ui == null)
 			{
 				return;
@@ -337,7 +337,7 @@ namespace ProjectOne.Dungeon
 			bool challengeNext = await ui.WaitAsync(rewards, _ctx.DungeonType, _ctx.Stage, canChallenge, ct);
 
 			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToDungeon, ct);
-			await UIManager.Instance.CloseOverlayAsync(false);
+			await UIManager.Instance.CloseWindowAsync(false);
 
 			if (challengeNext == true && DungeonProgress.TryConsumeEnter(_ctx.DungeonType) == true)
 			{
@@ -507,9 +507,9 @@ namespace ProjectOne.Dungeon
 		// 전투씬 수명 매니저는 씬과 함께 파괴되지만, 영속(DontDestroyOnLoad) 매니저는 명시적으로 비운다.
 		private void cleanupAll()
 		{
-			if (UnitContainer.HasInstance == true)
+			if (UnitManager.HasInstance == true)
 			{
-				UnitContainer.Instance.ClearAll();
+				UnitManager.Instance.ClearAll();
 			}
 
 			if (MonsterSpawnManager.HasInstance == true)
@@ -566,12 +566,12 @@ namespace ProjectOne.Dungeon
 
 		private static UnitBase findFirstAliveHero()
 		{
-			if (UnitContainer.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return null;
 			}
 
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase h = heroes[i];

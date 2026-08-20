@@ -5,6 +5,8 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceLocations;
+using UnityEngine.AddressableAssets.ResourceLocators;
 using UnityEngine.ResourceManagement.ResourceProviders;
 using UnityEngine.SceneManagement;
 
@@ -138,6 +140,13 @@ namespace ProjectOne.Resources
 				return null;
 			}
 
+			// 미등록 주소는 콘텐츠 제작 중 흔한 상태다. 예외를 던지기 전에 걸러 콘솔을 조용히 유지한다.
+			if (HasKey(address) == false)
+			{
+				Debug.LogWarning($"[AddressableHelper] 카탈로그에 없는 주소입니다: {address} — 인스턴스화를 건너뜁니다.");
+				return null;
+			}
+
 			try
 			{
 				return await InstantiateAsync(address, parent, instantiateInWorldSpace, ct);
@@ -202,9 +211,67 @@ namespace ProjectOne.Resources
 			await handle.ToUniTask(cancellationToken: ct);
 		}
 
+		// ── 키 존재 확인 ──────────────────────────────────────────────
+
+		// 카탈로그에 이 키(주소 또는 라벨)의 위치가 있는가.
+		//
+		// try-catch 로 감싸는 것만으로는 부족하다 — Addressables 는 예외를 던지기 **전에**
+		// 자체적으로 LogException 을 찍으므로 콘솔에 붉은 에러가 그대로 남는다.
+		// 없는 것이 정상인 경로(빈 그룹의 라벨, 미제작 프리팹)는 호출 자체를 하지 않아야 조용하다.
+		public static bool HasKey(object key)
+		{
+			if (key == null)
+			{
+				return false;
+			}
+
+			IEnumerator<IResourceLocator> e = Addressables.ResourceLocators.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				IList<IResourceLocation> locations;
+				if (e.Current.Locate(key, null, out locations) == true && locations != null && locations.Count > 0)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		// ── 다운로드(원격 카탈로그) ───────────────────────────────────
 
-		// key 또는 label에 대해 필요한 의존성 크기 (바이트)
+		// key 또는 label 의 다운로드 크기(바이트) 조회.
+		// GetDownloadSizeAsync 실패를 0 반환으로 변환 (호출부 try-catch 제거용). OCE는 그대로 전파.
+		//
+		// 그룹이 비어 있으면 그 라벨은 카탈로그에 위치가 없어 InvalidKeyException 이 난다.
+		// 콘텐츠 제작 중에는 흔한 상태이고, 라벨 하나 때문에 패치 단계가 통째로 죽으면 게임을 켤 수 없다.
+		// 크기 0 이면 호출부가 자연히 그 라벨을 건너뛴다.
+		public static async UniTask<long> TryGetDownloadSizeAsync(object key, CancellationToken ct = default)
+		{
+			// 조회 전에 막는다 — 예외를 잡아도 Addressables 가 이미 콘솔에 에러를 찍은 뒤다.
+			if (HasKey(key) == false)
+			{
+				Debug.LogWarning($"[AddressableHelper] 카탈로그에 없는 키입니다: {key} — 다운로드를 건너뜁니다(그룹이 비었을 수 있음).");
+				return 0L;
+			}
+
+			try
+			{
+				return await GetDownloadSizeAsync(key, ct);
+			}
+			catch (OperationCanceledException)
+			{
+				throw;
+			}
+			catch (Exception e)
+			{
+				Debug.LogWarning($"[AddressableHelper] 다운로드 크기 조회 실패: {key} ({e.Message}) — 해당 라벨을 건너뜁니다.");
+				return 0L;
+			}
+		}
+
+		// 실패 시 예외를 던진다. 라벨 존재가 보장된 곳에서 쓴다 —
+		// 조용한 0바이트가 오히려 위험한 경우를 위해 남겨 둔다.
 		public static async UniTask<long> GetDownloadSizeAsync(object key, CancellationToken ct = default)
 		{
 			AsyncOperationHandle<long> handle = Addressables.GetDownloadSizeAsync(key);

@@ -14,7 +14,6 @@ namespace ProjectOne.Flow
 	{
 		public const string SceneName = "5.Dungeon";
 
-		private const string HudAddress = "UI_DungeonHUD";
 
 		private readonly DungeonContext _context;
 
@@ -33,8 +32,6 @@ namespace ProjectOne.Flow
 			await SceneManager.LoadSceneAsync(SceneName).ToUniTask(Progress.Create<float>(onSceneLoadProgress), cancellationToken: ct);
 
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 0f);
-			await SceneHud.LoadAsync(HudAddress, ct);
-
 			// 히어로 스폰·맵 로드까지 await 한 뒤 로딩을 내린다 — "준비 완료" 후에 걷는다.
 			DungeonDirector director = DungeonDirector.EnsureInstance();
 			await director.Begin(_context);
@@ -45,7 +42,6 @@ namespace ProjectOne.Flow
 
 		public UniTask ExitAsync()
 		{
-			SceneHud.Unload();
 			return UniTask.CompletedTask;
 		}
 

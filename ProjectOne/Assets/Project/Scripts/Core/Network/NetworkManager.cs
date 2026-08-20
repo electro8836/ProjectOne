@@ -22,6 +22,12 @@ namespace ProjectOne.Network
 		// 현재 로그인 성공 상태 — 실패해도 게임은 로컬 데이터로 진행 가능.
 		public bool IsLoggedIn { get; private set; }
 
+		// 로그인을 한 번이라도 시도해 결과가 나왔는가(성공/실패 무관).
+		//
+		// 타이틀이 IsLoggedIn 만 기다리면 서버가 죽었을 때 영원히 못 넘어간다.
+		// 실패도 "결정된 상태"이므로 흐름은 진행시키고, 서버 데이터 없이 도는 것은 각 상태가 감당한다.
+		public bool LoginAttempted { get; private set; }
+
 		private NetworkManager() { }
 
 		// 뒤끝 SDK 초기화(1회, 멱등) — TheBackendSettings 의 키로 로컬 초기화(네트워크 아님).
@@ -54,6 +60,7 @@ namespace ProjectOne.Network
 		{
 			if (Init() == false)
 			{
+				LoginAttempted = true;
 				callback?.Invoke(false, "초기화 실패");
 				return;
 			}
@@ -61,12 +68,14 @@ namespace ProjectOne.Network
 			ILoginHandler handler = createLoginHandler(type);
 			if (handler == null)
 			{
+				LoginAttempted = true;
 				callback?.Invoke(false, $"미지원 로그인 타입: {type}");
 				return;
 			}
 
 			(bool success, string error) = await handler.LoginAsync();
 			IsLoggedIn = success;
+			LoginAttempted = true;
 			if (success == true)
 			{
 				Debug.Log($"[Backnd] 로그인 성공({type}) - user: {Backend.UserInDate}");

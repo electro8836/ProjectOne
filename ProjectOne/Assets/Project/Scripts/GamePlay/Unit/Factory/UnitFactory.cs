@@ -150,7 +150,7 @@ namespace ProjectOne.Unit
 				return null;
 			}
 
-			Transform root = UnitContainer.Instance.GetRoot(unitType);
+			Transform root = UnitManager.Instance.GetRoot(unitType);
 			GameObject val2 = Object.Instantiate<GameObject>(val, pos, Quaternion.identity, root);
 			T unit = val2.GetComponent<T>();
 			if (unit == null)

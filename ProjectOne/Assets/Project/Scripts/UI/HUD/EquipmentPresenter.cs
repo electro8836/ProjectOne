@@ -89,7 +89,7 @@ namespace ProjectOne.UI
 
 		private void onCloseRequested()
 		{
-			UIManager.Instance.CloseOverlayAsync().Forget();
+			UIManager.Instance.CloseWindowAsync().Forget();
 		}
 
 		private void onTabSelected(int index)

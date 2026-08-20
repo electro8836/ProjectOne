@@ -6,6 +6,7 @@ using UnityEngine;
 using ProjectOne.Map;
 using ProjectOne.Npcs;
 using ProjectOne.Quests;
+using ProjectOne.Unit;
 
 namespace ProjectOne.Town
 {
@@ -21,11 +22,15 @@ namespace ProjectOne.Town
 
 		private int _townMapId;
 
+		private Hero _hero;
+
 		public static bool HasInstance => _instance != null;
 
 		public static TownDirector Instance => _instance;
 
 		public int TownMapId => _townMapId;
+
+		public Hero Hero => _hero;
 
 		public static TownDirector EnsureInstance()
 		{
@@ -53,6 +58,9 @@ namespace ProjectOne.Town
 
 		public async UniTask Begin(CancellationToken ct)
 		{
+			// 카메라는 맵·히어로가 없어도 먼저 세운다 — 실패해도 흐름을 막지 않는다.
+			await GameplaySceneSetup.EnsureCameraAsync(ct);
+
 			_townMapId = findTownMapId();
 			if (_townMapId <= 0)
 			{
@@ -67,8 +75,29 @@ namespace ProjectOne.Town
 				return;
 			}
 
-			// 맵이 떠야 NPC 마커를 찾을 수 있다.
+			// 맵이 떠야 NPC 마커와 히어로 시작 지점을 찾을 수 있다.
 			_npcSpawner.Refresh(ct);
+
+			await spawnHeroAsync(ct);
+		}
+
+		// 마을 히어로 — 전투가 없으므로 자동전투 두뇌를 붙이지 않는다(조작만).
+		// 마을 귀환은 전체 회복 지점이다 (기반테이블 5.3).
+		private async UniTask spawnHeroAsync(CancellationToken ct)
+		{
+			Vector3 spawnPos = MapManager.Instance.GetAnchorPosition(_townMapId);
+
+			_hero = await UnitFactory.Instance.CreateHeroAsync(spawnPos, Faction.Player, false, ct);
+			if (_hero == null)
+			{
+				// UnitFactory 가 이미 원인을 로그로 남긴다(주소 미입력 / 프리팹에 Hero 컴포넌트 없음 등).
+				return;
+			}
+
+			if (_hero.Vitals != null)
+			{
+				_hero.Vitals.FullHeal();
+			}
 		}
 
 		// 마을은 하나뿐이다. 여러 개면 첫 번째를 쓰고 경고한다.

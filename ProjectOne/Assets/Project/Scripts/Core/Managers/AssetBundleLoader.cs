@@ -144,7 +144,7 @@ namespace ProjectOne.Resources
 			long total = 0;
 			for (int i = 0; i < list.Count; i++)
 			{
-				long size = await AddressableHelper.GetDownloadSizeAsync(list[i], ct);
+				long size = await AddressableHelper.TryGetDownloadSizeAsync(list[i], ct);
 				total += size;
 			}
 			return new BundleCheckResult(total);
@@ -194,7 +194,7 @@ namespace ProjectOne.Resources
 			{
 				if (!isLabelDone(list[i]))
 				{
-					sizes[i] = await AddressableHelper.GetDownloadSizeAsync(list[i], ct);
+					sizes[i] = await AddressableHelper.TryGetDownloadSizeAsync(list[i], ct);
 					totalBytes += sizes[i];
 				}
 			}

@@ -263,7 +263,7 @@ namespace ProjectOne.UserData
 		// 리졸브 캐시도 함께 버린다 (스킬 설계 11.4 — 무기 교체는 가장 무거운 무효화 이벤트다).
 		private void reapplyHero()
 		{
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				Hero hero = heroes[i] as Hero;

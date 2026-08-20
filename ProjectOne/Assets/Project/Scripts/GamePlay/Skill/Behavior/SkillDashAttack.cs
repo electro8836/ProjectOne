@@ -109,13 +109,13 @@ namespace ProjectOne.Skill
 
 		private void DamagePathEnemies()
 		{
-			if (UnitContainer.Instance == null || _row == null)
+			if (UnitManager.Instance == null || _row == null)
 			{
 				return;
 			}
 
 			_hitList.Clear();
-			UnitContainer.Instance.SpatialHash.Query(_caster.HitCenter, _queryBuffer);
+			UnitManager.Instance.SpatialHash.Query(_caster.HitCenter, _queryBuffer);
 			for (int i = 0; i < _queryBuffer.Count; i++)
 			{
 				UnitBase u = _queryBuffer[i];

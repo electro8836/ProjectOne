@@ -30,12 +30,12 @@ namespace ProjectOne.UI
 		private void Start()
 		{
 			// 매니저가 히어로보다 늦게 깬 경우 보강 — 이미 스폰된 히어로가 있으면 바 생성
-			if (UnitContainer.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return;
 			}
 
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase hero = heroes[i];
@@ -53,7 +53,7 @@ namespace ProjectOne.UI
 			EventManager.Instance.Unsubscribe<UnitDiedEvent>(onUnitDied);
 		}
 
-		// UnitContainer(ExecutionOrder -100) 가 위치 캐시를 먼저 갱신한 뒤 실행되어 최신 위치를 읽는다.
+		// UnitManager(ExecutionOrder -100) 가 위치 캐시를 먼저 갱신한 뒤 실행되어 최신 위치를 읽는다.
 		private void LateUpdate()
 		{
 			updateHeroBar();

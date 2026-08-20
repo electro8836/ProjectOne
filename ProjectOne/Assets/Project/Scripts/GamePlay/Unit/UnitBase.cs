@@ -53,6 +53,9 @@ namespace ProjectOne.Unit
 
 		protected CircleCollider2D _collider;
 
+		// 머리 위 체력바(SpriteRenderer 기반). 프리팹에 없으면 null 이고 갱신을 건너뛴다.
+		protected UnitHealthBar _healthBar;
+
 		public bool IsDead { get; protected set; }
 
 		// 프레임 캐시 — UnitSimulator 가 프레임당 1회 갱신. 핫 루프(충돌/분리)는 이 필드만 읽어
@@ -215,19 +218,20 @@ namespace ProjectOne.Unit
 			_mover = this.GetComponent<UnitMover>();
 			_animator = this.GetComponent<UnitAnimator>();
 			_collider = this.GetComponent<CircleCollider2D>();
+			_healthBar = this.GetComponentInChildren<UnitHealthBar>(true);
 		}
 
 		protected virtual void OnEnable()
 		{
-			UnitContainer.Instance.Register(this);
+			UnitManager.Instance.Register(this);
 		}
 
 		protected virtual void OnDisable()
 		{
-			// 앱/씬 종료 시엔 UnitContainer 가 먼저 파괴됐을 수 있어 null 가드.
-			if (UnitContainer.HasInstance)
+			// 앱/씬 종료 시엔 UnitManager 가 먼저 파괴됐을 수 있어 null 가드.
+			if (UnitManager.HasInstance)
 			{
-				UnitContainer.Instance.Unregister(this);
+				UnitManager.Instance.Unregister(this);
 			}
 		}
 
@@ -265,6 +269,12 @@ namespace ProjectOne.Unit
 			if (_animator != null)
 			{
 				_animator.UpdateSorting();
+			}
+
+			// 체력바도 같은 이유로 여기서 돌린다 — 비율이 그대로면 내부에서 즉시 반환한다.
+			if (_healthBar != null)
+			{
+				_healthBar.Refresh();
 			}
 
 			if (!IsDead)

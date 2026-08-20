@@ -94,7 +94,7 @@ namespace EDT {
     public enum MapType {
         None,
         Town,
-        Stage,
+        Field,
         Dungeon,
     }
 
@@ -545,7 +545,7 @@ namespace EDT {
         TableItem,
         TableMap,
         TableAct,
-        TableMapStage,
+        TableField,
         TableDungeon,
         TableDungeonStage,
         TableWeaponMastery,

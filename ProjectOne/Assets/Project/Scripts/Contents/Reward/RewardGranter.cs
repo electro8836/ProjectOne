@@ -221,12 +221,12 @@ namespace ProjectOne.Reward
 		// 살아있는 히어로의 골드 획득량 보너스. 없으면 0.
 		private static float getGoldDropBonus()
 		{
-			if (UnitContainer.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return 0f;
 			}
 
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase hero = heroes[i];

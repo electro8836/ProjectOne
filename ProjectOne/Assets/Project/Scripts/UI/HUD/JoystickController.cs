@@ -19,7 +19,7 @@ namespace ProjectOne.UI
 		[Header("참조")]
 		[SerializeField] private RectTransform _base;     // 터치 위치로 이동하는 조이스틱 배경(중앙 anchor/pivot)
 		[SerializeField] private RectTransform _handle;
-		[SerializeField] private float _radius = 150f;
+		[SerializeField] private float _radius = 90;
 
 		[Header("방향 포커스")]
 		[SerializeField] private GameObject _focusLeftUp;
@@ -73,8 +73,8 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			// 유동성 모드만 배경 중앙을 터치 위치로 이동 (입력영역·배경 모두 중앙 anchor/pivot 전제)
-			// 고정 모드는 배경을 홈 위치에 그대로 둔다
+			// 유동 모드만 배경 중앙을 터치 위치로 옮긴다. 고정 모드는 홈(중앙)에 그대로 둔다.
+			// 좌표계 보정은 tryGetLocal 이 이미 마쳤다.
 			if (_useFloating == true)
 			{
 				_base.anchoredPosition = local;
@@ -106,11 +106,22 @@ namespace ProjectOne.UI
 			resetToHome();
 		}
 
-		// 입력 영역(이 스크립트가 붙은 rect) 기준 로컬 좌표 — area pivot 기준
+		// 입력 영역 기준 좌표를 **자식의 anchoredPosition 좌표계로** 변환해 돌려준다.
+		//
+		// ScreenPointToLocalPointInRectangle 은 **pivot 기준** 좌표를 준다. 그런데 _base 의 anchor 는
+		// 부모 중앙이라, 그대로 대입하면 pivot 이 중앙이 아닐 때 그 차이만큼 어긋난다
+		// (pivot 이 (0.5,0) 이면 누른 자리보다 높이의 절반만큼 위로 튄다).
+		// rect.center 는 pivot 기준 좌표계에서 rect 중앙의 위치이므로, 이만큼 빼면 정확히 맞는다.
 		private bool tryGetLocal(PointerEventData eventData, out Vector2 local)
 		{
 			RectTransform area = (RectTransform)transform;
-			return RectTransformUtility.ScreenPointToLocalPointInRectangle(area, eventData.position, eventData.pressEventCamera, out local);
+			if (RectTransformUtility.ScreenPointToLocalPointInRectangle(area, eventData.position, eventData.pressEventCamera, out local) == false)
+			{
+				return false;
+			}
+
+			local -= area.rect.center;
+			return true;
 		}
 
 		// 배경을 홈 위치로 되돌리고 핸들·입력·포커스를 초기화 (배경은 계속 표시 유지)

@@ -17,7 +17,6 @@ namespace ProjectOne.UI
 		[Header("UI 참조")]
 		[SerializeField] private Image _iconImage;
 		[SerializeField] private TMP_Text _amountText;
-		[SerializeField] private UIButton _navigationButton;
 
 		private Action<ResourceChangeEvent> _onResourceChanged;
 
@@ -25,7 +24,6 @@ namespace ProjectOne.UI
 		{
 			_onResourceChanged = onResourceChanged;
 			EventManager.Instance.Subscribe<ResourceChangeEvent>(_onResourceChanged);
-			_navigationButton.OnClickEvent += onNavigationClicked;
 			refresh();
 			loadIconAsync(this.GetCancellationTokenOnDestroy()).Forget();
 		}
@@ -33,7 +31,6 @@ namespace ProjectOne.UI
 		private void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<ResourceChangeEvent>(_onResourceChanged);
-			_navigationButton.OnClickEvent -= onNavigationClicked;
 
 			if (ResourceManager.HasInstance)
 			{
@@ -47,14 +44,12 @@ namespace ProjectOne.UI
 
 		private void onResourceChanged(ResourceChangeEvent evt)
 		{
-			if (evt.CurrencyType != _targetCurrency) { return; }
+			if (evt.CurrencyType != _targetCurrency) 
+			{
+				return;
+			}
 
 			updateAmount(evt.CurrentAmount);
-		}
-
-		private void onNavigationClicked()
-		{
-			// TODO(STEP 6) — 재화 획득 안내 팝업. 신규 테이블에 링크 컬럼이 없어 코드가 매핑을 갖게 된다.
 		}
 
 		private void refresh()
@@ -92,11 +87,20 @@ namespace ProjectOne.UI
 
 		private static string formatAmount(int amount)
 		{
-			if (amount >= 1_000_000_000) { return (amount / 1_000_000_000).ToString() + "B"; }
+			if (amount >= 1_000_000_000) 
+			{
+				return (amount / 1_000_000_000).ToString() + "B";
+			}
 
-			if (amount >= 1_000_000) { return (amount / 1_000_000).ToString() + "M"; }
+			if (amount >= 1_000_000) 
+			{
+				return (amount / 1_000_000).ToString() + "M"; 
+			}
 
-			if (amount >= 1_000) { return (amount / 1_000).ToString() + "K"; }
+			if (amount >= 1_000)
+			{ 
+				return (amount / 1_000).ToString() + "K"; 
+			}
 
 			return amount.ToString();
 		}

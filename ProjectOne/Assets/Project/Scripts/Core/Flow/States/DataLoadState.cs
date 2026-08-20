@@ -41,8 +41,17 @@ namespace ProjectOne.Flow
 		}
 
 		// GetUserData 호출을 콜백 → UniTask 로 래핑(NetworkManager 변경 없이 State 측에서 변환).
+		//
+		// 미로그인이면 요청 자체를 건너뛴다. 로그인 없이 InvokeFunction 을 넣으면 SendQueue 워커에서
+		// 실패해 콜백이 영영 오지 않을 수 있고, 그러면 아래 TCS 가 풀리지 않아 로딩이 영구 고착된다.
 		private UniTask requestGetUserDataAsync()
 		{
+			if (NetworkManager.Instance.IsLoggedIn == false)
+			{
+				Debug.LogWarning("[DataLoadState] 미로그인 상태 — 서버 데이터 요청을 건너뜁니다. 빈 계정으로 진행합니다.");
+				return UniTask.CompletedTask;
+			}
+
 			_getUserDataTcs = new UniTaskCompletionSource();
 			NetworkManager.Instance.RequestGetUserData(onUserDataLoaded);
 			return _getUserDataTcs.Task;

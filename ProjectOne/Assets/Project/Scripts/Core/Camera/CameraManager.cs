@@ -36,7 +36,7 @@ namespace ProjectOne.CameraSystem
 
 		[Header("줌")]
 		// 기본 직교 줌 크기 (ZoomReset 복귀 기준). 0 이하면 시작 시 vcam 값을 사용한다
-		[SerializeField] private float _defaultOrthoSize = 5f;
+		[SerializeField] private float _defaultOrthoSize = 6f;
 
 		[Header("쉐이크 프리셋")]
 		[SerializeField] private List<ShakePreset> _shakePresets = new List<ShakePreset>();

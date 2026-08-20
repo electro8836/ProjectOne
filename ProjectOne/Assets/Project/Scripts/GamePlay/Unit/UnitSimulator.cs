@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace ProjectOne.Unit
 {
-	// 유닛 일괄 구동 로직 (순수 C# 클래스 — UnitContainer 가 소유하고 Fixed/LateUpdate 에서 구동).
+	// 유닛 일괄 구동 로직 (순수 C# 클래스 — UnitManager 가 소유하고 Fixed/LateUpdate 에서 구동).
 	// - 모든 유닛의 위치/반경을 프레임당 1회 캐시 → 핫 루프의 네이티브 브릿지 호출 제거
 	// - 몬스터 분리(Separation) 벡터를 pair-wise 로 한 번에 배치 계산
 	// - 모든 유닛의 ManualTick 을 단일 루프로 구동 → 개별 MonoBehaviour.LateUpdate 콜백 오버헤드 제거

@@ -79,7 +79,7 @@ namespace ProjectOne.Unit
 			return pool;
 		}
 
-		// 씬 전환 시 호출 — 풀 GameObject 는 UnitContainer 자식이라 씬과 함께 파괴된다.
+		// 씬 전환 시 호출 — 풀 GameObject 는 씬의 UnitContainer 자식이라 씬과 함께 파괴된다.
 		// 캐시에 죽은 참조가 남으면 다음 씬에서 소환이 조용히 실패한다.
 		public void Clear()
 		{
@@ -100,7 +100,7 @@ namespace ProjectOne.Unit
 		private SummonPool createPool(GameObject prefab, EDT.Summon summonId, Table_Summon.Row row)
 		{
 			GameObject val = new GameObject($"SummonPool_{summonId}");
-			val.transform.SetParent(UnitContainer.Instance.GetRoot(UnitType.Summon), false);
+			val.transform.SetParent(UnitManager.Instance.GetRoot(UnitType.Summon), false);
 			val.SetActive(false);
 			SummonPool pool = val.AddComponent<SummonPool>();
 			pool.Setup(prefab, summonId, row, DefaultCapacity);

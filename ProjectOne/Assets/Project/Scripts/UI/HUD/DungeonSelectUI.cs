@@ -12,7 +12,7 @@ using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
-	// 던전 선택 화면. UIManager.OpenOverlayAsync로 오버레이 캔버스에 열린다.
+	// 던전 선택 화면. UIManager.OpenWindowAsync로 오버레이 캔버스에 열린다.
 	// Table_Dungeon을 ID 오름차순으로 나열하고 좌우(이전/다음)로 넘기며 선택한다.
 	// 선택된 던전의 이름·권장 레벨·아이콘(이전/현재/다음)을 표시한다.
 	public class DungeonSelectUI : UIScreen
@@ -88,7 +88,7 @@ namespace ProjectOne.UI
 
 		private void onReturnClicked()
 		{
-			UIManager.Instance.CloseOverlayAsync().Forget();
+			UIManager.Instance.CloseWindowAsync().Forget();
 		}
 
 		private void onBattleClicked()

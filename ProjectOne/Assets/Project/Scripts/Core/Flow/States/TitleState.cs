@@ -27,14 +27,22 @@ namespace ProjectOne.Flow
 
 			await SceneManager.LoadSceneAsync(SceneName).ToUniTask(cancellationToken: ct);
 
-			// 로그인 성공 대기 (Button_Guest / Button_Google → NetworkManager.Login)
+			// 로그인 결과 대기 (Button_Guest / Button_Google → NetworkManager.Login)
+			//
+			// 성공이 아니라 **결과**를 기다린다. 서버가 죽어 실패해도 오프라인으로 진행한다 —
+			// 성공만 기다리면 서버 장애가 곧 개발 중단이 된다.
 			if (SkipLogin == true)
 			{
 				Debug.LogWarning("[TitleState] SkipLogin 이 켜져 있어 로그인 대기를 건너뜁니다 — 빈 계정으로 진행합니다.");
 			}
 			else
 			{
-				await UniTask.WaitUntil(isLoggedIn, cancellationToken: ct);
+				await UniTask.WaitUntil(isLoginResolved, cancellationToken: ct);
+
+				if (NetworkManager.Instance.IsLoggedIn == false)
+				{
+					Debug.LogWarning("[TitleState] 로그인에 실패했습니다 — 빈 계정으로 진행합니다.");
+				}
 			}
 
 			GameFlow.Instance.ChangeStateAsync(new PatchState()).Forget();
@@ -45,9 +53,9 @@ namespace ProjectOne.Flow
 			return UniTask.CompletedTask;
 		}
 
-		private bool isLoggedIn()
+		private bool isLoginResolved()
 		{
-			return NetworkManager.Instance.IsLoggedIn;
+			return NetworkManager.Instance.IsLoggedIn || NetworkManager.Instance.LoginAttempted;
 		}
 	}
 }

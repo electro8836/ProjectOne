@@ -9,16 +9,22 @@ using ProjectOne.Resources;
 
 namespace ProjectOne.UI
 {
-	// UI 전역 진입점.
-	// - 씬을 가로지르는 Canvas 계층(Overlay / Popup) 관리
-	// - GameStateChangedEvent를 구독해 오버레이 스택을 자동 정리
-	// (씬 전용 HUD는 각 씬의 Canvas에 직접 배치 — 매니저가 소유하지 않음)
+	// UI 전역 진입점. 씬을 가로지르는 Canvas 계층을 소유한다.
+	//
+	//   Overlay(100)  상시 HUD          — MainHUD
+	//   Window (200)  전체창            — 장비 / 상점 / 던전선택
+	//   Popup  (300)  창 위 작은 창     — 아이템 정보 · 확인
+	//   System (400)  최상위            — 네트워크 딤 · 로딩
+	//
+	// 위로 갈수록 덮는다. HUD 를 가장 아래에 두어 창·팝업이 자연히 그 위에 뜬다.
+	// GameStateChangedEvent 를 구독해 열린 창을 자동 정리한다.
 	public class UIManager : MonoSingleton<UIManager>
 	{
 		[Header("Canvas 계층")]
-		[SerializeField] private Canvas _overlayCanvas;	// Sort Order 200, DontDestroyOnLoad
-		[SerializeField] private Canvas _popupCanvas;	// Sort Order 300, DontDestroyOnLoad
-		[SerializeField] private Canvas _systemCanvas;	// Sort Order 400 — 네트워크 딤(최상위), DontDestroyOnLoad
+		[SerializeField] private Canvas _hudCanvas;	// Sort Order 100 — 상시 HUD
+		[SerializeField] private Canvas _windowCanvas;	// Sort Order 200 — 전체창
+		[SerializeField] private Canvas _popupCanvas;	// Sort Order 300 — 창 위 작은 창
+		[SerializeField] private Canvas _systemCanvas;	// Sort Order 400 — 네트워크 딤(최상위)
 
 		[Header("네트워크 딤")]
 		[SerializeField] private GameObject _networkBlockerPrefab;
@@ -26,8 +32,8 @@ namespace ProjectOne.UI
 		// 이 시간(초) 안에 응답이 오면 딤을 띄우지 않는다(빠른 응답에서 화면 깜빡임 방지).
 		private const float NetworkBlockerShowDelaySec = 0.2f;
 
-		// 오버레이 스택 (Back키 처리, 직렬 닫기용)
-		private readonly Stack<UIScreen> _overlayStack = new Stack<UIScreen>();
+		// 열린 창 스택 (Back키 처리, 직렬 닫기용)
+		private readonly Stack<UIScreen> _windowStack = new Stack<UIScreen>();
 
 		// 씬에 직접 배치된 HUD 등 화면 레지스트리 — 깨어날 때 등록/사라질 때 해제하여 타입으로 O(1) 조회
 		private readonly Dictionary<System.Type, UIScreen> _screens = new Dictionary<System.Type, UIScreen>();
@@ -45,7 +51,60 @@ namespace ProjectOne.UI
 		protected override void Awake()
 		{
 			base.Awake();
+			ensureEventSystem();
+			validateCanvases();
 			EventManager.Instance.Subscribe<GameStateChangedEvent>(onGameStateChanged);
+		}
+
+		// EventSystem 이 없으면 UI 포인터 이벤트가 **발생 자체를 하지 않는다** —
+		// 조이스틱 드래그(IDragHandler)도 버튼 클릭도 통째로 죽는다.
+		//
+		// 씬마다 배치하지 않고 여기서 보장하는 이유:
+		//  - 씬이 5개고 앞으로 늘어난다. 하나만 빠뜨려도 그 씬에서 입력이 죽는다
+		//  - UIManager 는 부트 1회 로드 + DontDestroyOnLoad 라 한 번이면 전 씬에 적용된다
+		// 이미 있으면 만들지 않으므로 중복 경고가 나지 않는다.
+		private void ensureEventSystem()
+		{
+			if (UnityEngine.EventSystems.EventSystem.current != null)
+			{
+				return;
+			}
+
+			GameObject go = new GameObject("EventSystem");
+			go.transform.SetParent(transform, false);
+			go.AddComponent<UnityEngine.EventSystems.EventSystem>();
+
+			// 이 프로젝트는 새 Input System 을 쓴다(HeroController 등).
+			// 구 StandaloneInputModule 은 InputSystem 활성 시 예외를 던진다.
+			go.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+		}
+
+		// 캔버스 배선이 끊기면 그 캔버스를 쓰는 모든 경로가 NRE 로 죽는다.
+		// 증상은 "UI 가 안 뜬다" 로만 보여서 프리팹부터 뒤지게 되므로, 어느 것이 비었는지 여기서 밝힌다.
+		//
+		// 특히 직렬화 필드를 개명하면 유니티가 이름을 키로 쓰기 때문에 프리팹의 값이 조용히 떨어져 나간다.
+		// 그 사고를 부팅 첫 줄에서 잡는 것이 목적이다.
+		private void validateCanvases()
+		{
+			if (_hudCanvas == null)
+			{
+				Debug.LogError("[UIManager] _hudCanvas 가 비었습니다 — MainHUD 를 띄울 수 없습니다.");
+			}
+
+			if (_windowCanvas == null)
+			{
+				Debug.LogError("[UIManager] _windowCanvas 가 비었습니다 — 창을 열 수 없습니다.");
+			}
+
+			if (_popupCanvas == null)
+			{
+				Debug.LogError("[UIManager] _popupCanvas 가 비었습니다 — 팝업을 열 수 없습니다.");
+			}
+
+			if (_systemCanvas == null)
+			{
+				Debug.LogError("[UIManager] _systemCanvas 가 비었습니다 — 네트워크 딤을 띄울 수 없습니다.");
+			}
 		}
 
 		protected override void OnDestroy()
@@ -162,10 +221,57 @@ namespace ProjectOne.UI
 			_networkBlocker.SetActive(true);
 		}
 
-		// ── 오버레이 ────────────────────────────────────────────────────
+		// ── 영속 MainHUD ────────────────────────────────────────────────
+		//
+		// 씬별 HUD 를 쓰지 않는다. 하나가 씬을 가로질러 살아 있고, 어디서 무엇을 보일지는
+		// HudContext 가시성으로 정한다 (MainHud.ApplyContext).
 
-		// Addressable 주소로 오버레이를 열어 _overlayCanvas 아래에 배치한다.
-		public async UniTask<T> OpenOverlayAsync<T>(string address, CancellationToken ct) where T : UIScreen
+		private const string MainHudAddress = "UIPrefab_MainHUD";
+
+		private GameObject _mainHud;
+
+		// 마을 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
+		//
+		// **히어로 스폰보다 먼저 불려야 한다.** JoystickController 가 Awake 에서 UnitSpawnedEvent 를
+		// 구독하므로, 히어로가 뜬 뒤에 HUD 가 생기면 이벤트를 놓쳐 조이스틱이 영영 대상을 못 찾는다.
+		public async UniTask EnsureMainHudAsync(CancellationToken ct)
+		{
+			if (_mainHud != null)
+			{
+				return;
+			}
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(MainHudAddress, ct);
+			if (prefab == null)
+			{
+				// HUD 가 아직 없어도 게임 흐름 자체는 막지 않는다.
+				Debug.LogWarning($"[UIManager] MainHUD 프리팹을 찾지 못했습니다: {MainHudAddress}");
+				return;
+			}
+
+			// HUD 캔버스(100) 자식으로 둔다 — 창(200)·팝업(300)·시스템(400)이 자연히 위를 덮는다.
+			// UIManager 자신이 영속이라 별도 DontDestroyOnLoad 가 필요 없다.
+			_mainHud = Instantiate(prefab, _hudCanvas.transform);
+		}
+
+		// ── 창(Window) ──────────────────────────────────────────────────
+
+		// 화면 열기의 단일 진입점. NPC 클릭이든 HUD 버튼이든 여기로 들어온다 —
+		// 그래야 "굳이 NPC 에게 가지 않아도 같은 창이 열린다"가 한 벌의 코드로 성립한다.
+		public async UniTask<UIScreen> OpenAsync(UIScreenId id, CancellationToken ct)
+		{
+			string address = UIScreenCatalog.GetAddress(id);
+			if (string.IsNullOrEmpty(address) == true)
+			{
+				Debug.LogError($"[UIManager] {id} 의 주소가 UIScreenCatalog 에 없습니다.");
+				return null;
+			}
+
+			return await OpenWindowAsync<UIScreen>(address, ct);
+		}
+
+		// Addressable 주소로 창을 열어 _windowCanvas 아래에 배치한다.
+		public async UniTask<T> OpenWindowAsync<T>(string address, CancellationToken ct) where T : UIScreen
 		{
 			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct);
 			if (prefab == null)
@@ -173,7 +279,7 @@ namespace ProjectOne.UI
 				return null;
 			}
 
-			GameObject go = Instantiate(prefab, _overlayCanvas.transform);
+			GameObject go = Instantiate(prefab, _windowCanvas.transform);
 			T screen = go.GetComponent<T>();
 			if (screen == null)
 			{
@@ -182,44 +288,44 @@ namespace ProjectOne.UI
 				return null;
 			}
 
-			_overlayStack.Push(screen);
+			_windowStack.Push(screen);
 			await screen.OnOpenAsync(ct);
 			return screen;
 		}
 
-		// 스택 최상단 오버레이를 닫는다.
-		// publishWhenEmpty: 스택이 비었을 때 OverlayClosedEvent를 발행할지.
+		// 스택 최상단 창을 닫는다.
+		// publishWhenEmpty: 스택이 비었을 때 WindowClosedEvent를 발행할지.
 		// 사용자 닫기(닫기 버튼)는 true(기본), 탭 전환·씬 전환의 일괄 닫기는 false로 조용히 닫는다.
-		public async UniTask CloseOverlayAsync(bool publishWhenEmpty = true)
+		public async UniTask CloseWindowAsync(bool publishWhenEmpty = true)
 		{
-			if (_overlayStack.Count == 0)
+			if (_windowStack.Count == 0)
 			{
 				return;
 			}
 
-			UIScreen screen = _overlayStack.Pop();
+			UIScreen screen = _windowStack.Pop();
 			await screen.OnCloseAsync();
 			Destroy(screen.gameObject);
 
-			// 마지막 오버레이가 닫혀 스택이 비면 통지 (탭 그룹 등이 선택 해제).
-			if (publishWhenEmpty && _overlayStack.Count == 0)
+			// 마지막 창이 닫혀 스택이 비면 통지 (탭 그룹 등이 선택 해제).
+			if (publishWhenEmpty && _windowStack.Count == 0)
 			{
-				EventManager.Instance.Publish(new OverlayClosedEvent());
+				EventManager.Instance.Publish(new WindowClosedEvent());
 			}
 		}
 
-		// 모든 오버레이를 닫는다 (탭 전환·씬 전환 시 호출 — 조용히 닫음).
-		public async UniTask CloseAllOverlaysAsync()
+		// 모든 창을 닫는다 (탭 전환·씬 전환 시 호출 — 조용히 닫음).
+		public async UniTask CloseAllWindowsAsync()
 		{
-			while (_overlayStack.Count > 0)
+			while (_windowStack.Count > 0)
 			{
-				await CloseOverlayAsync(false);
+				await CloseWindowAsync(false);
 			}
 		}
 
 		// ── 공통 팝업 ───────────────────────────────────────────────────
 
-		// 아이템 정보 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.
+		// 아이템 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowItemInfoPopupAsync(string address, long uid, CancellationToken ct)
 		{
 			_popupCts?.Cancel();
@@ -254,11 +360,11 @@ namespace ProjectOne.UI
 		// 캐릭터 디테일 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.
 		// ── 이벤트 핸들러 ───────────────────────────────────────────────
 
-		// 상태가 전이될 때 열려있는 오버레이를 모두 닫는다.
-		// 각 State의 EnterAsync에서 필요한 오버레이를 새로 열도록 위임.
+		// 상태가 전이될 때 열려있는 창을 모두 닫는다.
+		// 각 State의 EnterAsync에서 필요한 창을 새로 열도록 위임.
 		private void onGameStateChanged(GameStateChangedEvent e)
 		{
-			CloseAllOverlaysAsync().Forget();
+			CloseAllWindowsAsync().Forget();
 		}
 	}
 }

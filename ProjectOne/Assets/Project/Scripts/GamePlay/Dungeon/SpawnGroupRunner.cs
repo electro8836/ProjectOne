@@ -110,12 +110,12 @@ namespace ProjectOne.Dungeon
 
 		private static Vector3 fallbackBasePos()
 		{
-			if (UnitContainer.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return Vector3.zero;
 			}
 
-			IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase hero = heroes[i];

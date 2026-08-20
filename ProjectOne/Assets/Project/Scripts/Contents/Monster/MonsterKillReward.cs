@@ -89,12 +89,12 @@ namespace ProjectOne.Monsters
 		// 살아있는 히어로의 경험치 획득량 보너스. 없으면 0.
 		private static float getExpBonus()
 		{
-			if (UnitContainer.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return 0f;
 			}
 
-			System.Collections.Generic.IReadOnlyList<UnitBase> heroes = UnitContainer.Instance.GetByType(UnitType.Hero);
+			System.Collections.Generic.IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
 			for (int i = 0; i < heroes.Count; i++)
 			{
 				UnitBase hero = heroes[i];
