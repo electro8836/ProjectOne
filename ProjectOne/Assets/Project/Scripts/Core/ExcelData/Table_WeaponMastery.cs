@@ -11,6 +11,7 @@ namespace EDT {
             public string Name { get; set; } = string.Empty;
             public WeaponType WeaponType { get; set; } = WeaponType.None;
             public WeaponRangeType RangeType { get; set; } = WeaponRangeType.None;
+            public string AnimControllerName { get; set; } = string.Empty;
             public Option LevelBonusOption { get; set; } = Option.None;
             public float LevelBonusPerLevel { get; set; } = 0f;
             public Skill NormalAttackSkill { get; set; } = Skill.None;
@@ -43,6 +44,7 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.WeaponType = (WeaponType)reader.ReadInt32();
                 row.RangeType = (WeaponRangeType)reader.ReadInt32();
+                row.AnimControllerName = reader.ReadString();
                 row.LevelBonusOption = (Option)reader.ReadInt32();
                 row.LevelBonusPerLevel = reader.ReadSingle();
                 row.NormalAttackSkill = (Skill)reader.ReadInt32();

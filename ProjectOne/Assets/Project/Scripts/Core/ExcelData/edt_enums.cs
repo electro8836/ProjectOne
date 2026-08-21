@@ -402,7 +402,7 @@ namespace EDT {
         OPT_LIFE_ON_HIT_AMP,
         OPT_EVASION_RATE_ADD,
         OPT_BLOCK_RATE_ADD,
-        OPT_MOVE_SPEED_BONUS_ADD,
+        OPT_MOVE_SPEED_ADD,
         OPT_EXP_BONUS_ADD,
         OPT_PICKUP_RANGE_ADD,
         OPT_GOLD_DROP_BONUS_ADD,
@@ -427,10 +427,13 @@ namespace EDT {
         Skill_DualPistols_Attack,
         Skill_DualPistols_Active_01,
         Skill_DualPistols_Passive_01,
+        Skill_Monster_MeleeAttack_01,
     }
 
     public enum SkillEffect {
         None,
+        SE_GreatSword_Attack_Damage,
+        SE_Monster_MeleeAttack_Damage,
     }
 
     public enum SkillModifier {
@@ -456,7 +459,7 @@ namespace EDT {
         Stat_LifeOnHit,
         Stat_EvasionRate,
         Stat_BlockRate,
-        Stat_MoveSpeedBonus,
+        Stat_MoveSpeed,
         Stat_ExpBonus,
         Stat_PickupRange,
         Stat_GoldDropBonus,
@@ -509,8 +512,8 @@ namespace EDT {
         StatDetail_EvasionRate_Add,
         StatDetail_BlockRate_Base,
         StatDetail_BlockRate_Add,
-        StatDetail_MoveSpeedBonus_Base,
-        StatDetail_MoveSpeedBonus_Add,
+        StatDetail_MoveSpeed_Base,
+        StatDetail_MoveSpeed_Add,
         StatDetail_ExpBonus_Base,
         StatDetail_ExpBonus_Add,
         StatDetail_PickupRange_Base,

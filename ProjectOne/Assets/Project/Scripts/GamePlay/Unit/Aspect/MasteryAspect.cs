@@ -36,6 +36,10 @@ namespace ProjectOne.Unit
 			applyLevelBonuses(hero, book);
 
 			Table_WeaponMastery.Row mastery = book.CurrentMastery;
+
+			// 애니메이터 오버라이드는 조기 반환 앞에서 끝낸다 — 무기를 벗은 경우도 되돌려야 한다.
+			applyAnimController(hero, mastery);
+
 			if (mastery == null)
 			{
 				// 무기 미착용 — 기본공격도 트리도 없다. 공격 자체가 불가능하다 (설계 4.3).
@@ -68,6 +72,38 @@ namespace ProjectOne.Unit
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
+
+		// 무기별 애니메이터 오버라이드 교체.
+		//
+		// AC_HeroRoot 의 ATTACK/SKILL 은 빈 클립(*_EMPTY)이며, 실제 모션은 AOC 가 갈아끼운다.
+		// 이 교체가 없으면 트리거는 들어가지만 화면에는 아무것도 나오지 않는다.
+		//
+		// 되돌리기를 RemoveFrom 이 아니라 여기서 하는 이유 — Reapply 는 RemoveFrom → ApplyTo 를
+		// 연달아 부르므로, 양쪽에서 건드리면 한 사이클에 컨트롤러가 두 번 바뀌고 트리거 리셋도 중복된다.
+		private void applyAnimController(Hero hero, Table_WeaponMastery.Row mastery)
+		{
+			UnitAnimator animator = hero.GetComponent<UnitAnimator>();
+			if (animator == null)
+			{
+				return;
+			}
+
+			if (mastery == null)
+			{
+				animator.RestoreBaseController();
+				return;
+			}
+
+			RuntimeAnimatorController controller = MasteryCatalog.GetAnimController(mastery.AnimControllerName);
+			if (controller == null)
+			{
+				// 이름이 비었거나 프리로드 누락 — GetAnimController 가 이미 로그를 남겼다.
+				animator.RestoreBaseController();
+				return;
+			}
+
+			animator.SetController(controller);
+		}
 
 		// 전 마스터리의 레벨 보너스를 합산한다. 양손검을 키우면 석궁을 들어도 그 공격력이 유지된다.
 		private void applyLevelBonuses(Hero hero, MasteryBook book)

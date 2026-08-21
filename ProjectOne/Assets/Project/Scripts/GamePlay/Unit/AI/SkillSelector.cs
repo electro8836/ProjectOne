@@ -89,8 +89,8 @@ namespace ProjectOne.Unit.AI
 		// 발사체 스킬이면 경로상 차단 벽이 없는(시야 확보된) 적이 1명이라도 있어야 한다(벽에 대고 헛스킬 방지).
 		private static bool HasEnemyInRange(UnitBase self, Table_Skill.Row row)
 		{
-			List<UnitBase> scanned = TargetResolver.ScanByType(row.ScanType, row.ScanRange, row.ScanParam, self);
-			List<UnitBase> enemies = TargetResolver.FilterByApplyTarget(scanned, SkillApplyTarget.Enemy, self);
+			// 적 존재 여부만 보므로 row.ApplyTarget 이 아니라 Enemy 고정이다 — 지원 스킬이 생기면 재검토한다.
+			List<UnitBase> enemies = TargetResolver.ScanByType(row.ScanType, SkillApplyTarget.Enemy, row.ScanRange, row.ScanParam, self);
 			if (enemies.Count == 0)
 			{
 				return false;
@@ -102,7 +102,7 @@ namespace ProjectOne.Unit.AI
 				return true;
 			}
 
-			// enemies 는 TargetResolver 내부 버퍼 직참조 — 이 루프 중 다른 ScanByType/Filter 호출 없음(HasLineOfSight 는 맵 질의)
+			// enemies 는 TargetResolver 내부 버퍼 직참조 — 이 루프 중 다른 ScanByType 호출 없음(HasLineOfSight 는 맵 질의)
 			Vector2 from = self.HitCenter;
 			for (int i = 0; i < enemies.Count; i++)
 			{

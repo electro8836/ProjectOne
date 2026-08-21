@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -59,6 +59,10 @@ namespace ProjectOne.UI
 		[Header("하단 메뉴")]
 		[SerializeField] private TabGroup _bottomTabs;
 
+		// 개발용 이동 버튼 — 비워두면 자식에서 자동 수집한다.
+		[Header("개발용 이동 버튼 (비우면 자식에서 자동 수집)")]
+		[SerializeField] private DevWarpButton[] _warpButtons;
+
 		// 탭 순서대로의 화면. None 이거나 배열이 짧으면 로그만 남기고 넘어간다 —
 		// 화면 프리팹이 생기면 코드를 고치지 않고 인스펙터에서 enum 만 고르면 연결된다.
 		[SerializeField] private UIScreenId[] _tabScreens;
@@ -66,12 +70,18 @@ namespace ProjectOne.UI
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────
 		public event Action<UIScreenId> OnScreenRequested;
 
+		// 이동 요청 — 목적지는 Table_Map.ID. 어디로 갈지는 Presenter 가 판단한다.
+		public event Action<int> OnWarpRequested;
+
 		private readonly MainHudPresenter _presenter = new MainHudPresenter();
 
 		private void Awake()
 		{
 			collectScreenButtons();
 			bindScreenButtons();
+
+			collectWarpButtons();
+			bindWarpButtons();
 
 			if (_bottomTabs != null)
 			{
@@ -82,15 +92,11 @@ namespace ProjectOne.UI
 		}
 
 		// 체력은 이벤트가 없어 값 비교로 갱신한다 — 판단은 Presenter 가 하고 View 는 위임만 한다.
-		private void Update()
-		{
-			_presenter.Tick();
-		}
-
 		private void OnDestroy()
 		{
 			_presenter.Dispose();
 			unbindScreenButtons();
+			unbindWarpButtons();
 
 			if (_bottomTabs != null)
 			{
@@ -223,6 +229,55 @@ namespace ProjectOne.UI
 			if (OnScreenRequested != null)
 			{
 				OnScreenRequested.Invoke(id);
+			}
+		}
+
+
+		// ── 이동 ──────────────────────────────────────────────────────
+
+		// 화면 열기 버튼과 같은 방식 — 비활성 자식까지 훑는다.
+		private void collectWarpButtons()
+		{
+			if (_warpButtons != null && _warpButtons.Length > 0)
+			{
+				return;
+			}
+
+			_warpButtons = this.GetComponentsInChildren<DevWarpButton>(true);
+		}
+
+		private void bindWarpButtons()
+		{
+			for (int i = 0; i < _warpButtons.Length; i++)
+			{
+				if (_warpButtons[i] != null)
+				{
+					_warpButtons[i].OnClicked += onWarpButtonClicked;
+				}
+			}
+		}
+
+		private void unbindWarpButtons()
+		{
+			if (_warpButtons == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < _warpButtons.Length; i++)
+			{
+				if (_warpButtons[i] != null)
+				{
+					_warpButtons[i].OnClicked -= onWarpButtonClicked;
+				}
+			}
+		}
+
+		private void onWarpButtonClicked(int mapId)
+		{
+			if (OnWarpRequested != null)
+			{
+				OnWarpRequested.Invoke(mapId);
 			}
 		}
 

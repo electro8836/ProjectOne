@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -380,16 +380,37 @@ namespace ProjectOne.Resources
 		}
 
 		// InstantiateAsync로 만든 인스턴스 해제 (GameObject.Destroy 대신 사용)
+		// 인스턴스 해제. **이미 파괴된 인스턴스도 처리한다.**
+		//
+		// 씬 언로드가 인스턴스를 먼저 파괴하면 Addressables 는 그것을 더 이상 찾지 못해
+		// 핸들이 영원히 남는다(번들 참조카운트가 떨어지지 않는다).
+		// 파괴된 유니티 오브젝트도 딕셔너리 키로는 유효하므로, 추적해 둔 핸들로 직접 해제한다.
+		//
+		// 진입 가드에 ReferenceEquals 를 쓰는 이유 — 일반 null 비교는 "인자가 진짜 null" 과
+		// "파괴된 오브젝트"를 구분하지 못해 후자까지 걸러내 버린다.
 		public static bool ReleaseInstance(GameObject instance)
 		{
-			if (instance == null)
+			if (ReferenceEquals(instance, null) == true)
 			{
 				return false;
 			}
 
-			if (_instanceHandles.TryGetValue(instance, out AsyncOperationHandle<GameObject> handle))
+			bool tracked = _instanceHandles.TryGetValue(instance, out AsyncOperationHandle<GameObject> handle);
+			if (tracked == true)
 			{
 				_instanceHandles.Remove(instance);
+			}
+
+			// 여기서의 null 은 "파괴됨" 을 뜻한다(위에서 진짜 null 은 걸러냈다).
+			if (instance == null)
+			{
+				if (tracked == true && handle.IsValid() == true)
+				{
+					Addressables.Release(handle);
+					return true;
+				}
+
+				return false;
 			}
 
 			return Addressables.ReleaseInstance(instance);

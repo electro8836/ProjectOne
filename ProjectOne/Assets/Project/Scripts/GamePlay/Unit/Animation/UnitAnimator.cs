@@ -1,13 +1,21 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace ProjectOne.Unit
 {
 	public class UnitAnimator : MonoBehaviour
 	{
+		// 정렬 단계가 바뀔 때 통지한다.
+		// SortingGroup 밖에서 유닛을 따라가야 하는 렌더러(HP바 등)가 구독한다.
+		public event System.Action<int> SortingOrderChanged;
+
 		private Animator _animator;
 
 		private SpriteRenderer _spriteRenderer;
+
+		// UnitRoot 에 붙은 정렬 그룹. 유닛 간 앞뒤는 이 값으로만 제어한다.
+		private SortingGroup _sortingGroup;
 
 		private MaterialPropertyBlock _mpb;
 
@@ -36,10 +44,10 @@ namespace ProjectOne.Unit
 		[SerializeField]
 		private float _attackSpeedScale = 1f;
 
-		// 기본 이속(UnitBase.BaseMoveSpeed = 3)에서 배속 1이 되도록 맞춘 계수.
-		// 이속이 빨라지면 걷는 애니메이션도 그만큼 비례해 빨라진다.
+		// 걷기 애니 배속의 프리팹별 미세 조정 계수.
+		// 호출자가 "기본 이속 대비 현재 이속" 비율을 넘기므로 기본값 1이면 기본 이속에서 1배속이 된다.
 		[SerializeField]
-		private float _moveSpeedScale = 1f / UnitBase.BaseMoveSpeed;
+		private float _moveSpeedScale = 1f;
 
 		[SerializeField]
 		private float _minMotionMul = 0.1f;
@@ -50,7 +58,7 @@ namespace ProjectOne.Unit
 		// worldY → sortingOrder 변환 정밀도. sortingOrder는 int16(±32767)이므로
 		// (맵 Y폭 × _precision ≤ 32767) 와 (구분할 최소 Y간격 × _precision ≥ 1) 사이에서 잡는다.
 		[SerializeField]
-		private float _precision = 100f;
+		private float _precision = 1000f;
 
 		// 루트가 발밑이 아닐 때 정렬 기준점(발밑)을 맞추는 보정값
 		[SerializeField]
@@ -59,7 +67,13 @@ namespace ProjectOne.Unit
 		// 컨트롤러에 존재하는 파라미터 해시 (Awake 에서 1회 수집)
 		private readonly HashSet<int> _parameterHashes = new HashSet<int>();
 
+		// 프리팹 원본 컨트롤러 — 무기 오버라이드를 벗을 때 복귀 대상
+		private RuntimeAnimatorController _baseController;
+
 		private int _lastSortOrder = int.MinValue;
+
+		// 마지막으로 계산된 정렬 단계. 아직 한 번도 계산되지 않았으면 int.MinValue.
+		public int SortingOrder { get { return _lastSortOrder; } }
 
 		private float _lastAttackSpeedMul = 1f;
 
@@ -88,12 +102,19 @@ namespace ProjectOne.Unit
 		{
 			_animator = this.GetComponentInChildren<Animator>();
 			_spriteRenderer = this.GetComponentInChildren<SpriteRenderer>();
+			_sortingGroup = this.GetComponentInChildren<SortingGroup>();
 			_mpb = new MaterialPropertyBlock();
 
 			// 미지정 프리팹은 애니메이터가 붙은 계층을 뒤집는다 — 대개 그것이 시각 루트다.
 			if (_flipRoot == null && _animator != null)
 			{
 				_flipRoot = _animator.transform;
+			}
+
+			// 프리팹이 물고 있던 원본 컨트롤러 — 무기를 벗으면 여기로 되돌린다.
+			if (_animator != null)
+			{
+				_baseController = _animator.runtimeAnimatorController;
 			}
 
 			cacheParameters();
@@ -130,10 +151,29 @@ namespace ProjectOne.Unit
 		{
 			float sortY = transform.position.y + _yOffset;
 			int order = -Mathf.RoundToInt(sortY * _precision); // Y가 클수록(위) 뒤로 → 음수
-			if (_lastSortOrder != order)
+			if (_lastSortOrder == order)
 			{
-				_lastSortOrder = order;
+				return;
+			}
+
+			_lastSortOrder = order;
+
+			// UnitRoot 의 SortingGroup 이 유닛 간 앞뒤를 결정한다.
+			// 자식 파츠의 sortingOrder 는 그룹 내부 상대 순서이므로 건드리지 않는다.
+			if (_sortingGroup)
+			{
+				_sortingGroup.sortingOrder = order;
+			}
+			// SortingGroup 이 없는 프리팹(몬스터: Model SpriteRenderer 1개)은 렌더러에 직접 쓴다.
+			else if (_spriteRenderer)
+			{
 				_spriteRenderer.sortingOrder = order;
+			}
+
+			// 그룹 밖에서 유닛을 따라다니는 렌더러(HP바 등)에 통지
+			if (SortingOrderChanged != null)
+			{
+				SortingOrderChanged(order);
 			}
 		}
 
@@ -236,9 +276,10 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		public void SetMoveSpeed(float moveSpeed)
+		// ratio 는 기본 이속 대비 현재 이속(기본 이속이면 1). 절대 속도가 아니다.
+		public void SetMoveSpeedRatio(float ratio)
 		{
-			float num = Mathf.Clamp(moveSpeed * _moveSpeedScale, _minMotionMul, _maxMotionMul);
+			float num = Mathf.Clamp(ratio * _moveSpeedScale, _minMotionMul, _maxMotionMul);
 			if (!Mathf.Approximately(_lastMoveSpeedMul, num) && hasParameter(HashMoveSpeedMul) == true)
 			{
 				_lastMoveSpeedMul = num;
@@ -309,13 +350,27 @@ namespace ProjectOne.Unit
 			if (!(controller == null) && !(_animator.runtimeAnimatorController == controller))
 			{
 				_animator.runtimeAnimatorController = controller;
+
+				// 컨트롤러가 바뀌면 파라미터 구성도 바뀔 수 있다 — 해시 캐시를 다시 만든다.
+				cacheParameters();
+
 				_animator.ResetTrigger(HashAttack);
 				_animator.ResetTrigger(HashSkill);
 				_animator.ResetTrigger(HashHit);
 				_animator.ResetTrigger(HashHDead);
-				_animator.SetBool(HashIsCasting, false);
+				if (hasParameter(HashIsCasting) == true)
+				{
+					_animator.SetBool(HashIsCasting, false);
+				}
+
 				_lastIsMoving = _animator.GetBool(HashIsMoving);
 			}
+		}
+
+		// 무기를 벗었을 때 프리팹 원본 컨트롤러로 되돌린다.
+		public void RestoreBaseController()
+		{
+			SetController(_baseController);
 		}
 	}
 }

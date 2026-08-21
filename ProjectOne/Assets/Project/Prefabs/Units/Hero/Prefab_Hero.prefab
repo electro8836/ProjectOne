@@ -2535,10 +2535,10 @@ MonoBehaviour:
   _flipRoot: {fileID: 2586639622737172184}
   _outlineWidth: 0.0002
   _attackSpeedScale: 1
-  _moveSpeedScale: 0.33333334
+  _moveSpeedScale: 1
   _minMotionMul: 0.1
   _maxMotionMul: 5
-  _precision: 100
+  _precision: 1000
   _yOffset: 0
 --- !u!114 &3326866471638308743
 MonoBehaviour:
@@ -2594,7 +2594,7 @@ CircleCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -2889,7 +2889,7 @@ SortingGroup:
   m_Enabled: 1
   m_SortingLayerID: 1060901631
   m_SortingLayer: 4
-  m_SortingOrder: 5
+  m_SortingOrder: 0
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0
 --- !u!95 &7508312742972669088
@@ -4446,16 +4446,40 @@ PrefabInstance:
     m_TransformParent: {fileID: 1680857250411635241}
     m_Modifications:
     - target: {fileID: 83338736130829566, guid: e7859a593598543448271359c0040464, type: 3}
+      propertyPath: m_SortingLayer
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 83338736130829566, guid: e7859a593598543448271359c0040464, type: 3}
       propertyPath: m_SortingOrder
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 83338736130829566, guid: e7859a593598543448271359c0040464, type: 3}
+      propertyPath: m_SortingLayerID
+      value: 1060901631
+      objectReference: {fileID: 0}
+    - target: {fileID: 2499040805531837348, guid: e7859a593598543448271359c0040464, type: 3}
+      propertyPath: m_SortingLayer
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 2499040805531837348, guid: e7859a593598543448271359c0040464, type: 3}
       propertyPath: m_SortingOrder
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2499040805531837348, guid: e7859a593598543448271359c0040464, type: 3}
+      propertyPath: m_SortingLayerID
+      value: 1060901631
+      objectReference: {fileID: 0}
     - target: {fileID: 3240972026560975054, guid: e7859a593598543448271359c0040464, type: 3}
       propertyPath: m_Name
       value: Prefab_HeroHp
+      objectReference: {fileID: 0}
+    - target: {fileID: 8339454957066342109, guid: e7859a593598543448271359c0040464, type: 3}
+      propertyPath: m_SortingLayer
+      value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 8339454957066342109, guid: e7859a593598543448271359c0040464, type: 3}
+      propertyPath: m_SortingLayerID
+      value: 1060901631
       objectReference: {fileID: 0}
     - target: {fileID: 8404609290248639219, guid: e7859a593598543448271359c0040464, type: 3}
       propertyPath: m_LocalScale.x
@@ -4479,7 +4503,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8404609290248639219, guid: e7859a593598543448271359c0040464, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.9999619
       objectReference: {fileID: 0}
     - target: {fileID: 8404609290248639219, guid: e7859a593598543448271359c0040464, type: 3}
       propertyPath: m_LocalRotation.x
@@ -4487,7 +4511,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8404609290248639219, guid: e7859a593598543448271359c0040464, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0.008726557
       objectReference: {fileID: 0}
     - target: {fileID: 8404609290248639219, guid: e7859a593598543448271359c0040464, type: 3}
       propertyPath: m_LocalRotation.z

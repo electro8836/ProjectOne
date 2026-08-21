@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
@@ -58,6 +58,10 @@ namespace ProjectOne.Town
 
 		public async UniTask Begin(CancellationToken ct)
 		{
+			// 이전 씬(필드·던전)의 유닛을 먼저 걷어낸다 — 아래에서 히어로를 새로 스폰하므로
+			// 이게 없으면 마을을 드나들 때마다 히어로가 쌓인다.
+			GameplaySceneSetup.ClearGameplayUnits();
+
 			// 카메라는 맵·히어로가 없어도 먼저 세운다 — 실패해도 흐름을 막지 않는다.
 			await GameplaySceneSetup.EnsureCameraAsync(ct);
 

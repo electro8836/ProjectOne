@@ -70,6 +70,13 @@ namespace ProjectOne.Flow
 				return;
 			}
 
+			// 2-1) 무기별 애니메이터 오버라이드 프리로드 — 무기 교체 경로가 동기라 미리 잡아 둔다
+			cancelled = await MasteryCatalog.PreloadAnimControllersAsync(ct).SuppressCancellationThrow();
+			if (cancelled)
+			{
+				return;
+			}
+
 			// 3) 아웃게임 UI 아이콘 아틀라스 로드 (AtlasManifest 주입 목록) — 화면 열 때 슬롯/아이콘 즉시 표시
 			AtlasManifest atlasManifest = AssetBundleLoader.Instance.AtlasManifest;
 			if (atlasManifest != null && atlasManifest.AtlasAddresses.Count > 0)

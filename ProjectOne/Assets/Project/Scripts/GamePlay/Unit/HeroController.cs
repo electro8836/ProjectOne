@@ -1,17 +1,15 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
-using EDT;
 using ProjectOne.Unit.Input;
-using ProjectOne.Unit.Stats;
-using ProjectOne.Skill;
 using ProjectOne.CameraSystem;
 
 namespace ProjectOne.Unit
 {
-	// 플레이어 단일 히어로 입력 컨트롤러 — IHeroInputProvider로부터 이동/평타 입력을 받는다.
+	// 플레이어 단일 히어로 입력 컨트롤러 — IHeroInputProvider로부터 이동 입력을 받는다.
 	// 입력 소스(KeyboardInputProvider 등)는 같은 GameObject에 함께 부착하며,
 	// 키보드 provider는 시리얼라이즈된 InputActionAsset 데이터를 사용한다.
+	//
+	// 공격은 여기서 처리하지 않는다 — 조준·시전 모두 HeroAutoBehavior 가 담당한다.
 	[RequireComponent(typeof(Hero))]
 	public class HeroController : MonoBehaviour
 	{
@@ -27,22 +25,6 @@ namespace ProjectOne.Unit
 			if (_input == null)
 			{
 				Debug.LogError("[HeroController] IHeroInputProvider 컴포넌트가 없습니다.");
-			}
-		}
-
-		void OnEnable()
-		{
-			if (_input != null)
-			{
-				_input.OnAttack += OnAttack;
-			}
-		}
-
-		void OnDisable()
-		{
-			if (_input != null)
-			{
-				_input.OnAttack -= OnAttack;
 			}
 		}
 
@@ -87,21 +69,6 @@ namespace ProjectOne.Unit
 			}
 
 			_mover.Move(move, _hero.MoveSpeed);
-		}
-
-		// 평타 입력 → 보유 첫 스킬 발동. 범위 밖 적이어도 TryCast가 그대로 실행.
-		void OnAttack()
-		{
-			if (_hero.IsDead == true || _hero.SkillContainer == null)
-			{
-				return;
-			}
-
-			IReadOnlyList<EDT.Skill> all = _hero.SkillContainer.GetAll();
-			if (all.Count > 0)
-			{
-				_hero.SkillContainer.TryCast(all[0]);
-			}
 		}
 	}
 }

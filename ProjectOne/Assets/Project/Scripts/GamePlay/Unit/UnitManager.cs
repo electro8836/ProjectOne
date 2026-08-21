@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using ProjectOne.Utils;
 
@@ -33,11 +33,8 @@ namespace ProjectOne.Unit
 		readonly Dictionary<UnitType, List<UnitBase>> _byType = new Dictionary<UnitType, List<UnitBase>>();
 		static readonly List<UnitBase> _empty = new List<UnitBase>(0);
 
-		// 씬에 배치된 컨테이너. 없으면 ensureContainer 가 매니저 자식으로 만들어 둔다.
+		// 씬에 배치된 컨테이너. 없으면 ensureContainer 가 **활성 씬에** 만든다(매니저 자식이 아니다).
 		UnitContainer _container;
-
-		// 매니저가 직접 만든 폴백 컨테이너인가 — 씬 전환 시 비울지 판단하는 근거.
-		bool _ownsContainer;
 
 		// 외부 순회용 — 인덱스 for 사용 권장
 		public IReadOnlyList<UnitBase> All
@@ -52,7 +49,9 @@ namespace ProjectOne.Unit
 		}
 
 		// 씬의 UnitContainer 가 Awake 에서 자기를 등록한다.
-		// 매니저가 만든 폴백이 이미 있으면 그것을 버리고 씬 것을 쓴다.
+		//
+		// 폴백은 디렉터가 요청할 때(=씬의 Awake 가 전부 끝난 뒤) 만들어지므로
+		// "폴백이 먼저 있고 나중에 씬 것이 등록되는" 경우는 생기지 않는다. 핸도버 처리가 필요 없다.
 		public void RegisterContainer(UnitContainer container)
 		{
 			if (container == null || _container == container)
@@ -60,13 +59,12 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			if (_ownsContainer == true && _container != null)
+			if (_container != null)
 			{
-				Destroy(_container.gameObject);
+				Debug.LogWarning($"[UnitManager] UnitContainer 가 둘 이상입니다 — 뒤에 등록된 {container.name} 을 씁니다.");
 			}
 
 			_container = container;
-			_ownsContainer = false;
 		}
 
 		public void UnregisterContainer(UnitContainer container)
@@ -77,8 +75,11 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		// 컨테이너가 없으면 매니저 자식으로 하나 만든다.
-		// 씬에 배치하는 편이 낫지만, 하나를 빠뜨렸다고 유닛 스폰이 통째로 죽어서는 안 된다.
+		// 컨테이너가 없으면 **활성 씬에** 하나 만든다.
+		//
+		// 매니저 자식으로 달면 안 된다 — 매니저는 영속(DontDestroyOnLoad)이라 컨테이너까지 씬 전환을
+		// 넘어 살아남고, "컨테이너가 씬에 있으면 씬 전환이 곧 정리다" 라는 분리의 목적이 무너진다.
+		// new GameObject 는 활성 씬에 생성되므로 부모를 지정하지 않는 것만으로 수명이 씬과 같아진다.
 		UnitContainer ensureContainer()
 		{
 			if (_container != null)
@@ -87,9 +88,7 @@ namespace ProjectOne.Unit
 			}
 
 			GameObject go = new GameObject("UnitContainer (auto)");
-			go.transform.SetParent(transform, false);
 			_container = go.AddComponent<UnitContainer>();
-			_ownsContainer = true;
 			return _container;
 		}
 

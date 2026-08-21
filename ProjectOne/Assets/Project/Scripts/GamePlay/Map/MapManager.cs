@@ -44,11 +44,8 @@ namespace ProjectOne.Map
 		// 마지막으로 질의된 그리드 — 히어로는 대개 한 그리드 안에 머무르므로 캐시가 거의 항상 적중한다.
 		private Entry _lastHit;
 
-		// 씬에 배치된 컨테이너. 없으면 ensureContainer 가 매니저 자식으로 만들어 둔다.
+		// 씬에 배치된 컨테이너. 없으면 ensureContainerRoot 가 **활성 씬에** 만든다(매니저 자식이 아니다).
 		private MapContainer _container;
-
-		// 매니저가 직접 만든 폴백 컨테이너인가.
-		private bool _ownsContainer;
 
 		public bool HasMap => _ordered.Count > 0;
 
@@ -219,7 +216,9 @@ namespace ProjectOne.Map
 		}
 
 		// 씬의 MapContainer 가 Awake 에서 자기를 등록한다.
-		// 매니저가 만든 폴백이 이미 있으면 그것을 버리고 씬 것을 쓴다.
+		//
+		// 폴백은 디렉터가 요청할 때(=씬의 Awake 가 전부 끝난 뒤) 만들어지므로
+		// "폴백이 먼저 있고 나중에 씬 것이 등록되는" 경우는 생기지 않는다. 핸도버 처리가 필요 없다.
 		public void RegisterContainer(MapContainer container)
 		{
 			if (container == null || _container == container)
@@ -227,25 +226,34 @@ namespace ProjectOne.Map
 				return;
 			}
 
-			if (_ownsContainer == true && _container != null)
+			if (_container != null)
 			{
-				Destroy(_container.gameObject);
+				Debug.LogWarning($"[MapManager] MapContainer 가 둘 이상입니다 — 뒤에 등록된 {container.name} 을 씁니다.");
 			}
 
 			_container = container;
-			_ownsContainer = false;
 		}
 
+		// 컨테이너가 사라졌다는 것은 그 아래 맵도 사라졌다는 뜻이다.
+		//
+		// 씬 언로드가 컨테이너와 맵을 함께 파괴하는데, 매니저는 영속이라 Addressable 인스턴스 핸들을
+		// 아무도 해제해 주지 않는다. OnDestroy 는 씬 언로드에서 반드시 호출되므로 여기가 유일하게
+		// 확실한 시점이다. 자식이 이미 파괴됐어도 ReleaseInstance 가 추적 핸들로 해제한다.
 		public void UnregisterContainer(MapContainer container)
 		{
-			if (_container == container)
+			if (_container != container)
 			{
-				_container = null;
+				return;
 			}
+
+			_container = null;
+			UnloadAll();
 		}
 
-		// 컨테이너가 없으면 매니저 자식으로 하나 만든다.
-		// 씬에 배치하는 편이 낫지만, 하나를 빠뜨렸다고 맵 로드가 통째로 죽어서는 안 된다.
+		// 컨테이너가 없으면 **활성 씬에** 하나 만든다.
+		//
+		// 매니저 자식으로 달면 안 된다 — 매니저는 영속이라 컨테이너까지 씬 전환을 넘어 살아남고,
+		// "컨테이너가 씬에 있으면 씬 전환이 곧 정리다" 라는 분리의 목적이 무너진다.
 		private Transform ensureContainerRoot()
 		{
 			if (_container != null)
@@ -254,9 +262,7 @@ namespace ProjectOne.Map
 			}
 
 			GameObject go = new GameObject("MapContainer (auto)");
-			go.transform.SetParent(transform, false);
 			_container = go.AddComponent<MapContainer>();
-			_ownsContainer = true;
 			return _container.transform;
 		}
 
@@ -293,12 +299,11 @@ namespace ProjectOne.Map
 
 		public void UnloadAll()
 		{
+			// null 검사를 하지 않는다 — 씬 언로드로 이미 파괴된 인스턴스도 핸들은 살아 있어
+			// 해제해야 한다. ReleaseInstance 가 파괴 여부를 구분해 처리한다.
 			for (int i = 0; i < _ordered.Count; i++)
 			{
-				if (_ordered[i].instance != null)
-				{
-					AddressableHelper.ReleaseInstance(_ordered[i].instance);
-				}
+				AddressableHelper.ReleaseInstance(_ordered[i].instance);
 			}
 
 			_ordered.Clear();

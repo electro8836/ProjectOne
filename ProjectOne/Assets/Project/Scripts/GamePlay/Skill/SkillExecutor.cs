@@ -107,7 +107,7 @@ namespace ProjectOne.Skill
 			Table_Skill.Row row = resolved.Row;
 
 			// scanned 는 TargetResolver 내부 버퍼 직참조 — ScheduleEffect 가 즉시 복사해 스냅샷을 만든다.
-			List<UnitBase> scanned = TargetResolver.ScanByType(row.ScanType, row.ScanRange, row.ScanParam, caster);
+			List<UnitBase> scanned = TargetResolver.ScanByType(row.ScanType, row.ApplyTarget, row.ScanRange, row.ScanParam, caster);
 
 			SkillRuntime rt = caster.SkillContainer.GetRuntime(resolved.Id);
 			float actionTime = (rt != null) ? rt.GetActionTime(useSpeed) : 0f;

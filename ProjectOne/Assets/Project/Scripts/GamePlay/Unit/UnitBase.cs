@@ -53,8 +53,16 @@ namespace ProjectOne.Unit
 
 		protected CircleCollider2D _collider;
 
-		// 머리 위 체력바(SpriteRenderer 기반). 프리팹에 없으면 null 이고 갱신을 건너뛴다.
-		protected UnitHealthBar _healthBar;
+		// 체력 또는 최대 체력이 바뀐 프레임에 1회 발행한다.
+		// 다단히트·흡혈·DoT 스택이면 한 프레임에 수십 번 변하므로 Vitals 는 dirty 만 세우고
+		// 여기서 모아서 통지한다. 사망 판정(IsHpZero)은 합치면 안 되므로 TakeDamage 가 즉시 한다.
+		public event System.Action<UnitBase> HpChanged;
+
+		// 최대 체력 변경 감지용. StatContainer 는 지연 계산이라 변경 시점을 알려주지 못하므로
+		// 프로젝트 관용구인 Version 비교로 잡는다 (SummonUnit.inheritOwnerStats 와 동일).
+		private int _lastStatVersion = int.MinValue;
+
+		private float _lastMaxHp;
 
 		public bool IsDead { get; protected set; }
 
@@ -114,20 +122,18 @@ namespace ProjectOne.Unit
 		// 1초 주기 자동 회복 타이머 (HP)
 		private IntervalTimer _secondTimer;
 
-		// 코드가 소유하는 기본 이동 속도. Stat_MoveSpeedBonus(비율)가 여기에 곱해진다 (기반테이블 8.1).
-		public const float BaseMoveSpeed = 3f;
-
-		// 최종 이동 속도 — 기본값 × (1 + 이동속도 보너스)
+		// 최종 이동 속도 — 스탯이 곧 이동 속도다 (Flat).
+		// 코드 기본값을 두지 않는다. 유닛별 속도는 CharacterStat / MonsterStat 의 MoveSpeed_Base 가 정한다.
 		public float MoveSpeed
 		{
 			get
 			{
 				if (_stats == null)
 				{
-					return BaseMoveSpeed;
+					return 0f;
 				}
 
-				return BaseMoveSpeed * (1f + _stats.GetStat(Stat.Stat_MoveSpeedBonus));
+				return _stats.GetStat(Stat.Stat_MoveSpeed);
 			}
 		}
 
@@ -218,7 +224,6 @@ namespace ProjectOne.Unit
 			_mover = this.GetComponent<UnitMover>();
 			_animator = this.GetComponent<UnitAnimator>();
 			_collider = this.GetComponent<CircleCollider2D>();
-			_healthBar = this.GetComponentInChildren<UnitHealthBar>(true);
 		}
 
 		protected virtual void OnEnable()
@@ -238,11 +243,21 @@ namespace ProjectOne.Unit
 		public void SetStats(StatContainer stats)
 		{
 			_stats = stats;
+			resetHpTracking();
 		}
 
 		public void SetVitals(Vitals vitals)
 		{
 			_vitals = vitals;
+			resetHpTracking();
+		}
+
+		// 컨테이너가 통째로 교체되면(몬스터 레벨 변경 등) 이전 추적값은 의미가 없다.
+		// 그대로 두면 새 최대치를 "변경"으로 오인해 엉뚱한 Rescale 이 걸린다.
+		private void resetHpTracking()
+		{
+			_lastStatVersion = int.MinValue;
+			_lastMaxHp = 0f;
 		}
 
 		public void SetSkillContainer(SkillContainer sc)
@@ -271,11 +286,8 @@ namespace ProjectOne.Unit
 				_animator.UpdateSorting();
 			}
 
-			// 체력바도 같은 이유로 여기서 돌린다 — 비율이 그대로면 내부에서 즉시 반환한다.
-			if (_healthBar != null)
-			{
-				_healthBar.Refresh();
-			}
+			// 체력/최대체력 변경을 프레임당 1회로 모아 통지 (체력바·HUD·보스UI 가 구독한다)
+			tickHpNotify();
 
 			if (!IsDead)
 			{
@@ -319,6 +331,52 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 최대 체력 변경을 감지해 현재 체력 비율을 맞추고, 체력 변경을 프레임당 1회 통지한다.
+		//
+		// 최대체력 모디파이어는 장비 교체 한 번에 여러 개가 붙었다 떨어지므로 변경마다 반응하면
+		// 중간 상태가 새어 나간다. 프레임 경계에서 한 번만 보면 그 문제가 없다.
+		private void tickHpNotify()
+		{
+			if (_stats == null || _vitals == null)
+			{
+				return;
+			}
+
+			bool maxHpChanged = false;
+
+			// Version 이 그대로면 최대치도 그대로다 — Dictionary 조회를 건너뛴다.
+			int statVersion = _stats.Version;
+			if (statVersion != _lastStatVersion)
+			{
+				_lastStatVersion = statVersion;
+
+				float maxHp = _stats.GetStat(Stat.Stat_MaxHp);
+				if (maxHp != _lastMaxHp)
+				{
+					// 첫 관측이면 기준값이 없다 — 기록만 하고 비율 보정은 다음 변경부터.
+					if (_lastMaxHp > 0f)
+					{
+						_vitals.RescaleToNewMaxHp(_lastMaxHp);
+					}
+
+					_lastMaxHp = maxHp;
+					maxHpChanged = true;
+				}
+			}
+
+			if (_vitals.IsHpDirty == false && maxHpChanged == false)
+			{
+				return;
+			}
+
+			_vitals.ClearHpDirty();
+
+			if (HpChanged != null)
+			{
+				HpChanged(this);
+			}
+		}
+
 		// 1초 주기 자연 재생 — Stat_HpRegen 만큼 회복 (호출부에서 _stats·_vitals null 보장)
 		private void regenTick()
 		{
@@ -335,7 +393,12 @@ namespace ProjectOne.Unit
 			if (!(_animator == null) && _stats != null)
 			{
 				_animator.SetAttackSpeed(_stats.GetStat(Stat.Stat_AtkSpeed));
-				_animator.SetMoveSpeed(MoveSpeed);
+
+				// 걷기 애니는 "기본 이속 대비 현재 이속" 비율로 재생한다.
+				// 유닛마다 기본 이속이 다르므로 절대 속도를 넘기면 배속이 유닛별로 어긋난다.
+				float baseMove = _stats.GetLayer(StatDetail.StatDetail_MoveSpeed_Base);
+				float ratio = (baseMove > 0f) ? MoveSpeed / baseMove : 1f;
+				_animator.SetMoveSpeedRatio(ratio);
 			}
 		}
 

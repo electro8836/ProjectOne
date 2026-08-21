@@ -192,6 +192,7 @@ GameObject:
   - component: {fileID: 543977141}
   - component: {fileID: 543977140}
   - component: {fileID: 543977142}
+  - component: {fileID: 543977143}
   m_Layer: 0
   m_Name: GameBootstrapper
   m_TagString: Untagged
@@ -240,6 +241,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7140c56c72cb4b44ba191242cb642c85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SendQueueMgr
+--- !u!114 &543977143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 543977139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 191972ba7e66a314e92d0ca868984903, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Dev.FPSCounter
+  _fontSize: 24
+  _color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &850023648
 GameObject:
   m_ObjectHideFlags: 0
@@ -313,10 +328,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e4da92602def174593736dd4eb31f57, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Boot.DevDataInjector
-  _disabled: 1
+  _disabled: 0
   _characterLevel: 1
-  _equipSlots: []
-  _masteries: []
+  _equipSlots:
+  - slot: 1
+    itemId: 1010101001
+    grade: 1
+    level: 1
+    purity: 1
+    quality: 100
+  _masteries:
+  - mastery: 1
+    level: 1
   _viewRefreshInterval: 0.5
   _viewCharacterLevel: 0
   _viewCharacterExp: 0

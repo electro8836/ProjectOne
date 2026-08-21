@@ -261,13 +261,14 @@ namespace ProjectOne.Monsters
 			return issues;
 		}
 
-		// 필수 스탯 4종이 없으면 주기 계산이 붕괴하거나 즉사한다 (설계 4장).
+		// 필수 스탯 5종이 없으면 주기 계산이 붕괴하거나 즉사하거나 제자리에 굳는다 (설계 4장).
 		private static readonly StatDetail[] _requiredStats = new StatDetail[]
 		{
 			StatDetail.StatDetail_Atk_Base,
 			StatDetail.StatDetail_AtkSpeed_Base,
 			StatDetail.StatDetail_MaxHp_Base,
-			StatDetail.StatDetail_Def_Base
+			StatDetail.StatDetail_Def_Base,
+			StatDetail.StatDetail_MoveSpeed_Base
 		};
 
 		private static int validateStatGroups()

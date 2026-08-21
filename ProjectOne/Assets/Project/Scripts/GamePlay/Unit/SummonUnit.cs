@@ -179,16 +179,11 @@ namespace ProjectOne.Unit
 
 			_ownerStatVersion = version;
 
-			float previousMaxHp = _stats.GetStat(Stat.Stat_MaxHp);
-
 			applyInherit(_row.InheritStatType_1, _row.InheritStatRatio_1);
 			applyInherit(_row.InheritStatType_2, _row.InheritStatRatio_2);
 
-			// MaxHp 상속이 걸려 있으면 최대치가 바뀐다. 현재 체력 비율을 유지한다.
-			if (_vitals != null && _stats.GetStat(Stat.Stat_MaxHp) != previousMaxHp)
-			{
-				_vitals.RescaleToNewMaxHp(previousMaxHp);
-			}
+			// MaxHp 상속으로 최대치가 바뀌면 UnitBase.tickHpNotify 가 다음 틱에 비율을 맞춘다.
+			// 여기서 또 부르면 이중 적용된다.
 		}
 
 		private void applyInherit(Stat statType, float ratio)

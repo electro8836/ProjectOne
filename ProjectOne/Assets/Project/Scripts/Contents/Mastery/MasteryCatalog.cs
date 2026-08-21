@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using EDT;
 using UnityEngine;
+using ProjectOne.Resources;
 
 namespace ProjectOne.Mastery
 {
@@ -27,6 +30,11 @@ namespace ProjectOne.Mastery
 		// NodeID → 노드 (PrevNodeID 추적용)
 		private static readonly Dictionary<int, Table_SkillTreeNode.Row> _nodeById =
 			new Dictionary<int, Table_SkillTreeNode.Row>();
+
+		// AnimControllerName → 무기별 애니메이터 오버라이드.
+		// 무기 교체 경로(Loadout.reapplyHero)가 완전 동기라 부트에서 미리 잡아 두고 동기로 꺼내 쓴다.
+		private static readonly Dictionary<string, RuntimeAnimatorController> _animControllers =
+			new Dictionary<string, RuntimeAnimatorController>();
 
 		// 레벨 오름차순 누적 경험치 — 이분 탐색용
 		private static readonly List<Table_MasteryLevelExp.Row> _masteryExp = new List<Table_MasteryLevelExp.Row>();
@@ -84,6 +92,59 @@ namespace ProjectOne.Mastery
 		public static Dictionary<WeaponMastery, Table_WeaponMastery.Row> All()
 		{
 			return Table_WeaponMastery.All();
+		}
+
+		// ── 애니메이터 오버라이드 ─────────────────────────────────────
+
+		// 마스터리 테이블이 참조하는 AnimControllerName 을 전부 미리 로드한다.
+		// Build() 이후에 호출해야 한다 — 주소 목록을 테이블에서 뽑는다.
+		//
+		// 해제하지 않는다. 세션 내내 필요한 자산이고 종류도 무기 계열 수만큼뿐이다.
+		public static async UniTask PreloadAnimControllersAsync(CancellationToken ct = default(CancellationToken))
+		{
+			_animControllers.Clear();
+
+			Dictionary<WeaponMastery, Table_WeaponMastery.Row> all = Table_WeaponMastery.All();
+			Dictionary<WeaponMastery, Table_WeaponMastery.Row>.Enumerator e = all.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				string address = e.Current.Value.AnimControllerName;
+				if (string.IsNullOrEmpty(address) == true || _animControllers.ContainsKey(address) == true)
+				{
+					continue;
+				}
+
+				// 구상 타입으로 요청한다 — Addressables 의 타입 필터가 베이스 타입에서 미스할 여지를 없앤다.
+				AnimatorOverrideController controller = await ResourceManager.Instance.AcquireAsync<AnimatorOverrideController>(address, ct);
+				if (controller == null)
+				{
+					// 조용히 넘기면 무기를 들어도 모션만 안 나오는 무음 실패가 된다.
+					Debug.LogError($"[MasteryCatalog] 애니메이터 오버라이드 로드 실패 — address:{address}");
+					continue;
+				}
+
+				_animControllers.Add(address, controller);
+			}
+
+			Debug.Log($"[MasteryCatalog] 애니메이터 오버라이드 프리로드 완료 — {_animControllers.Count}종");
+		}
+
+		// 프리로드된 오버라이드를 동기로 꺼낸다. 이름이 비어 있으면 null (무기 미착용 등 정상 경로).
+		public static RuntimeAnimatorController GetAnimController(string address)
+		{
+			if (string.IsNullOrEmpty(address) == true)
+			{
+				return null;
+			}
+
+			RuntimeAnimatorController controller;
+			if (_animControllers.TryGetValue(address, out controller) == false)
+			{
+				Debug.LogError($"[MasteryCatalog] 프리로드되지 않은 애니메이터 오버라이드 — address:{address}");
+				return null;
+			}
+
+			return controller;
 		}
 
 		// ── 스킬 트리 조회 ────────────────────────────────────────────

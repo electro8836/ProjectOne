@@ -11,20 +11,27 @@ namespace ProjectOne.Skill
 	{
 		private static readonly List<UnitBase> _scratch = new List<UnitBase>(32);
 
-		private static readonly List<UnitBase> _filtered = new List<UnitBase>(32);
-
-		private static readonly List<UnitBase> _self = new List<UnitBase>(1);
-
 		// Target 스캔용 후보 거리(sqrMagnitude) — _scratch 와 인덱스 1:1 대응
 		private static readonly List<float> _scratchDist = new List<float>(32);
 
 		// scanRange 의 의미는 형태마다 다르다 — Circle/Sector=반경, Line=길이, Target=사거리 (설계 3.4).
 		// scanParam 은 Sector=각도(도), Line=폭, Target=최대 대상 수. Circle 은 미사용.
-		public static List<UnitBase> ScanByType(SkillScanTypes scanType, float scanRange, float scanParam, UnitBase caster, bool useOverride = false, Vector2 centerOverride = default, Vector2 facingOverride = default)
+		//
+		// 진영 판정(applyTarget)은 기하 판정보다 싸므로 루프 안에서 먼저 건다.
+		// 별도 필터 패스를 두면 버퍼를 한 번 더 복사하게 되고, 거르지 않은 목록이
+		// 외부로 새어나가 아군 오폭이 된다(이 함수가 유일한 탐색 진입점이다).
+		public static List<UnitBase> ScanByType(SkillScanTypes scanType, SkillApplyTarget applyTarget, float scanRange, float scanParam, UnitBase caster, bool useOverride = false, Vector2 centerOverride = default, Vector2 facingOverride = default)
 		{
 			_scratch.Clear();
-			if (caster == null)
+			if (caster == null || applyTarget == SkillApplyTarget.None)
 			{
+				return _scratch;
+			}
+
+			// 자기 대상은 탐색하지 않는다 — ScanRange 값과 무관하다 (설계 3.5).
+			if (applyTarget == SkillApplyTarget.Self)
+			{
+				_scratch.Add(caster);
 				return _scratch;
 			}
 
@@ -46,7 +53,8 @@ namespace ProjectOne.Skill
 					for (int i = 0; i < all.Count; i++)
 					{
 						UnitBase unitBase2 = all[i];
-						if (!(unitBase2 == null) && !unitBase2.IsDead && !(unitBase2 == caster) && IsEnemy(caster.Faction, unitBase2.Faction))
+						// 지정 대상은 자기 자신을 고르지 않는다 — 진영 판정과 별개로 유지한다.
+						if (!(unitBase2 == null) && !unitBase2.IsDead && !(unitBase2 == caster) && passesApplyTarget(applyTarget, caster, unitBase2))
 						{
 							Vector2 val = unitBase2.HitCenter - hitCenter;
 							float sqrMagnitude = val.sqrMagnitude;
@@ -95,7 +103,8 @@ namespace ProjectOne.Skill
 				for (int j = 0; j < all.Count; j++)
 				{
 					UnitBase unitBase3 = all[j];
-					if (!(unitBase3 == null) && !unitBase3.IsDead)
+					// 진영 판정을 기하 판정 앞에 둔다 — 후보를 먼저 줄여야 InSector/InLine 호출이 줄어든다.
+					if (!(unitBase3 == null) && !unitBase3.IsDead && passesApplyTarget(applyTarget, caster, unitBase3))
 					{
 						Vector2 hitCenter2 = unitBase3.HitCenter;
 						float radius = unitBase3.Radius;
@@ -125,67 +134,23 @@ namespace ProjectOne.Skill
 			}
 		}
 
-		public static List<UnitBase> FilterByApplyTarget(List<UnitBase> scanned, SkillApplyTarget target, UnitBase caster)
+		// 유닛 하나가 ApplyTarget 진영 조건을 통과하는가.
+		//
+		// Enemy 는 같은 진영을 걸러내므로 시전자가 자동으로 빠진다.
+		// Friendly 는 시전자를 포함한다 — 자힐·자버프가 동작해야 한다.
+		private static bool passesApplyTarget(SkillApplyTarget target, UnitBase caster, UnitBase unit)
 		{
-			if (target == SkillApplyTarget.Self)
+			switch (target)
 			{
-				_self.Clear();
-				if (caster != null)
-				{
-					_self.Add(caster);
-				}
-
-				return _self;
+			case SkillApplyTarget.Enemy:
+				return IsEnemy(caster.Faction, unit.Faction);
+			case SkillApplyTarget.Friendly:
+				return IsFriendly(caster.Faction, unit.Faction);
+			case SkillApplyTarget.All:
+				return true;
+			default:
+				return false;
 			}
-
-			_filtered.Clear();
-			if (target == SkillApplyTarget.None || scanned == null || caster == null)
-			{
-				return _filtered;
-			}
-
-			if (target == SkillApplyTarget.All)
-			{
-				for (int i = 0; i < scanned.Count; i++)
-				{
-					UnitBase unitBase = scanned[i];
-					if (!(unitBase == null))
-					{
-						_filtered.Add(unitBase);
-					}
-				}
-
-				return _filtered;
-			}
-
-			for (int j = 0; j < scanned.Count; j++)
-			{
-				UnitBase unitBase2 = scanned[j];
-				if (unitBase2 == null)
-				{
-					continue;
-				}
-
-				switch (target)
-				{
-				case SkillApplyTarget.Enemy:
-					if (IsEnemy(caster.Faction, unitBase2.Faction))
-					{
-						_filtered.Add(unitBase2);
-					}
-
-					break;
-				case SkillApplyTarget.Friendly:
-					if (IsFriendly(caster.Faction, unitBase2.Faction))
-					{
-						_filtered.Add(unitBase2);
-					}
-
-					break;
-				}
-			}
-
-			return _filtered;
 		}
 
 		private static Vector2 GetFacing(UnitBase caster)

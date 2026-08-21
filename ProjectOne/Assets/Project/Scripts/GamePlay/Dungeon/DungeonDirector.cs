@@ -106,6 +106,11 @@ namespace ProjectOne.Dungeon
 
 			DungeonRunState.Instance.Reset();
 
+			// 이전 씬(마을·필드)의 유닛과 풀을 걷어낸다 — 세 디렉터가 같은 규약을 쓴다.
+			// 풀 오브젝트는 씬 컨테이너 아래에 살아 씬과 함께 파괴되므로, 비우지 않으면
+			// MonsterPoolHub 가 죽은 풀을 재사용해 스폰이 조용히 실패한다.
+			Map.GameplaySceneSetup.ClearGameplayUnits();
+
 			await loadMapAsync(_cts.Token);
 			await spawnHeroAsync(_cts.Token);
 

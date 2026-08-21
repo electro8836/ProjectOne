@@ -1,4 +1,4 @@
-using Cysharp.Threading.Tasks;
+﻿using Cysharp.Threading.Tasks;
 using EDT;
 using UnityEngine;
 using ProjectOne.Event;
@@ -26,6 +26,7 @@ namespace ProjectOne.UI
 			EventManager.Instance.Subscribe<UnitSpawnedEvent>(onUnitSpawned);
 
 			view.OnScreenRequested += onScreenRequested;
+			view.OnWarpRequested += onWarpRequested;
 
 			refreshCharacter();
 
@@ -42,14 +43,19 @@ namespace ProjectOne.UI
 			if (view != null)
 			{
 				view.OnScreenRequested -= onScreenRequested;
+				view.OnWarpRequested -= onWarpRequested;
+			}
+
+			if (_hero != null)
+			{
+				_hero.HpChanged -= onHpChanged;
 			}
 
 			_hero = null;
 		}
 
-		// View 의 Update 가 위임한다. 체력은 이벤트가 없어 값 비교로 갱신한다 —
-		// 피격마다 이벤트를 쏘면 다단히트에서 프레임당 수십 번 그리게 된다.
-		public void Tick()
+		// 히어로의 체력/최대체력이 바뀐 프레임에 1회 불린다 (UnitBase.HpChanged).
+		private void onHpChanged(UnitBase unit)
 		{
 			if (_hero == null || _hero.Vitals == null || _hero.Stats == null)
 			{
@@ -83,9 +89,20 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			if (_hero != null)
+			{
+				_hero.HpChanged -= onHpChanged;
+			}
+
 			_hero = e.Unit;
 			_lastHp = -1f;
 			_lastMaxHp = -1f;
+
+			if (_hero != null)
+			{
+				_hero.HpChanged += onHpChanged;
+				onHpChanged(_hero);
+			}
 		}
 
 		// 상태 전이가 곧 맥락 전환이다. 어떤 버튼이 보일지는 View 인스펙터가 정한다.
@@ -132,6 +149,48 @@ namespace ProjectOne.UI
 		private async UniTaskVoid openAsync(UIScreenId id)
 		{
 			await UIManager.Instance.OpenAsync(id, view.GetCancellationTokenOnDestroy());
+		}
+
+		// ── 이동 ──────────────────────────────────────────────────────
+
+		// 목적지는 Table_Map.ID 하나로 들어온다. 어느 상태로 갈지는 Map 테이블의 MapType 이 정한다 —
+		// 코드가 "이 버튼은 필드" 같은 분류표를 따로 들면 테이블과 두 벌이 되어 같이 틀어진다.
+		private void onWarpRequested(int mapId)
+		{
+			Table_Map.Row map = Table_Map.Get(mapId);
+			if (map == null)
+			{
+				Debug.LogWarning($"[MainHudPresenter] Map {mapId} 가 없습니다 — DevWarpButton 의 MapId 를 확인하세요.");
+				return;
+			}
+
+			if (map.MapType == MapType.Town)
+			{
+				changeStateIfNeeded(new TownState(), typeof(TownState));
+				return;
+			}
+
+			if (map.MapType == MapType.Field)
+			{
+				// Map.ID 와 Field.ID 는 같은 값이다.
+				changeStateIfNeeded(new FieldState(mapId), typeof(FieldState));
+				return;
+			}
+
+			Debug.LogWarning($"[MainHudPresenter] 아직 지원하지 않는 이동 대상입니다 — Map {mapId} ({map.MapType})");
+		}
+
+		// 같은 상태로 다시 들어가면 씬을 새로 로드해 히어로가 재스폰되고 위치가 초기화된다.
+		// 필드 안에서 다른 필드로 가는 경우는 여기 해당하지 않는다(대상이 달라도 상태 타입이 같아서
+		// 지금은 막힌다) — Field 1-2 가 생기면 FieldDirector.MoveToField 로 분기한다.
+		private static void changeStateIfNeeded(IGameState next, System.Type stateType)
+		{
+			if (GameFlow.Instance.CurrentState != null && GameFlow.Instance.CurrentState.GetType() == stateType)
+			{
+				return;
+			}
+
+			GameFlow.Instance.ChangeStateAsync(next).Forget();
 		}
 
 		// ── 표시 ──────────────────────────────────────────────────────

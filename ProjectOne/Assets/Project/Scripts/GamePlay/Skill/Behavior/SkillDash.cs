@@ -43,7 +43,7 @@ namespace ProjectOne.Skill
 			}
 
 			// 탐지 반경 내 가장 가까운 적 1명
-			List<UnitBase> scanned = TargetResolver.ScanByType(SkillScanTypes.Target, detectRange, 1f, _caster);
+			List<UnitBase> scanned = TargetResolver.ScanByType(SkillScanTypes.Target, SkillApplyTarget.Enemy, detectRange, 1f, _caster);
 			if (scanned.Count == 0)
 			{
 				_finished = true;

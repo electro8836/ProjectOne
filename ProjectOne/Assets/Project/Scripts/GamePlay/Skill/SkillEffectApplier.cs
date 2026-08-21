@@ -94,7 +94,16 @@ namespace ProjectOne.Skill
 					break;
 			}
 
-			playEffectPresentation(row, targets);
+			// 타격 연출은 실제로 효과가 적용된 대상에만 나가야 한다.
+			// applyDamage/applyForce 는 시전자를 건너뛰므로 연출도 같은 규칙을 따른다.
+			// 반대로 자힐·자버프는 시전자가 정당한 대상이라 제외하면 안 된다.
+			UnitBase vfxExcluded = null;
+			if (row.EffectType == SkillEffectTypes.Damage || row.EffectType == SkillEffectTypes.Force)
+			{
+				vfxExcluded = caster;
+			}
+
+			playEffectPresentation(row, targets, vfxExcluded);
 
 			// 적중 개념이 없는 효과는 "성공"을 적중으로 간주한다 (설계 5.6).
 			if (succeeded == true)
@@ -112,12 +121,11 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			List<UnitBase> scanned = TargetResolver.ScanByType(SkillScanTypes.Circle, radius, 0f, caster,
+			// 착탄은 적에게만 적용한다 — 탐색이 진영을 걸러 준다.
+			List<UnitBase> scanned = TargetResolver.ScanByType(SkillScanTypes.Circle, SkillApplyTarget.Enemy, radius, 0f, caster,
 				useOverride: true, centerOverride: new Vector2(center.x, center.y), facingOverride: Vector2.right);
 
-			// 착탄은 적에게만 적용한다 — 탐색 결과에는 아군·자신도 섞여 있다.
-			List<UnitBase> enemies = TargetResolver.FilterByApplyTarget(scanned, SkillApplyTarget.Enemy, caster);
-			Apply(effectId, caster, skillId, enemies, 0);
+			Apply(effectId, caster, skillId, scanned, 0);
 		}
 
 		// 리졸브 사본에서 먼저 찾는다 — 모디파이어가 반영된 값을 써야 한다 (설계 11.1).
@@ -707,14 +715,14 @@ namespace ProjectOne.Skill
 		}
 
 		// 타격 연출 — Additive 정책. 누적을 허용하고 각자 수명대로 소멸한다 (설계 4.8).
-		static void playEffectPresentation(Table_SkillEffect.Row row, List<UnitBase> targets)
+		static void playEffectPresentation(Table_SkillEffect.Row row, List<UnitBase> targets, UnitBase excluded)
 		{
 			if (string.IsNullOrEmpty(row.EffectVFX) == false)
 			{
 				for (int i = 0; i < targets.Count; i++)
 				{
 					UnitBase target = targets[i];
-					if (target == null)
+					if (target == null || target == excluded)
 					{
 						continue;
 					}

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -82,10 +82,19 @@ namespace ProjectOne.Field
 				return;
 			}
 
+			// 이전 씬(마을·던전)의 유닛을 먼저 걷어낸다 — 아래에서 히어로를 새로 스폰한다.
+			GameplaySceneSetup.ClearGameplayUnits();
+
+			// 카메라 리그는 씬과 함께 파괴된다. 없으면 vcam 이 없어 화면이 히어로를 따라가지 않는다.
+			await GameplaySceneSetup.EnsureCameraAsync(ct);
+
 			await loadActAsync(field.ActID, ct);
 
-			_hero = await UnitFactory.Instance.CreateHeroAsync(GetFieldCenter(fieldId), Faction.Player, true, ct);
-			moveHeroToField(fieldId);
+			// 그리드 중심은 벽 속일 수 있다. 맵 프리팹의 MapAnchor 를 시작 지점으로 쓴다(마을과 같은 규약).
+			Vector3 spawnPos = MapManager.Instance.GetAnchorPosition(fieldId);
+
+			_hero = await UnitFactory.Instance.CreateHeroAsync(spawnPos, Faction.Player, true, ct);
+			_currentFieldId = fieldId;
 		}
 
 		// 같은 액트 안에서 필드 이동 — 로드가 없다. 회복도 없다.
