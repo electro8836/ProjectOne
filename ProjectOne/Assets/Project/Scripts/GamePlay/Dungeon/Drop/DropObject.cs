@@ -119,7 +119,16 @@ namespace ProjectOne.Dungeon
 			switch (_type)
 			{
 			case DropObjectType.HealOrb:
+				float before = hero.Vitals.Hp;
 				hero.Vitals.ModifyHp(hero.Stats.GetStat(Stat.Stat_MaxHp) * RestoreRatio);
+
+				// 풀피 클램프로 실제 회복이 0이면 알리지 않는다 — 0 이 뜨는 팝업을 막는다.
+				int healed = Mathf.RoundToInt(hero.Vitals.Hp - before);
+				if (healed > 0)
+				{
+					EventManager.Instance.Publish(new HealAppliedEvent(hero, healed));
+				}
+
 				break;
 			}
 		}

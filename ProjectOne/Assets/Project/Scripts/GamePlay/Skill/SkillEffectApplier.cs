@@ -6,6 +6,7 @@ using ProjectOne.Summons;
 using ProjectOne.Audio;
 using ProjectOne.Combat;
 using ProjectOne.Buff;
+using ProjectOne.Event;
 using ProjectOne.Projectile;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
@@ -344,6 +345,8 @@ namespace ProjectOne.Skill
 			DamageCalculator.Result result = DamageCalculator.Calculate(caster, target, p.ScaleStat, p.Ratio, p.FlatValue, row.OnHitTrigger);
 			if (result.IsAvoided == true)
 			{
+				// 무효화는 TakeDamage 를 타지 않아 DamageTakenEvent 가 나가지 않는다 — 여기서 따로 알린다.
+				EventManager.Instance.Publish(new DamageAvoidedEvent(target, caster, result.IsBlocked));
 				return false;
 			}
 
@@ -419,7 +422,15 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
+				float before = target.Vitals.Hp;
 				target.Vitals.ModifyHp(amount);
+
+				// 풀피 클램프로 실제 회복이 0이면 알리지 않는다 — 0 이 뜨는 팝업을 막는다.
+				int healed = Mathf.RoundToInt(target.Vitals.Hp - before);
+				if (healed > 0)
+				{
+					EventManager.Instance.Publish(new HealAppliedEvent(target, healed));
+				}
 			}
 
 			return true;

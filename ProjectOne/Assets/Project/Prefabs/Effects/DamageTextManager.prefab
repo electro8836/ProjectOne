@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8499909871740535769
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8552710708475698177}
+  - component: {fileID: 7279460881411907816}
+  m_Layer: 0
+  m_Name: DamageTextManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8552710708475698177
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8499909871740535769}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7279460881411907816
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8499909871740535769}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30f0ae6de6a70a442988c974b3f05f88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Combat.DamageTextManager
+  _monsterHitPrefab: {fileID: 1328877854164517136, guid: 0f5bfe1636f4d4f48855962d8900c933, type: 3}
+  _monsterCritPrefab: {fileID: 1328877854164517136, guid: af695a07ddea4724aa8a2e3489b71505, type: 3}
+  _heroHitPrefab: {fileID: 1328877854164517136, guid: 5364578acffa1984a9b872b4ae68c143, type: 3}
+  _healPrefab: {fileID: 1328877854164517136, guid: db84d6b0f4b2ebe4f8b23295234a1a0a, type: 3}
+  _missPrefab: {fileID: 1725412265150527026, guid: c73fb314f5c9c7744bbbba6e536de27d, type: 3}
+  _blockPrefab: {fileID: 1725412265150527026, guid: 4f18d33caa2f3824f9b2d2459a79a200, type: 3}
+  _yOffset: 0.2

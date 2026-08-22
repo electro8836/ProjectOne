@@ -115,6 +115,37 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 공격 무효화 알림 (회피/막기 — HP 변화가 없다). 데미지 텍스트의 MISS/BLOCK 표시에서 구독.
+		// DamageTakenEvent 로는 담을 수 없다 — SkillEffectApplier.dealDamage 가
+		// TakeDamage 호출 전에 조기 리턴하므로 그 이벤트 자체가 나가지 않는다.
+		public readonly struct DamageAvoidedEvent
+		{
+				public readonly UnitBase Target;
+				public readonly UnitBase Attacker;
+				public readonly bool IsBlocked;   // false=회피(MISS), true=막기(BLOCK)
+
+				public DamageAvoidedEvent(UnitBase target, UnitBase attacker, bool isBlocked)
+				{
+						this.Target = target;
+						this.Attacker = attacker;
+						this.IsBlocked = isBlocked;
+				}
+		}
+
+		// 회복 적용 알림 (최대체력 클램프 후 실제로 오른 양). 데미지 텍스트/전투로그 등에서 구독.
+		// 풀피라 실제 회복이 0이면 발행하지 않는다 — 0 이 뜨는 팝업을 막는다.
+		public readonly struct HealAppliedEvent
+		{
+				public readonly UnitBase Target;
+				public readonly int Amount;
+
+				public HealAppliedEvent(UnitBase target, int amount)
+				{
+						this.Target = target;
+						this.Amount = amount;
+				}
+		}
+
 		// 유닛 스폰 글로벌 알림 (HeroAspect 외 보조 채널 — UI/사운드/튜토리얼 등).
 		public readonly struct UnitSpawnedEvent
 		{

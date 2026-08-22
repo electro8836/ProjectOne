@@ -12,6 +12,7 @@ namespace EDT {
             public int MonsterID { get; set; } = 0;
             public int Level { get; set; } = 0;
             public int Count { get; set; } = 0;
+            public float RespawnTime { get; set; } = 0f;
             public int RewardGroupID { get; set; } = 0;
         }
 
@@ -40,6 +41,7 @@ namespace EDT {
                 row.MonsterID = reader.ReadInt32();
                 row.Level = reader.ReadInt32();
                 row.Count = reader.ReadInt32();
+                row.RespawnTime = reader.ReadSingle();
                 row.RewardGroupID = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

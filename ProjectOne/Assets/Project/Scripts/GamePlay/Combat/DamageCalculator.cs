@@ -17,6 +17,7 @@ namespace ProjectOne.Combat
 			public int Damage;
 			public bool IsCritical;
 			public bool IsAvoided;		// 회피 또는 막기로 무효화
+			public bool IsBlocked;		// IsAvoided 중 막기 쪽 — 회피(MISS)와 표시를 구분하려고 둔다
 			public float LifeOnHit;
 		}
 
@@ -43,6 +44,7 @@ namespace ProjectOne.Combat
 			if (Random.value < t.GetStat(Stat.Stat_BlockRate))
 			{
 				r.IsAvoided = true;
+				r.IsBlocked = true;
 				return r;
 			}
 

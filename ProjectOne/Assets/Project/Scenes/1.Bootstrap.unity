@@ -192,7 +192,6 @@ GameObject:
   - component: {fileID: 543977141}
   - component: {fileID: 543977140}
   - component: {fileID: 543977142}
-  - component: {fileID: 543977143}
   m_Layer: 0
   m_Name: GameBootstrapper
   m_TagString: Untagged
@@ -241,20 +240,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7140c56c72cb4b44ba191242cb642c85, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SendQueueMgr
---- !u!114 &543977143
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 543977139}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 191972ba7e66a314e92d0ca868984903, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Dev.FPSCounter
-  _fontSize: 24
-  _color: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &850023648
 GameObject:
   m_ObjectHideFlags: 0
@@ -299,6 +284,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1195888838
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 8499909871740535769, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_Name
+      value: DamageTextManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.09507
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.35376
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8552710708475698177, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
 --- !u!1 &1860655696
 GameObject:
   m_ObjectHideFlags: 0
@@ -723,5 +765,6 @@ SceneRoots:
   - {fileID: 493909477}
   - {fileID: 3482589833842539942}
   - {fileID: 2145747172182817801}
+  - {fileID: 1195888838}
   - {fileID: 850023650}
   - {fileID: 1860655698}
