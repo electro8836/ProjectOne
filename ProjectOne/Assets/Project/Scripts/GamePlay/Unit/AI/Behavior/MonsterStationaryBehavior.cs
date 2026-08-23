@@ -16,6 +16,12 @@ namespace ProjectOne.Unit.AI
 		{
 			self.Mover.Stop();
 
+			// 스킬/평타 모션이 도는 동안은 시선도 시전도 건드리지 않는다
+			if (self.SkillContainer != null && self.SkillContainer.IsInAction == true)
+			{
+				return;
+			}
+
 			_decisionAccum += dt;
 			if (_decisionAccum < DecisionInterval)
 			{

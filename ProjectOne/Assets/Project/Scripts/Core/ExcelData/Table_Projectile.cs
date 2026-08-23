@@ -9,12 +9,7 @@ namespace EDT {
         public class Row {
             public Projectile ID { get; set; } = Projectile.None;
             public string PrefabPath { get; set; } = string.Empty;
-            public float Speed { get; set; } = 0f;
-            public float Accel { get; set; } = 0f;
-            public float MaxSpeed { get; set; } = 0f;
-            public float HomingRate { get; set; } = 0f;
             public int Pierce { get; set; } = 0;
-            public float MaxDistance { get; set; } = 0f;
             public float ExplodeRadius { get; set; } = 0f;
             public SkillEffect HitEffectID_1 { get; set; } = SkillEffect.None;
             public SkillEffect HitEffectID_2 { get; set; } = SkillEffect.None;
@@ -42,12 +37,7 @@ namespace EDT {
                 Row row = new Row();
                 row.ID = (Projectile)reader.ReadInt32();
                 row.PrefabPath = reader.ReadString();
-                row.Speed = reader.ReadSingle();
-                row.Accel = reader.ReadSingle();
-                row.MaxSpeed = reader.ReadSingle();
-                row.HomingRate = reader.ReadSingle();
                 row.Pierce = reader.ReadInt32();
-                row.MaxDistance = reader.ReadSingle();
                 row.ExplodeRadius = reader.ReadSingle();
                 row.HitEffectID_1 = (SkillEffect)reader.ReadInt32();
                 row.HitEffectID_2 = (SkillEffect)reader.ReadInt32();

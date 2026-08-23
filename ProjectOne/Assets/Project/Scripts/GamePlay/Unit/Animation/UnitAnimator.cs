@@ -64,7 +64,7 @@ namespace ProjectOne.Unit
 		[SerializeField]
 		private float _yOffset = 0f;
 
-		// 컨트롤러에 존재하는 파라미터 해시 (Awake 에서 1회 수집)
+		// 컨트롤러에 존재하는 파라미터 해시. Awake 에서 수집하고 SetController 에서 다시 만든다.
 		private readonly HashSet<int> _parameterHashes = new HashSet<int>();
 
 		// 프리팹 원본 컨트롤러 — 무기 오버라이드를 벗을 때 복귀 대상
@@ -91,7 +91,7 @@ namespace ProjectOne.Unit
 
 		private static readonly int HashIsDead = Animator.StringToHash("IsDead");
 
-		// 캐스팅 모션은 아직 컨트롤러에 없다 — hasParameter 가드로 조용히 넘어간다.
+		// 몬스터 컨트롤러엔 아직 캐스팅 모션이 없다 — hasParameter 가드로 조용히 넘어간다.
 		private static readonly int HashIsCasting = Animator.StringToHash("IsCasting");
 
 		private static readonly int HashAttackSpeedMul = Animator.StringToHash("AttackSpeedMod");
@@ -364,6 +364,11 @@ namespace ProjectOne.Unit
 				}
 
 				_lastIsMoving = _animator.GetBool(HashIsMoving);
+
+				// 컨트롤러 교체는 애니메이터를 리바인드해 Float 파라미터를 기본값으로 되돌린다.
+				// 스로틀 캐시도 함께 버려야 같은 값이 다시 들어올 때 걸러지지 않는다.
+				_lastAttackSpeedMul = float.NaN;
+				_lastMoveSpeedMul = float.NaN;
 			}
 		}
 

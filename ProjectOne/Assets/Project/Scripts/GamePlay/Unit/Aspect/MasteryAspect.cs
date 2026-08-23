@@ -75,7 +75,7 @@ namespace ProjectOne.Unit
 
 		// 무기별 애니메이터 오버라이드 교체.
 		//
-		// AC_HeroRoot 의 ATTACK/SKILL 은 빈 클립(*_EMPTY)이며, 실제 모션은 AOC 가 갈아끼운다.
+		// AC_Root 의 ATTACK/SKILL 은 빈 클립(EMPTY_*)이며, 실제 모션은 AOC 가 갈아끼운다.
 		// 이 교체가 없으면 트리거는 들어가지만 화면에는 아무것도 나오지 않는다.
 		//
 		// 되돌리기를 RemoveFrom 이 아니라 여기서 하는 이유 — Reapply 는 RemoveFrom → ApplyTo 를

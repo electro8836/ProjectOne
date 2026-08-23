@@ -40,7 +40,7 @@ namespace EDT {
 
     public enum WeaponType {
         None,
-        Greatsword,
+        DualBlades,
         RuneSword,
         CrossBow,
         DualPistols,
@@ -360,7 +360,7 @@ namespace EDT {
 
     public enum WeaponMastery {
         None,
-        Mastery_GreatSword,
+        Mastery_DualBlades,
         Mastery_RuneSword,
         Mastery_CrossBow,
         Mastery_DualPistols,
@@ -411,13 +411,15 @@ namespace EDT {
 
     public enum Projectile {
         None,
+        PJT_CrossBow_Bolt,
+        PJT_Monster_Arrow,
     }
 
     public enum Skill {
         None,
-        Skill_GreatSword_Attack,
-        Skill_GreatSword_Active_01,
-        Skill_GreatSword_Passive_01,
+        Skill_DualBlades_Attack,
+        Skill_DualBlades_Active_01,
+        Skill_DualBlades_Passive_01,
         Skill_RuneSword_Attack,
         Skill_RuneSword_Active_01,
         Skill_RuneSword_Passive_01,
@@ -428,12 +430,21 @@ namespace EDT {
         Skill_DualPistols_Active_01,
         Skill_DualPistols_Passive_01,
         Skill_Monster_MeleeAttack_01,
+        Skill_Monster_RangeAttack_01,
+        Skill_Monster_CastAttack_01,
     }
 
     public enum SkillEffect {
         None,
-        SE_GreatSword_Attack_Damage,
+        SE_DualBlades_Attack_Damage,
+        SE_RuneSword_Attack_Damage,
+        SE_CrossBow_Attack_Projectile,
+        SE_CrossBow_Attack_Damage,
+        SE_DualPistol_Attack_Damage,
         SE_Monster_MeleeAttack_Damage,
+        SE_Monster_RangeAttack_Projectile,
+        SE_Monster_RangeAttack_Damage,
+        SE_Monster_CastAttack_Damage,
     }
 
     public enum SkillModifier {
@@ -557,7 +568,6 @@ namespace EDT {
         TableMasteryLevelExp,
         TableMonster,
         TableMonsterStat,
-        TableMonsterAI,
         TableMonsterSpawn,
         TableNpc,
         TableNpcSpawn,

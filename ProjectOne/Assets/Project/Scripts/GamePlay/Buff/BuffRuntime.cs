@@ -239,6 +239,7 @@ namespace ProjectOne.Buff
 			{
 				Owner.SkillContainer.CancelCasting();
 				Owner.SkillContainer.CancelBehavior();
+				Owner.SkillContainer.CancelAction();
 			}
 		}
 

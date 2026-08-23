@@ -36,7 +36,9 @@ namespace ProjectOne.Skill
 		}
 
 		// depth 는 ChainEffectIDs 재귀 깊이다. 0에서 시작한다.
-		public static void Apply(SkillEffect effectId, UnitBase caster, EDT.Skill skillId, List<UnitBase> scanned, int depth)
+		// hasCenter/center 는 좌표 고정형(EffectOrigin=Location) 전용 — 연출을 대상마다가 아니라 그 좌표에서 1회 낸다.
+		public static void Apply(SkillEffect effectId, UnitBase caster, EDT.Skill skillId, List<UnitBase> scanned, int depth,
+			bool hasCenter = false, Vector2 center = default(Vector2))
 		{
 			if (effectId == SkillEffect.None || caster == null)
 			{
@@ -104,7 +106,7 @@ namespace ProjectOne.Skill
 				vfxExcluded = caster;
 			}
 
-			playEffectPresentation(row, targets, vfxExcluded);
+			playEffectPresentation(row, targets, vfxExcluded, hasCenter, center);
 
 			// 적중 개념이 없는 효과는 "성공"을 적중으로 간주한다 (설계 5.6).
 			if (succeeded == true)
@@ -571,6 +573,7 @@ namespace ProjectOne.Skill
 			data.target = target;
 			data.hitRadius = projectile.ExplodeRadius;
 			data.speedRate = (p.SpeedRate > 0f) ? p.SpeedRate : 1f;
+			data.pierce = projectile.Pierce;
 
 			ProjectileManager.Instance.Launch(projectile.PrefabPath, data);
 		}
@@ -726,8 +729,25 @@ namespace ProjectOne.Skill
 		}
 
 		// 타격 연출 — Additive 정책. 누적을 허용하고 각자 수명대로 소멸한다 (설계 4.8).
-		static void playEffectPresentation(Table_SkillEffect.Row row, List<UnitBase> targets, UnitBase excluded)
+		static void playEffectPresentation(Table_SkillEffect.Row row, List<UnitBase> targets, UnitBase excluded, bool hasCenter, Vector2 center)
 		{
+			// 좌표 고정 효과는 대상이 아니라 고정 좌표에서 1회 터진다 —
+			// 회피에 성공해(대상 0명) 데미지가 안 들어가도 장판이 터지는 것은 보여야 한다.
+			if (hasCenter == true)
+			{
+				if (string.IsNullOrEmpty(row.EffectVFX) == false)
+				{
+					VFXManager.Instance.PlayOneShot(row.EffectVFX, new Vector3(center.x, center.y, 0f));
+				}
+
+				if (string.IsNullOrEmpty(row.EffectSFX) == false)
+				{
+					AudioManager.Instance.PlaySFX(row.EffectSFX);
+				}
+
+				return;
+			}
+
 			if (string.IsNullOrEmpty(row.EffectVFX) == false)
 			{
 				for (int i = 0; i < targets.Count; i++)
@@ -738,8 +758,8 @@ namespace ProjectOne.Skill
 						continue;
 					}
 
-					Vector2 center = target.HitCenter;
-					VFXManager.Instance.PlayOneShot(row.EffectVFX, new Vector3(center.x, center.y, target.transform.position.z));
+					Vector2 hitCenter = target.HitCenter;
+					VFXManager.Instance.PlayOneShot(row.EffectVFX, new Vector3(hitCenter.x, hitCenter.y, target.transform.position.z));
 				}
 			}
 

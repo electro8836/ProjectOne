@@ -30,6 +30,7 @@ namespace ProjectOne.Unit
 			public bool isCasting;      // 캐스팅 스킬 여부 — 표시/종료를 IsCasting 폴링으로 제어
 			public float castDuration;  // CastingParam(초) — 채움이 0→풀 크기로 도달하는 시간
 			public float castStartTime; // 캐스팅(표시) 시작 시각
+			public bool isLocation;     // 좌표 고정형 — 캐스터가 아니라 시전 시점 대상 좌표에 그린다
 		}
 
 		// 임의 월드 위치에 잠깐 띄우는 범위 표시 — OnHitTarget 프록이 피격자마다 동시에 띄울 수 있게 풀로 재사용.
@@ -223,6 +224,20 @@ namespace ProjectOne.Unit
 			return earliest < 0f ? 0f : earliest;
 		}
 
+		// 좌표 고정형 효과(EffectOrigin=Location)를 가진 스킬인가 — 원을 캐스터가 아닌 고정 좌표에 그려야 한다.
+		private static bool HasLocationEffect(ResolvedSkill resolved)
+		{
+			for (int i = 0; i < resolved.Effects.Count; i++)
+			{
+				if (resolved.Effects[i].EffectOrigin == SkillEffectOrigin.Location)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		// 단일 스킬에 대한 자식 인디케이터를 미리 생성한다 (비패시브 + 범위형만).
 		private void TryAddItem(EDT.Skill id)
 		{
@@ -252,13 +267,20 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			IndicatorMeshBuilder builder = IndicatorMeshBuilder.Get(row.ScanType);
+			// 좌표 고정형은 ScanType 과 무관하게 피격 반경(ScanParam)만큼의 꽉 찬 원이다.
+			// ScanRange 는 시전 사거리라 원 크기로 쓰면 안 된다.
+			bool isLocation = HasLocationEffect(resolved);
+			IndicatorMeshBuilder builder = isLocation
+				? IndicatorMeshBuilder.Get(SkillScanTypes.Circle)
+				: IndicatorMeshBuilder.Get(row.ScanType);
 			if (builder == null)
 			{
 				return;  // None 등 표시 대상 아님
 			}
 
-			Mesh mesh = builder.Build(row.ScanRange, row.ScanParam, _segments, _ringThickness);
+			Mesh mesh = isLocation
+				? builder.Build(row.ScanParam, 0f, _segments, _ringThickness)
+				: builder.Build(row.ScanRange, row.ScanParam, _segments, _ringThickness);
 
 			bool isCasting = (row.CastingType == SkillCastingTypes.Casting);
 
@@ -266,7 +288,9 @@ namespace ProjectOne.Unit
 			item.id = id;
 			item.mesh = mesh;
 			item.tr = CreateMeshChild("Indicator_" + id.ToString(), mesh, _material, _sortingOrder);
-			item.needsFacing = (row.ScanType == SkillScanTypes.Sector || row.ScanType == SkillScanTypes.Line);
+			item.isLocation = isLocation;
+			// 좌표 고정형은 원이라 방향이 없다
+			item.needsFacing = (isLocation == false) && (row.ScanType == SkillScanTypes.Sector || row.ScanType == SkillScanTypes.Line);
 			item.showTime = 0f;
 			item.hideTime = 0f;
 			item.active = false;
@@ -560,6 +584,13 @@ namespace ProjectOne.Unit
 				return;
 			}
 
+			// 자식이라 부모(몬스터)가 움직이면 원이 끌려간다 — 좌표 고정형은 매 프레임 월드 좌표로 되돌린다.
+			// 캐스팅 중에는 BlockMove 로 정지하지만 넉백 임펄스나 유닛 밀림으로는 움직인다.
+			if (item.isLocation == true)
+			{
+				UpdateItemTransform(item);
+			}
+
 			// 진행 중 — 채움을 0→풀 크기로 스케일링 (CastingParam 이 0이면 즉시 가득)
 			float t = (item.castDuration > 0f) ? Mathf.Clamp01((now - item.castStartTime) / item.castDuration) : 1f;
 			// 방향성 스킬(Line/Sector)은 폭 고정, 길이(X)만 성장 — 원형/도넛은 균등 성장
@@ -576,7 +607,13 @@ namespace ProjectOne.Unit
 		// 인디케이터 표시 시작 시점의 캐스터 중심/방향으로 자식 위치·회전을 갱신
 		private void UpdateItemTransform(Item item)
 		{
+			// 좌표 고정형은 시전 시점에 못 박힌 좌표를 쓴다 — 캐스터를 따라가지 않는다.
 			Vector2 center = _owner.HitCenter;
+			if (item.isLocation == true && _owner.SkillContainer != null && _owner.SkillContainer.HasCastCenter == true)
+			{
+				center = _owner.SkillContainer.CastCenter;
+			}
+
 			Vector3 pos = new Vector3(center.x, center.y, 0f);
 			item.tr.position = pos;
 			if (item.fillTr != null)

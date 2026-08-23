@@ -59,12 +59,20 @@ namespace ProjectOne.Unit.AI
 		// 의사결정에서 산출한 접근 방향 — 매 프레임 이동이 이 값 + 최신 분리벡터로 조향한다
 		private Vector2 _cachedApproachDir;
 
-		// 기본공격 정보 캐시 — 사거리/발사체여부 모두 불변이라 최초 1회만 테이블 조회
+		// 기본공격 정보 캐시 — 정지 사거리/발사체여부 모두 불변이라 최초 1회만 테이블 조회
 		private float _cachedRange = -1f;
 		private bool _basicIsProjectile;
 
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
+			// 스킬/평타 모션이 도는 동안은 그 자리에서 마친다 — 이동도 판단도 하지 않는다
+			SkillContainer sc = self.SkillContainer;
+			if (sc != null && sc.IsInAction == true)
+			{
+				self.Mover.Stop();
+				return;
+			}
+
 			// 스폰 자리에서 너무 벗어났으면 전투를 접고 복귀한다 (몬스터 설계 5장)
 			if (MonsterAiCommon.TickLeash(self, bb) == true)
 			{
@@ -87,17 +95,21 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			// 정지(공격) — 타겟을 응시하고, 판단 주기마다 스킬을 시전한다
+			// 사거리에 든 스킬이 있으면 접근 도중에도 그 자리에서 시전한다 — 정지 거리는 평타 기준이라
+			// 사거리가 긴 스킬을 정지할 때까지 묵혀 두면 안 된다. 시전 중 정지는 SkillContainer 의
+			// 액션 락(IsInAction)과 캐스팅의 BlockMove 가 처리한다.
+			if (decide == true)
+			{
+				// Sector/Line 스킬이 타겟을 조준하도록 시전 전에 시선을 맞춘다
+				self.Mover.SetFacing(target.CachedPos - self.CachedPos);
+				SkillSelector.Select(self, false);
+			}
+
+			// 정지(공격) — 타겟을 응시한다
 			if (_approaching == false)
 			{
 				self.Mover.Stop();
-				// Sector/Line 스킬이 타겟을 조준하도록 시전 전에 시선을 맞춘다
 				self.Mover.SetFacing(target.CachedPos - self.CachedPos);
-				if (decide == true)
-				{
-					SkillSelector.Select(self, false);
-				}
-
 				return;
 			}
 
@@ -183,7 +195,7 @@ namespace ProjectOne.Unit.AI
 			Vector2 selfPos = self.CachedPos;
 			Vector2 dirToTarget = target.CachedPos - selfPos;
 
-			// 기본공격 사거리·발사체여부는 불변 — 최초 1회만 테이블 조회해 캐시 (다수 몬스터 매 판단 조회 방지)
+			// 정지 사거리·발사체여부는 불변 — 최초 1회만 테이블 조회해 캐시 (다수 몬스터 매 판단 조회 방지)
 			if (_cachedRange < 0f)
 			{
 				_cachedRange = GetStoppingRange(self);
@@ -254,8 +266,8 @@ namespace ProjectOne.Unit.AI
 			return (resolved != null) ? resolved.Row : null;
 		}
 
-		// 정지 사거리 — 보유 스킬 중 최소 사거리. 그 거리까지 접근해야 보유 스킬 전부가 사거리 안에 들어 시전 가능해진다.
-		// 시전 가능한 사거리 스킬이 없으면 폴백.
+		// 정지 사거리 — 평타 사거리까지 접근한다. 사거리에 든 스킬은 접근 도중에 이미 나가므로
+		// 끝까지 붙는 기준은 평타다. 평타가 없는 몬스터(캐스터 전용)는 보유 스킬 최소 사거리로 폴백한다.
 		private static float GetStoppingRange(UnitBase self)
 		{
 			SkillContainer sc = self.SkillContainer;
@@ -264,8 +276,14 @@ namespace ProjectOne.Unit.AI
 				return _fallbackRange;
 			}
 
-			float min = sc.GetMinSkillRange();
-			return (min > 0f) ? min : _fallbackRange;
+			float range = sc.GetBasicAttackRange();
+			if (range > 0f)
+			{
+				return range;
+			}
+
+			range = sc.GetMinSkillRange();
+			return (range > 0f) ? range : _fallbackRange;
 		}
 
 		// 발사체 기본공격일 때만 시야(LoS)를 따진다 — 근접/비발사체나 맵 없음이면 항상 사격 가능으로 본다.

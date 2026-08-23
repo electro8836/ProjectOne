@@ -18,6 +18,9 @@ namespace ProjectOne.Settings
 		// 조이스틱 유동성(floating) 사용 여부 변경 알림
 		public event System.Action<bool> FloatingJoystickChanged;
 
+		// 기본공격 사거리 원 표시 여부 변경 알림
+		public event System.Action<bool> AttackRangeCircleChanged;
+
 		public SettingsManager()
 		{
 		}
@@ -46,6 +49,31 @@ namespace ProjectOne.Settings
 			if (PlayerSkillIndicatorChanged != null)
 			{
 				PlayerSkillIndicatorChanged(enabled);
+			}
+		}
+
+		public bool ShowAttackRangeCircle
+		{
+			get
+			{
+				EnsureLoaded();
+				return _data.showAttackRangeCircle;
+			}
+		}
+
+		public void SetShowAttackRangeCircle(bool enabled)
+		{
+			EnsureLoaded();
+			if (_data.showAttackRangeCircle == enabled)
+			{
+				return;
+			}
+
+			_data.showAttackRangeCircle = enabled;
+			Save();
+			if (AttackRangeCircleChanged != null)
+			{
+				AttackRangeCircleChanged(enabled);
 			}
 		}
 

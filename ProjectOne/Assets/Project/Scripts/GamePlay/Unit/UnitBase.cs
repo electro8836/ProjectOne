@@ -430,16 +430,20 @@ namespace ProjectOne.Unit
 					_brain.OnDamaged(info.Attacker);
 				}
 
-				if (_animator != null)
-				{
-					_animator.PlayHit();
-				}
-
 				if (info.KnockbackPower > 0f && _mover != null)
 				{
 					_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
-					// 넉백 발생 → 진행 중인 캐스팅 취소
+					// 넉백 발생 → 진행 중인 캐스팅/모션 취소
 					_skillContainer?.CancelCasting();
+					_skillContainer?.CancelAction();
+				}
+
+				// 캐스팅 중에는 피격 모션을 내지 않는다 — 애니메이터가 시전 자세를 유지할 뿐 아니라,
+				// 소비되지 않은 Hit 트리거가 남아 캐스팅 종료 직후 뒤늦게 터지는 것도 막는다.
+				// 넉백은 위에서 캐스팅을 이미 취소했으므로 여기서 정상적으로 피격 모션이 나간다.
+				if (_animator != null && (_skillContainer == null || _skillContainer.IsCasting == false))
+				{
+					_animator.PlayHit();
 				}
 			}
 		}
@@ -453,6 +457,7 @@ namespace ProjectOne.Unit
 				if (_skillContainer != null)
 				{
 					_skillContainer.CancelCasting();
+					_skillContainer.CancelAction();
 				}
 
 				if (_animator != null)
@@ -487,6 +492,12 @@ namespace ProjectOne.Unit
 			if (_mover != null)
 			{
 				_mover.SetMoveEnabled(enabled: true);
+			}
+
+			// 풀 재사용 — 이전 생의 모션 잠금이 남아 조준이 굳는 것을 막는다
+			if (_skillContainer != null)
+			{
+				_skillContainer.CancelAction();
 			}
 		}
 	}

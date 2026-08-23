@@ -46,7 +46,7 @@ namespace ProjectOne.Monsters
 			buildNormalAttacks();
 
 			_built = true;
-			Debug.Log($"[MonsterCatalog] 구축 완료 — 몬스터:{Table_Monster.All().Count} AI:{Table_MonsterAI.All().Count} 스폰그룹:{_spawnsByGroup.Count} 스탯그룹:{_statsByGroup.Count}");
+			Debug.Log($"[MonsterCatalog] 구축 완료 — 몬스터:{Table_Monster.All().Count} 스폰그룹:{_spawnsByGroup.Count} 스탯그룹:{_statsByGroup.Count}");
 
 			validate();
 		}
@@ -56,19 +56,6 @@ namespace ProjectOne.Monsters
 		public static Table_Monster.Row GetMonster(int monsterId)
 		{
 			return Table_Monster.Get(monsterId);
-		}
-
-		// 몬스터의 AI 파라미터. AIGroupID 는 MonsterAI.ID 를 직접 가리킨다(1행 = 1그룹).
-		// 지정되지 않았거나 행이 없으면 null — 호출자가 기본 동작으로 폴백한다.
-		public static Table_MonsterAI.Row GetAI(int monsterId)
-		{
-			Table_Monster.Row monster = Table_Monster.Get(monsterId);
-			if (monster == null || monster.AIGroupID <= 0)
-			{
-				return null;
-			}
-
-			return Table_MonsterAI.Get(monster.AIGroupID);
 		}
 
 		// 스폰 조합. 없으면 빈 목록(널 아님).
@@ -220,14 +207,9 @@ namespace ProjectOne.Monsters
 				issues++;
 			}
 
-			if (row.AIGroupID <= 0)
+			if (row.AIType == MonsterAIType.None)
 			{
-				Debug.LogWarning($"[MonsterCatalog] 몬스터 {row.ID}({row.Name}) 에 AIGroupID 가 없습니다 — 기본 AI 로 동작합니다.");
-				issues++;
-			}
-			else if (Table_MonsterAI.Get(row.AIGroupID) == null)
-			{
-				Debug.LogWarning($"[MonsterCatalog] 몬스터 {row.ID}({row.Name}) 의 AIGroupID={row.AIGroupID} 가 MonsterAI 에 없습니다.");
+				Debug.LogWarning($"[MonsterCatalog] 몬스터 {row.ID}({row.Name}) 에 AIType 이 없습니다 — 기본 AI 로 동작합니다.");
 				issues++;
 			}
 

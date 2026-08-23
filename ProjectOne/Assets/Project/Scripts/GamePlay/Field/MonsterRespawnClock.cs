@@ -13,18 +13,14 @@ namespace ProjectOne.Field
 	//
 	// 기록이 없다 = 즉시 스폰 가능. 한 번도 죽인 적 없는 슬롯, 살아있는 채로 회수된 슬롯이 여기 해당한다.
 	//
-	// 저장하지 않는다 — 앱을 껐다 켜면 전부 살아있는 상태로 시작한다.
-	// 뒤끝 서버 저장으로 넘어갈 때는 절대시각이 아니라 GetRemaining 으로 남은 초를 뽑아 저장하고,
-	// 시간 소스인 now 프로퍼티만 서버 기준으로 교체하면 된다.
+	// 리젠 시각은 로컬 전용이다. 서버에 올리지 않고 저장도 하지 않는다 —
+	// 앱을 껐다 켜면 모든 몬스터가 살아있는 상태로 시작한다. 의도된 동작이다.
 	public sealed class MonsterRespawnClock : Singleton<MonsterRespawnClock>
 	{
 		// 슬롯 → 리젠 가능해지는 시각
 		private readonly Dictionary<SlotKey, float> _readyAt = new Dictionary<SlotKey, float>();
 
 		protected MonsterRespawnClock() { }
-
-		// 시간 소스는 여기 하나뿐이다. 서버 시간으로 갈아끼울 지점.
-		private float now => Time.time;
 
 		public void SetRespawn(in SlotKey key, float respawnTime)
 		{
@@ -34,24 +30,19 @@ namespace ProjectOne.Field
 				return;
 			}
 
-			_readyAt[key] = now + respawnTime;
+			_readyAt[key] = Time.time + respawnTime;
 		}
 
+		// 기록이 없으면 즉시 스폰 가능하다.
 		public bool IsReady(in SlotKey key)
-		{
-			return GetRemaining(key) <= 0f;
-		}
-
-		public float GetRemaining(in SlotKey key)
 		{
 			float ready;
 			if (_readyAt.TryGetValue(key, out ready) == false)
 			{
-				return 0f;
+				return true;
 			}
 
-			float remaining = ready - now;
-			return (remaining > 0f) ? remaining : 0f;
+			return Time.time >= ready;
 		}
 
 		public void Clear(in SlotKey key)

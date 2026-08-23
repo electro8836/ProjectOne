@@ -44,8 +44,8 @@ namespace ProjectOne.Unit
 			component.SetMonsterType(row?.MonsterType ?? MonsterType.None);
 
 			// AIType 이 FSM/BT 선택까지 겸한다 (몬스터 설계 5장).
-			// AIGroupID 가 비었으면 row 가 null 이고 접근형으로 폴백한다 — 경고는 MonsterCatalog 가 낸다.
-			AiBrain brain = AiBrainFactory.CreateForMonster(component, MonsterCatalog.GetAI(_monsterId));
+			// AI 파라미터는 Monster 행에 함께 들어 있다. row 가 null 이면 접근형으로 폴백한다 — 경고는 MonsterCatalog 가 낸다.
+			AiBrain brain = AiBrainFactory.CreateForMonster(component, row);
 			if (brain != null)
 			{
 				component.SetBrain(brain);

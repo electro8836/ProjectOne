@@ -281,6 +281,9 @@ namespace ProjectOne.UserData
 				{
 					hero.SkillContainer.RefreshFromResolve();
 				}
+
+				// 무기가 바뀌면 공속·이속 스탯도 바뀐다 — 애니 배속을 다시 밀어 넣는다.
+				hero.RefreshAnimationStats();
 			}
 		}
 	}

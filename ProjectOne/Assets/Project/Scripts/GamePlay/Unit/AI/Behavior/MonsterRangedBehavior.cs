@@ -27,6 +27,14 @@ namespace ProjectOne.Unit.AI
 
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
+			// 스킬/평타 모션이 도는 동안은 그 자리에서 마친다 — 이동도 판단도 하지 않는다
+			SkillContainer sc = self.SkillContainer;
+			if (sc != null && sc.IsInAction == true)
+			{
+				self.Mover.Stop();
+				return;
+			}
+
 			if (MonsterAiCommon.TickLeash(self, bb) == true)
 			{
 				return;
@@ -49,15 +57,17 @@ namespace ProjectOne.Unit.AI
 
 			self.Mover.SetFacing(target.CachedPos - self.CachedPos);
 
+			// 사거리에 든 스킬이 있으면 접근 도중에도 쏜다 — 정지 거리는 평타 기준이라
+			// 사거리가 긴 스킬을 정지할 때까지 묵혀 두면 안 된다.
+			if (decide == true)
+			{
+				SkillSelector.Select(self, false);
+			}
+
 			if (_approaching == false)
 			{
 				// 사거리 안 — 제자리에서 쏜다
 				self.Mover.Stop();
-				if (decide == true)
-				{
-					SkillSelector.Select(self, false);
-				}
-
 				return;
 			}
 
@@ -73,10 +83,10 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
+			// 정지 사거리는 불변 — 최초 1회만 구한다
 			if (_cachedRange < 0f)
 			{
-				float min = (self.SkillContainer != null) ? self.SkillContainer.GetMinSkillRange() : -1f;
-				_cachedRange = (min > 0f) ? min : FallbackRange;
+				_cachedRange = getStoppingRange(self);
 			}
 
 			float distSqr = (target.CachedPos - self.CachedPos).sqrMagnitude;
@@ -94,6 +104,25 @@ namespace ProjectOne.Unit.AI
 			{
 				_approaching = true;
 			}
+		}
+
+		// 정지 사거리 — 평타 사거리. 평타가 없는 캐스터 전용 몬스터는 보유 스킬 최소 사거리로 폴백한다.
+		private static float getStoppingRange(UnitBase self)
+		{
+			SkillContainer sc = self.SkillContainer;
+			if (sc == null)
+			{
+				return FallbackRange;
+			}
+
+			float range = sc.GetBasicAttackRange();
+			if (range > 0f)
+			{
+				return range;
+			}
+
+			range = sc.GetMinSkillRange();
+			return (range > 0f) ? range : FallbackRange;
 		}
 	}
 }

@@ -107,7 +107,7 @@ namespace ProjectOne.Unit
 			if (monster.GetComponent<SkillIndicator>() == null)
 			{
 				SkillIndicator ind = monster.gameObject.AddComponent<SkillIndicator>();
-				ind.SetDevColor(new Color(1f, 0.65f, 0.1f, 0.5f));
+				ind.SetDevColor(new Color(1f, 0.15f, 0.15f, 0.45f));
 				ind.ConfigureForMonster(_showSkillIndicators);
 				ind.SetSkills(monster.SkillContainer.GetAll());
 			}

@@ -55,8 +55,8 @@ namespace ProjectOne.Unit
 			return CreateMesh(verts, tris);
 		}
 
-		// 도넛/링 메시. innerR~outerR 사이를 채운다.
-		protected static Mesh BuildRing(float innerR, float outerR, int segments)
+		// 도넛/링 메시. innerR~outerR 사이를 채운다. (AttackRangeCircle 이 직접 호출한다)
+		public static Mesh BuildRing(float innerR, float outerR, int segments)
 		{
 			if (innerR < 0f)
 			{

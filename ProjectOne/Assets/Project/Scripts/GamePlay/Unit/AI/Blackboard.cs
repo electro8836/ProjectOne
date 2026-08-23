@@ -13,7 +13,7 @@ namespace ProjectOne.Unit.AI
 		// "플레이어와 얼마나 멀어지면 포기"가 아니라 "자기 자리에서 얼마나 벗어나면 복귀"다.
 		public Vector2 Anchor;
 
-		// ── MonsterAI 테이블 파라미터 ─────────────────────────────────
+		// ── Monster 테이블 AI 파라미터 ───────────────────────────────
 		// 스폰 시 1회 주입된다. 데이터가 없으면 아래 기본값으로 동작한다.
 
 		public AggroType Aggro = AggroType.Aggressive;
@@ -41,7 +41,7 @@ namespace ProjectOne.Unit.AI
 		// 타겟 후보 유형 — 몬스터는 히어로를, 소환물은 몬스터를 노린다.
 		public UnitType TargetUnitType = UnitType.Hero;
 
-		public void ApplyAI(Table_MonsterAI.Row row)
+		public void ApplyAI(Table_Monster.Row row)
 		{
 			if (row == null)
 			{

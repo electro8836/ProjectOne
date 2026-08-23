@@ -26,6 +26,8 @@ namespace ProjectOne.Projectile
 		// 수명 만료와 충돌이 같은 프레임에 발생할 때 이중 반환 방지
 		private bool _isReleased;
 		private float _traveledDistance;
+		// 적중 누적 수 — _data.pierce 를 넘어서면 소멸한다
+		private int _hitCount;
 
 		// 이동 방식 위임 — Awake 에서 GetComponent 로 캐시. 궤적별 전용 분기를 위해 Homing/Parabolic 캐스팅도 캐시.
 		private ITrajectory _trajectory;
@@ -140,7 +142,7 @@ namespace ProjectOne.Projectile
 					return;
 				}
 
-				// 적중 — 범위공격(hitRadius>0)이면 적중 위치 원형 범위에, 아니면 적중 대상 단일에 효과 적용 후 반환
+				// 적중 — 범위공격(hitRadius>0)이면 적중 위치 원형 범위에, 아니면 적중 대상 단일에 효과 적용
 				if (_data.hitRadius > 0f)
 				{
 					SkillEffectApplier.ApplyAtPosition(_data.hitEffect, _data.caster, _data.skillId, transform.position, _data.hitRadius);
@@ -152,7 +154,13 @@ namespace ProjectOne.Projectile
 					SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer, 0);
 				}
 
-				returnToPool("hit");
+				// 관통 — pierce 만큼 더 뚫고 지나간다. 0이면 첫 적중에 소멸한다.
+				_hitCount++;
+				if (_hitCount > _data.pierce)
+				{
+					returnToPool("hit");
+				}
+
 				return;
 			}
 
@@ -167,6 +175,7 @@ namespace ProjectOne.Projectile
 			_ownerPool = pool;
 			_isReleased = false;
 			_traveledDistance = 0f;
+			_hitCount = 0;
 			transform.position = data.startPos;
 
 			// 이동 방식 초기화 — 회전은 Update 에서 궤적이 제공하는 facing 으로 매 프레임 갱신

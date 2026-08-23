@@ -315,17 +315,6 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - MonsterAI
-            {
-                CurrentFile = Table_MonsterAI.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_MonsterAI._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
             #region Table - MonsterSpawn
             {
                 CurrentFile = Table_MonsterSpawn.Filename;

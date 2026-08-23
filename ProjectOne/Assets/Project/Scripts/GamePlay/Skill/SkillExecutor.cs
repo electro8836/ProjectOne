@@ -53,8 +53,10 @@ namespace ProjectOne.Skill
 			{
 				// 캐스팅 — CastingParam(초) 만큼 차단한 뒤 효과가 나간다.
 				// 캐스팅 시간은 공속의 영향을 받지 않는다 (설계 4.7).
+				// 모션은 시전을 마친 뒤에 낸다 (SkillContainer.EndCasting) — 캐스팅 동안 시전 자세를
+				// 유지하다가 종료 순간에 공격 모션이 나가야 하고, 취소되면 모션이 나가면 안 된다.
 				caster.SkillContainer.BeginCasting(row.CastingParam, id);
-				playSkillPresentation(row, caster, useSpeed);
+				playSkillVfx(row, caster);
 				scheduleEffects(resolved, caster, useSpeed, row.CastingParam);
 				return;
 			}
@@ -92,6 +94,28 @@ namespace ProjectOne.Skill
 			SkillEffectApplier.Apply(effectId, caster, skillId, targets, 0);
 		}
 
+		// 좌표 고정 효과의 발동 — 시전 시점 대상 스냅샷을 버리고, 지금 그 좌표 반경 안에 있는 적만 때린다.
+		// 반경은 스킬의 ScanParam 이다 (좌표 고정형에서 ScanParam 은 대상 수가 아니라 피격 반경).
+		public static void RunEffectAt(EDT.Skill skillId, SkillEffect effectId, UnitBase caster, Vector2 center)
+		{
+			if (caster == null || caster.IsDead == true)
+			{
+				return;
+			}
+
+			ResolvedSkill resolved = caster.Resolve(skillId);
+			if (resolved == null || resolved.IsValid == false)
+			{
+				return;
+			}
+
+			Table_Skill.Row row = resolved.Row;
+			List<UnitBase> hit = TargetResolver.ScanByType(SkillScanTypes.Circle, row.ApplyTarget, row.ScanParam, 0f, caster,
+				useOverride: true, centerOverride: center, facingOverride: Vector2.right);
+
+			SkillEffectApplier.Apply(effectId, caster, skillId, hit, 0, hasCenter: true, center: center);
+		}
+
 		// ── 내부 ──────────────────────────────────────────────────────
 
 		// 탐색 1회 → 효과별 지연 예약. extraDelay 는 캐스팅 시간처럼 사이클 앞에 붙는 고정 지연이다.
@@ -112,11 +136,42 @@ namespace ProjectOne.Skill
 			SkillRuntime rt = caster.SkillContainer.GetRuntime(resolved.Id);
 			float actionTime = (rt != null) ? rt.GetActionTime(useSpeed) : 0f;
 
+			// 좌표 고정형(Location) 효과는 시전 시점의 최근접 대상 위치에 못 박는다.
+			// scanned[0] 이 최근접이다 — Target 탐색이 가까운 순으로 정렬해 둔다 (TargetResolver).
+			bool hasCenter = (scanned.Count > 0);
+			Vector2 center = hasCenter ? scanned[0].HitCenter : Vector2.zero;
+
+			// 일반 효과를 먼저 예약한다. 좌표 고정 예약은 지연이 0이면 그 자리에서 발동하면서
+			// TargetResolver 를 다시 부르는데, scanned 는 그 내부 버퍼 직참조라 이미 덮어써진 뒤가 된다.
 			for (int i = 0; i < resolved.Effects.Count; i++)
 			{
 				Table_SkillEffect.Row effect = resolved.Effects[i];
+				if (effect.EffectOrigin == SkillEffectOrigin.Location)
+				{
+					continue;
+				}
+
 				float delay = extraDelay + actionTime * effect.EffectTime;
 				caster.SkillContainer.ScheduleEffect(delay, resolved.Id, effect.ID, scanned);
+			}
+
+			// 대상이 없으면 좌표를 잡을 수 없다 — 좌표 고정 효과는 통째로 건너뛴다(헛시전).
+			if (hasCenter == false)
+			{
+				return;
+			}
+
+			for (int i = 0; i < resolved.Effects.Count; i++)
+			{
+				Table_SkillEffect.Row effect = resolved.Effects[i];
+				if (effect.EffectOrigin != SkillEffectOrigin.Location)
+				{
+					continue;
+				}
+
+				float delay = extraDelay + actionTime * effect.EffectTime;
+				caster.SkillContainer.SetCastCenter(center);
+				caster.SkillContainer.ScheduleEffect(delay, resolved.Id, effect.ID, null, center);
 			}
 		}
 
@@ -124,7 +179,12 @@ namespace ProjectOne.Skill
 		static void playSkillPresentation(Table_Skill.Row row, UnitBase caster, float useSpeed)
 		{
 			playAnim(row, caster, useSpeed);
+			playSkillVfx(row, caster);
+		}
 
+		// VFX/SFX 만 — 캐스팅형은 시전 시작에 이것만 내고 모션은 종료 시점으로 미룬다.
+		static void playSkillVfx(Table_Skill.Row row, UnitBase caster)
+		{
 			if (string.IsNullOrEmpty(row.SkillVFX) == false)
 			{
 				// 충돌체 중심에 부착 — 신규 스키마에 앵커 컬럼이 없어 항상 중심 기준이다.

@@ -11,9 +11,9 @@ namespace ProjectOne.Unit.AI
 			return new AiBrain(hero, new HeroAutoBehavior());
 		}
 
-		// 몬스터: MonsterAI.AIType 이 FSM/BT 선택까지 겸한다 (몬스터 설계 5장).
-		// row 가 null 이면(AIGroupID 미지정 등) 근접 접근형으로 폴백한다 — 경고는 MonsterCatalog 가 낸다.
-		public static AiBrain CreateForMonster(UnitBase monster, Table_MonsterAI.Row row)
+		// 몬스터: Monster.AIType 이 FSM/BT 선택까지 겸한다 (몬스터 설계 5장).
+		// row 가 null 이거나 AIType 이 None 이면 근접 접근형으로 폴백한다 — 경고는 MonsterCatalog 가 낸다.
+		public static AiBrain CreateForMonster(UnitBase monster, Table_Monster.Row row)
 		{
 			IAiBehavior behavior = createBehavior(row);
 			AiBrain brain = new AiBrain(monster, behavior);
@@ -56,7 +56,7 @@ namespace ProjectOne.Unit.AI
 			return new MonsterStationaryBehavior();
 		}
 
-		private static IAiBehavior createBehavior(Table_MonsterAI.Row row)
+		private static IAiBehavior createBehavior(Table_Monster.Row row)
 		{
 			MonsterAIType type = (row != null) ? row.AIType : MonsterAIType.None;
 
