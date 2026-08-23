@@ -2,6 +2,7 @@
 using EDT;
 using UnityEngine;
 using ProjectOne.Event;
+using ProjectOne.Field;
 using ProjectOne.Flow;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
@@ -173,7 +174,14 @@ namespace ProjectOne.UI
 			if (map.MapType == MapType.Field)
 			{
 				// Map.ID 와 Field.ID 는 같은 값이다.
-				changeStateIfNeeded(new FieldState(mapId), typeof(FieldState));
+				// 필드 밖(마을)이면 씬 전환, 필드 안이면 씬 전환 없이 이동/교체한다.
+				if (FieldDirector.HasInstance == false)
+				{
+					GameFlow.Instance.ChangeStateAsync(new FieldState(mapId)).Forget();
+					return;
+				}
+
+				FieldDirector.Instance.ChangeActAsync(mapId, view.GetCancellationTokenOnDestroy()).Forget();
 				return;
 			}
 
@@ -181,8 +189,6 @@ namespace ProjectOne.UI
 		}
 
 		// 같은 상태로 다시 들어가면 씬을 새로 로드해 히어로가 재스폰되고 위치가 초기화된다.
-		// 필드 안에서 다른 필드로 가는 경우는 여기 해당하지 않는다(대상이 달라도 상태 타입이 같아서
-		// 지금은 막힌다) — Field 1-2 가 생기면 FieldDirector.MoveToField 로 분기한다.
 		private static void changeStateIfNeeded(IGameState next, System.Type stateType)
 		{
 			if (GameFlow.Instance.CurrentState != null && GameFlow.Instance.CurrentState.GetType() == stateType)

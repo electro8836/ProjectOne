@@ -95,6 +95,11 @@ namespace ProjectOne.Field
 
 			_hero = await UnitFactory.Instance.CreateHeroAsync(spawnPos, Faction.Player, true, ct);
 			_currentFieldId = fieldId;
+
+			if (_spawner != null)
+			{
+				_spawner.BeginField(fieldId);
+			}
 		}
 
 		// 같은 액트 안에서 필드 이동 — 로드가 없다. 회복도 없다.
@@ -113,7 +118,7 @@ namespace ProjectOne.Field
 				return;
 			}
 
-			moveHeroToField(fieldId);
+			enterField(fieldId);
 		}
 
 		// 액트 전환 — 씬은 그대로 두고 로딩창만 띄운 뒤 그리드맵을 통째로 교체한다.
@@ -145,24 +150,11 @@ namespace ProjectOne.Field
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneLoad, 1f);
 
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 0f);
-			moveHeroToField(fieldId);
+			enterField(fieldId);
 			await UniTask.NextFrame(ct);
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 1f);
 
 			await LoadingManager.Instance.HideAsync();
-		}
-
-		// 필드의 그리드맵 중심 좌표. 히어로 배치 기준점이다.
-		public static Vector3 GetFieldCenter(int fieldId)
-		{
-			Table_Field.Row field = Table_Field.Get(fieldId);
-			if (field == null)
-			{
-				return Vector3.zero;
-			}
-
-			Table_Act.Row act = Table_Act.Get(field.ActID);
-			return MapManager.GetFieldOrigin(act != null ? act.Order : 1, field.Order);
 		}
 
 		private async UniTask loadActAsync(int actId, CancellationToken ct)
@@ -171,16 +163,32 @@ namespace ProjectOne.Field
 			_currentActId = actId;
 			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
-			// 맵이 떠야 스폰 포인트를 찾을 수 있다.
-			if (_spawner != null)
-			{
-				_spawner.BeginAct(actId);
-			}
-
 			if (_npcSpawner != null)
 			{
 				_npcSpawner.Clear();
 				_npcSpawner.Refresh(ct);
+			}
+		}
+
+		// 필드 경계 — 떠나는 필드의 몬스터를 걷어내고 히어로를 옮긴 뒤 새 필드 것으로 갈아끼운다.
+		// 몬스터는 히어로가 있는 필드에만 존재한다. 나머지 필드는 리젠 시각만 흐른다.
+		private void enterField(int fieldId)
+		{
+			if (_spawner != null)
+			{
+				_spawner.EndField();
+			}
+
+			if (MonsterSpawnManager.HasInstance == true)
+			{
+				MonsterSpawnManager.Instance.ClearAlive();
+			}
+
+			moveHeroToField(fieldId);
+
+			if (_spawner != null)
+			{
+				_spawner.BeginField(fieldId);
 			}
 		}
 
@@ -194,7 +202,8 @@ namespace ProjectOne.Field
 			}
 
 			// 그리드맵이 10000 간격으로 떨어져 있어 필드 이동은 곧 순간이동이다.
-			_hero.transform.position = GetFieldCenter(fieldId);
+			// 도착 지점은 Begin() 과 같은 규약 — 맵 프리팹의 MapAnchor(Entry) 위치.
+			_hero.transform.position = MapManager.Instance.GetAnchorPosition(fieldId);
 			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 		}
 
