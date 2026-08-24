@@ -3,11 +3,13 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Audio;
+using ProjectOne.Avatar;
 using ProjectOne.Data;
 using ProjectOne.Resources;
 using ProjectOne.Settings;
 using ProjectOne.UI;
 using ProjectOne.Consumables;
+using ProjectOne.Costumes;
 using ProjectOne.Dungeon;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
@@ -58,6 +60,7 @@ namespace ProjectOne.Flow
 			MasteryCatalog.Build();
 			SkillModifierCatalog.Build();
 			MonsterCatalog.Build();
+			CostumeCatalog.Build();
 			RewardCatalog.Build();
 			ConsumableCatalog.Build();
 			QuestCatalog.Build();	// RewardCatalog 이후여야 한다 — 상자의 보상 그룹 존재를 검증한다
@@ -72,6 +75,13 @@ namespace ProjectOne.Flow
 
 			// 2-1) 무기별 애니메이터 오버라이드 프리로드 — 무기 교체 경로가 동기라 미리 잡아 둔다
 			cancelled = await MasteryCatalog.PreloadAnimControllersAsync(ct).SuppressCancellationThrow();
+			if (cancelled)
+			{
+				return;
+			}
+
+			// 2-2) 무기 외형(파츠 세트) 프리로드 — 장비 교체 경로가 동기라 미리 잡아 둔다
+			cancelled = await AvatarCatalog.PreloadAsync(ct).SuppressCancellationThrow();
 			if (cancelled)
 			{
 				return;

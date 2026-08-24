@@ -62,6 +62,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - Costume
+            {
+                CurrentFile = Table_Costume.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Costume._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Currency
             {
                 CurrentFile = Table_Currency.Filename;

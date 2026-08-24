@@ -17,6 +17,7 @@ namespace ProjectOne.UserData
 	{
 		// EquipmentAspect / MasteryAspect 와 동일한 source 태그
 		private const string EquipmentSource = "Equipment";
+		private const string AvatarSource = "Avatar";
 		private const string MasterySource = "Mastery";
 
 		// 인덱스 = EquipSlotTypes 정수값. 0번(None)은 사용하지 않는다. 0 = 미장착.
@@ -275,6 +276,7 @@ namespace ProjectOne.UserData
 				hero.SkillResolver.Invalidate();
 				HeroAspectRegistry.Instance.Reapply(hero, EquipmentSource);
 				HeroAspectRegistry.Instance.Reapply(hero, MasterySource);
+				HeroAspectRegistry.Instance.Reapply(hero, AvatarSource);
 
 				// Mastery 출처가 아닌 스킬(장비 SkillGrant 등)의 사이클 값도 다시 읽어야 한다.
 				if (hero.SkillContainer != null)

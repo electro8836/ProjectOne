@@ -18,5 +18,6 @@ namespace ProjectOne.Shared
 		public InventoryDto inventory;
 		public LoadoutDto loadout;
 		public ClearedDungeonsDto clearedDungeons;
+		public CostumeDto costume;
 	}
 }

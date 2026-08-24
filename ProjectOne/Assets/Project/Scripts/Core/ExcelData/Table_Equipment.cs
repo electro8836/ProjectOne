@@ -12,6 +12,7 @@ namespace EDT {
             public WeaponType WeaponType { get; set; } = WeaponType.None;
             public ItemGradeType MaxGrade { get; set; } = ItemGradeType.None;
             public int EquipOptionGroupID { get; set; } = 0;
+            public string WeaponSetAddress { get; set; } = string.Empty;
         }
 
         public const string Filename = "edt_equipment.bytes";
@@ -39,6 +40,7 @@ namespace EDT {
                 row.WeaponType = (WeaponType)reader.ReadInt32();
                 row.MaxGrade = (ItemGradeType)reader.ReadInt32();
                 row.EquipOptionGroupID = reader.ReadInt32();
+                row.WeaponSetAddress = reader.ReadString();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

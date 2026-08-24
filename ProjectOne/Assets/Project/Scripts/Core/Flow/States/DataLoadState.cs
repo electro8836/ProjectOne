@@ -82,6 +82,11 @@ namespace ProjectOne.Flow
 				{
 					Account.Instance.SetClearedDungeons(data.clearedDungeons);
 				}
+
+				if (data.costume != null)
+				{
+					Account.Instance.SetCostume(data.costume);
+				}
 			}
 			else
 			{

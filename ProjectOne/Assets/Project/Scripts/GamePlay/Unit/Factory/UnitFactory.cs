@@ -24,6 +24,7 @@ namespace ProjectOne.Unit
 		// 장비 장착 Aspect — 무상태이므로 단일 인스턴스 재사용 (Register 는 중복 방지됨)
 		private readonly EquipmentAspect _equipmentAspect = new EquipmentAspect();
 		private readonly MasteryAspect _masteryAspect = new MasteryAspect();
+		private readonly HeroAvatarAspect _avatarAspect = new HeroAvatarAspect();
 
 		// 히어로 프리팹 Addressable 주소 — 캐릭터가 하나뿐이라 테이블이 아닌 부트에서 주입받는다.
 		private string _heroPrefabAddress = string.Empty;
@@ -67,6 +68,7 @@ namespace ProjectOne.Unit
 
 			HeroAspectRegistry.Instance.Register(_equipmentAspect);
 			HeroAspectRegistry.Instance.Register(_masteryAspect);
+			HeroAspectRegistry.Instance.Register(_avatarAspect);
 			HeroAspectRegistry.Instance.ApplyAll(hero);
 
 			// 장비/레벨 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전

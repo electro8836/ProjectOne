@@ -26,6 +26,12 @@ namespace EDT {
         SkillPoint,
     }
 
+    public enum CostumeType {
+        None,
+        Weapon,
+        Body,
+    }
+
     public enum EquipSlotTypes {
         None,
         Weapon,
@@ -545,6 +551,7 @@ namespace EDT {
         TableCharacterStat,
         TableCharacterLevelExp,
         TableConsumable,
+        TableCostume,
         TableCurrency,
         TableEquipment,
         TableEquipOption,

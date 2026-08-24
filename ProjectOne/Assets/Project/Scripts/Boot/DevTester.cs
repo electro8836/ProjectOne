@@ -76,6 +76,13 @@ namespace ProjectOne.Boot
 		[Header("마스터리 진행도 (무기 + 레벨)")]
 		[SerializeField] private List<DevMastery> _masteries = new List<DevMastery>();
 
+		[Header("코스튬 보유 ID 목록")]
+		[SerializeField] private List<int> _ownedCostumes = new List<int>();
+
+		[Header("코스튬 착용 (0 = 미착용, 바디는 기본 코스튬)")]
+		[SerializeField] private int _equippedBodyCostume;
+		[SerializeField] private int _equippedWeaponCostume;
+
 		[Header("런타임 조회 (읽기 전용)")]
 		[SerializeField] private float _viewRefreshInterval = 0.5f;
 		[SerializeField] private int _viewCharacterLevel;
@@ -140,7 +147,40 @@ namespace ProjectOne.Boot
 			Account.Instance.SetInventory(buildInventory());
 			Account.Instance.SetLoadout(buildLoadout());
 			Account.Instance.SetMastery(buildMastery());
-			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel + ", 장착:" + _equipSlots.Count + "칸");
+			Account.Instance.SetCostume(buildCostume());
+			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel + ", 장착:" + _equipSlots.Count + "칸, 코스튬:" + _ownedCostumes.Count + "종");
+		}
+
+		// 코스튬 개발 데이터 — 보유 목록과 착용 ID.
+		//
+		// CostumeBook 은 보유하지 않은 착용 ID 를 버리므로(서버 데이터 불일치 방어),
+		// 여기서는 착용으로 지정한 것을 보유에 자동으로 넣는다. 목록에 두 번 적지 않아도 되게 하려는 것이다.
+		private CostumeDto buildCostume()
+		{
+			CostumeDto dto = new CostumeDto();
+
+			for (int i = 0; i < _ownedCostumes.Count; i++)
+			{
+				int id = _ownedCostumes[i];
+				if (id > 0 && dto.owned.Contains(id) == false)
+				{
+					dto.owned.Add(id);
+				}
+			}
+
+			if (_equippedBodyCostume > 0 && dto.owned.Contains(_equippedBodyCostume) == false)
+			{
+				dto.owned.Add(_equippedBodyCostume);
+			}
+
+			if (_equippedWeaponCostume > 0 && dto.owned.Contains(_equippedWeaponCostume) == false)
+			{
+				dto.owned.Add(_equippedWeaponCostume);
+			}
+
+			dto.equippedBodyId = _equippedBodyCostume;
+			dto.equippedWeaponId = _equippedWeaponCostume;
+			return dto;
 		}
 
 		// 마스터리 레벨은 누적 경험치에서 파생되므로, 원하는 레벨의 누적값을 역으로 넣는다.

@@ -46,6 +46,8 @@ namespace ProjectOne.Editor
 			// UI 아이콘 스프라이트(개별) — 아틀라스에 포함되어 런타임 직접 로드는 하지 않음(빌드 중복 제거는 후속 과제).
 			new Rule { folder = "Assets/Project/Art/UI/Atlas_OutGame", ext = ".png", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			new Rule { folder = "Assets/Project/Art/UI/Atlas_Common", ext = ".png", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			// 아바타 파츠 세트(ScriptableObject) — 무기/코스튬 외형. 주소 = 파일명, AvatarCatalog 가 프리로드.
+			new Rule { folder = "Assets/Project/Data/ScriptableObject/Avatar", ext = ".asset", group = "Avatar_Sets", label = "Avatar_Sets", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			// EDT 테이블 — 그룹 Data_Tables / 라벨 Tables 로 자동 등록. 부트 로더가 라벨 "Tables" 로 로드.
 			new Rule { folder = "Assets/Project/Data/Tables",     ext = ".bytes",      group = "Data_Tables",     label = "Tables",          flattenAddress = true, keepExtension = true,  inDownloadLabels = false },
 		};
