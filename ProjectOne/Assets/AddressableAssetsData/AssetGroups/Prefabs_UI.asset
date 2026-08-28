@@ -15,6 +15,12 @@ MonoBehaviour:
   m_GroupName: Prefabs_UI
   m_GUID: 4078d5fd7a9395644a832aeb1ad820f7
   m_SerializeEntries:
+  - m_GUID: 03f064b53dcf9f84781472dce3207ef1
+    m_Address: Prefab_ConsumablePopup
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Prefabs_UI
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 0f5bfe1636f4d4f48855962d8900c933
     m_Address: NormalDamageText
     m_ReadOnly: 0
@@ -29,6 +35,12 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 30a616b1fd6023a4a8968334c8eadf2b
     m_Address: Prefab_EnermyHp
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Prefabs_UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 37ec78b51709d5b4fa540d8605692856
+    m_Address: UIPrefab_NavigationBar
     m_ReadOnly: 0
     m_SerializedLabels:
     - Prefabs_UI
@@ -57,8 +69,8 @@ MonoBehaviour:
     m_SerializedLabels:
     - Prefabs_UI
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 5f958445cd23bf2478ac098d0013a5d7
-    m_Address: UI_Equipment
+  - m_GUID: 689d2f2d8882c7d4ebade189804260d1
+    m_Address: Popup_Box_CornerDeco_Base
     m_ReadOnly: 0
     m_SerializedLabels:
     - Prefabs_UI
@@ -75,12 +87,6 @@ MonoBehaviour:
     m_SerializedLabels:
     - Prefabs_UI
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 8af18193c70393c4c8fd0e601c6ae70e
-    m_Address: Prefab_InventorySlot
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - Prefabs_UI
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 93ca3351a0557ca4a8ef09b1ea358cd0
     m_Address: Bag
     m_ReadOnly: 0
@@ -93,14 +99,14 @@ MonoBehaviour:
     m_SerializedLabels:
     - Prefabs_UI
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: af695a07ddea4724aa8a2e3489b71505
-    m_Address: CriticalDamageText
+  - m_GUID: 9f2a5b61b66e25b4c9e747d2d0e822a7
+    m_Address: UIPrefab_Equipment
     m_ReadOnly: 0
     m_SerializedLabels:
     - Prefabs_UI
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b5982f24fb8dd3a4b957213c3d19e487
-    m_Address: Prefab_ItemInfoPopup
+  - m_GUID: af695a07ddea4724aa8a2e3489b71505
+    m_Address: CriticalDamageText
     m_ReadOnly: 0
     m_SerializedLabels:
     - Prefabs_UI
@@ -111,20 +117,14 @@ MonoBehaviour:
     m_SerializedLabels:
     - Prefabs_UI
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c0b8e814c58a89c41b6e8492509fd4fd
-    m_Address: Prefab_RewardSlot
+  - m_GUID: c38230cd97a2c8b4b80b41ff6f96125a
+    m_Address: Prefab_ItemSlot
     m_ReadOnly: 0
     m_SerializedLabels:
     - Prefabs_UI
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c73fb314f5c9c7744bbbba6e536de27d
     m_Address: MissText
-    m_ReadOnly: 0
-    m_SerializedLabels:
-    - Prefabs_UI
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: c9d5714276bdce04598aac6240f0aa09
-    m_Address: Prefab_EquipmentOptionSlot
     m_ReadOnly: 0
     m_SerializedLabels:
     - Prefabs_UI
@@ -141,6 +141,12 @@ MonoBehaviour:
     m_SerializedLabels:
     - Prefabs_UI
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e0813906134ceac44b8d40faf1902688
+    m_Address: UIPrefab_EquipmentPopup
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Prefabs_UI
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e2e12ea60004a124286654f9a13befa4
     m_Address: LobbyUI
     m_ReadOnly: 0
@@ -149,6 +155,12 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: e7859a593598543448271359c0040464
     m_Address: Prefab_HeroHp
+    m_ReadOnly: 0
+    m_SerializedLabels:
+    - Prefabs_UI
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f0aafc13f15a8ec4cb89ef2bb196feef
+    m_Address: Equipment_ItemInfoPopup_02
     m_ReadOnly: 0
     m_SerializedLabels:
     - Prefabs_UI

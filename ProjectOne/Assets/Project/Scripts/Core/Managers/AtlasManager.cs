@@ -7,8 +7,8 @@ using ProjectOne.Utils;
 
 namespace ProjectOne.Resources
 {
-	// 아웃게임 UI 아이콘 SpriteAtlas 캐시.
-	// 부트에서 아틀라스를 로드해 상주시키고, 슬롯은 이름(=주소=파일명)으로 스프라이트를 동기 조회한다.
+	// SpriteAtlas 캐시. 아웃게임 UI 아이콘과 인게임 유닛 파츠 아틀라스를 함께 담는다.
+	// 부트에서 아틀라스를 로드해 상주시키고, 사용처는 이름(=스프라이트명)으로 동기 조회한다.
 	// 개별 아이콘을 어드레서블로 따로 로드하지 않으므로, 화면 열 때 로드 대기/깜빡임 없이 같은 프레임에 표시된다.
 	public class AtlasManager : Singleton<AtlasManager>
 	{

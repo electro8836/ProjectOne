@@ -23,11 +23,17 @@ namespace ProjectOne.Editor
 		{
 			public string folder;          // 감시 폴더
 			public string ext;             // 허용 확장자 (소문자, 점 포함)
-			public string group;           // 마킹할 그룹 이름
-			public string label;           // 부여할 Addressables label (보통 group과 동일)
+			public string group;           // 마킹할 그룹 이름 (groupFromFileName 이면 무시)
+			public string label;           // 부여할 Addressables label (보통 group과 동일, groupFromFileName 이면 무시)
 			public bool flattenAddress;    // true 면 address = 파일명만, false 면 폴더 상대경로
 			public bool keepExtension;     // true 면 address 에 확장자 유지 (예: edt_xxx.bytes)
 			public bool inDownloadLabels;  // true 면 PatchConfig._downloadLabels 에 포함
+
+			// true 면 group/label 을 파일명에서 도출한다 — 에셋 1개당 그룹 1개.
+			// 아틀라스가 이 방식이다: 아틀라스마다 번들을 나눠야 필요한 것만 받을 수 있는데,
+			// 고정 group 으로는 한 폴더의 아틀라스가 전부 한 번들로 뭉쳐 그게 불가능하다.
+			// 주소도 파일명이라 결과적으로 주소 = 그룹 = 라벨이 되어 대응표가 필요 없다.
+			public bool groupFromFileName;
 		}
 
 		private static readonly Rule[] Rules = new Rule[]
@@ -41,11 +47,9 @@ namespace ProjectOne.Editor
 			new Rule { folder = "Assets/Project/Prefabs/Projectile", ext = ".prefab",  group = "Prefabs_Projectile", label = "Prefabs_Projectile", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			// 씬 종속 카메라 리그 — 맵과 함께 코드가 띄우므로 맵 그룹에 같이 담는다 (GameplaySceneSetup).
 			new Rule { folder = "Assets/Project/Prefabs/Camera",  ext = ".prefab",     group = "Prefabs_Maps",    label = "Prefabs_Maps",    flattenAddress = true, keepExtension = false, inDownloadLabels = true },
-			// UI 아이콘 SpriteAtlas(V2) — 런타임은 이 아틀라스들을 로드(IconAtlasCache), 슬롯은 이름으로 GetSprite.
-			new Rule { folder = "Assets/Project/Art/UI", ext = ".spriteatlasv2", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
-			// UI 아이콘 스프라이트(개별) — 아틀라스에 포함되어 런타임 직접 로드는 하지 않음(빌드 중복 제거는 후속 과제).
-			new Rule { folder = "Assets/Project/Art/UI/Atlas_OutGame", ext = ".png", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
-			new Rule { folder = "Assets/Project/Art/UI/Atlas_Common", ext = ".png", group = "Sprites_OutGame", label = "Sprites_OutGame", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			// SpriteAtlas(V2) — Art 하위 전체. UI 아이콘(Art/UI/Atlas)과 유닛 파츠(Art/Units/Parts)를 함께 덮는다.
+			// 런타임은 아틀라스만 로드하고(AtlasManager) 스프라이트는 이름으로 꺼내므로, 낱장 png 는 마킹하지 않는다.
+			new Rule { folder = "Assets/Project/Art", ext = ".spriteatlasv2", flattenAddress = true, keepExtension = false, inDownloadLabels = true, groupFromFileName = true },
 			// 아바타 파츠 세트(ScriptableObject) — 무기/코스튬 외형. 주소 = 파일명, AvatarCatalog 가 프리로드.
 			new Rule { folder = "Assets/Project/Data/ScriptableObject/Avatar", ext = ".asset", group = "Avatar_Sets", label = "Avatar_Sets", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			// EDT 테이블 — 그룹 Data_Tables / 라벨 Tables 로 자동 등록. 부트 로더가 라벨 "Tables" 로 로드.
@@ -56,11 +60,11 @@ namespace ProjectOne.Editor
 		private const string _patchConfigDir       = "Assets/Project/Data/ScriptableObject/Config";
 		private const string _patchConfigAssetPath = "Assets/Project/Data/ScriptableObject/Config/PatchConfig.asset";
 
-		// AtlasManifest.asset 위치 — 아웃게임 아이콘 아틀라스 주소 목록(AssetBundleLoader가 인스펙터로 보유)
+		// AtlasManifest.asset 위치 — 상주 로드할 아틀라스 주소 목록(AssetBundleLoader가 인스펙터로 보유)
 		private const string _atlasManifestAssetPath = "Assets/Project/Data/ScriptableObject/Config/AtlasManifest.asset";
 
-		// 아틀라스 수집 대상 폴더/확장자 — Rules 의 .spriteatlasv2 규칙과 동일
-		private const string _atlasFolder = "Assets/Project/Art/UI";
+		// 아틀라스 수집 대상 폴더/확장자 — Rules 의 .spriteatlasv2 규칙과 동일하게 유지할 것
+		private const string _atlasFolder = "Assets/Project/Art";
 		private const string _atlasExt    = ".spriteatlasv2";
 
 		// ── AssetPostprocessor 진입점 ─────────────────────────────────
@@ -321,8 +325,17 @@ namespace ProjectOne.Editor
 					continue;
 				}
 
-				groupName = r.group;
-				label = r.label;
+				if (r.groupFromFileName == true)
+				{
+					groupName = Path.GetFileNameWithoutExtension(assetPath);
+					label = groupName;
+				}
+				else
+				{
+					groupName = r.group;
+					label = r.label;
+				}
+
 				if (r.flattenAddress == true)
 				{
 					address = r.keepExtension ? Path.GetFileName(assetPath) : Path.GetFileNameWithoutExtension(assetPath);
@@ -379,6 +392,21 @@ namespace ProjectOne.Editor
 					continue;
 				}
 
+				// 파일명이 곧 라벨인 규칙은 Rules 만 봐서는 알 수 없다 — 실제 파일을 훑어 채운다.
+				if (Rules[i].groupFromFileName == true)
+				{
+					List<string> names = collectAtlasNames();
+					for (int n = 0; n < names.Count; n++)
+					{
+						if (seen.Add(names[n]))
+						{
+							labelList.Add(names[n]);
+						}
+					}
+
+					continue;
+				}
+
 				if (seen.Add(Rules[i].label))
 				{
 					labelList.Add(Rules[i].label);
@@ -414,24 +442,35 @@ namespace ProjectOne.Editor
 			Debug.Log($"[Addressables] PatchConfig 갱신 완료: [{string.Join(", ", labelList)}]");
 		}
 
-		// Art/UI 의 .spriteatlasv2 주소를 수집해 AtlasManifest.asset의 _atlasAddresses를 갱신
+		// 감시 폴더의 .spriteatlasv2 이름(=주소=그룹=라벨) 목록.
+		// AtlasManifest 갱신과 PatchConfig 라벨 수집이 같은 목록을 써야 하므로 한 곳에 둔다.
+		private static List<string> collectAtlasNames()
+		{
+			var names = new List<string>();
+			if (AssetDatabase.IsValidFolder(_atlasFolder) == false)
+			{
+				return names;
+			}
+
+			string[] guids = AssetDatabase.FindAssets("", new[] { _atlasFolder });
+			for (int i = 0; i < guids.Length; i++)
+			{
+				string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+				if (isWatchedAtlas(path))
+				{
+					names.Add(Path.GetFileNameWithoutExtension(path));
+				}
+			}
+
+			names.Sort();	// 파일 순회 순서에 흔들리지 않게 고정 — 매니페스트/PatchConfig diff 를 줄인다
+			return names;
+		}
+
+		// Art 하위의 .spriteatlasv2 주소를 수집해 AtlasManifest.asset의 _atlasAddresses를 갱신
 		// MarkAll() 및 아틀라스 추가/삭제 시 자동 호출 → 부트가 이 목록으로 아틀라스를 로드
 		private static void refreshAtlasManifest()
 		{
-			// 감시 폴더에서 .spriteatlasv2 를 찾아 주소(=확장자 제외 파일명) 목록 수집
-			var addressList = new List<string>();
-			if (AssetDatabase.IsValidFolder(_atlasFolder))
-			{
-				string[] guids = AssetDatabase.FindAssets("", new[] { _atlasFolder });
-				for (int i = 0; i < guids.Length; i++)
-				{
-					string path = AssetDatabase.GUIDToAssetPath(guids[i]);
-					if (isWatchedAtlas(path))
-					{
-						addressList.Add(Path.GetFileNameWithoutExtension(path));
-					}
-				}
-			}
+			List<string> addressList = collectAtlasNames();
 
 			// Config 폴더 없으면 생성 (Data/ScriptableObject 까지는 존재한다고 가정)
 			if (!AssetDatabase.IsValidFolder(_patchConfigDir))
