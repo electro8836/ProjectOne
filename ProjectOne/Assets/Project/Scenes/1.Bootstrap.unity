@@ -127,6 +127,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 827102520626777141, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 1529667782244705642, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
@@ -134,6 +138,10 @@ PrefabInstance:
     - target: {fileID: 3373317497805159052, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_Name
       value: UIManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 5100000000000000012, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 5592100982462328540, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_LocalPosition.x
@@ -174,6 +182,10 @@ PrefabInstance:
     - target: {fileID: 5592100982462328540, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8397822096474945262, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
@@ -341,6 +353,52 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 3d40803937dd5744fb23de56a64c67b7, type: 3}
+--- !u!1 &1705878970
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1705878972}
+  - component: {fileID: 1705878971}
+  m_Layer: 0
+  m_Name: Dev FPS Counter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1705878971
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705878970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 191972ba7e66a314e92d0ca868984903, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Dev.FPSCounter
+  _fontSize: 36
+  _color: {r: 1, g: 1, b: 1, a: 1}
+--- !u!4 &1705878972
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1705878970}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.22819, y: 0.08488, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1860655696
 GameObject:
   m_ObjectHideFlags: 0
@@ -372,13 +430,45 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Boot.DevDataInjector
   _disabled: 0
   _characterLevel: 1
-  _equipSlots:
+  _equipSlots: []
+  _ownedEquipments:
   - slot: 1
     itemId: 1010101001
     grade: 1
     level: 1
     purity: 1
-    quality: 100
+    quality: 50
+  - slot: 1
+    itemId: 1010101002
+    grade: 2
+    level: 1
+    purity: 1
+    quality: 50
+  - slot: 1
+    itemId: 1010101003
+    grade: 3
+    level: 1
+    purity: 1
+    quality: 50
+  - slot: 1
+    itemId: 1010101004
+    grade: 4
+    level: 1
+    purity: 1
+    quality: 50
+  - slot: 1
+    itemId: 1010101004
+    grade: 5
+    level: 1
+    purity: 1
+    quality: 50
+  - slot: 1
+    itemId: 1010101004
+    grade: 6
+    level: 1
+    purity: 1
+    quality: 70
+  _ownedItems: []
   _masteries:
   - mastery: 1
     level: 1
@@ -776,4 +866,5 @@ SceneRoots:
   - {fileID: 2145747172182817801}
   - {fileID: 1195888838}
   - {fileID: 850023650}
+  - {fileID: 1705878972}
   - {fileID: 1860655698}
