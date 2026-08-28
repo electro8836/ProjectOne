@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -20,6 +20,11 @@ namespace ProjectOne.UI
 		[Header("등급 색상 대상")]
 		[SerializeField] private Image _bgMask;		// Bg_Mask
 		[SerializeField] private Image _border;		// Border
+
+		[Header("타입 배지")]
+		[SerializeField] private Image _typeBg;		// Type — 등급 bg
+		[SerializeField] private Image _typeBorder;	// Type/Border — 등급 border
+		[SerializeField] private Image _typeIcon;		// Type/Icon — 분류 아이콘
 
 		[Header("내용")]
 		[SerializeField] private Image _itemIcon;			// ItemIcon
@@ -67,6 +72,8 @@ namespace ProjectOne.UI
 			}
 
 			Table_Item.Row row = instance.Item;
+			applyTypeIcon(row);
+
 			await setIcon((row != null) ? row.Icon : string.Empty, ct);
 		}
 
@@ -77,6 +84,7 @@ namespace ProjectOne.UI
 			_itemId = (row != null) ? row.ID : 0;
 
 			applyGradeColor(colors, (row != null) ? row.Grade : ItemGradeType.None);
+			applyTypeIcon(row);
 
 			// 스택 아이템은 장착 개념이 없다. 프리펩 기본값이 활성이라 끄지 않으면 소모품에도 "장착중" 이 뜬다.
 			SetEquipped(false);
@@ -120,6 +128,23 @@ namespace ProjectOne.UI
 			ItemGradeColorTable.GradeColor gc = colors.Get(grade);
 			_bgMask.color = gc.bg;
 			_border.color = gc.border;
+			_typeBg.color = gc.bg;
+			_typeBorder.color = gc.border;
+		}
+
+		// 분류 배지. 아이콘은 Atlas_Icon 에 상주하므로 동기 조회로 같은 프레임에 표시된다.
+		// 매칭되는 분류가 없으면(재료·수집품) 배지를 통째로 감춘다 — 아이콘 없는 빈 배지를 남기지 않는다.
+		private void applyTypeIcon(Table_Item.Row row)
+		{
+			string address = ItemTypeIcons.Get(row);
+			if (string.IsNullOrEmpty(address))
+			{
+				_typeBg.gameObject.SetActive(false);
+				return;
+			}
+
+			_typeBg.gameObject.SetActive(true);
+			_typeIcon.sprite = AtlasManager.Instance.Get(address);
 		}
 
 		private void onClicked()

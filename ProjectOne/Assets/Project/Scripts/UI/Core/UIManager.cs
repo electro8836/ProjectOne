@@ -392,6 +392,39 @@ namespace ProjectOne.UI
 			}
 		}
 
+		// 소모품 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 소모품은 스택이라 장비처럼 인스턴스 UID 가 없어 아이템 ID 로 연다.
+		public async UniTask ShowConsumablePopupAsync(string address, int itemId, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			ConsumableInfoPopup popup = go.GetComponent<ConsumableInfoPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return;
+			}
+
+			await popup.ShowAsync(itemId, _popupCts.Token);
+			Destroy(go);
+
+			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(address);
+			}
+		}
+
 		// 캐릭터 디테일 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.
 		// ── 이벤트 핸들러 ───────────────────────────────────────────────
 

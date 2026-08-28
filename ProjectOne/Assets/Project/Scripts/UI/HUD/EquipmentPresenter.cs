@@ -1,7 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Items;
@@ -33,6 +32,7 @@ namespace ProjectOne.UI
 	public sealed class EquipmentPresenter : Presenter<EquipmentUI>
 	{
 		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
+		private const string CONSUMABLE_POPUP_ADDRESS = "UIPrefab_ConsumablePopup";
 
 		// 분류 탭 인덱스 — 프리펩 TabMenu_Middle 의 Hierarchy 순서와 일대일로 맞춘다.
 		private const int TAB_ALL = 0;
@@ -103,15 +103,13 @@ namespace ProjectOne.UI
 			rebuild();
 		}
 
-		// 슬롯 클릭 — 장비는 정보 팝업을 상위 캔버스에 연다(네비게이션 결정은 Presenter).
-		// 스택 아이템은 uid 가 없고 전용 팝업도 아직 없어 로그만 남긴다.
+		// 슬롯 클릭 — 정보 팝업을 상위 캔버스에 연다(네비게이션 결정은 Presenter).
+		// uid 가 0 이면 인스턴스가 없는 스택 아이템(소모품)이라 아이템 ID 로 여는 전용 팝업을 쓴다.
 		private void onSlotClicked(long uid, int itemId)
 		{
 			if (uid == 0)
 			{
-				Table_Item.Row row = Table_Item.Get(itemId);
-				string name = (row != null) ? row.Name : "?";
-				Debug.Log("[EquipmentUI] 아이템 클릭 itemId=" + itemId + " name=" + name);
+				UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, itemId, view.GetDestroyToken()).Forget();
 				return;
 			}
 

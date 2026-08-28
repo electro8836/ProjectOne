@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -42,9 +42,10 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _equipButtonLabel;	// EquipButton 라벨
 		[SerializeField] private UIButton _enchantButton;		// EnchantButton
 
-		// Dimmed — **이 팝업의 유일한 닫기 수단이다**(전용 닫기 버튼은 없앴다).
-		// 본문 영역은 ItemInfo/Bg 가 레이캐스트를 흡수하므로, 여기까지 내려오는 클릭은
+		// 닫기는 ExitButton 과 Dimmed 두 경로다.
+		// 본문 영역은 ItemInfo/Bg 가 레이캐스트를 흡수하므로, Dimmed 까지 내려오는 클릭은
 		// 곧 "팝업 밖을 눌렀다"는 뜻이다.
+		[SerializeField] private UIButton _exitButton;
 		[SerializeField] private UIButton _dimmedButton;
 
 		[Header("프리펩 / 데이터")]
@@ -104,6 +105,7 @@ namespace ProjectOne.UI
 
 			_equipButton.OnClickEvent += onEquipClicked;
 			_enchantButton.OnClickEvent += onEnchantClicked;
+			_exitButton.OnClickEvent += onExitClicked;
 			_dimmedButton.OnClickEvent += onExitClicked;
 
 			_presenter.Initialize(this);
@@ -115,6 +117,7 @@ namespace ProjectOne.UI
 
 			_equipButton.OnClickEvent -= onEquipClicked;
 			_enchantButton.OnClickEvent -= onEnchantClicked;
+			_exitButton.OnClickEvent -= onExitClicked;
 			_dimmedButton.OnClickEvent -= onExitClicked;
 		}
 

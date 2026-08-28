@@ -392,12 +392,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1705878970}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.22819, y: 0.08488, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1860655698}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1860655696
 GameObject:
@@ -468,7 +468,13 @@ MonoBehaviour:
     level: 1
     purity: 1
     quality: 70
-  _ownedItems: []
+  _ownedItems:
+  - itemId: 1030100001
+    count: 5
+  - itemId: 1030100003
+    count: 3
+  - itemId: 1030300001
+    count: 1
   _masteries:
   - mastery: 1
     level: 1
@@ -499,7 +505,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1705878972}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2048078140
@@ -866,5 +873,4 @@ SceneRoots:
   - {fileID: 2145747172182817801}
   - {fileID: 1195888838}
   - {fileID: 850023650}
-  - {fileID: 1705878972}
   - {fileID: 1860655698}
