@@ -24,6 +24,8 @@ namespace EDT {
             public SkillEffect EffectID_01 { get; set; } = SkillEffect.None;
             public SkillEffect EffectID_02 { get; set; } = SkillEffect.None;
             public string SkillVFX { get; set; } = string.Empty;
+            public bool SkillVFXFacing { get; set; } = false;
+            public float SkillVFXOffset { get; set; } = 0f;
             public string SkillSFX { get; set; } = string.Empty;
         }
 
@@ -64,6 +66,8 @@ namespace EDT {
                 row.EffectID_01 = (SkillEffect)reader.ReadInt32();
                 row.EffectID_02 = (SkillEffect)reader.ReadInt32();
                 row.SkillVFX = reader.ReadString();
+                row.SkillVFXFacing = reader.ReadBoolean();
+                row.SkillVFXOffset = reader.ReadSingle();
                 row.SkillSFX = reader.ReadString();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

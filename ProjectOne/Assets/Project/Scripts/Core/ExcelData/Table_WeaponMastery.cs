@@ -18,6 +18,7 @@ namespace EDT {
             public int MaxRow { get; set; } = 0;
             public int MaxColumn { get; set; } = 0;
             public int SkillTreeNodeGroupID { get; set; } = 0;
+            public Skill[] Dev_SkillIDs { get; set; } = Array.Empty<Skill>();
         }
 
         public const string Filename = "edt_weaponmastery.bytes";
@@ -51,6 +52,7 @@ namespace EDT {
                 row.MaxRow = reader.ReadInt32();
                 row.MaxColumn = reader.ReadInt32();
                 row.SkillTreeNodeGroupID = reader.ReadInt32();
+                { int _n = reader.ReadInt32(); row.Dev_SkillIDs = new Skill[_n]; for(int _i=0;_i<_n;_i++) row.Dev_SkillIDs[_i] = (Skill)reader.ReadInt32(); }
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

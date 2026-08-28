@@ -330,6 +330,9 @@ namespace EDT {
 
     public enum Buff {
         None,
+        BUFF_Stagger,
+        BUFF_Stun,
+        BUFF_DamageTakenUp,
     }
 
     public enum Currency {
@@ -425,6 +428,7 @@ namespace EDT {
         None,
         Skill_DualBlades_Attack,
         Skill_DualBlades_Active_01,
+        Skill_DualBlades_Active_02,
         Skill_DualBlades_Passive_01,
         Skill_RuneSword_Attack,
         Skill_RuneSword_Active_01,
@@ -451,6 +455,12 @@ namespace EDT {
         SE_Monster_RangeAttack_Projectile,
         SE_Monster_RangeAttack_Damage,
         SE_Monster_CastAttack_Damage,
+        SE_Common_Stagger_Buff,
+        SE_Boss_Break_Stun_Buff,
+        SE_Boss_Break_DamageTakenUp_Buff,
+        SE_Debuff_DamageTakenUp_StatChange,
+        SE_DualBlades_Active_01_Damage,
+        SE_DualBlades_Active_02_Damage,
     }
 
     public enum SkillModifier {
