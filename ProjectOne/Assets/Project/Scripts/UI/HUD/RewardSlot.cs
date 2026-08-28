@@ -20,7 +20,6 @@ namespace ProjectOne.UI
 		[Header("등급 색상 대상")]
 		[SerializeField] private Image _bgMask;
 		[SerializeField] private Image _gradient;
-		[SerializeField] private Image _glow;
 
 		// 참조카운트 해제용 아이콘 주소 추적 (아틀라스 스프라이트는 null 로 두어 대상 제외)
 		private string _iconAddress;
@@ -28,7 +27,7 @@ namespace ProjectOne.UI
 		// 아이템 모드 — 서버가 확정한 실제 획득을 등급 색상과 함께 표시한다(던전 결과창용).
 		// 색상 테이블은 호출자(DungeonResultUI)가 주입한다.
 		public async UniTask BindItemAsync(int rewardType, int itemId, int count, bool isBonus,
-			GradeColorTable gradeColors, CancellationToken ct)
+			ItemGradeColorTable gradeColors, CancellationToken ct)
 		{
 			if (_countText != null)
 			{
@@ -72,17 +71,16 @@ namespace ProjectOne.UI
 			await setIconAsync(iconAddress, ct);
 		}
 
-		// 등급 색상 — Bg_Mask/Gradient/Glow 3개에 색을 적용한다(모두 활성).
-		private void applyGradeColors(GradeColorTable.GradeColor gc)
+		// 등급 색상 — Bg_Mask/Gradient 에 색을 적용한다(Gradient 자리는 Border 색을 쓴다, 모두 활성).
+		private void applyGradeColors(ItemGradeColorTable.GradeColor gc)
 		{
 			if (gc == null)
 			{
 				return;
 			}
 
-			setColor(_bgMask, gc.bgMask, true);
-			setColor(_gradient, gc.gradient, true);
-			setColor(_glow, gc.glow, true);
+			setColor(_bgMask, gc.bg, true);
+			setColor(_gradient, gc.border, true);
 		}
 
 		private static void setColor(Image target, Color color, bool active)
@@ -96,7 +94,7 @@ namespace ProjectOne.UI
 			target.color = color;
 		}
 
-		// 아틀라스 우선(동기), 미포함 시 비동기 로드. FieldSelectSlot/EquipmentSlot 패턴.
+		// 아틀라스 우선(동기), 미포함 시 비동기 로드. FieldSelectSlot/ItemSlot 패턴.
 		private async UniTask setIconAsync(string address, CancellationToken ct)
 		{
 			if (_icon == null || _iconAddress == address)

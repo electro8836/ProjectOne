@@ -109,28 +109,7 @@ namespace ProjectOne.UI
 		// 상태 전이가 곧 맥락 전환이다. 어떤 버튼이 보일지는 View 인스펙터가 정한다.
 		private void onGameStateChanged(GameStateChangedEvent e)
 		{
-			view.ApplyContext(toContext(e.StateType));
-		}
-
-		private static HudContext toContext(System.Type stateType)
-		{
-			if (stateType == typeof(TownState))
-			{
-				return HudContext.Town;
-			}
-
-			if (stateType == typeof(FieldState))
-			{
-				return HudContext.Field;
-			}
-
-			if (stateType == typeof(DungeonState))
-			{
-				return HudContext.Dungeon;
-			}
-
-			// 타이틀·패치·로딩 등 — HUD 를 보일 자리가 아니다.
-			return HudContext.None;
+			view.ApplyContext(HudContexts.FromState(e.StateType));
 		}
 
 		// ── 화면 열기 ─────────────────────────────────────────────────

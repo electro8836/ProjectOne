@@ -13,7 +13,8 @@ namespace ProjectOne.UI
 	//
 	//   Overlay(100)  상시 HUD          — MainHUD
 	//   Window (200)  전체창            — 장비 / 상점 / 던전선택
-	//   Popup  (300)  창 위 작은 창     — 아이템 정보 · 확인
+	//   Navi   (300)  창 위 상시        — 네비게이션 바
+	//   Popup  (350)  네비게이션 위     — 아이템 정보 · 확인
 	//   System (400)  최상위            — 네트워크 딤 · 로딩
 	//
 	// 위로 갈수록 덮는다. HUD 를 가장 아래에 두어 창·팝업이 자연히 그 위에 뜬다.
@@ -23,7 +24,8 @@ namespace ProjectOne.UI
 		[Header("Canvas 계층")]
 		[SerializeField] private Canvas _hudCanvas;	// Sort Order 100 — 상시 HUD
 		[SerializeField] private Canvas _windowCanvas;	// Sort Order 200 — 전체창
-		[SerializeField] private Canvas _popupCanvas;	// Sort Order 300 — 창 위 작은 창
+		[SerializeField] private Canvas _popupCanvas;	// Sort Order 350 — 네비게이션 위 작은 창
+		[SerializeField] private Canvas _navigationCanvas;	// Sort Order 300 — 네비게이션 바(창 위 상시)
 		[SerializeField] private Canvas _systemCanvas;	// Sort Order 400 — 네트워크 딤(최상위)
 
 		[Header("네트워크 딤")]
@@ -99,6 +101,11 @@ namespace ProjectOne.UI
 			if (_popupCanvas == null)
 			{
 				Debug.LogError("[UIManager] _popupCanvas 가 비었습니다 — 팝업을 열 수 없습니다.");
+			}
+
+			if (_navigationCanvas == null)
+			{
+				Debug.LogError("[UIManager] _navigationCanvas 가 비었습니다 — 네비게이션 바를 띄울 수 없습니다.");
 			}
 
 			if (_systemCanvas == null)
@@ -249,9 +256,37 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			// HUD 캔버스(100) 자식으로 둔다 — 창(200)·팝업(300)·시스템(400)이 자연히 위를 덮는다.
+			// HUD 캔버스(100) 자식으로 둔다 — 창(200)·네비(300)·팝업(350)·시스템(400)이 자연히 위를 덮는다.
 			// UIManager 자신이 영속이라 별도 DontDestroyOnLoad 가 필요 없다.
 			_mainHud = Instantiate(prefab, _hudCanvas.transform);
+		}
+
+		// ── 영속 네비게이션 바 ──────────────────────────────────────────
+		//
+		// MainHUD 와 같은 영속 UI 지만 캔버스가 다르다 — 창(200) 위에 상시 떠야 하므로
+		// 전용 Navigation(300) 캔버스에 붙인다. 어느 맥락에서 보일지는 NavigationBar 가 스스로 정한다.
+
+		private const string NavigationBarAddress = "UIPrefab_NavigationBar";
+
+		private GameObject _navigationBar;
+
+		// 마을 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
+		public async UniTask EnsureNavigationBarAsync(CancellationToken ct)
+		{
+			if (_navigationBar != null)
+			{
+				return;
+			}
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(NavigationBarAddress, ct);
+			if (prefab == null)
+			{
+				// 네비게이션이 없어도 게임 흐름 자체는 막지 않는다.
+				Debug.LogWarning($"[UIManager] NavigationBar 프리팹을 찾지 못했습니다: {NavigationBarAddress}");
+				return;
+			}
+
+			_navigationBar = Instantiate(prefab, _navigationCanvas.transform);
 		}
 
 		// ── 창(Window) ──────────────────────────────────────────────────

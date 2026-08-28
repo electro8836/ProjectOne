@@ -41,7 +41,7 @@ namespace ProjectOne.UI
 		private static readonly Dictionary<UIScreenId, string> _addresses = new Dictionary<UIScreenId, string>
 		{
 			{ UIScreenId.Character,     "UI_Character" },
-			{ UIScreenId.Equipment,     "UI_Equipment" },
+			{ UIScreenId.Equipment,     "UIPrefab_Equipment" },
 			{ UIScreenId.Mastery,       "UI_Mastery" },
 			{ UIScreenId.Quest,         "UI_Quest" },
 			{ UIScreenId.Settings,      "UI_Settings" },

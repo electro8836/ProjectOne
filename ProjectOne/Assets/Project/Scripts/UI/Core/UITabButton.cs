@@ -75,8 +75,9 @@ namespace ProjectOne.UI
 
 		private void onSelfClicked()
 		{
-			// 이미 선택된 탭을 다시 누르면 전환이 없으므로 사운드/VFX 생략
-			if (_currentState != TabState.Selected) { playClickFeedback(); }
+			// 이미 선택된 탭의 재클릭도 유효한 조작이다 — 네비게이션 바에서는 열린 화면을 닫는다.
+			// 상태로 거르지 않고 항상 낸다.
+			playClickFeedback();
 
 			if (OnTabClicked != null) { OnTabClicked.Invoke(this); }
 		}
@@ -99,9 +100,6 @@ namespace ProjectOne.UI
 		private void playDownFeedback()
 		{
 			if (_themeData == null) { return; }
-
-			// 사운드와 동일 조건 — 이미 선택된 탭(전환 없음)은 스케일도 생략
-			if (_currentState == TabState.Selected) { return; }
 
 			_pressActive = true;
 

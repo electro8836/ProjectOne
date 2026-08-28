@@ -32,6 +32,9 @@ namespace ProjectOne.Flow
 			// 히어로를 찾으므로 순서가 뒤집히면 이벤트를 놓친다.
 			await UIManager.Instance.EnsureMainHudAsync(ct);
 
+			// 창(200)·팝업(300) 위에 상시 뜨는 하단 네비게이션 — 전용 Navigation(350) 캔버스에 붙는다.
+			await UIManager.Instance.EnsureNavigationBarAsync(ct);
+
 			// 마을 맵 + NPC 배치. 씬은 비어 있고 코드가 띄운다 (맵 설계 8장).
 			TownDirector director = TownDirector.EnsureInstance();
 			await director.Begin(ct);

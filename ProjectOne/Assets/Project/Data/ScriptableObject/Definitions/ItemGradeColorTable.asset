@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a7c3e9b45d24f8ca0e6b2d71f3c8a55, type: 3}
+  m_Name: ItemGradeColorTable
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.ItemGradeColorTable
+  _colors:
+  - grade: 1
+    bg: {r: 0.42745098, g: 0.4117647, b: 0.40784314, a: 1}
+    border: {r: 0.58431375, g: 0.5647059, b: 0.5568628, a: 1}
+    text: {r: 0.85882353, g: 0.83137255, b: 0.82352941, a: 1}
+  - grade: 2
+    bg: {r: 0.023529412, g: 0.5647059, b: 0.4627451, a: 1}
+    border: {r: 0.007843138, g: 0.6784314, b: 0.43137255, a: 1}
+    text: {r: 0.48235294, g: 1, b: 0.49411765, a: 1}
+  - grade: 3
+    bg: {r: 0.101960786, g: 0.47843137, b: 0.5647059, a: 1}
+    border: {r: 0.29411766, g: 0.63529414, b: 0.7137255, a: 1}
+    text: {r: 0.61568627, g: 0.9254902, b: 1, a: 1}
+  - grade: 4
+    bg: {r: 0.5137255, g: 0.35686275, b: 0.78039217, a: 1}
+    border: {r: 0.58431375, g: 0.4392157, b: 0.827451, a: 1}
+    text: {r: 0.86666667, g: 0.6, b: 1, a: 1}
+  - grade: 5
+    bg: {r: 0.5529412, g: 0.34901962, b: 0.25490198, a: 1}
+    border: {r: 0.7176471, g: 0.49803922, b: 0.3019608, a: 1}
+    text: {r: 0.97254902, g: 0.74117647, b: 0.01176471, a: 1}
+  - grade: 6
+    bg: {r: 0.6431373, g: 0.20392157, b: 0.29803923, a: 1}
+    border: {r: 0.827451, g: 0.28627452, b: 0.38039216, a: 1}
+    text: {r: 1, g: 0, b: 0.81960784, a: 1}

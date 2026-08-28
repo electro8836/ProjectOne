@@ -23,7 +23,7 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _levelText;			// Text_Level
 
 		// 탭이 열 화면의 Addressable 주소 (탭→화면 매핑은 코드에서 관리)
-		private const string EQUIPMENT_ADDRESS = "UI_Equipment";
+		private const string EQUIPMENT_ADDRESS = "UIPrefab_Equipment";
 		private const string DUNGEON_ADDRESS = "UI_DungeonSelect";
 		private const string FIELD_SELECT_ADDRESS = "UI_FieldSelect";
 

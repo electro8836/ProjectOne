@@ -19,6 +19,34 @@ namespace ProjectOne.UI
 		Raid = 1 << 3
 	}
 
+	// 게임 상태 → 화면 맥락.
+	//
+	// MainHud 와 NavigationBar 가 같은 기준으로 보이고 숨어야 한다.
+	// 각자 갖고 있으면 상태를 하나 추가할 때 한쪽만 고쳐져 조용히 어긋난다.
+	public static class HudContexts
+	{
+		public static HudContext FromState(System.Type stateType)
+		{
+			if (stateType == typeof(Flow.TownState))
+			{
+				return HudContext.Town;
+			}
+
+			if (stateType == typeof(Flow.FieldState))
+			{
+				return HudContext.Field;
+			}
+
+			if (stateType == typeof(Flow.DungeonState))
+			{
+				return HudContext.Dungeon;
+			}
+
+			// 타이틀·패치·로딩 등 — HUD 를 보일 자리가 아니다.
+			return HudContext.None;
+		}
+	}
+
 	// 게임 전역 HUD 의 View(MVP).
 	//
 	// **씬별 HUD 를 두지 않는다.** 이 하나가 씬을 가로질러 살아 있고, 어디서 무엇을 보일지는
@@ -55,17 +83,9 @@ namespace ProjectOne.UI
 		[Header("화면 열기 버튼 (비우면 자식에서 자동 수집)")]
 		[SerializeField] private ScreenOpenButton[] _screenButtons;
 
-		// 하단 메뉴. 배타 선택은 TabGroup 이 알아서 하고, 여기서는 "선택되면 무엇을 여는가"만 정한다.
-		[Header("하단 메뉴")]
-		[SerializeField] private TabGroup _bottomTabs;
-
 		// 개발용 이동 버튼 — 비워두면 자식에서 자동 수집한다.
 		[Header("개발용 이동 버튼 (비우면 자식에서 자동 수집)")]
 		[SerializeField] private DevWarpButton[] _warpButtons;
-
-		// 탭 순서대로의 화면. None 이거나 배열이 짧으면 로그만 남기고 넘어간다 —
-		// 화면 프리팹이 생기면 코드를 고치지 않고 인스펙터에서 enum 만 고르면 연결된다.
-		[SerializeField] private UIScreenId[] _tabScreens;
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────
 		public event Action<UIScreenId> OnScreenRequested;
@@ -83,11 +103,6 @@ namespace ProjectOne.UI
 			collectWarpButtons();
 			bindWarpButtons();
 
-			if (_bottomTabs != null)
-			{
-				_bottomTabs.OnTabChanged += onBottomTabChanged;
-			}
-
 			_presenter.Initialize(this);
 		}
 
@@ -97,11 +112,6 @@ namespace ProjectOne.UI
 			_presenter.Dispose();
 			unbindScreenButtons();
 			unbindWarpButtons();
-
-			if (_bottomTabs != null)
-			{
-				_bottomTabs.OnTabChanged -= onBottomTabChanged;
-			}
 		}
 
 		// ── 표시 (Presenter 가 지시) ───────────────────────────────────
@@ -278,28 +288,6 @@ namespace ProjectOne.UI
 			if (OnWarpRequested != null)
 			{
 				OnWarpRequested.Invoke(mapId);
-			}
-		}
-
-		// 탭 인덱스 → 화면. 아직 연결하지 않은 탭은 눌리기만 하고 아무 일도 하지 않는다.
-		private void onBottomTabChanged(int index)
-		{
-			if (_tabScreens == null || index < 0 || index >= _tabScreens.Length)
-			{
-				Debug.Log($"[MainHud] 탭 {index} 에 연결된 화면이 없습니다.");
-				return;
-			}
-
-			UIScreenId screen = _tabScreens[index];
-			if (screen == UIScreenId.None)
-			{
-				Debug.Log($"[MainHud] 탭 {index} 에 연결된 화면이 없습니다.");
-				return;
-			}
-
-			if (OnScreenRequested != null)
-			{
-				OnScreenRequested.Invoke(screen);
 			}
 		}
 	}

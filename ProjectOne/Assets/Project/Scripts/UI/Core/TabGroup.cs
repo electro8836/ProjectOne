@@ -73,6 +73,12 @@ namespace ProjectOne.UI
 		{
 			SelectedIndex = -1;
 
+			// 꺼진 채로 있는 동안 유니티가 Awake 를 미뤄 아직 탭을 모을 수 없다 — 지울 선택도 없다.
+			if (_tabs == null)
+			{
+				return;
+			}
+
 			for (int i = 0; i < _tabs.Length; i++)
 			{
 				UITabButton tab = _tabs[i];

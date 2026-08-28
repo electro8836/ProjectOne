@@ -1,22 +1,22 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EDT;
 
 namespace ProjectOne.UI
 {
-	// 아이템 등급별 색상 묶음 (BgMask/Gradient/Glow). 인스펙터로 주입해 슬롯이 등급으로 조회한다.
-	[CreateAssetMenu(menuName = "Custom UI/Grade Color Table", fileName = "GradeColorTable")]
-	public class GradeColorTable : ScriptableObject
+	// 아이템 등급별 색상 묶음 (Bg/Border/Text). 인스펙터로 주입해 슬롯·팝업이 등급으로 조회한다.
+	[CreateAssetMenu(menuName = "Custom UI/Item Grade Color Table", fileName = "ItemGradeColorTable")]
+	public class ItemGradeColorTable : ScriptableObject
 	{
 		// 한 등급에 대한 세 요소 색상.
 		[Serializable]
 		public class GradeColor
 		{
 			public ItemGradeType grade = ItemGradeType.None;
-			public Color bgMask = Color.white;
-			public Color gradient = Color.white;
-			public Color glow = Color.white;
+			public Color bg = Color.white;		// Bg_Mask / TopBg
+			public Color border = Color.white;	// Border / Deco2
+			public Color text = Color.white;	// 등급명 텍스트
 		}
 
 		[SerializeField] private List<GradeColor> _colors = new List<GradeColor>();

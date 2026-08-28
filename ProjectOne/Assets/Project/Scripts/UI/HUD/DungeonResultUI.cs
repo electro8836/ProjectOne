@@ -19,7 +19,7 @@ namespace ProjectOne.UI
 		[SerializeField] private RewardSlot _slotPrefab;
 
 		[Header("등급 색상 테이블")]
-		[SerializeField] private GradeColorTable _gradeColors;
+		[SerializeField] private ItemGradeColorTable _gradeColors;
 
 		[Header("복귀")]
 		[SerializeField] private UIButton _backgroundButton;             // 보상 외 영역 클릭 → 마을
