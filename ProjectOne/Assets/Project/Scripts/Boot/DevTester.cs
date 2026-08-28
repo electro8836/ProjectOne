@@ -30,6 +30,14 @@ namespace ProjectOne.Boot
 			public int quality;
 		}
 
+		// 보유 스택 아이템 1종 — 소모품·재료. 장비는 인스턴스라 DevSlot 이 따로 담당한다.
+		[System.Serializable]
+		public struct DevItem
+		{
+			public int itemId;
+			public int count;
+		}
+
 		// 마스터리 1종의 개발 진행도 — 레벨만 지정하면 누적 경험치를 역산해 넣는다.
 		[System.Serializable]
 		public struct DevMastery
@@ -72,6 +80,14 @@ namespace ProjectOne.Boot
 
 		[Header("장착 슬롯 (슬롯 종류 + 아이템 ID)")]
 		[SerializeField] private List<DevSlot> _equipSlots = new List<DevSlot>();
+
+		// 장착하지 않고 인벤토리에만 두는 장비 — 장비 화면의 목록/정렬을 보려면 이쪽에 넣는다.
+		// slot 은 _equipSlots 와 마찬가지로 표기용이다(실제 착용 부위는 Equipment 테이블 소유).
+		[Header("보유 장비 (미장착 — 인벤토리에만 존재)")]
+		[SerializeField] private List<DevSlot> _ownedEquipments = new List<DevSlot>();
+
+		[Header("보유 아이템 (소모품·재료 — 아이템 ID + 개수)")]
+		[SerializeField] private List<DevItem> _ownedItems = new List<DevItem>();
 
 		[Header("마스터리 진행도 (무기 + 레벨)")]
 		[SerializeField] private List<DevMastery> _masteries = new List<DevMastery>();
@@ -148,7 +164,9 @@ namespace ProjectOne.Boot
 			Account.Instance.SetLoadout(buildLoadout());
 			Account.Instance.SetMastery(buildMastery());
 			Account.Instance.SetCostume(buildCostume());
-			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel + ", 장착:" + _equipSlots.Count + "칸, 코스튬:" + _ownedCostumes.Count + "종");
+			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel
+				+ ", 장착:" + _equipSlots.Count + "칸, 보유장비:" + _ownedEquipments.Count + "개"
+				+ ", 보유아이템:" + _ownedItems.Count + "종, 코스튬:" + _ownedCostumes.Count + "종");
 		}
 
 		// 코스튬 개발 데이터 — 보유 목록과 착용 ID.
@@ -208,9 +226,23 @@ namespace ProjectOne.Boot
 		private InventoryDto buildInventory()
 		{
 			InventoryDto inventory = new InventoryDto();
-			for (int i = 0; i < _equipSlots.Count; i++)
+
+			// 장착분이 UID 앞자리를 쓰고(buildLoadout 이 같은 인덱스로 UID 를 계산한다),
+			// 보유분은 그 뒤로 이어붙인다 — 두 목록의 UID 가 겹치면 인스턴스가 서로를 덮어쓴다.
+			addEquipments(inventory, _equipSlots, true, 0);
+			addEquipments(inventory, _ownedEquipments, false, _equipSlots.Count);
+			addItems(inventory);
+
+			inventory.nextEquipmentUid = devUid(_equipSlots.Count + _ownedEquipments.Count);
+			return inventory;
+		}
+
+		// 장비 목록을 인벤토리에 담는다. equipped 면 테이블이 정한 부위에 착용시키고, 아니면 보유만 한다.
+		private void addEquipments(InventoryDto inventory, List<DevSlot> sources, bool equipped, int uidOffset)
+		{
+			for (int i = 0; i < sources.Count; i++)
 			{
-				DevSlot src = _equipSlots[i];
+				DevSlot src = sources[i];
 				if (src.itemId <= 0)
 				{
 					continue;
@@ -224,18 +256,59 @@ namespace ProjectOne.Boot
 				}
 
 				EquipmentInstanceDto dto = new EquipmentInstanceDto();
-				dto.uid = devUid(i);
+				dto.uid = devUid(uidOffset + i);
 				dto.itemId = src.itemId;
 				dto.grade = (int)(src.grade != ItemGradeType.None ? src.grade : ItemGradeType.Normal);
 				dto.level = src.level > 0 ? src.level : 1;
 				dto.purity = (int)(src.purity != EquipPurity.None ? src.purity : EquipPurity.Purity_3);
 				dto.quality = src.quality;
-				dto.equippedSlot = (int)row.EquipSlotType;
+				dto.equippedSlot = equipped ? (int)row.EquipSlotType : 0;
 				inventory.equipments.Add(dto);
 			}
+		}
 
-			inventory.nextEquipmentUid = devUid(_equipSlots.Count);
-			return inventory;
+		// 스택 아이템을 인벤토리에 담는다. 같은 ID 를 여러 줄에 적으면 개수를 합친다.
+		private void addItems(InventoryDto inventory)
+		{
+			for (int i = 0; i < _ownedItems.Count; i++)
+			{
+				DevItem src = _ownedItems[i];
+				if (src.itemId <= 0 || src.count <= 0)
+				{
+					continue;
+				}
+
+				if (Table_Item.Get(src.itemId) == null)
+				{
+					Debug.LogWarning("[DevTester] Item 행이 없는 아이템 — 건너뜁니다: " + src.itemId);
+					continue;
+				}
+
+				OwnedItemDto existing = findItem(inventory, src.itemId);
+				if (existing != null)
+				{
+					existing.count += src.count;
+					continue;
+				}
+
+				OwnedItemDto dto = new OwnedItemDto();
+				dto.itemId = src.itemId;
+				dto.count = src.count;
+				inventory.items.Add(dto);
+			}
+		}
+
+		private static OwnedItemDto findItem(InventoryDto inventory, int itemId)
+		{
+			for (int i = 0; i < inventory.items.Count; i++)
+			{
+				if (inventory.items[i].itemId == itemId)
+				{
+					return inventory.items[i];
+				}
+			}
+
+			return null;
 		}
 
 		private LoadoutDto buildLoadout()
