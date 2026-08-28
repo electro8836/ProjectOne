@@ -437,15 +437,28 @@ namespace ProjectOne.Unit
 					_skillContainer?.CancelCasting();
 					_skillContainer?.CancelAction();
 				}
-
-				// 캐스팅 중에는 피격 모션을 내지 않는다 — 애니메이터가 시전 자세를 유지할 뿐 아니라,
-				// 소비되지 않은 Hit 트리거가 남아 캐스팅 종료 직후 뒤늦게 터지는 것도 막는다.
-				// 넉백은 위에서 캐스팅을 이미 취소했으므로 여기서 정상적으로 피격 모션이 나간다.
-				if (_animator != null && (_skillContainer == null || _skillContainer.IsCasting == false))
-				{
-					_animator.PlayHit();
-				}
 			}
+		}
+
+		// 경직/기절 진입 연출 — 일반 피격은 모션을 내지 않는다.
+		//
+		// 캐스팅 중에는 무시한다. 애니메이터가 시전 자세를 유지할 뿐 아니라,
+		// 소비되지 않은 Hit 트리거가 남아 캐스팅 종료 직후 뒤늦게 터지기 때문이다.
+		// 행동 차단 버프가 Cast 플래그를 가지면 BuffRuntime 이 먼저 캐스팅을 취소하므로
+		// 그 경우에는 정상적으로 모션이 나간다.
+		public void PlayStaggerMotion()
+		{
+			if (IsDead == true || _animator == null)
+			{
+				return;
+			}
+
+			if (_skillContainer != null && _skillContainer.IsCasting == true)
+			{
+				return;
+			}
+
+			_animator.PlayHit();
 		}
 
 		protected virtual void Die()
@@ -457,7 +470,13 @@ namespace ProjectOne.Unit
 				if (_skillContainer != null)
 				{
 					_skillContainer.CancelCasting();
+					_skillContainer.CancelBehavior();
 					_skillContainer.CancelAction();
+
+					// 예약된 지연 효과 폐기 — CancelCasting 은 캐스팅 중일 때만 이걸 부른다.
+					// 평타처럼 Instant 로 예약된 타격이 남으면 풀 재사용으로 되살아난 뒤
+					// 첫 틱에 옛 대상 스냅샷을 그대로 때린다.
+					_skillContainer.CancelPendingEffects();
 				}
 
 				if (_animator != null)
@@ -498,6 +517,9 @@ namespace ProjectOne.Unit
 			if (_skillContainer != null)
 			{
 				_skillContainer.CancelAction();
+
+				// Die() 를 거치지 않고 회수되는 경로(스테이지 정리 등)도 있으므로 여기서 한 번 더 비운다.
+				_skillContainer.CancelPendingEffects();
 			}
 		}
 	}

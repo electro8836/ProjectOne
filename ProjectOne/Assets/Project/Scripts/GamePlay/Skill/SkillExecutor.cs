@@ -17,6 +17,13 @@ namespace ProjectOne.Skill
 		// useSpeed 는 호출자가 계산해 넘긴다 — 평타만 공속을 받고 나머지는 1.0 이다.
 		public static void Execute(EDT.Skill id, UnitBase caster, float useSpeed)
 		{
+			Execute(id, caster, useSpeed, false, Vector2.zero);
+		}
+
+		// origin 은 이 시전을 유발한 대상의 위치다 (조건 발동형 전용).
+		// 좌표 고정형(Location) 효과의 중심으로 쓴다 — 유발한 대상이 이미 죽었어도 좌표는 유효하다.
+		public static void Execute(EDT.Skill id, UnitBase caster, float useSpeed, bool hasOrigin, Vector2 origin)
+		{
 			if (caster == null || caster.IsDead == true)
 			{
 				return;
@@ -57,12 +64,12 @@ namespace ProjectOne.Skill
 				// 유지하다가 종료 순간에 공격 모션이 나가야 하고, 취소되면 모션이 나가면 안 된다.
 				caster.SkillContainer.BeginCasting(row.CastingParam, id);
 				playSkillVfx(row, caster);
-				scheduleEffects(resolved, caster, useSpeed, row.CastingParam);
+				scheduleEffects(resolved, caster, useSpeed, row.CastingParam, hasOrigin, origin);
 				return;
 			}
 
 			playSkillPresentation(row, caster, useSpeed);
-			scheduleEffects(resolved, caster, useSpeed, 0f);
+			scheduleEffects(resolved, caster, useSpeed, 0f, hasOrigin, origin);
 		}
 
 		// Passive — 모션/딜레이/쿨타임 없이 효과만 상시 적용
@@ -80,7 +87,7 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			scheduleEffects(resolved, caster, 1f, 0f);
+			scheduleEffects(resolved, caster, 1f, 0f, false, Vector2.zero);
 		}
 
 		// SkillContainer 예약 디스패치 진입점 — 효과 1개를 대상 스냅샷에 적용한다.
@@ -121,7 +128,7 @@ namespace ProjectOne.Skill
 		// 탐색 1회 → 효과별 지연 예약. extraDelay 는 캐스팅 시간처럼 사이클 앞에 붙는 고정 지연이다.
 		//
 		// 효과 목록은 리졸브 결과가 소유한다 — 테이블은 2슬롯이지만 Append 모디파이어로 늘어날 수 있다.
-		static void scheduleEffects(ResolvedSkill resolved, UnitBase caster, float useSpeed, float extraDelay)
+		static void scheduleEffects(ResolvedSkill resolved, UnitBase caster, float useSpeed, float extraDelay, bool hasOrigin, Vector2 origin)
 		{
 			if (caster.SkillContainer == null)
 			{
@@ -136,10 +143,21 @@ namespace ProjectOne.Skill
 			SkillRuntime rt = caster.SkillContainer.GetRuntime(resolved.Id);
 			float actionTime = (rt != null) ? rt.GetActionTime(useSpeed) : 0f;
 
-			// 좌표 고정형(Location) 효과는 시전 시점의 최근접 대상 위치에 못 박는다.
-			// scanned[0] 이 최근접이다 — Target 탐색이 가까운 순으로 정렬해 둔다 (TargetResolver).
-			bool hasCenter = (scanned.Count > 0);
-			Vector2 center = hasCenter ? scanned[0].HitCenter : Vector2.zero;
+			// 좌표 고정형(Location) 효과는 시전 시점의 대상 위치에 못 박는다.
+			//
+			// 유발 대상이 지정됐으면(조건 발동형) 그 좌표를 그대로 쓴다 — 여기서 재탐색하면
+			// 방금 그 타격으로 죽은 대상이 빠져 엉뚱한 적 위치에 터진다.
+			// 지정이 없으면 scanned[0] 이 최근접이다 (Target 탐색만 가까운 순으로 정렬해 둔다).
+			bool hasCenter = (hasOrigin == true || scanned.Count > 0);
+			Vector2 center = Vector2.zero;
+			if (hasOrigin == true)
+			{
+				center = origin;
+			}
+			else if (scanned.Count > 0)
+			{
+				center = scanned[0].HitCenter;
+			}
 
 			// 일반 효과를 먼저 예약한다. 좌표 고정 예약은 지연이 0이면 그 자리에서 발동하면서
 			// TargetResolver 를 다시 부르는데, scanned 는 그 내부 버퍼 직참조라 이미 덮어써진 뒤가 된다.
@@ -187,9 +205,31 @@ namespace ProjectOne.Skill
 		{
 			if (string.IsNullOrEmpty(row.SkillVFX) == false)
 			{
-				// 충돌체 중심에 부착 — 신규 스키마에 앵커 컬럼이 없어 항상 중심 기준이다.
-				Vector3 offset = (Vector3)(caster.HitCenter - (Vector2)caster.transform.position);
-				VFXManager.Instance.PlayOneShot(row.SkillVFX, caster.transform, offset);
+				// 충돌체 중심 기준 — 신규 스키마에 앵커 컬럼이 없어 항상 중심이다.
+				Vector2 center = caster.HitCenter;
+				Quaternion rotation = Quaternion.identity;
+
+				if (row.SkillVFXFacing == true || row.SkillVFXOffset != 0f)
+				{
+					Vector2 facing = Vector2.right;
+					if (caster.Mover != null && caster.Mover.Facing.sqrMagnitude > 1e-6f)
+					{
+						facing = caster.Mover.Facing;
+					}
+
+					if (row.SkillVFXFacing == true)
+					{
+						// 범위 판정(Scanner)·인디케이터와 같은 +X 기준 공식이다 — 셋의 방향이 어긋나지 않는다.
+						float angle = Mathf.Atan2(facing.y, facing.x) * Mathf.Rad2Deg;
+						rotation = Quaternion.Euler(0f, 0f, angle);
+					}
+
+					center += facing * row.SkillVFXOffset;
+				}
+
+				// 시전 위치에 한 번 터지고 끝난다 — 시전자에 부착하지 않아 따라다니지 않는다.
+				Vector3 spawnPos = new Vector3(center.x, center.y, caster.transform.position.z);
+				VFXManager.Instance.PlayOneShot(row.SkillVFX, spawnPos, rotation);
 			}
 
 			if (string.IsNullOrEmpty(row.SkillSFX) == false)

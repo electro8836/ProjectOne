@@ -180,6 +180,10 @@ namespace ProjectOne.Skill
 				return;
 			}
 
+			bool swingHit = false;
+			Vector2 swingOrigin = Vector2.zero;
+			float nearestSqr = float.MaxValue;
+
 			for (int i = 0; i < targets.Count; i++)
 			{
 				UnitBase target = targets[i];
@@ -190,7 +194,23 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				dealDamage(caster, target, skillId, row, p);
+				if (dealDamage(caster, target, skillId, row, p) == true)
+				{
+					swingHit = true;
+					Vector2 hitCenter = target.HitCenter;
+					float sqr = (hitCenter - caster.HitCenter).sqrMagnitude;
+					if (sqr < nearestSqr)
+					{
+						nearestSqr = sqr;
+						swingOrigin = hitCenter;
+					}
+				}
+			}
+
+			// 루프 뒤로 targets 를 더 쓰지 않으므로 여기서 바로 통지해도 안전하다.
+			if (swingHit == true)
+			{
+				notifyNormalHit(caster, skillId, swingOrigin);
 			}
 		}
 
@@ -301,7 +321,13 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			bool anyHit = false;
+			// 스윙(타격 1회) 단위로 집계한다 — 광역으로 여러 명을 맞춰도 콤보는 1만 올라야 한다.
+			// 콤보 통지는 targets 사용이 모두 끝난 뒤로 미룬다 (아래 재진입 주석 참조).
+			int hitSwings = 0;
+			Vector2 swingOrigin = Vector2.zero;
+			float nearestSqr = float.MaxValue;
+
+			bool swingHit = false;
 			for (int i = 0; i < targets.Count; i++)
 			{
 				UnitBase target = targets[i];
@@ -310,7 +336,24 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				anyHit |= dealDamage(caster, target, skillId, row, p);
+				if (dealDamage(caster, target, skillId, row, p) == true)
+				{
+					swingHit = true;
+					// 부채꼴·원형 탐색은 정렬돼 있지 않아 최근접을 여기서 직접 고른다.
+					Vector2 hitCenter = target.HitCenter;
+					float sqr = (hitCenter - caster.HitCenter).sqrMagnitude;
+					if (sqr < nearestSqr)
+					{
+						nearestSqr = sqr;
+						swingOrigin = hitCenter;
+					}
+				}
+			}
+
+			bool anyHit = swingHit;
+			if (swingHit == true)
+			{
+				hitSwings++;
 			}
 
 			// 다단히트는 ①②의 예외 — 의도된 반복이다 (설계 5.8).
@@ -326,6 +369,7 @@ namespace ProjectOne.Skill
 				// 간격이 0이면 예약할 이유가 없다 — 같은 프레임에 마저 때린다.
 				for (int hit = 1; hit < p.HitCount; hit++)
 				{
+					bool extraHit = false;
 					for (int i = 0; i < targets.Count; i++)
 					{
 						UnitBase target = targets[i];
@@ -334,12 +378,52 @@ namespace ProjectOne.Skill
 							continue;
 						}
 
-						anyHit |= dealDamage(caster, target, skillId, row, p);
+						if (dealDamage(caster, target, skillId, row, p) == true)
+						{
+							extraHit = true;
+							Vector2 hitCenter = target.HitCenter;
+							float sqr = (hitCenter - caster.HitCenter).sqrMagnitude;
+							if (sqr < nearestSqr)
+							{
+								nearestSqr = sqr;
+								swingOrigin = hitCenter;
+							}
+						}
+					}
+
+					anyHit |= extraHit;
+					if (extraHit == true)
+					{
+						hitSwings++;
 					}
 				}
 			}
 
+			// 콤보 통지는 targets 를 다 쓴 뒤에 몰아서 한다.
+			//
+			// 통지는 TriggerOnCombo → SkillExecutor.Execute 로 이어지고, 콤보 스킬의 지연이 0이면
+			// 그 자리에서 SkillEffectApplier.Apply(depth:0) 까지 동기로 내려간다. 그 안의 resolveOrigin 이
+			// _originBuffers[0] 을 Clear 하는데 여기서 순회 중인 targets 가 바로 그 버퍼라,
+			// 스윙 도중에 통지하면 뒤따르는 다단히트 루프와 ScheduleRepeat 이 빈 리스트를 보게 된다.
+			for (int s = 0; s < hitSwings; s++)
+			{
+				notifyNormalHit(caster, skillId, swingOrigin);
+			}
+
 			return anyHit;
+		}
+
+		// 평타 1타가 누군가에게 실제로 데미지를 넣었을 때만 콤보를 센다 (회피·막기는 제외).
+		// 평타 여부 판정은 SkillContainer 가 한다 — 여기서는 스윙 단위로 알리기만 한다.
+		// origin 은 그 스윙에서 가장 가까웠던 피격 대상의 위치다 (좌표 고정형 콤보 스킬의 중심).
+		static void notifyNormalHit(UnitBase caster, EDT.Skill skillId, Vector2 origin)
+		{
+			if (caster.SkillContainer == null)
+			{
+				return;
+			}
+
+			caster.SkillContainer.NotifyNormalAttackHit(skillId, origin);
 		}
 
 		static bool dealDamage(UnitBase caster, UnitBase target, EDT.Skill skillId, Table_SkillEffect.Row row, in DamageParams p)
@@ -375,10 +459,12 @@ namespace ProjectOne.Skill
 			// 온히트 계열 발동 — 다단히트에는 TRUE 를 넣지 않는 것이 데이터 규약이다 (설계 5.7)
 			if (row.OnHitTrigger == true && caster.SkillContainer != null)
 			{
-				caster.SkillContainer.TriggerOnHit();
+				// 발동될 스킬이 좌표 고정형이면 이 대상 자리에서 터진다.
+				Vector2 hitOrigin = target.HitCenter;
+				caster.SkillContainer.TriggerOnHit(hitOrigin);
 				if (result.IsCritical == true)
 				{
-					caster.SkillContainer.TriggerOnCrit();
+					caster.SkillContainer.TriggerOnCrit(hitOrigin);
 				}
 			}
 

@@ -47,6 +47,7 @@ namespace ProjectOne.Unit
 			}
 
 			registerSkill(hero, mastery.NormalAttackSkill);
+			registerDevSkills(hero, mastery);
 			applyTree(hero, book, mastery);
 		}
 
@@ -207,6 +208,29 @@ namespace ProjectOne.Unit
 
 			hero.Stats.AddModifier(entry.statDetail, value, Source);
 		}
+
+		// ── 개발용 (제거 예정) ────────────────────────────────────────
+		//
+		// 스킬 트리로 습득하기 전에 스킬을 굴려 보기 위한 임시 통로다.
+		// Table_WeaponMastery.Dev_SkillIDs 를 그대로 보유 스킬로 등록한다.
+		//
+		// 걷어낼 때 지울 것 — 이 메서드, ApplyTo 의 호출 한 줄, Mastery.xlsx 의 Dev_SkillIDs 컬럼.
+		// 그 전까지는 테이블 칸을 비우는 것만으로 무력화된다.
+		// 등록 출처가 정규 경로와 같은 Source 라 RemoveFrom 이 함께 정리한다.
+		private void registerDevSkills(Hero hero, Table_WeaponMastery.Row mastery)
+		{
+			if (mastery.Dev_SkillIDs == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < mastery.Dev_SkillIDs.Length; i++)
+			{
+				registerSkill(hero, mastery.Dev_SkillIDs[i]);
+			}
+		}
+
+		// ──────────────────────────────────────────────────────────────
 
 		private void registerSkill(Hero hero, EDT.Skill skill)
 		{

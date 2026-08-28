@@ -77,6 +77,8 @@ namespace ProjectOne.Skill
 			dst.EffectID_02 = src.EffectID_02;
 			dst.SkillVFX = src.SkillVFX;
 			dst.SkillSFX = src.SkillSFX;
+			dst.SkillVFXFacing = src.SkillVFXFacing;
+			dst.SkillVFXOffset = src.SkillVFXOffset;
 			return dst;
 		}
 

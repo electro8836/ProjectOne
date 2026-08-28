@@ -45,6 +45,14 @@ namespace ProjectOne.Buff
 				return;
 			}
 
+			// 경직 면역 — 엘리트/보스는 일반 경직에 걸리지 않는다.
+			// 기절(BUFF_Stun)은 면역 대상이 아니다: 보스 패턴 파훼·엘리트 특정 상황에서만
+			// 부여되므로 부여하는 쪽(SkillEffect)이 이미 게이트 역할을 한다.
+			if (id == EDT.Buff.BUFF_Stagger && isStaggerImmune() == true)
+			{
+				return;
+			}
+
 			BuffRuntime existing;
 			if (_firstById.TryGetValue(id, out existing) == false)
 			{
@@ -214,6 +222,17 @@ namespace ProjectOne.Buff
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
+
+		// 엘리트/보스만 면역이다. 히어로·소환수는 MonsterType 이 None 이라 경직에 걸린다.
+		bool isStaggerImmune()
+		{
+			if (_owner == null)
+			{
+				return false;
+			}
+
+			return _owner.MonsterType == MonsterType.Elite || _owner.MonsterType == MonsterType.Boss;
+		}
 
 		void addNew(EDT.Buff id, float duration, UnitBase source, EDT.Skill sourceSkill)
 		{

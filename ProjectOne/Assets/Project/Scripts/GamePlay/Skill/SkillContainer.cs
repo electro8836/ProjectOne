@@ -68,7 +68,7 @@ namespace ProjectOne.Skill
 		// OnLowHP 검사 주기 카운터
 		float _lowHpCheckTimer;
 
-		// 콤보 카운터 — 캐릭터당 1개. Normal 스킬 시전 시 +1, 리셋 없음 (설계 2.2)
+		// 콤보 카운터 — 캐릭터당 1개. 평타가 적중했을 때 +1, 리셋 없음 (설계 2.2)
 		int _comboCount;
 		public int ComboCount => _comboCount;
 
@@ -243,12 +243,8 @@ namespace ProjectOne.Skill
 				beginAction(rt.GetActionTime(useSpeed));
 			}
 
-			// 평타 시전 횟수를 센다 — 적중 여부와 무관하다 (설계 2.2)
-			if (rt.IsNormal == true)
-			{
-				_comboCount++;
-				TriggerOnCombo();
-			}
+			// 콤보는 여기서 세지 않는다 — 평타가 실제로 적중했을 때
+			// SkillEffectApplier 가 NotifyNormalAttackHit 으로 알린다.
 
 			rt.StartCooldown(useSpeed);
 			return true;
@@ -900,31 +896,46 @@ namespace ProjectOne.Skill
 		// ── 조건 발동 (트리거) ────────────────────────────────────────
 
 		// OnHitTrigger=TRUE 인 효과가 적중했을 때 호출 — OnHit 스킬을 확률 발동한다.
-		public void TriggerOnHit()
+		// origin 은 이 발동을 유발한 대상의 위치다 (좌표 고정형 효과의 중심).
+		public void TriggerOnHit(Vector2 origin)
 		{
-			triggerByChance(SkillCastingTypes.OnHit);
+			triggerByChance(SkillCastingTypes.OnHit, origin);
 		}
 
 		// 치명타 발생 시 (OnHitTrigger=TRUE 인 효과에서만)
-		public void TriggerOnCrit()
+		public void TriggerOnCrit(Vector2 origin)
 		{
-			triggerByChance(SkillCastingTypes.OnCrit);
+			triggerByChance(SkillCastingTypes.OnCrit, origin);
 		}
 
 		// 피격 시 — OnHitTrigger 와 무관하게 동작한다 (설계 2.2)
-		public void TriggerOnDamaged()
+		public void TriggerOnDamaged(Vector2 origin)
 		{
-			triggerByChance(SkillCastingTypes.OnDamaged);
+			triggerByChance(SkillCastingTypes.OnDamaged, origin);
 		}
 
 		// 적 처치 시 — 수단 무관. 광역으로 3명을 처치하면 3회 호출된다.
-		public void TriggerOnKill()
+		public void TriggerOnKill(Vector2 origin)
 		{
-			triggerByChance(SkillCastingTypes.OnKill);
+			triggerByChance(SkillCastingTypes.OnKill, origin);
+		}
+
+		// 평타가 실제로 적을 때렸을 때 콤보를 센다 — 휘두르기만 해서는 세지 않는다.
+		// 광역으로 여러 명을 맞춰도 타격 1회는 1 카운트다 (호출자가 스윙 단위로 부른다).
+		public void NotifyNormalAttackHit(EDT.Skill id, Vector2 origin)
+		{
+			SkillRuntime rt;
+			if (_byId.TryGetValue(id, out rt) == false || rt.IsNormal == false)
+			{
+				return;
+			}
+
+			_comboCount++;
+			TriggerOnCombo(origin);
 		}
 
 		// n번째 평타마다 발동. 카운터는 캐릭터당 1개를 공유하고 각 스킬이 count % n 으로 판정한다.
-		void TriggerOnCombo()
+		void TriggerOnCombo(Vector2 origin)
 		{
 			if (_owner == null || _owner.IsDead == true)
 			{
@@ -947,13 +958,13 @@ namespace ProjectOne.Skill
 
 				if (_comboCount % period == 0)
 				{
-					SkillExecutor.Execute(rt.Id, _owner, 1f);
+					SkillExecutor.Execute(rt.Id, _owner, 1f, true, origin);
 					rt.StartCooldown(1f);
 				}
 			}
 		}
 
-		void triggerByChance(SkillCastingTypes type)
+		void triggerByChance(SkillCastingTypes type, Vector2 origin)
 		{
 			if (_owner == null || _owner.IsDead == true)
 			{
@@ -974,7 +985,7 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				SkillExecutor.Execute(rt.Id, _owner, 1f);
+				SkillExecutor.Execute(rt.Id, _owner, 1f, true, origin);
 				rt.StartCooldown(1f);
 			}
 		}

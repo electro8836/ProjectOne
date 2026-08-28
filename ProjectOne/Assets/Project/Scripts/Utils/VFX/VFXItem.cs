@@ -11,6 +11,11 @@ namespace ProjectOne.Utils
 		private string _address;
 		private ParticleSystem _ps;   // 대표 파티클 (생존 판정·재생·정지 모두 withChildren 으로 처리)
 
+		// 정렬 기준 전환용 — 렌더러와 프리펩 원본 alignment 를 짝으로 들고 있는다.
+		private ParticleSystemRenderer[] _renderers;
+		private ParticleSystemRenderSpace[] _baseAlignments;
+		private bool _aligned;
+
 		public string Address => _address;
 
 		// VFXManager 가 인스턴스 생성 직후 1회 호출
@@ -25,6 +30,36 @@ namespace ProjectOne.Utils
 				{
 					_ps = GetComponentInChildren<ParticleSystem>(true);
 				}
+			}
+
+			if (_renderers == null)
+			{
+				_renderers = GetComponentsInChildren<ParticleSystemRenderer>(true);
+				_baseAlignments = new ParticleSystemRenderSpace[_renderers.Length];
+				for (int i = 0; i < _renderers.Length; i++)
+				{
+					_baseAlignments[i] = _renderers[i].alignment;
+				}
+			}
+		}
+
+		// 파티클을 트랜스폼 기준으로 정렬할지 — 방향성 VFX 만 켠다.
+		//
+		// 프리펩 원본은 대개 View(카메라 기준)라 루트에 Z 회전을 줘도 파티클은 그대로 있는다.
+		// Local 로 바꾸면 파티클이 트랜스폼 회전을 따라간다.
+		// 끌 때 원본으로 되돌리는 이유 — 풀은 주소 단위로 공유되므로 한 번 Local 이 된 인스턴스가
+		// 회전을 쓰지 않는 호출에 재사용될 수 있다.
+		public void SetAlignedToTransform(bool aligned)
+		{
+			if (_renderers == null || _aligned == aligned)
+			{
+				return;
+			}
+
+			_aligned = aligned;
+			for (int i = 0; i < _renderers.Length; i++)
+			{
+				_renderers[i].alignment = aligned ? ParticleSystemRenderSpace.Local : _baseAlignments[i];
 			}
 		}
 

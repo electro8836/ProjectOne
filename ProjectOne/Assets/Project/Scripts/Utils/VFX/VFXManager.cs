@@ -34,7 +34,7 @@ namespace ProjectOne.Utils
 
 		// ── 공개 API ──────────────────────────────────────────────────
 
-		// one-shot : anchor 에 붙여(따라다님) 1회 재생, 파티클 수명 후 자동 반환 (SkillVFX 용)
+		// one-shot : anchor 에 붙여(따라다님) 1회 재생, 파티클 수명 후 자동 반환 (UI 버튼 등 추종이 필요한 쪽)
 		public void PlayOneShot(string address, Transform anchor)
 		{
 			PlayOneShot(address, anchor, Vector3.zero);
@@ -52,15 +52,21 @@ namespace ProjectOne.Utils
 			VFXItem item = tryGetItemSync(address);
 			if (item != null)
 			{
-				activateOneShot(item, anchor, localOffset, Vector3.zero, false);
+				activateOneShot(item, anchor, localOffset, Quaternion.identity, Vector3.zero, false);
 				return;
 			}
 
-			playOneShotAsync(address, anchor, localOffset, Vector3.zero, false).Forget();
+			playOneShotAsync(address, anchor, localOffset, Quaternion.identity, Vector3.zero, false).Forget();
 		}
 
 		// one-shot : 월드 좌표에 고정 소환(부착·추종 없음) (EffectVFX 용)
 		public void PlayOneShot(string address, Vector3 worldPosition)
+		{
+			PlayOneShot(address, worldPosition, Quaternion.identity);
+		}
+
+		// one-shot : 월드 좌표에 rotation 만큼 돌려 고정 소환 (방향성 SkillVFX 용)
+		public void PlayOneShot(string address, Vector3 worldPosition, Quaternion rotation)
 		{
 			if (string.IsNullOrEmpty(address))
 			{
@@ -70,11 +76,11 @@ namespace ProjectOne.Utils
 			VFXItem item = tryGetItemSync(address);
 			if (item != null)
 			{
-				activateOneShot(item, null, Vector3.zero, worldPosition, true);
+				activateOneShot(item, null, Vector3.zero, rotation, worldPosition, true);
 				return;
 			}
 
-			playOneShotAsync(address, null, Vector3.zero, worldPosition, true).Forget();
+			playOneShotAsync(address, null, Vector3.zero, rotation, worldPosition, true).Forget();
 		}
 
 		// one-shot : 프리팹 직접 참조로 월드 좌표 고정 소환 (인스펙터 링크용). 주소 등록 불필요 — 항상 동기 스폰.
@@ -89,7 +95,7 @@ namespace ProjectOne.Utils
 			VFXItem item = tryGetItemSync(key);
 			if (item != null)
 			{
-				activateOneShot(item, null, Vector3.zero, worldPosition, true);
+				activateOneShot(item, null, Vector3.zero, Quaternion.identity, worldPosition, true);
 			}
 		}
 
@@ -215,18 +221,26 @@ namespace ProjectOne.Utils
 		// ── 스폰 활성화 (동기·비동기 공유) ────────────────────────────
 
 		// one-shot 활성: 위치 지정 → 활성 → 재생 → 활성 리스트 등록
-		private void activateOneShot(VFXItem item, Transform anchor, Vector3 localOffset, Vector3 worldPosition, bool useWorld)
+		// 회전은 무회전이어도 반드시 명시해서 덮어쓴다.
+		// 풀 반환 경로가 transform 을 되돌리지 않고 SetParent(anchor, false) 도 localRotation 을 보존하므로,
+		// 생략하면 회전을 준 VFX 가 반환된 뒤 재사용되는 인스턴스에 그 각도가 그대로 남는다.
+		private void activateOneShot(VFXItem item, Transform anchor, Vector3 localOffset, Quaternion localRotation, Vector3 worldPosition, bool useWorld)
 		{
 			if (useWorld == true)
 			{
 				// 월드 고정 소환 — 부모는 매니저 그대로, 좌표만 지정 (대상 추종 안 함)
 				item.transform.position = worldPosition;
+				item.transform.rotation = localRotation;
 			}
 			else
 			{
 				item.transform.SetParent(anchor, false);
 				item.transform.localPosition = localOffset;
+				item.transform.localRotation = localRotation;
 			}
+
+			// 회전을 준 경우에만 파티클을 트랜스폼 기준으로 정렬한다 — 프리펩 원본(View)은 회전을 무시한다.
+			item.SetAlignedToTransform(localRotation != Quaternion.identity);
 
 			item.gameObject.SetActive(true);
 			item.OnActivate();
@@ -254,7 +268,7 @@ namespace ProjectOne.Utils
 
 		// ── 비동기 스폰 (최초 로드 필요 시에만) ───────────────────────
 
-		private async UniTask playOneShotAsync(string address, Transform anchor, Vector3 localOffset, Vector3 worldPosition, bool useWorld)
+		private async UniTask playOneShotAsync(string address, Transform anchor, Vector3 localOffset, Quaternion localRotation, Vector3 worldPosition, bool useWorld)
 		{
 			VFXItem item = await getItemAsync(address);
 			if (item == null || _isQuitting == true)
@@ -269,7 +283,7 @@ namespace ProjectOne.Utils
 				return;
 			}
 
-			activateOneShot(item, anchor, localOffset, worldPosition, useWorld);
+			activateOneShot(item, anchor, localOffset, localRotation, worldPosition, useWorld);
 		}
 
 		private async UniTask attachAsync(VFXHandle handle)

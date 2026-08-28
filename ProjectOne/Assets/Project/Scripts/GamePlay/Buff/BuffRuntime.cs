@@ -83,6 +83,12 @@ namespace ProjectOne.Buff
 			RemainingDuration = IsInfinite ? 0f : duration;
 			_intervalTimer.Reset();
 			_expired = false;
+
+			// 재적용도 새로운 경직 타격이다 — 차단은 이미 걸려 있으므로 연출만 다시 낸다.
+			if (_blockFlags != null && _blockFlags.Length > 0 && Owner != null)
+			{
+				Owner.PlayStaggerMotion();
+			}
 		}
 
 		// 남은 시간에 가산 (StackPolicy = Extend)
@@ -211,6 +217,7 @@ namespace ProjectOne.Buff
 				return;
 			}
 
+			bool blocksMove = false;
 			bool blocksCast = false;
 			for (int i = 0; i < _blockFlags.Length; i++)
 			{
@@ -218,6 +225,7 @@ namespace ProjectOne.Buff
 				{
 					case ActionBlockType.Move:
 						Owner.BlockMove(_blockKey);
+						blocksMove = true;
 						break;
 					case ActionBlockType.Turn:
 						if (Owner.Mover != null)
@@ -240,6 +248,12 @@ namespace ProjectOne.Buff
 				Owner.SkillContainer.CancelCasting();
 				Owner.SkillContainer.CancelBehavior();
 				Owner.SkillContainer.CancelAction();
+			}
+
+			// 행동이 묶인 순간이 곧 경직이다 — 피격 모션은 여기서만 나간다.
+			if (blocksMove == true || blocksCast == true)
+			{
+				Owner.PlayStaggerMotion();
 			}
 		}
 
