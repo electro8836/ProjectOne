@@ -114,6 +114,9 @@ namespace ProjectOne.Dungeon
 			await loadMapAsync(_cts.Token);
 			await spawnHeroAsync(_cts.Token);
 
+			// 월드 오브젝트 풀은 첫 처치 전에 준비돼 있어야 한다 — 없으면 보상 드랍이 유실된다.
+			await DropManager.Instance.PrepareAsync(_cts.Token);
+
 			// 던전 입장은 항상 완전한 상태에서 시작한다 (기반테이블 5.3)
 			healAllHeroes();
 

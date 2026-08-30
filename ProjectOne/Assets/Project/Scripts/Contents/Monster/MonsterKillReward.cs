@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EDT;
 using UnityEngine;
+using ProjectOne.Dungeon;
 using ProjectOne.Event;
 using ProjectOne.Reward;
 using ProjectOne.Unit;
@@ -70,6 +71,9 @@ namespace ProjectOne.Monsters
 
 		// 고유 드랍과 지역 드랍은 **둘 다** 굴린다 (보상 설계 9장). 하나를 고르는 것이 아니다.
 		// 보상 그룹이 지정되지 않았으면(대부분의 경우) 아무 일도 일어나지 않는다.
+		//
+		// 여기서는 굴리기만 한다 — 인벤토리에 들어가는 것은 히어로가 바닥 드랍을 획득 범위에
+		// 넣었을 때다(사용자 결정). 결과 목록은 서버 배치 업로드(STEP 14)가 소비할 자리이기도 하다.
 		private void grantDrops(MonsterKillEvent e)
 		{
 			_granted.Clear();
@@ -77,13 +81,23 @@ namespace ProjectOne.Monsters
 			Table_Monster.Row monster = MonsterCatalog.GetMonster(e.MonsterID);
 			if (monster != null)
 			{
-				RewardGranter.Grant(monster.RewardGroupID, RewardContext.MonsterKill, _granted);
+				RewardGranter.Roll(monster.RewardGroupID, RewardContext.MonsterKill, _granted);
 			}
 
-			RewardGranter.Grant(e.SpawnRewardGroupID, RewardContext.MonsterKill, _granted);
+			RewardGranter.Roll(e.SpawnRewardGroupID, RewardContext.MonsterKill, _granted);
 
-			// 드랍 연출(바닥 오브젝트)은 붙이지 않는다 — 인벤토리에 바로 들어간다.
-			// 결과 목록은 서버 배치 업로드(STEP 14)가 소비할 자리다.
+			if (_granted.Count == 0)
+			{
+				return;
+			}
+
+			if (DropManager.HasInstance == false)
+			{
+				Debug.LogError("[MonsterKillReward] DropManager 가 없어 처치 보상을 떨어뜨리지 못했다 — 보상이 유실된다.");
+				return;
+			}
+
+			DropManager.Instance.SpawnRewardDrops(e.Position, _granted);
 		}
 
 		// 살아있는 히어로의 경험치 획득량 보너스. 없으면 0.

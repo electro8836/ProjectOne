@@ -4,23 +4,49 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.Resources;
+using ProjectOne.Reward;
 using ProjectOne.Unit;
 using ProjectOne.Utils;
 
 namespace ProjectOne.Dungeon
 {
-	// 던전 드랍오브젝트 매니저(전투씬 수명). 타입별 풀 생성/정리와 사망 위치 스폰을 담당한다.
+	// 월드 오브젝트 매니저(전투씬 수명). 타입별 풀 생성/정리와 스폰을 담당한다.
+	// 필드·던전 양쪽에서 쓴다 — Persistent 가 false 라 마을로 따라가지 않는다.
 	//
-	// **보상 지급은 여기가 아니다.** RewardGranter 가 처치 즉시 인벤토리에 넣는다(사용자 결정) —
-	// 바닥에 떨어뜨렸다가 줍는 연출은 보류 상태다.
+	// 세 종류를 스폰한다.
+	//   HealOrb  — 몬스터 사망 위치에 확률로
+	//   Item     — 처치 보상(RewardGranter.Roll 결과)을 실어 사망 위치 주변에 산포
+	//   BuffRune — 히어로 주변에 랜덤 간격으로
 	//
-	// 이 클래스는 그 연출을 나중에 붙일 때를 위한 인프라(풀 생성·정리·산포 스폰)로 남겨 둔다.
-	// 되살리려면 (1) 드랍 프리팹 제작 (2) DropObject 에 아이템 페이로드 추가
-	// (3) 여기서 RewardGranter 결과를 받아 스폰 — 세 가지가 필요하다.
+	// **보상 지급은 여기가 아니라 DropObject 가 한다.** 여기서는 굴려 둔 결과를 실어 보내기만 하고,
+	// 히어로가 획득 범위에 들어온 순간 DropObject 가 인벤에 넣는다.
 	public sealed class DropManager : MonoSingleton<DropManager>
 	{
 		// 드랍 산포 반경 (사망 위치 주변)
 		private const float ScatterRadius = 0.5f;
+
+		// 프리팹 주소 — 씬 직렬화로 숨는 것을 막기 위해 코드 상수로 고정한다.
+		private const string HealOrbAddress = "Prefab_HealOrb";
+		private const string BuffRuneAddress = "Prefab_BuffRune";
+		private const string DropItemAddress = "Prefab_DropItem";
+
+		// 몬스터 처치 시 회복 오브가 등장할 확률
+		private const float HealOrbChance = 0.15f;
+
+		// [임시] 보상 테이블(Monster/MonsterSpawn 의 RewardGroupID)이 비어 있어 드랍 연출을 볼 수 없다.
+		// 처치마다 페이로드 없는 드랍을 떨궈 연출만 확인한다 — 주워도 인벤토리는 변하지 않는다.
+		// 정식 보상 데이터가 들어오면 이 상수와 onUnitDied 의 사용 블록을 함께 지운다.
+		private const bool TestDropOnKill = true;
+		private const int TestDropCountMin = 2;
+		private const int TestDropCountMax = 3;
+
+		// 버프룬 생성 간격 범위(초)
+		private const float RuneIntervalMin = 5f;
+		private const float RuneIntervalMax = 10f;
+
+		// 버프룬이 히어로로부터 떨어져 생성될 거리 범위(유닛)
+		private const float RuneSpawnDistMin = 2f;
+		private const float RuneSpawnDistMax = 4f;
 
 		[Header("풀 용량")]
 		[SerializeField] private int _defaultPoolCapacity = 16;
@@ -30,6 +56,12 @@ namespace ProjectOne.Dungeon
 		// 타입별 풀 / 풀 프리팹 주소(해제용)
 		private readonly Dictionary<DropObjectType, DropObjectPool> _pools = new Dictionary<DropObjectType, DropObjectPool>();
 		private readonly Dictionary<DropObjectType, string> _poolPaths = new Dictionary<DropObjectType, string>();
+
+		// 다음 버프룬 생성까지 남은 시간. 풀이 준비되기 전에는 카운트다운하지 않는다.
+		private float _runeTimer;
+
+		// 보상 1건을 담아 넘기기 위한 재사용 버퍼 — 스폰은 메인 스레드 단일 경로다.
+		private readonly List<GrantedReward> _single = new List<GrantedReward>(1);
 
 		protected override void Awake()
 		{
@@ -43,12 +75,16 @@ namespace ProjectOne.Dungeon
 			base.OnDestroy();
 		}
 
-		// 스테이지 진입 시 호출 — 이전 스테이지 풀을 정리한다.
-		// 드랍 연출이 보류라 후보 수집·풀 사전 생성은 아직 없다.
-		public UniTask PrepareStageAsync(int groupId, CancellationToken ct)
+		// 전투씬 진입 시 1회 호출 — 이전 풀을 정리하고 세 종류를 미리 만들어 둔다.
+		public async UniTask PrepareAsync(CancellationToken ct)
 		{
 			clearPools();
-			return UniTask.CompletedTask;
+
+			await createPoolAsync(DropObjectType.HealOrb, HealOrbAddress, ct);
+			await createPoolAsync(DropObjectType.BuffRune, BuffRuneAddress, ct);
+			await createPoolAsync(DropObjectType.Item, DropItemAddress, ct);
+
+			resetRuneTimer();
 		}
 
 		// 던전 종료 시 호출 — 풀 일괄 정리.
@@ -64,12 +100,112 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			// 지급은 MonsterKillReward 가 MonsterKillEvent 로 처리한다.
-			// 연출을 붙이게 되면 여기서 spawnDrop 으로 사망 위치에 스폰한다.
+			// 회복 오브는 산포하지 않는다 — 쓰러진 자리에 그대로 뜬다.
+			if (Random.value < HealOrbChance)
+			{
+				spawnDrop(DropObjectType.HealOrb, evt.Position);
+			}
+
+			// [임시] 연출 확인용 — SetPayload 를 부르지 않으므로 주워도 지급이 없다.
+			if (TestDropOnKill == true)
+			{
+				int count = Random.Range(TestDropCountMin, TestDropCountMax + 1);
+				for (int i = 0; i < count; i++)
+				{
+					spawnDrop(DropObjectType.Item, randomAround(evt.Position));
+				}
+			}
 		}
 
-		// 지정 타입 드랍을 사망 위치 주변에 스폰한다. 풀이 없으면 아무 일도 하지 않는다.
-		private void spawnDrop(DropObjectType type, Vector2 center)
+		// 굴려 둔 처치 보상을 사망 위치 주변에 흩뿌린다. 보상 1건당 오브젝트 1개다.
+		// 지급은 히어로가 획득 범위에 들어왔을 때 DropObject 가 한다.
+		public void SpawnRewardDrops(Vector2 center, List<GrantedReward> rewards)
+		{
+			if (rewards == null || rewards.Count == 0)
+			{
+				return;
+			}
+
+			DropObjectPool pool;
+			if (_pools.TryGetValue(DropObjectType.Item, out pool) == false || pool == null)
+			{
+				Debug.LogError("[DropManager] Item 풀이 없어 처치 보상을 떨어뜨리지 못했다 — 보상이 유실된다.");
+				return;
+			}
+
+			for (int i = 0; i < rewards.Count; i++)
+			{
+				RewardDrop drop = pool.Spawn(randomAround(center)) as RewardDrop;
+				if (drop == null)
+				{
+					Debug.LogError("[DropManager] Item 풀의 프리팹이 RewardDrop 이 아니다 — 보상이 유실된다.");
+					continue;
+				}
+
+				_single.Clear();
+				_single.Add(rewards[i]);
+				drop.SetPayload(_single);
+			}
+
+			_single.Clear();
+		}
+
+		private void Update()
+		{
+			tickRuneSpawn();
+		}
+
+		// 히어로 주변에 랜덤 간격으로 버프룬을 놓는다. 풀이 없으면 아무 일도 하지 않는다.
+		private void tickRuneSpawn()
+		{
+			if (_pools.ContainsKey(DropObjectType.BuffRune) == false)
+			{
+				return;
+			}
+
+			_runeTimer -= Time.deltaTime;
+			if (_runeTimer > 0f)
+			{
+				return;
+			}
+
+			resetRuneTimer();
+
+			UnitBase hero = findAliveHero();
+			if (hero == null)
+			{
+				return;		// 히어로가 없거나 죽은 동안은 건너뛴다 — 다음 간격에 다시 시도한다
+			}
+
+			spawnDrop(DropObjectType.BuffRune, randomNear(hero.HitCenter));
+		}
+
+		private void resetRuneTimer()
+		{
+			_runeTimer = Random.Range(RuneIntervalMin, RuneIntervalMax);
+		}
+
+		private static UnitBase findAliveHero()
+		{
+			if (UnitManager.HasInstance == false)
+			{
+				return null;
+			}
+
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
+			{
+				if (heroes[i] != null && heroes[i].IsDead == false)
+				{
+					return heroes[i];
+				}
+			}
+
+			return null;
+		}
+
+		// 지정 타입 드랍을 해당 위치에 그대로 스폰한다. 풀이 없으면 아무 일도 하지 않는다.
+		private void spawnDrop(DropObjectType type, Vector2 pos)
 		{
 			DropObjectPool pool;
 			if (_pools.TryGetValue(type, out pool) == false || pool == null)
@@ -77,7 +213,7 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			pool.Spawn(randomAround(center));
+			pool.Spawn(new Vector3(pos.x, pos.y, 0f));
 		}
 
 		private async UniTask createPoolAsync(DropObjectType type, string path, CancellationToken ct)
@@ -139,6 +275,14 @@ namespace ProjectOne.Dungeon
 		private int capacityFor(DropObjectType type)
 		{
 			return _defaultPoolCapacity;
+		}
+
+		// 중심에서 RuneSpawnDist 범위의 랜덤 방향/거리 — 히어로 발밑에 겹쳐 뜨지 않게 한다.
+		private static Vector2 randomNear(Vector2 center)
+		{
+			float angle = Random.Range(0f, Mathf.PI * 2f);
+			float dist = Random.Range(RuneSpawnDistMin, RuneSpawnDistMax);
+			return new Vector2(center.x + Mathf.Cos(angle) * dist, center.y + Mathf.Sin(angle) * dist);
 		}
 
 		private static Vector3 randomAround(Vector2 center)

@@ -41,7 +41,7 @@ namespace ProjectOne.Dungeon
 		{
 			DropObject drop = GetFromPool();
 			drop.transform.position = pos;
-			drop.Initialize(_type, this);
+			drop.Initialize(this);
 			drop.OnActivate();
 			return drop;
 		}

@@ -8,6 +8,7 @@ using ProjectOne.Event;
 using ProjectOne.Unit.Stats;
 using ProjectOne.Skill;
 using ProjectOne.Buff;
+using ProjectOne.Dungeon;
 using ProjectOne.Unit.AI;
 using ProjectOne.UserData;
 
@@ -73,6 +74,9 @@ namespace ProjectOne.Unit
 
 			// 장비/레벨 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전
 			hero.Vitals.InitHp();
+
+			// 드랍 흡입 센서 — 히어로 프리팹에 없으므로 여기서 붙인다.
+			HeroMagnet.AttachTo(hero);
 
 			// 보유 스킬은 MasteryAspect 가 등록하므로 인디케이터 갱신은 ApplyAll 이후여야 한다.
 			RefreshSkillIndicator(hero);

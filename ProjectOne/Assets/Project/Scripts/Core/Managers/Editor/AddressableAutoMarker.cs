@@ -45,6 +45,7 @@ namespace ProjectOne.Editor
 			new Rule { folder = "Assets/Project/Prefabs/UI",      ext = ".prefab",     group = "Prefabs_UI",      label = "Prefabs_UI",      flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			new Rule { folder = "Assets/Project/Prefabs/Maps",    ext = ".prefab",     group = "Prefabs_Maps",    label = "Prefabs_Maps",    flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			new Rule { folder = "Assets/Project/Prefabs/Projectile", ext = ".prefab",  group = "Prefabs_Projectile", label = "Prefabs_Projectile", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
+			new Rule { folder = "Assets/Project/Prefabs/WorldObject", ext = ".prefab", group = "Prefabs_WorldObject", label = "Prefabs_WorldObject", flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			// 씬 종속 카메라 리그 — 맵과 함께 코드가 띄우므로 맵 그룹에 같이 담는다 (GameplaySceneSetup).
 			new Rule { folder = "Assets/Project/Prefabs/Camera",  ext = ".prefab",     group = "Prefabs_Maps",    label = "Prefabs_Maps",    flattenAddress = true, keepExtension = false, inDownloadLabels = true },
 			// SpriteAtlas(V2) — Art 하위 전체. UI 아이콘(Art/UI/Atlas)과 유닛 파츠(Art/Units/Parts)를 함께 덮는다.

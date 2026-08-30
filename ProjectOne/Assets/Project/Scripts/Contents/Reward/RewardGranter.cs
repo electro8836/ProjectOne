@@ -37,7 +37,11 @@ namespace ProjectOne.Reward
 		public EquipmentInstance equipment;
 	}
 
-	// Reward 그룹을 굴려 실제로 지급한다 (설계 6장).
+	// Reward 그룹을 굴려 지급한다 (설계 6장).
+	//
+	// **추첨(Roll)과 지급(ApplyAll)이 분리되어 있다.** 바닥 드랍처럼 "굴리는 시점"과
+	// "인벤에 들어가는 시점"이 다른 경로가 있기 때문이다 — 몬스터 처치는 즉시 굴리되
+	// 실제 지급은 히어로가 획득 범위에 들어왔을 때 일어난다.
 	//
 	// **순수 로직에 가깝게 유지한다.** 입력은 테이블 + 맥락, 출력은 지급 목록이고
 	// 부수효과는 인벤/지갑 반영뿐이다. 나중에 이 규칙을 서버(뒤끝 함수)로 포팅할 때
@@ -47,9 +51,24 @@ namespace ProjectOne.Reward
 		// 가중치 추첨용 재사용 버퍼 — 지급은 메인 스레드 단일 경로다.
 		private static readonly List<int> _weightBuffer = new List<int>(8);
 
-		// 그룹 하나를 굴려 지급하고 결과를 buffer 에 채운다(호출자가 버퍼를 소유).
+		// 그룹 하나를 굴려 즉시 지급하고 결과를 buffer 에 채운다(호출자가 버퍼를 소유).
 		// buffer 를 비우지 않고 **누적**한다 — 고유 드랍 + 지역 드랍처럼 두 그룹을 이어 굴릴 수 있다.
 		public static void Grant(int groupId, RewardContext context, List<GrantedReward> buffer)
+		{
+			if (buffer == null)
+			{
+				return;
+			}
+
+			// 이번 호출로 새로 추가된 몫만 지급한다 — 누적된 앞부분을 다시 지급하면 안 된다.
+			int start = buffer.Count;
+			Roll(groupId, context, buffer);
+			ApplyRange(buffer, start);
+		}
+
+		// 굴리기만 한다 — 인벤/지갑에 손대지 않는다. 지급은 ApplyAll 이 맡는다.
+		// 장비 인스턴스 생성(등급·순도·품질 결정)까지는 여기서 끝난다.
+		public static void Roll(int groupId, RewardContext context, List<GrantedReward> buffer)
 		{
 			if (groupId <= 0 || buffer == null)
 			{
@@ -59,13 +78,56 @@ namespace ProjectOne.Reward
 			IReadOnlyList<RewardCatalog.RewardEntry> entries = RewardCatalog.GetGroup(groupId);
 			for (int i = 0; i < entries.Count; i++)
 			{
-				grantOne(entries[i], context, buffer);
+				rollOne(entries[i], context, buffer);
+			}
+		}
+
+		// 굴려 둔 목록을 실제로 인벤/지갑에 반영한다. 변경 이벤트는 여기서 발행된다.
+		public static void ApplyAll(List<GrantedReward> rewards)
+		{
+			ApplyRange(rewards, 0);
+		}
+
+		// 목록의 startIndex 이후만 반영한다.
+		public static void ApplyRange(List<GrantedReward> rewards, int startIndex)
+		{
+			if (rewards == null)
+			{
+				return;
+			}
+
+			for (int i = startIndex; i < rewards.Count; i++)
+			{
+				applyOne(rewards[i]);
 			}
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
 
-		private static void grantOne(RewardCatalog.RewardEntry entry, RewardContext context, List<GrantedReward> buffer)
+		private static void applyOne(GrantedReward granted)
+		{
+			if (granted.count <= 0)
+			{
+				return;
+			}
+
+			if (granted.type == RewardType.Currency)
+			{
+				CurrencyManager.Instance.Add(granted.currency, granted.count);
+				return;
+			}
+
+			// 장비는 인스턴스가 이미 만들어져 있다 — 넣기만 하면 된다.
+			if (granted.equipment != null)
+			{
+				Account.Instance.Inventory.AddEquipment(granted.equipment);
+				return;
+			}
+
+			Account.Instance.Inventory.Add(granted.itemId, granted.count);
+		}
+
+		private static void rollOne(RewardCatalog.RewardEntry entry, RewardContext context, List<GrantedReward> buffer)
 		{
 			if (entry.isValid == false)
 			{
@@ -96,11 +158,11 @@ namespace ProjectOne.Reward
 			switch (row.RewardType)
 			{
 				case RewardType.Currency:
-					grantCurrency(entry, context, count, buffer);
+					rollCurrency(entry, context, count, buffer);
 					break;
 
 				case RewardType.Item:
-					grantItem(entry.itemId, row.EquipGradeWeightID, count, buffer);
+					rollItem(entry.itemId, row.EquipGradeWeightID, count, buffer);
 					break;
 
 				case RewardType.ItemPool:
@@ -110,7 +172,7 @@ namespace ProjectOne.Reward
 						int itemId = pickFromPool(entry.poolId);
 						if (itemId > 0)
 						{
-							grantItem(itemId, row.EquipGradeWeightID, 1, buffer);
+							rollItem(itemId, row.EquipGradeWeightID, 1, buffer);
 						}
 					}
 
@@ -129,7 +191,7 @@ namespace ProjectOne.Reward
 		}
 
 		// 골드 보너스는 **적 처치분에만** 곱한다 — 퀘스트·던전 클리어 보상은 고정값이다 (기반테이블 8.1).
-		private static void grantCurrency(RewardCatalog.RewardEntry entry, RewardContext context, int count, List<GrantedReward> buffer)
+		private static void rollCurrency(RewardCatalog.RewardEntry entry, RewardContext context, int count, List<GrantedReward> buffer)
 		{
 			if (context == RewardContext.MonsterKill)
 			{
@@ -141,8 +203,6 @@ namespace ProjectOne.Reward
 				return;
 			}
 
-			CurrencyManager.Instance.Add(entry.currency, count);
-
 			GrantedReward granted = default(GrantedReward);
 			granted.type = RewardType.Currency;
 			granted.currency = entry.currency;
@@ -151,7 +211,7 @@ namespace ProjectOne.Reward
 		}
 
 		// 장비냐 아니냐는 RewardType 이 아니라 **최종 지급 대상**이 기준이다 (설계 6.1).
-		private static void grantItem(int itemId, int gradeWeightId, int count, List<GrantedReward> buffer)
+		private static void rollItem(int itemId, int gradeWeightId, int count, List<GrantedReward> buffer)
 		{
 			if (itemId <= 0 || count <= 0)
 			{
@@ -160,8 +220,6 @@ namespace ProjectOne.Reward
 
 			if (Table_Equipment.Get(itemId) == null)
 			{
-				Account.Instance.Inventory.Add(itemId, count);
-
 				GrantedReward stacked = default(GrantedReward);
 				stacked.type = RewardType.Item;
 				stacked.itemId = itemId;
@@ -180,8 +238,6 @@ namespace ProjectOne.Reward
 				{
 					continue;
 				}
-
-				Account.Instance.Inventory.AddEquipment(instance);
 
 				GrantedReward granted = default(GrantedReward);
 				granted.type = RewardType.Item;

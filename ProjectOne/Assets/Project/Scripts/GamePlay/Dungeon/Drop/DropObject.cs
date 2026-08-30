@@ -1,19 +1,20 @@
-﻿using UnityEngine;
-using EDT;
+using UnityEngine;
 using ProjectOne.Utils;
 using ProjectOne.Unit;
 using ProjectOne.Audio;
-using ProjectOne.Event;
 
 namespace ProjectOne.Dungeon
 {
-	// 던전 휘발성 드랍 아이템. 몬스터 사망 시 DropManager 가 풀에서 스폰한다.
-	// 히어로가 접촉(트리거)하면 타입별 효과를 적용하고 풀로 반환된다.
+	// 전투씬 휘발성 월드 오브젝트의 공통 베이스. DropManager 가 풀에서 스폰한다.
+	// 히어로가 접촉(트리거)하면 파생의 효과를 적용하고 풀로 반환된다.
 	// 프리팹 요구사항: isTrigger CircleCollider2D + Kinematic Rigidbody2D.
-	public class DropObject : MonoBehaviour, IPoolable
+	//
+	// 종류별 차이는 전부 파생이 갖는다 — HealOrb(회복) / BuffRune(버프·수명) / RewardDrop(보상·흡입).
+	public abstract class DropObject : MonoBehaviour, IPoolable
 	{
-		// 체력/스태미너 회복 비율 (최대치 대비)
-		private const float RestoreRatio = 0.25f;
+		[Header("수명")]
+		// 획득되지 않았을 때 스스로 사라지기까지의 시간(초). 0 이면 무한.
+		[SerializeField] private float _lifetime = 0f;
 
 		[Header("픽업 연출")]
 		// 픽업 FX 프리팹 (직접 링크) — VFXManager 가 풀링 재생/회수
@@ -21,48 +22,55 @@ namespace ProjectOne.Dungeon
 		// 픽업 SFX (직접 링크) — AudioManager 풀에서 2D 재생
 		[SerializeField] private AudioClip _pickupSfx;
 
-		[Header("자석 흡입")]
-		// 흡입 시작 속도(유닛/초)
-		[SerializeField] private float _homingStartSpeed = 2f;
-		// 흡입 가속도(유닛/초²) — 히어로에 가까워질수록 빨라지는 느낌
-		[SerializeField] private float _homingAccel = 40f;
-		// 흡입 최대 속도(유닛/초)
-		[SerializeField] private float _homingMaxSpeed = 20f;
-
-		private DropObjectType _type;
 		private DropObjectPool _ownerPool;
 		// 같은 프레임 다중 트리거로 이중 반환되는 것 방지
 		private bool _isReleased;
-		// 이동/트리거 감지용 Kinematic Rigidbody2D (static 콜라이더 이동 시 충돌 트리 재빌드 회피)
-		private Rigidbody2D _rb;
-		// 현재 흡입 속도 (스폰마다 _homingStartSpeed 로 리셋)
-		private float _homingSpeed;
+		// 남은 수명 (_lifetime 이 0 이면 쓰지 않는다)
+		private float _remainingLife;
 
-		private void Awake()
-		{
-			_rb = this.GetComponent<Rigidbody2D>();
-		}
+		// 파생이 흡입 로직에서 이중 반환을 피하려고 읽는다.
+		protected bool IsReleased => _isReleased;
 
-		// DropObjectPool.Spawn() 이 위치 설정 → Initialize() → OnActivate() 순서로 호출
-		public void Initialize(DropObjectType type, DropObjectPool pool)
+		// DropObjectPool.Spawn() 이 위치 설정 → Initialize() → OnActivate() 순서로 호출.
+		// 파생은 자기 상태를 리셋하기 전에 base.Initialize(pool) 을 먼저 부른다.
+		public virtual void Initialize(DropObjectPool pool)
 		{
-			_type = type;
 			_ownerPool = pool;
 			_isReleased = false;
-			_homingSpeed = _homingStartSpeed;
+			_remainingLife = _lifetime;
 		}
 
-		// HeroMagnet 센서가 프레임(물리)마다 호출 — 히어로 중심으로 가속 이동. 최종 획득은 기존 OnTriggerEnter2D 가 처리.
-		public void MagnetTick(Vector2 targetCenter)
+		private void Update()
+		{
+			// _lifetime 이 0 이면 스스로 사라지지 않는다 — 스테이지 정리가 회수한다.
+			// _ownerPool 이 없으면 아직 Initialize 를 거치지 않은 예열 인스턴스다.
+			if (_lifetime <= 0f || _isReleased == true || _ownerPool == null)
+			{
+				return;
+			}
+
+			_remainingLife -= Time.deltaTime;
+			if (_remainingLife > 0f)
+			{
+				return;
+			}
+
+			ReleaseSelf();
+		}
+
+		// 히어로가 실제로 획득했을 때 — 파생이 자기 효과를 적용한다.
+		protected abstract void OnPickup(UnitBase hero);
+
+		// 이중 반환을 막으면서 풀로 돌려보낸다 (픽업·수명만료 공용).
+		protected void ReleaseSelf()
 		{
 			if (_isReleased == true)
 			{
 				return;
 			}
 
-			_homingSpeed = Mathf.Min(_homingSpeed + _homingAccel * Time.fixedDeltaTime, _homingMaxSpeed);
-			Vector2 next = Vector2.MoveTowards(_rb.position, targetCenter, _homingSpeed * Time.fixedDeltaTime);
-			_rb.MovePosition(next);
+			_isReleased = true;
+			_ownerPool.Release(this);
 		}
 
 		public void OnActivate()
@@ -93,11 +101,10 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			applyPickupEffect(unit);
+			OnPickup(unit);
 			playPickupFeedback();
 
-			_isReleased = true;
-			_ownerPool.Release(this);
+			ReleaseSelf();
 		}
 
 		// 픽업 연출(FX/SFX) — 풀 반환 전 호출. FX/SFX 모두 전역 매니저에 위임해 본체 비활성화와 분리.
@@ -111,25 +118,6 @@ namespace ProjectOne.Dungeon
 			if (_pickupSfx != null)
 			{
 				AudioManager.Instance.PlaySFX(_pickupSfx);
-			}
-		}
-
-		private void applyPickupEffect(UnitBase hero)
-		{
-			switch (_type)
-			{
-			case DropObjectType.HealOrb:
-				float before = hero.Vitals.Hp;
-				hero.Vitals.ModifyHp(hero.Stats.GetStat(Stat.Stat_MaxHp) * RestoreRatio);
-
-				// 풀피 클램프로 실제 회복이 0이면 알리지 않는다 — 0 이 뜨는 팝업을 막는다.
-				int healed = Mathf.RoundToInt(hero.Vitals.Hp - before);
-				if (healed > 0)
-				{
-					EventManager.Instance.Publish(new HealAppliedEvent(hero, healed));
-				}
-
-				break;
 			}
 		}
 	}

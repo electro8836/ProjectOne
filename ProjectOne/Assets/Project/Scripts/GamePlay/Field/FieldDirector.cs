@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
+using ProjectOne.Dungeon;
 using ProjectOne.Loading;
 using ProjectOne.Map;
 using ProjectOne.Monsters;
@@ -66,6 +67,12 @@ namespace ProjectOne.Field
 
 		private void OnDestroy()
 		{
+			// 풀 오브젝트는 씬과 함께 사라지지만 Addressable 핸들은 명시적으로 놓아야 한다.
+			if (DropManager.HasInstance == true)
+			{
+				DropManager.Instance.Clear();
+			}
+
 			if (_instance == this)
 			{
 				_instance = null;
@@ -95,6 +102,9 @@ namespace ProjectOne.Field
 
 			_hero = await UnitFactory.Instance.CreateHeroAsync(spawnPos, Faction.Player, true, ct);
 			_currentFieldId = fieldId;
+
+			// 월드 오브젝트 풀은 첫 처치 전에 준비돼 있어야 한다 — 없으면 보상 드랍이 유실된다.
+			await DropManager.Instance.PrepareAsync(ct);
 
 			if (_spawner != null)
 			{

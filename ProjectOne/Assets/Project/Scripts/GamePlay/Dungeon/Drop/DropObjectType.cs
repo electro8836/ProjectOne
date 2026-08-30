@@ -7,5 +7,7 @@
 	{
 		None,
 		HealOrb,
+		BuffRune,
+		Item,
 	}
 }

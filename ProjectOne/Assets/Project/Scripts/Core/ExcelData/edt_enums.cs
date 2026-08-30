@@ -333,6 +333,7 @@ namespace EDT {
         BUFF_Stagger,
         BUFF_Stun,
         BUFF_DamageTakenUp,
+        BUFF_CombatRune,
     }
 
     public enum Currency {
@@ -461,6 +462,8 @@ namespace EDT {
         SE_Debuff_DamageTakenUp_StatChange,
         SE_DualBlades_Active_01_Damage,
         SE_DualBlades_Active_02_Damage,
+        SE_BuffRune_AtkUp,
+        SE_BuffRune_DefUp,
     }
 
     public enum SkillModifier {
