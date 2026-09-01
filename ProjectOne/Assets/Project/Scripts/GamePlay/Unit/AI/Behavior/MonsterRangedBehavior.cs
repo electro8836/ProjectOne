@@ -90,8 +90,12 @@ namespace ProjectOne.Unit.AI
 			}
 
 			float distSqr = (target.CachedPos - self.CachedPos).sqrMagnitude;
-			float inRange = _cachedRange;
-			float outRange = _cachedRange * Hysteresis;
+
+			// 스킬 발동 조건(TargetResolver: ScanRange + 타겟 반지름)과 같은 기준으로 멈춘다.
+			// 기준이 어긋나면 사거리에서 시전해 놓고 시전이 끝난 뒤 그 차이만큼 더 걸어 들어간다.
+			float stopDist = _cachedRange + target.Radius;
+			float inRange = stopDist;
+			float outRange = stopDist * Hysteresis;
 
 			if (_approaching == true)
 			{

@@ -8,6 +8,7 @@ using ProjectOne.Loading;
 using ProjectOne.Map;
 using ProjectOne.Monsters;
 using ProjectOne.Npcs;
+using ProjectOne.UI;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Field
@@ -73,6 +74,11 @@ namespace ProjectOne.Field
 				DropManager.Instance.Clear();
 			}
 
+			if (UIManager.HasInstance == true)
+			{
+				UIManager.Instance.ReleaseWorldGauge();
+			}
+
 			if (_instance == this)
 			{
 				_instance = null;
@@ -105,6 +111,9 @@ namespace ProjectOne.Field
 
 			// 월드 오브젝트 풀은 첫 처치 전에 준비돼 있어야 한다 — 없으면 보상 드랍이 유실된다.
 			await DropManager.Instance.PrepareAsync(ct);
+
+			// 유닛 위에 뜨는 게이지(보스 캐스팅·상호작용 진행)를 Canvas_World 에 올린다.
+			await UIManager.Instance.EnsureWorldGaugeAsync(ct);
 
 			if (_spawner != null)
 			{

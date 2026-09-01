@@ -17,7 +17,7 @@ namespace EDT {
             public AggroType AggroType { get; set; } = AggroType.None;
             public float DetectRange { get; set; } = 0f;
             public float LeashRange { get; set; } = 0f;
-            public Skill[] SkillIDs { get; set; } = Array.Empty<Skill>();
+            public int SkillSetGroupID { get; set; } = 0;
             public int BaseExp { get; set; } = 0;
             public int PerLevelExp { get; set; } = 0;
             public int RewardGroupID { get; set; } = 0;
@@ -53,7 +53,7 @@ namespace EDT {
                 row.AggroType = (AggroType)reader.ReadInt32();
                 row.DetectRange = reader.ReadSingle();
                 row.LeashRange = reader.ReadSingle();
-                { int _n = reader.ReadInt32(); row.SkillIDs = new Skill[_n]; for(int _i=0;_i<_n;_i++) row.SkillIDs[_i] = (Skill)reader.ReadInt32(); }
+                row.SkillSetGroupID = reader.ReadInt32();
                 row.BaseExp = reader.ReadInt32();
                 row.PerLevelExp = reader.ReadInt32();
                 row.RewardGroupID = reader.ReadInt32();

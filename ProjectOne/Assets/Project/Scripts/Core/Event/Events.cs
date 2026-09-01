@@ -146,6 +146,18 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 브레이크 발동 알림 (게이지 0 도달 또는 보스 패턴 파훼). 데미지 텍스트의 BREAK 표시에서 구독.
+		// HP 변화가 없어 DamageTakenEvent 로는 담을 수 없다.
+		public readonly struct MonsterBrokenEvent
+		{
+				public readonly UnitBase Target;
+
+				public MonsterBrokenEvent(UnitBase target)
+				{
+						this.Target = target;
+				}
+		}
+
 		// 유닛 스폰 글로벌 알림 (HeroAspect 외 보조 채널 — UI/사운드/튜토리얼 등).
 		public readonly struct UnitSpawnedEvent
 		{

@@ -334,6 +334,8 @@ namespace EDT {
         BUFF_Stun,
         BUFF_DamageTakenUp,
         BUFF_CombatRune,
+        BUFF_Invincible,
+        BUFF_BreakStun,
     }
 
     public enum Currency {
@@ -443,6 +445,8 @@ namespace EDT {
         Skill_Monster_MeleeAttack_01,
         Skill_Monster_RangeAttack_01,
         Skill_Monster_CastAttack_01,
+        Skill_Monster_OrcGeneral_Active_01,
+        Skill_Monster_Boss_Doom_01,
     }
 
     public enum SkillEffect {
@@ -458,12 +462,15 @@ namespace EDT {
         SE_Monster_CastAttack_Damage,
         SE_Common_Stagger_Buff,
         SE_Boss_Break_Stun_Buff,
+        SE_Monster_Break_Stun_Buff,
         SE_Boss_Break_DamageTakenUp_Buff,
         SE_Debuff_DamageTakenUp_StatChange,
         SE_DualBlades_Active_01_Damage,
         SE_DualBlades_Active_02_Damage,
         SE_BuffRune_AtkUp,
         SE_BuffRune_DefUp,
+        SE_Monster_OrcGeneral_Active_01_Damage,
+        SE_Boss_Doom_Damage,
     }
 
     public enum SkillModifier {
@@ -494,6 +501,7 @@ namespace EDT {
         Stat_PickupRange,
         Stat_GoldDropBonus,
         Stat_DamageTakenAmp,
+        Stat_MaxBreakGauge,
     }
 
     public enum StatDetail {
@@ -552,6 +560,8 @@ namespace EDT {
         StatDetail_GoldDropBonus_Add,
         StatDetail_DamageTakenAmp_Base,
         StatDetail_DamageTakenAmp_Add,
+        StatDetail_MaxBreakGauge_Base,
+        StatDetail_MaxBreakGauge_Add,
     }
 
     public enum Summon {
@@ -589,6 +599,8 @@ namespace EDT {
         TableMonster,
         TableMonsterStat,
         TableMonsterSpawn,
+        TableBossMonsterPhase,
+        TableMonsterSkillSet,
         TableNpc,
         TableNpcSpawn,
         TableNpcDialog,

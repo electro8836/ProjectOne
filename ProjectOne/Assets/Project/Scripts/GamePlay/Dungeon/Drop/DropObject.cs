@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using ProjectOne.Utils;
 using ProjectOne.Unit;
 using ProjectOne.Audio;
@@ -42,9 +42,17 @@ namespace ProjectOne.Dungeon
 
 		private void Update()
 		{
-			// _lifetime 이 0 이면 스스로 사라지지 않는다 — 스테이지 정리가 회수한다.
 			// _ownerPool 이 없으면 아직 Initialize 를 거치지 않은 예열 인스턴스다.
-			if (_lifetime <= 0f || _isReleased == true || _ownerPool == null)
+			if (_isReleased == true || _ownerPool == null)
+			{
+				return;
+			}
+
+			// 수명과 무관하게 매 프레임 돈다 — 유지 시간 판정처럼 수명이 없는 파생도 써야 한다.
+			Tick(Time.deltaTime);
+
+			// _lifetime 이 0 이면 스스로 사라지지 않는다 — 스테이지 정리가 회수한다.
+			if (_lifetime <= 0f)
 			{
 				return;
 			}
@@ -56,6 +64,23 @@ namespace ProjectOne.Dungeon
 			}
 
 			ReleaseSelf();
+		}
+
+		// 매 프레임 갱신이 필요한 파생용. 파생이 Update 를 직접 선언하면 베이스의 Update 와
+		// 어느 쪽이 불릴지 불분명해지므로 이 훅을 거친다.
+		protected virtual void Tick(float dt)
+		{
+		}
+
+		// 접촉 즉시 획득할지. 유지 시간이 필요한 파생은 false 로 덮고 Enter/Exit 로 직접 판정한다.
+		protected virtual bool PickupOnTouch
+		{
+			get { return true; }
+		}
+
+		// 히어로가 범위에 들어왔을 때 — 즉시 획득이 아닌 파생이 쓴다.
+		protected virtual void OnHeroEnter(UnitBase hero)
+		{
 		}
 
 		// 히어로가 실제로 획득했을 때 — 파생이 자기 효과를 적용한다.
@@ -81,6 +106,28 @@ namespace ProjectOne.Dungeon
 		{
 		}
 
+		// 히어로 판별 — 파생이 OnTriggerExit2D 에서 같은 규칙을 쓰도록 공개한다.
+		//
+		// 자석 센서(히어로 자식)는 획득 대상이 아니다 — 넓은 범위에서 즉시 획득되는 것을 막는다.
+		// 몬스터/투사체 콜라이더는 GetComponentInParent 결과로 자연 제외된다.
+		protected static bool TryGetHero(Collider2D other, out UnitBase hero)
+		{
+			hero = null;
+			if (other.GetComponent<HeroMagnet>() != null)
+			{
+				return false;
+			}
+
+			UnitBase unit = other.GetComponentInParent<UnitBase>();
+			if (unit == null || unit.GetUnitType() != UnitType.Hero || unit.IsDead == true)
+			{
+				return false;
+			}
+
+			hero = unit;
+			return true;
+		}
+
 		private void OnTriggerEnter2D(Collider2D other)
 		{
 			if (_isReleased == true)
@@ -88,27 +135,28 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			// 자석 센서(히어로 자식)는 획득 대상 아님 — 넓은 범위에서 즉시 획득되는 것 방지
-			if (other.GetComponent<HeroMagnet>() != null)
+			UnitBase hero;
+			if (TryGetHero(other, out hero) == false)
 			{
 				return;
 			}
 
-			// 히어로만 획득 — 몬스터/투사체 콜라이더는 GetComponentInParent 결과로 자연 제외
-			UnitBase unit = other.GetComponentInParent<UnitBase>();
-			if (unit == null || unit.GetUnitType() != UnitType.Hero || unit.IsDead == true)
+			OnHeroEnter(hero);
+
+			// 유지 시간이 필요한 파생은 여기서 끝낸다 — 완료 판정은 파생이 직접 한다.
+			if (PickupOnTouch == false)
 			{
 				return;
 			}
 
-			OnPickup(unit);
-			playPickupFeedback();
+			OnPickup(hero);
+			PlayPickupFeedback();
 
 			ReleaseSelf();
 		}
 
 		// 픽업 연출(FX/SFX) — 풀 반환 전 호출. FX/SFX 모두 전역 매니저에 위임해 본체 비활성화와 분리.
-		private void playPickupFeedback()
+		protected void PlayPickupFeedback()
 		{
 			if (_pickupFx != null)
 			{

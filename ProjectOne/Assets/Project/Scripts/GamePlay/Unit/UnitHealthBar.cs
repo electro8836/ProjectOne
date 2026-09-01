@@ -21,8 +21,20 @@ namespace ProjectOne.Unit
 		[Tooltip("체력바 테두리 스프라이트")]
 		[SerializeField] private SpriteRenderer _border;
 
+		[Tooltip("브레이크 게이지 Fill 스프라이트 — 엘리트 전용, 없는 유닛은 비워 둔다")]
+		[SerializeField] private SpriteRenderer _breakFill;
+
+		[Tooltip("브레이크 게이지 배경 스프라이트")]
+		[SerializeField] private SpriteRenderer _breakBg;
+
+		[Tooltip("브레이크 게이지 테두리 스프라이트")]
+		[SerializeField] private SpriteRenderer _breakBorder;
+
 		// 체력이 가득 찼을 때의 가로 길이. 프리팹 초기값을 기준으로 삼는다.
 		private float _fullWidth = 1f;
+
+		// 브레이크 게이지가 가득 찼을 때의 가로 길이. 위와 같은 규칙이다.
+		private float _breakFullWidth = 1f;
 
 		private UnitBase _owner;
 
@@ -31,6 +43,8 @@ namespace ProjectOne.Unit
 
 		// 마지막으로 반영한 비율 — 값이 바뀔 때만 size 를 대입한다.
 		private float _lastRatio = -1f;
+
+		private float _lastBreakRatio = -1f;
 
 		private void Awake()
 		{
@@ -44,12 +58,19 @@ namespace ProjectOne.Unit
 			}
 
 			_fullWidth = _fill.size.x;
+
+			// 브레이크 게이지는 엘리트에만 있다 — 없으면 그냥 놔둔다.
+			if (_breakFill != null)
+			{
+				_breakFullWidth = _breakFill.size.x;
+			}
 		}
 
 		private void OnEnable()
 		{
 			// 풀에서 재사용되면 유닛의 체력이 리셋된다 — 다음 통지를 반드시 반영하도록 캐시를 비운다.
 			_lastRatio = -1f;
+			_lastBreakRatio = -1f;
 
 			if (_owner != null)
 			{
@@ -103,6 +124,44 @@ namespace ProjectOne.Unit
 			{
 				_border.sortingOrder = order + 3;
 			}
+
+			// 브레이크 게이지는 체력바 위 단계에 얹는다 — 같은 유닛 안에서 순서가 겹치지 않게.
+			if (_breakBg != null)
+			{
+				_breakBg.sortingOrder = order + 4;
+			}
+
+			if (_breakFill != null)
+			{
+				_breakFill.sortingOrder = order + 5;
+			}
+
+			if (_breakBorder != null)
+			{
+				_breakBorder.sortingOrder = order + 6;
+			}
+		}
+
+		// 브레이크 게이지 비율(0~1)을 Fill 가로 길이에 반영한다.
+		// 체력과 달리 통지 이벤트가 없어 MonsterBreak 가 직접 밀어 넣는다.
+		public void SetBreakRatio(float ratio)
+		{
+			if (_breakFill == null)
+			{
+				return;
+			}
+
+			float clamped = Mathf.Clamp01(ratio);
+			if (Mathf.Approximately(clamped, _lastBreakRatio) == true)
+			{
+				return;
+			}
+
+			_lastBreakRatio = clamped;
+
+			Vector2 size = _breakFill.size;
+			size.x = _breakFullWidth * clamped;
+			_breakFill.size = size;
 		}
 
 		// 유닛의 체력/최대체력이 바뀐 프레임에 1회 불린다 (UnitBase.HpChanged).

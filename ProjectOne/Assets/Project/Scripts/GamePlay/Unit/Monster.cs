@@ -1,4 +1,4 @@
-using EDT;
+﻿using EDT;
 using UnityEngine;
 using ProjectOne.Combat;
 using ProjectOne.Event;
@@ -26,6 +26,9 @@ namespace ProjectOne.Unit
 		// 고유 드랍(Monster.RewardGroupID)은 원형이 소유하므로 여기 두지 않는다.
 		public int SpawnRewardGroupId { get; private set; }
 
+		// 브레이크 게이지 — 엘리트/보스만 가진다. MonsterPool 이 등급을 보고 붙여 준다.
+		private MonsterBreak _break;
+
 		public override UnitType GetUnitType()
 		{
 			return UnitType.Monster;
@@ -38,7 +41,7 @@ namespace ProjectOne.Unit
 
 			if (_brain != null)
 			{
-				_brain.Blackboard.ResetForSpawn(new Vector2(origin.x, origin.y));
+				_brain.ResetForSpawn(new Vector2(origin.x, origin.y));
 			}
 		}
 
@@ -54,6 +57,12 @@ namespace ProjectOne.Unit
 			SpawnRewardGroupId = groupId;
 		}
 
+		// 브레이크 컴포넌트 주입 — 풀 생성 시 1회. 일반 몬스터는 null 로 남는다.
+		public void SetBreak(MonsterBreak component)
+		{
+			_break = component;
+		}
+
 		public void TakeDamage(in DamageInfo info)
 		{
 			HandleHit(in info);
@@ -63,6 +72,17 @@ namespace ProjectOne.Unit
 				if (_vitals.IsHpZero)
 				{
 					Die();
+				}
+			}
+
+			// 브레이크 차감은 사망 판정 뒤다 — 죽은 몬스터가 기절 모션으로 넘어가면 안 된다.
+			// 타격 1회당 1번 차감되므로 다단히트는 히트 수만큼 깎인다.
+			if (_break != null && IsDead == false)
+			{
+				Table_Skill.Row skill = Table_Skill.Get((EDT.Skill)info.SkillID);
+				if (skill != null && skill.BreakDamage > 0f)
+				{
+					_break.ApplyBreakDamage(skill.BreakDamage);
 				}
 			}
 		}
@@ -76,6 +96,28 @@ namespace ProjectOne.Unit
 			if (wasAlive == true)
 			{
 				EventManager.Instance.Publish(new MonsterKillEvent(GetTableID(), Level, HitCenter, SpawnRewardGroupId));
+			}
+		}
+
+		public override void ManualTick(float dt)
+		{
+			base.ManualTick(dt);
+
+			// 죽으면 게이지 회복도 멈춘다 — base 가 버프/스킬/AI 를 IsDead 로 거르는 것과 같은 규칙.
+			if (IsDead == false && _break != null)
+			{
+				_break.Tick(dt);
+			}
+		}
+
+		// 풀 재사용 — 이전 생의 브레이크 상태가 남으면 다음 스폰이 0 게이지로 시작한다.
+		public override void OnSpawnReset(Vector3 pos)
+		{
+			base.OnSpawnReset(pos);
+
+			if (_break != null)
+			{
+				_break.ResetForSpawn();
 			}
 		}
 

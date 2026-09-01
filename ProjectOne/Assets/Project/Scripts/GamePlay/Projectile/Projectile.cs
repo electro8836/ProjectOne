@@ -108,7 +108,8 @@ namespace ProjectOne.Projectile
 				return;
 			}
 
-			if (_data.target != null && _data.target.IsDead == false)
+			// 발사 시점에 잠근 대상이라 그 사이 무적이 됐을 수 있다 — 유도/포물선의 누수 지점이다.
+			if (_data.target != null && _data.target.IsTargetable == true)
 			{
 				_hitBuffer.Clear();
 				_hitBuffer.Add(_data.target);
@@ -136,8 +137,8 @@ namespace ProjectOne.Projectile
 					}
 				}
 
-				// 적이 아니면(아군/캐스터 자신/사망) 무시하고 통과
-				if (_data.caster == null || unit.IsDead == true || TargetResolver.IsEnemy(_data.caster.Faction, unit.Faction) == false)
+				// 적이 아니면(아군/캐스터 자신/사망/무적) 무시하고 통과
+				if (_data.caster == null || unit.IsTargetable == false || TargetResolver.IsEnemy(_data.caster.Faction, unit.Faction) == false)
 				{
 					return;
 				}

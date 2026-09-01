@@ -15,6 +15,9 @@ namespace ProjectOne.Dungeon
 		// 센서 오브젝트 이름 — 히어로 프리팹이 아니라 코드가 만든다.
 		private const string SensorName = "MagnetSensor";
 
+		// 센서 전용 레이어 — Physics2D 매트릭스에서 Drop 레이어하고만 충돌하도록 설정돼 있다.
+		private const string SensorLayerName = "MagnetSensor";
+
 		// Stat_PickupRange 가 비어 있을 때 쓰는 기본 흡입 범위(반경).
 		// CharacterStat 에 StatDetail_PickupRange_Base 행이 생기면 그 값이 이 기본값을 대체한다.
 		[SerializeField] private float _range = 2f;
@@ -41,6 +44,18 @@ namespace ProjectOne.Dungeon
 			GameObject go = new GameObject(SensorName);
 			go.transform.SetParent(hero.transform, false);
 			go.transform.localPosition = Vector3.zero;
+
+			// 전용 레이어를 반드시 씌운다. Default 로 남으면 투사체가 이 넓은 센서에 걸려
+			// GetComponentInParent 로 히어로를 찾아내 사거리 밖에서 명중 판정이 나 버린다.
+			int sensorLayer = LayerMask.NameToLayer(SensorLayerName);
+			if (sensorLayer < 0)
+			{
+				Debug.LogError($"[HeroMagnet] 레이어 '{SensorLayerName}' 가 없습니다 — Project Settings > Tags and Layers 를 확인하세요.");
+			}
+			else
+			{
+				go.layer = sensorLayer;
+			}
 
 			// 트리거 콜백을 받으려면 자체 Rigidbody2D 가 필요하다. Kinematic 이라 물리에 관여하지 않는다.
 			Rigidbody2D rb = go.AddComponent<Rigidbody2D>();

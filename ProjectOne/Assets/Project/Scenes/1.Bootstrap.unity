@@ -127,6 +127,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 773462493708180903, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: m_SortingOrder
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 773462493708180903, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
     - target: {fileID: 827102520626777141, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
@@ -139,6 +147,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: UIManager
       objectReference: {fileID: 0}
+    - target: {fileID: 3616004815322770208, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.003
+      objectReference: {fileID: 0}
+    - target: {fileID: 3616004815322770208, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.003
+      objectReference: {fileID: 0}
+    - target: {fileID: 3623497805024100753, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: _bossCastingGauge
+      value: 
+      objectReference: {fileID: 7894682227904997499, guid: 894d0609c3ab5dc47bce6dc7e44f5bad, type: 3}
+    - target: {fileID: 3623497805024100753, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: _interactionGauge
+      value: 
+      objectReference: {fileID: 176688733951041818, guid: a4aebce4e42002647a366f85c973755a, type: 3}
     - target: {fileID: 5100000000000000012, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
@@ -487,6 +511,7 @@ MonoBehaviour:
   _ownedCostumes: e9030000ea030000d1070000
   _equippedBodyCostume: 1002
   _equippedWeaponCostume: 0
+  _attackWhileMoving: 0
   _viewRefreshInterval: 1
   _viewCharacterLevel: 0
   _viewCharacterExp: 0

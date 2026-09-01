@@ -30,6 +30,10 @@ namespace ProjectOne.Combat
 		[SerializeField] private DamageNumber _missPrefab;
 		[SerializeField] private DamageNumber _blockPrefab;
 
+		// 브레이크 발동 표시 — 문구(BREAK)는 프리팹의 텍스트가 갖는다.
+		[Header("브레이크")]
+		[SerializeField] private DamageNumber _breakPrefab;
+
 		// HitCenter 로부터 위로 띄울 높이
 		[SerializeField] private float _yOffset = 0.5f;
 
@@ -55,6 +59,7 @@ namespace ProjectOne.Combat
 			prewarm(_healPrefab);
 			prewarm(_missPrefab);
 			prewarm(_blockPrefab);
+			prewarm(_breakPrefab);
 		}
 
 		private void OnEnable()
@@ -62,6 +67,7 @@ namespace ProjectOne.Combat
 			EventManager.Instance.Subscribe<DamageTakenEvent>(onDamageTaken);
 			EventManager.Instance.Subscribe<HealAppliedEvent>(onHealApplied);
 			EventManager.Instance.Subscribe<DamageAvoidedEvent>(onDamageAvoided);
+			EventManager.Instance.Subscribe<MonsterBrokenEvent>(onMonsterBroken);
 		}
 
 		private void OnDisable()
@@ -69,6 +75,7 @@ namespace ProjectOne.Combat
 			EventManager.Instance.Unsubscribe<DamageTakenEvent>(onDamageTaken);
 			EventManager.Instance.Unsubscribe<HealAppliedEvent>(onHealApplied);
 			EventManager.Instance.Unsubscribe<DamageAvoidedEvent>(onDamageAvoided);
+			EventManager.Instance.Unsubscribe<MonsterBrokenEvent>(onMonsterBroken);
 		}
 
 		// 프리팹당 1회 호출 — enablePooling 이 꺼져 있으면 라이브러리가 알아서 무시한다.
@@ -156,6 +163,23 @@ namespace ProjectOne.Combat
 
 			// 숫자 없이 띄운다 — 문구는 프리팹이 갖는다.
 			prefab.Spawn(spawnPos(e.Target));
+		}
+
+		private void onMonsterBroken(MonsterBrokenEvent e)
+		{
+			if (e.Target == null)
+			{
+				return;
+			}
+
+			// 인스펙터 미연결 방어
+			if (_breakPrefab == null)
+			{
+				return;
+			}
+
+			// 숫자 없이 띄운다 — 문구는 프리팹이 갖는다.
+			_breakPrefab.Spawn(spawnPos(e.Target));
 		}
 
 		// 대상이 죽거나 풀로 반환되기 전에 위치를 즉시 읽는다 (이벤트에 좌표가 실려 있지 않음).

@@ -28,6 +28,11 @@ namespace ProjectOne.UI
 		[SerializeField] private Canvas _navigationCanvas;	// Sort Order 300 — 네비게이션 바(창 위 상시)
 		[SerializeField] private Canvas _systemCanvas;	// Sort Order 400 — 네트워크 딤(최상위)
 
+		// WorldSpace — 유닛 머리 위에 뜨는 게이지들. 위 5개와 달리 화면이 아니라 월드에 그려진다.
+		// 중첩 Canvas 는 루트의 renderMode 를 따르므로 반드시 다른 캔버스의 자식이 아니라
+		// UIManager 직속(=Canvas 없는 루트의 자식)이어야 WorldSpace 로 산다.
+		[SerializeField] private Canvas _worldCanvas;
+
 		[Header("네트워크 딤")]
 		[SerializeField] private GameObject _networkBlockerPrefab;
 
@@ -111,6 +116,11 @@ namespace ProjectOne.UI
 			if (_systemCanvas == null)
 			{
 				Debug.LogError("[UIManager] _systemCanvas 가 비었습니다 — 네트워크 딤을 띄울 수 없습니다.");
+			}
+
+			if (_worldCanvas == null)
+			{
+				Debug.LogError("[UIManager] _worldCanvas 가 비었습니다 — 월드 게이지를 띄울 수 없습니다.");
 			}
 		}
 
@@ -287,6 +297,125 @@ namespace ProjectOne.UI
 			}
 
 			_navigationBar = Instantiate(prefab, _navigationCanvas.transform);
+		}
+
+		// ── 월드 게이지 ────────────────────────────────────────────────
+		//
+		// 유닛 머리 위에 뜨는 게이지들. 화면 UI 와 달리 Canvas_World(WorldSpace) 아래에 붙는다.
+		// 전투에서만 쓰이므로 전투 진입에 로드하고 나갈 때 놓는다 — 마을까지 들고 가지 않는다.
+
+		private const string BossCastingGaugeAddress = "UIPrefab_BossCastingGage";
+		private const string InteractionGaugeAddress = "UIPrefab_InteractionGage";
+		private const string BossGimmickGaugeAddress = "UIPrefab_BossGimmickGage";
+
+		private GameObject _bossCastingGaugeGo;
+		private GameObject _interactionGaugeGo;
+		private InteractionGauge _interactionGauge;
+
+		// 기믹 게이지만 프리팹을 들고 있는다 — 코어마다 하나씩 찍어야 해서 인스턴스가 여럿이다.
+		private GameObject _bossGimmickGaugePrefab;
+
+		// 상호작용 진행 게이지 접근점 — 기믹 파훼·상자 개봉·자원 수집이 공용으로 쓴다.
+		// 아직 로드 전이면 null 이므로 호출부가 확인해야 한다.
+		public InteractionGauge InteractionGauge
+		{
+			get { return _interactionGauge; }
+		}
+
+		// 전투 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
+		public async UniTask EnsureWorldGaugeAsync(CancellationToken ct)
+		{
+			if (_worldCanvas == null)
+			{
+				return;
+			}
+
+			if (_bossCastingGaugeGo == null)
+			{
+				_bossCastingGaugeGo = await instantiateWorldGaugeAsync(BossCastingGaugeAddress, ct);
+			}
+
+			if (_interactionGaugeGo == null)
+			{
+				_interactionGaugeGo = await instantiateWorldGaugeAsync(InteractionGaugeAddress, ct);
+				if (_interactionGaugeGo != null)
+				{
+					_interactionGauge = _interactionGaugeGo.GetComponent<InteractionGauge>();
+					if (_interactionGauge == null)
+					{
+						Debug.LogError($"[UIManager] {InteractionGaugeAddress} 에 InteractionGauge 컴포넌트가 없습니다.");
+					}
+				}
+			}
+
+			if (_bossGimmickGaugePrefab == null)
+			{
+				_bossGimmickGaugePrefab = await ResourceManager.Instance.AcquireAsync<GameObject>(BossGimmickGaugeAddress, ct);
+				if (_bossGimmickGaugePrefab == null)
+				{
+					// 게이지가 없어도 파훼 자체는 돌아간다 — 진행도가 안 보일 뿐이다.
+					Debug.LogWarning($"[UIManager] 월드 게이지 프리팹을 찾지 못했습니다: {BossGimmickGaugeAddress}");
+				}
+			}
+		}
+
+		// 기믹 코어 1개당 1개. 회수는 게이지가 스스로 한다 — 대상이 꺼지거나 사라지면 자기를 파괴한다.
+		public BossGimmickGauge CreateBossGimmickGauge()
+		{
+			if (_bossGimmickGaugePrefab == null || _worldCanvas == null)
+			{
+				return null;
+			}
+
+			GameObject go = Instantiate(_bossGimmickGaugePrefab, _worldCanvas.transform);
+			BossGimmickGauge gauge = go.GetComponent<BossGimmickGauge>();
+			if (gauge == null)
+			{
+				Debug.LogError($"[UIManager] {BossGimmickGaugeAddress} 에 BossGimmickGauge 컴포넌트가 없습니다.");
+				Destroy(go);
+				return null;
+			}
+
+			return gauge;
+		}
+
+		// 전투 종료 시. UIManager 가 영속이라 명시적으로 걷지 않으면 마을까지 따라간다.
+		public void ReleaseWorldGauge()
+		{
+			if (_bossCastingGaugeGo != null)
+			{
+				Destroy(_bossCastingGaugeGo);
+				_bossCastingGaugeGo = null;
+				ResourceManager.Instance.Release(BossCastingGaugeAddress);
+			}
+
+			if (_interactionGaugeGo != null)
+			{
+				Destroy(_interactionGaugeGo);
+				_interactionGaugeGo = null;
+				_interactionGauge = null;
+				ResourceManager.Instance.Release(InteractionGaugeAddress);
+			}
+
+			if (_bossGimmickGaugePrefab != null)
+			{
+				// 찍어 둔 인스턴스는 각자 대상을 따라 사라진다 — 여기서는 프리팹 참조만 놓는다.
+				_bossGimmickGaugePrefab = null;
+				ResourceManager.Instance.Release(BossGimmickGaugeAddress);
+			}
+		}
+
+		private async UniTask<GameObject> instantiateWorldGaugeAsync(string address, CancellationToken ct)
+		{
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct);
+			if (prefab == null)
+			{
+				// 게이지가 없어도 전투 흐름 자체는 막지 않는다.
+				Debug.LogWarning($"[UIManager] 월드 게이지 프리팹을 찾지 못했습니다: {address}");
+				return null;
+			}
+
+			return Instantiate(prefab, _worldCanvas.transform);
 		}
 
 		// ── 창(Window) ──────────────────────────────────────────────────

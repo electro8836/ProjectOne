@@ -29,6 +29,7 @@ namespace ProjectOne.Dungeon
 		private const string HealOrbAddress = "Prefab_HealOrb";
 		private const string BuffRuneAddress = "Prefab_BuffRune";
 		private const string DropItemAddress = "Prefab_DropItem";
+		private const string BossGimmickAddress = "Prefab_BossGimmickCore";
 
 		// 몬스터 처치 시 회복 오브가 등장할 확률
 		private const float HealOrbChance = 0.15f;
@@ -83,6 +84,7 @@ namespace ProjectOne.Dungeon
 			await createPoolAsync(DropObjectType.HealOrb, HealOrbAddress, ct);
 			await createPoolAsync(DropObjectType.BuffRune, BuffRuneAddress, ct);
 			await createPoolAsync(DropObjectType.Item, DropItemAddress, ct);
+			await createPoolAsync(DropObjectType.BossGimmick, BossGimmickAddress, ct);
 
 			resetRuneTimer();
 		}
@@ -114,6 +116,45 @@ namespace ProjectOne.Dungeon
 				{
 					spawnDrop(DropObjectType.Item, randomAround(evt.Position));
 				}
+			}
+		}
+
+		// 보스 전멸기 파훼용 코어를 center 주변 radius 원주에 균등 배치한다.
+		// 스폰된 코어를 outSpawned 에 담아 돌려주므로, 파훼가 끝나면 호출자가 Recall 로 회수한다.
+		// (코어는 수명이 없다 — 회수 책임이 전환 시퀀스에 있다)
+		public void SpawnGimmicks(Vector2 center, float radius, int count,
+			IBossGimmickListener listener, List<BossGimmickCore> outSpawned)
+		{
+			if (count <= 0 || outSpawned == null)
+			{
+				return;
+			}
+
+			DropObjectPool pool;
+			if (_pools.TryGetValue(DropObjectType.BossGimmick, out pool) == false || pool == null)
+			{
+				Debug.LogError("[DropManager] BossGimmick 풀이 없어 파훼 기믹을 생성하지 못했다 — 전멸기를 막을 수단이 사라진다.");
+				return;
+			}
+
+			// 시작 각도를 무작위로 돌려 매번 같은 자리에 뜨지 않게 한다.
+			float startAngle = Random.value * Mathf.PI * 2f;
+			float step = Mathf.PI * 2f / count;
+
+			for (int i = 0; i < count; i++)
+			{
+				float angle = startAngle + step * i;
+				Vector2 pos = center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+
+				BossGimmickCore core = pool.Spawn(pos) as BossGimmickCore;
+				if (core == null)
+				{
+					Debug.LogError("[DropManager] BossGimmick 프리팹에 BossGimmickCore 컴포넌트가 없다.");
+					return;
+				}
+
+				core.SetListener(listener);
+				outSpawned.Add(core);
 			}
 		}
 

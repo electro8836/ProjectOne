@@ -41,7 +41,17 @@ namespace ProjectOne.Unit
 			UnitFactory.Instance.ComposeUnit(component, _monsterId, statGroupId, 1, Faction.Enemy);
 			val.name = string.Format("{0}_{1}", (row != null) ? row.Name : "Monster", component.GetID());
 
-			component.SetMonsterType(row?.MonsterType ?? MonsterType.None);
+			MonsterType monsterType = row?.MonsterType ?? MonsterType.None;
+			component.SetMonsterType(monsterType);
+
+			// 브레이크는 엘리트/보스 전용이다 — 일반 몬스터에는 컴포넌트를 붙이지 않는다.
+			// 프리팹이 아니라 여기서 붙이는 이유: 등급은 테이블 값이라 프리팹과 어긋날 수 있다.
+			if (monsterType == MonsterType.Elite || monsterType == MonsterType.Boss)
+			{
+				MonsterBreak breakComponent = val.AddComponent<MonsterBreak>();
+				breakComponent.SetOwner(component);
+				component.SetBreak(breakComponent);
+			}
 
 			// AIType 이 FSM/BT 선택까지 겸한다 (몬스터 설계 5장).
 			// AI 파라미터는 Monster 행에 함께 들어 있다. row 가 null 이면 접근형으로 폴백한다 — 경고는 MonsterCatalog 가 낸다.

@@ -62,7 +62,7 @@ namespace ProjectOne.Skill
 				// 캐스팅 시간은 공속의 영향을 받지 않는다 (설계 4.7).
 				// 모션은 시전을 마친 뒤에 낸다 (SkillContainer.EndCasting) — 캐스팅 동안 시전 자세를
 				// 유지하다가 종료 순간에 공격 모션이 나가야 하고, 취소되면 모션이 나가면 안 된다.
-				caster.SkillContainer.BeginCasting(row.CastingParam, id);
+				caster.SkillContainer.BeginCasting(row.CastingParam, id, useSpeed);
 				playSkillVfx(row, caster);
 				scheduleEffects(resolved, caster, useSpeed, row.CastingParam, hasOrigin, origin);
 				return;
@@ -123,6 +123,28 @@ namespace ProjectOne.Skill
 			SkillEffectApplier.Apply(effectId, caster, skillId, hit, 0, hasCenter: true, center: center);
 		}
 
+		// 발동 시점 재탐색 — 시전 시점의 대상 스냅샷을 버리고, 스킬의 ScanType/ScanRange/ScanParam 으로
+		// 시전자 기준 범위를 다시 판정한다. 캐스팅 도중 벗어난 적은 빠지고 들어온 적은 포함된다.
+		// 방향은 캐스팅 중 facing 잠금(BeginCasting)으로 시전 시작 시점 값이 그대로 유지된다.
+		public static void RunEffectRescan(EDT.Skill skillId, SkillEffect effectId, UnitBase caster)
+		{
+			if (caster == null || caster.IsDead == true)
+			{
+				return;
+			}
+
+			ResolvedSkill resolved = caster.Resolve(skillId);
+			if (resolved == null || resolved.IsValid == false)
+			{
+				return;
+			}
+
+			Table_Skill.Row row = resolved.Row;
+			List<UnitBase> hit = TargetResolver.ScanByType(row.ScanType, row.ApplyTarget, row.ScanRange, row.ScanParam, caster);
+
+			SkillEffectApplier.Apply(effectId, caster, skillId, hit, 0);
+		}
+
 		// ── 내부 ──────────────────────────────────────────────────────
 
 		// 탐색 1회 → 효과별 지연 예약. extraDelay 는 캐스팅 시간처럼 사이클 앞에 붙는 고정 지연이다.
@@ -159,18 +181,38 @@ namespace ProjectOne.Skill
 				center = scanned[0].HitCenter;
 			}
 
-			// 일반 효과를 먼저 예약한다. 좌표 고정 예약은 지연이 0이면 그 자리에서 발동하면서
+			// 캐스팅형은 대상 스냅샷을 쓰지 않는다 — 선딜 동안 회피가 성립해야 한다 (발동 시점 재탐색).
+			bool rescanAtFire = (row.CastingType == SkillCastingTypes.Casting);
+
+			// 일반 효과를 먼저 예약한다. 좌표 고정·재탐색 예약은 지연이 0이면 그 자리에서 발동하면서
 			// TargetResolver 를 다시 부르는데, scanned 는 그 내부 버퍼 직참조라 이미 덮어써진 뒤가 된다.
 			for (int i = 0; i < resolved.Effects.Count; i++)
 			{
 				Table_SkillEffect.Row effect = resolved.Effects[i];
-				if (effect.EffectOrigin == SkillEffectOrigin.Location)
+				if (effect.EffectOrigin == SkillEffectOrigin.Location || rescanAtFire == true)
 				{
 					continue;
 				}
 
 				float delay = extraDelay + actionTime * effect.EffectTime;
 				caster.SkillContainer.ScheduleEffect(delay, resolved.Id, effect.ID, scanned);
+			}
+
+			// 재탐색 예약 — 좌표 고정 효과는 자기 경로가 따로 있으므로 제외한다.
+			// 대상이 없어 좌표를 못 잡는 경우에도 재탐색은 성립하므로 hasCenter 검사보다 앞에 둔다.
+			if (rescanAtFire == true)
+			{
+				for (int i = 0; i < resolved.Effects.Count; i++)
+				{
+					Table_SkillEffect.Row effect = resolved.Effects[i];
+					if (effect.EffectOrigin == SkillEffectOrigin.Location)
+					{
+						continue;
+					}
+
+					float delay = extraDelay + actionTime * effect.EffectTime;
+					caster.SkillContainer.ScheduleRescanEffect(delay, resolved.Id, effect.ID);
+				}
 			}
 
 			// 대상이 없으면 좌표를 잡을 수 없다 — 좌표 고정 효과는 통째로 건너뛴다(헛시전).

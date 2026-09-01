@@ -99,6 +99,9 @@ namespace ProjectOne.Boot
 		[SerializeField] private int _equippedBodyCostume;
 		[SerializeField] private int _equippedWeaponCostume;
 
+		[Header("임시 — 체크 시 이동 중에도 공격")]
+		[SerializeField] private bool _attackWhileMoving;
+
 		[Header("런타임 조회 (읽기 전용)")]
 		[SerializeField] private float _viewRefreshInterval = 0.5f;
 		[SerializeField] private int _viewCharacterLevel;
@@ -139,6 +142,9 @@ namespace ProjectOne.Boot
 
 		private void Update()
 		{
+			// [임시] 이동 중 공격 스위치 — 플레이 중 체크를 바로 반영하려고 주기 갱신보다 앞에 둔다
+			ProjectOne.Unit.AI.HeroAutoBehavior.AllowAttackWhileMoving = _attackWhileMoving;
+
 			_viewTimer += Time.unscaledDeltaTime;
 			if (_viewTimer < _viewRefreshInterval)
 			{

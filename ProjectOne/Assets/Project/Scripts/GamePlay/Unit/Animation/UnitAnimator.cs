@@ -23,6 +23,8 @@ namespace ProjectOne.Unit
 
 		private bool _lastIsMoving;
 
+		private bool _lastDebuff;
+
 		// 좌우 플립 판정용 — facing.x 를 시간 기반으로 누적해 고빈도 부호 진동(분산 조향 떨림)을 흡수
 		private float _facingXSmoothed;
 
@@ -93,6 +95,9 @@ namespace ProjectOne.Unit
 
 		// 몬스터 컨트롤러엔 아직 캐스팅 모션이 없다 — hasParameter 가드로 조용히 넘어간다.
 		private static readonly int HashIsCasting = Animator.StringToHash("IsCasting");
+
+		// 기절 등 지속 디버프 포즈 — AnyState 에서 DEBUFF 상태로 넘어가는 조건이다.
+		private static readonly int HashDebuff = Animator.StringToHash("Debuff");
 
 		private static readonly int HashAttackSpeedMul = Animator.StringToHash("AttackSpeedMod");
 
@@ -183,6 +188,16 @@ namespace ProjectOne.Unit
 			{
 				_lastIsMoving = isMoving;
 				_animator.SetBool(HashIsMoving, isMoving);
+			}
+		}
+
+		// 지속 디버프 포즈 토글. SetMoving 과 같이 값이 바뀔 때만 기록한다.
+		public void SetDebuff(bool active)
+		{
+			if (_lastDebuff != active && hasParameter(HashDebuff) == true)
+			{
+				_lastDebuff = active;
+				_animator.SetBool(HashDebuff, active);
 			}
 		}
 
@@ -319,6 +334,59 @@ namespace ProjectOne.Unit
 			{
 				_animator.SetBool(HashIsDead, false);
 			}
+		}
+
+		// 풀 재사용 — 비활성/리바인드로 애니메이터 파라미터가 기본값으로 돌아가면 캐시와 어긋난다.
+		// 어긋나면 SetMoving 이 값 비교에서 걸러져 이동해도 Idle 포즈가 유지된다.
+		// 컨트롤러 교체(SetController)와 같은 정리를 스폰 시점에도 한다.
+		public void ResetForSpawn()
+		{
+			if (_animator == null)
+			{
+				return;
+			}
+
+			if (hasParameter(HashAttack) == true)
+			{
+				_animator.ResetTrigger(HashAttack);
+			}
+
+			if (hasParameter(HashSkill) == true)
+			{
+				_animator.ResetTrigger(HashSkill);
+			}
+
+			if (hasParameter(HashHit) == true)
+			{
+				_animator.ResetTrigger(HashHit);
+			}
+
+			if (hasParameter(HashHDead) == true)
+			{
+				_animator.ResetTrigger(HashHDead);
+			}
+
+			if (hasParameter(HashIsCasting) == true)
+			{
+				_animator.SetBool(HashIsCasting, false);
+			}
+
+			if (hasParameter(HashIsMoving) == true)
+			{
+				_animator.SetBool(HashIsMoving, false);
+			}
+
+			if (hasParameter(HashDebuff) == true)
+			{
+				_animator.SetBool(HashDebuff, false);
+			}
+
+			_lastIsMoving = false;
+			_lastDebuff = false;
+
+			// 스로틀 캐시도 버린다 — 같은 값이 다시 들어올 때 걸러지지 않게 한다.
+			_lastAttackSpeedMul = float.NaN;
+			_lastMoveSpeedMul = float.NaN;
 		}
 
 		private void OnValidate()

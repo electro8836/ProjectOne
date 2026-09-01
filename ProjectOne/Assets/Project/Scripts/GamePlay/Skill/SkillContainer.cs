@@ -48,6 +48,9 @@ namespace ProjectOne.Skill
 			// 좌표 고정 효과 — 발동 시점에 이 좌표를 중심으로 다시 탐색한다 (EffectOrigin=Location)
 			public Vector2 center;
 			public bool hasCenter;
+
+			// 발동 시점에 시전자 기준으로 범위를 다시 탐색한다 (캐스팅형)
+			public bool rescan;
 		}
 
 		// 캐스팅 중 이동/스킬 차단에 쓰는 차단 키
@@ -76,10 +79,21 @@ namespace ProjectOne.Skill
 		bool _isCasting;
 		public bool IsCasting => _isCasting;
 
+		// 시전 완료까지 남은 시간 — 0 이 되는 순간 공격 모션을 낸다(효과 발동보다 앞선다)
+		float _castMotionRemaining;
+
+		// 남은 시전 시간 — 보스 전환 시퀀스가 파훼 제한시간으로 읽는다(제한시간 = 캐스팅 시간).
+		public float CastRemaining => _castMotionRemaining;
+		bool _castMotionPlayed;
+
 		// 스킬 동작(모션) 진행 중 남은 시간 — 이 동안 조준이 고정되고 다른 스킬을 겹쳐 시전하지 못한다.
 		// 이동 정지는 AI(몬스터 behavior)가 IsInAction 을 보고 처리한다 — 히어로 조작감은 건드리지 않는다.
 		float _actionRemaining;
 		public bool IsInAction => _actionRemaining > 0f;
+
+		// 시전 시점의 공속 배율 — 모션은 CastingParam 뒤에 시작하므로 그때 다시 구하지 않고 보관한다.
+		// 캐스팅형이라도 평타(SkillCategory=Normal)면 공속을 받으므로 1 로 고정하면 안 된다.
+		float _castUseSpeed = 1f;
 
 		// 현재 캐스팅 중인 스킬 ID — 인디케이터가 자기 항목 종료를 판단하도록 노출
 		EDT.Skill _castingId = EDT.Skill.None;
@@ -410,6 +424,7 @@ namespace ProjectOne.Skill
 
 			tickAuras(dt);
 			tickLowHp(dt);
+			tickCastMotion(dt);
 			tickPending(dt);
 		}
 
@@ -549,17 +564,24 @@ namespace ProjectOne.Skill
 		// targets 는 호출자의 버퍼일 수 있으므로 내부에서 복사해 스냅샷으로 보관한다.
 		public void ScheduleEffect(float delay, EDT.Skill skillId, SkillEffect effectId, List<UnitBase> targets)
 		{
-			scheduleEffectInternal(delay, skillId, effectId, targets, false, Vector2.zero);
+			scheduleEffectInternal(delay, skillId, effectId, targets, false, Vector2.zero, false);
+		}
+
+		// 재탐색 예약 — 대상 스냅샷을 싣지 않는다. 발동 시점에 시전자 기준으로 다시 탐색하므로
+		// 캐스팅 도중 범위를 벗어난 적은 맞지 않고, 뒤늦게 들어온 적은 맞는다 (캐스팅형 전용).
+		public void ScheduleRescanEffect(float delay, EDT.Skill skillId, SkillEffect effectId)
+		{
+			scheduleEffectInternal(delay, skillId, effectId, null, false, Vector2.zero, true);
 		}
 
 		// 좌표 고정 예약 — 대상 스냅샷 대신 좌표를 싣는다. 발동 시점에 그 좌표로 다시 탐색하므로
 		// 시전 후 범위를 벗어난 적은 맞지 않고, 뒤늦게 들어온 적은 맞는다 (EffectOrigin=Location).
 		public void ScheduleEffect(float delay, EDT.Skill skillId, SkillEffect effectId, List<UnitBase> targets, Vector2 center)
 		{
-			scheduleEffectInternal(delay, skillId, effectId, targets, true, center);
+			scheduleEffectInternal(delay, skillId, effectId, targets, true, center, false);
 		}
 
-		void scheduleEffectInternal(float delay, EDT.Skill skillId, SkillEffect effectId, List<UnitBase> targets, bool hasCenter, Vector2 center)
+		void scheduleEffectInternal(float delay, EDT.Skill skillId, SkillEffect effectId, List<UnitBase> targets, bool hasCenter, Vector2 center, bool rescan)
 		{
 			PendingEffect p = default(PendingEffect);
 			p.kind = PendingKind.Effect;
@@ -570,6 +592,7 @@ namespace ProjectOne.Skill
 			p.repeat = 1;
 			p.center = center;
 			p.hasCenter = hasCenter;
+			p.rescan = rescan;
 
 			if (delay <= 0f)
 			{
@@ -630,7 +653,7 @@ namespace ProjectOne.Skill
 			// 캐스팅 스킬은 마지막 효과가 나간 뒤 차단을 푼다 — 정상 종료라 모션도 여기서 나간다.
 			if (_isCasting == true && p.skillId == _castingId && hasPendingFor(_castingId) == false)
 			{
-				EndCasting(completed: true);
+				EndCasting();
 			}
 		}
 
@@ -640,7 +663,11 @@ namespace ProjectOne.Skill
 			switch (p.kind)
 			{
 				case PendingKind.Effect:
-					if (p.hasCenter == true)
+					if (p.rescan == true)
+					{
+						SkillExecutor.RunEffectRescan(p.skillId, p.effectId, _owner);
+					}
+					else if (p.hasCenter == true)
 					{
 						SkillExecutor.RunEffectAt(p.skillId, p.effectId, _owner, p.center);
 					}
@@ -767,12 +794,15 @@ namespace ProjectOne.Skill
 		// ── 캐스팅 ────────────────────────────────────────────────────
 
 		// 캐스팅 시작 — 시전 시간 동안 이동/스킬을 차단하고 조준을 고정한다.
-		// 모션(AnimName)은 여기서 내지 않는다. 시전을 마친 EndCasting 이 낸다 —
+		// 모션(AnimName)은 여기서 내지 않는다. castTime 이 지난 뒤 tickCastMotion 이 낸다 —
 		// 시작에 내면 트리거가 캐스팅 내내 살아 있다가 취소 시에도 공격 모션이 나가 버린다.
-		public void BeginCasting(float castTime, EDT.Skill id)
+		public void BeginCasting(float castTime, EDT.Skill id, float useSpeed)
 		{
 			_isCasting = true;
 			_castingId = id;
+			_castUseSpeed = useSpeed;
+			_castMotionRemaining = castTime;
+			_castMotionPlayed = false;
 			_owner.BlockMove(CastingKey);
 			_owner.BlockSkill(CastingKey);
 
@@ -804,27 +834,24 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			EndCasting(completed: false);
+			EndCasting();
 			CancelPendingEffects();
 		}
 
-		// completed 는 시전을 끝까지 마쳤는가 — 취소면 모션을 내지 않는다.
-		void EndCasting(bool completed)
+		// 모션은 여기서 내지 않는다 — tickCastMotion 이 시전 완료 시점에 이미 냈다.
+		// 정상 종료(효과 발동 완료)와 취소가 하는 일이 같아졌으므로 구분 인자를 두지 않는다.
+		void EndCasting()
 		{
 			if (_isCasting == false)
 			{
 				return;
 			}
 
-			// _castingId 를 지우기 전에 내야 한다.
-			if (completed == true)
-			{
-				playCastMotion();
-			}
-
 			_isCasting = false;
 			_castingId = EDT.Skill.None;
 			_hasCastCenter = false;
+			_castMotionRemaining = 0f;
+			_castMotionPlayed = false;
 			_owner.UnblockMove(CastingKey);
 			_owner.UnblockSkill(CastingKey);
 
@@ -834,15 +861,38 @@ namespace ProjectOne.Skill
 				animator.SetCasting(false);
 			}
 
-			if (_owner.Mover != null)
+			// 모션이 아직 돌고 있으면 조준을 풀지 않는다 — 남은 잠금은 endAction 이 모션 종료 시각에 푼다.
+			// 취소 경로는 CancelCasting 과 CancelAction 이 항상 짝으로 불리므로 잠금이 남지 않는다.
+			if (_owner.Mover != null && IsInAction == false)
 			{
 				_owner.Mover.SetFacingLocked(false);
 			}
 		}
 
+		// 시전을 마친 순간 공격 모션을 낸다 — 데미지는 이 모션의 EffectTime 지점에 들어간다.
+		// 이동 차단과 인디케이터는 EndCasting 까지 유지되므로 여기서 풀지 않는다.
+		void tickCastMotion(float dt)
+		{
+			if (_isCasting == false || _castMotionPlayed == true)
+			{
+				return;
+			}
+
+			_castMotionRemaining -= dt;
+			if (_castMotionRemaining > 0f)
+			{
+				return;
+			}
+
+			playCastMotion();
+		}
+
 		// 시전을 마친 순간의 공격 모션 — 애니메이터는 이 트리거로 캐스팅 자세에서 빠져나온다.
 		void playCastMotion()
 		{
+			// 리졸브에 실패해도 다시 시도하지 않는다 — 매 프레임 재진입 방지
+			_castMotionPlayed = true;
+
 			ResolvedSkill resolved = _owner.Resolve(_castingId);
 			if (resolved == null || resolved.IsValid == false)
 			{
@@ -853,6 +903,17 @@ namespace ProjectOne.Skill
 			if (animator != null)
 			{
 				animator.PlayMotion(resolved.Row.AnimName);
+				animator.SetCasting(false);
+			}
+
+			// 모션이 시작되는 지금부터 모션 길이만큼 액션 락을 건다.
+			// 캐스팅의 BlockMove 는 마지막 효과가 나갈 때 풀리는데 그 시점이 모션 종료보다 이르다 —
+			// 그 틈에 AI 가 추적을 재개하면 스킬 모션이 이동 모션으로 잘린다.
+			// 모션을 끝까지 보장해야 하므로 쿨타임에 깎이는 GetActionTime 이 아니라 GetAnimPlayTime 을 쓴다.
+			SkillRuntime rt = GetRuntime(_castingId);
+			if (rt != null)
+			{
+				beginAction(rt.GetAnimPlayTime(_castUseSpeed));
 			}
 		}
 

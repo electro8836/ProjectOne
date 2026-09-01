@@ -114,10 +114,10 @@ namespace ProjectOne.Unit.AI
 			}
 
 			// 접근 — 사거리 안으로는 전진하지 않는다(오버슈트로 너무 붙는 것 방지). 분리·접선은 그대로 둬 측면 정렬 유지.
-			// 사거리(=max(스킬 사거리, 반지름합))에 들어서면 radial 0 → Decide 가 inRange 로 공격 전환한다.
+			// 정지 거리(=max(스킬 사거리+타겟 반지름, 반지름합))에 들어서면 radial 0 → Decide 가 inRange 로 공격 전환한다.
 			Vector2 radial = _cachedApproachDir;
 			float distToTarget = (target.CachedPos - self.CachedPos).magnitude;
-			float stopDist = Mathf.Max(_cachedRange, self.Radius + target.Radius);
+			float stopDist = GetStopDistance(self, target);
 			if (distToTarget <= stopDist)
 			{
 				radial = Vector2.zero;
@@ -207,7 +207,7 @@ namespace ProjectOne.Unit.AI
 			float distSqr = dirToTarget.sqrMagnitude;
 
 			// 물리 접촉 거리와 공격 사거리 중 더 큰 값으로 정지 — ScanParam1 이 작아도 닿으면 정지
-			float stoppingDist = Mathf.Max(range, self.Radius + target.Radius);
+			float stoppingDist = GetStopDistance(self, target);
 			float stoppingDistSqr = stoppingDist * stoppingDist;
 
 			// LoS(HasClearShot)는 정지 판단이 필요한 순간에만 계산한다. 발사체 기본공격이 벽에 가려져 있으면
@@ -223,7 +223,7 @@ namespace ProjectOne.Unit.AI
 			else
 			{
 				// 거리 히스테리시스로 재접근하거나, 시야가 막히면(LoS) 즉시 재접근
-				float reapproach = range * _hysteresis;
+				float reapproach = stoppingDist * _hysteresis;
 				if (distSqr > reapproach * reapproach || HasClearShot(self, target) == false)
 				{
 					_approaching = true;
@@ -264,6 +264,14 @@ namespace ProjectOne.Unit.AI
 
 			ProjectOne.Skill.ResolvedSkill resolved = self.Resolve(basic);
 			return (resolved != null) ? resolved.Row : null;
+		}
+
+		// 정지 거리 — 스킬 발동 조건(TargetResolver: ScanRange + 타겟 반지름)과 같은 기준으로 맞춘다.
+		// 기준이 어긋나면 사거리에서 시전해 놓고 시전이 끝난 뒤 그 차이만큼 더 걸어 들어간다.
+		// 물리 접촉 거리(반지름 합)보다는 작아지지 않게 둔다 — 사거리가 짧아도 닿으면 멈춘다.
+		private float GetStopDistance(UnitBase self, UnitBase target)
+		{
+			return Mathf.Max(_cachedRange + target.Radius, self.Radius + target.Radius);
 		}
 
 		// 정지 사거리 — 평타 사거리까지 접근한다. 사거리에 든 스킬은 접근 도중에 이미 나가므로

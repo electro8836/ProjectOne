@@ -30,6 +30,10 @@ namespace ProjectOne.Buff
 			get { return _owner; }
 		}
 
+		// 버프가 컨테이너에서 빠진 직후 1회 발행한다.
+		// 만료 · Remove · TryConsume 세 경로가 전부 removeAt 을 지나므로 새는 곳이 없다.
+		public event System.Action<BuffRuntime> BuffRemoved;
+
 		// duration / stackMax 는 부여하는 SkillEffect 가 정한다 (설계 8.3).
 		public void Apply(EDT.Buff id, float duration, int stackMax, UnitBase source, EDT.Skill sourceSkill)
 		{
@@ -45,10 +49,11 @@ namespace ProjectOne.Buff
 				return;
 			}
 
-			// 경직 면역 — 엘리트/보스는 일반 경직에 걸리지 않는다.
-			// 기절(BUFF_Stun)은 면역 대상이 아니다: 보스 패턴 파훼·엘리트 특정 상황에서만
-			// 부여되므로 부여하는 쪽(SkillEffect)이 이미 게이트 역할을 한다.
-			if (id == EDT.Buff.BUFF_Stagger && isStaggerImmune() == true)
+			// 상태이상 면역 — 엘리트/보스는 행동을 막는 버프(BlockFlags 보유)에 걸리지 않는다.
+			// 받는 피해 증가처럼 스탯만 건드리는 디버프는 그대로 걸린다 — 디버프 빌드가 통해야 한다.
+			// 반드시 걸려야 하는 것만 Buff.IgnoreImmune 로 예외 처리한다 (브레이크 강제 기절).
+			if (row.IgnoreImmune == false && row.BlockFlags != null && row.BlockFlags.Length > 0
+				&& _owner != null && _owner.IsCrowdControlImmune == true)
 			{
 				return;
 			}
@@ -93,6 +98,16 @@ namespace ProjectOne.Buff
 					UnityEngine.Debug.LogError($"[BuffContainer] StackPolicy 가 None 입니다 — Buff:{id}");
 					existing.Refresh(duration);
 					break;
+			}
+		}
+
+		// 걸린 버프를 전부 걷는다 — 풀 재사용(OnSpawnReset)이 이전 생의 상태를 물고 오지 않게.
+		// removeAt 을 그대로 지나므로 행동차단 해제 · StatModifier 회수 · BuffRemoved 통지가 모두 정상 수행된다.
+		public void Clear()
+		{
+			for (int i = _ordered.Count - 1; i >= 0; i--)
+			{
+				removeAt(i);
 			}
 		}
 
@@ -182,6 +197,26 @@ namespace ProjectOne.Buff
 			return _activeView;
 		}
 
+		// DEBUFF 모션을 내는 버프가 하나라도 걸려 있는가.
+		//
+		// 활성 버프는 보통 한 자릿수라 순회로 충분하다 — 스택 정책마다 캐시 무효화 시점이
+		// 달라 카운터를 따로 들면 어긋나기 쉽다(먼저 끝난 스턴이 남은 스턴의 연출을 꺼버린다).
+		public bool HasDebuffMotion
+		{
+			get
+			{
+				for (int i = 0; i < _ordered.Count; i++)
+				{
+					if (_ordered[i].PlaysDebuffMotion == true)
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
+		}
+
 		public IReadOnlyList<EDT.Buff> GetDebuffs()
 		{
 			_debuffView.Clear();
@@ -223,17 +258,6 @@ namespace ProjectOne.Buff
 
 		// ── 내부 ──────────────────────────────────────────────────────
 
-		// 엘리트/보스만 면역이다. 히어로·소환수는 MonsterType 이 None 이라 경직에 걸린다.
-		bool isStaggerImmune()
-		{
-			if (_owner == null)
-			{
-				return false;
-			}
-
-			return _owner.MonsterType == MonsterType.Elite || _owner.MonsterType == MonsterType.Boss;
-		}
-
 		void addNew(EDT.Buff id, float duration, UnitBase source, EDT.Skill sourceSkill)
 		{
 			BuffRuntime rt = new BuffRuntime(id, _owner, source, duration, sourceSkill);
@@ -263,6 +287,12 @@ namespace ProjectOne.Buff
 						break;
 					}
 				}
+			}
+
+			// 인덱스 정리가 끝난 뒤에 알린다 — 구독자가 컨테이너를 다시 조회해도 일관된 상태를 본다.
+			if (BuffRemoved != null)
+			{
+				BuffRemoved(rt);
 			}
 		}
 

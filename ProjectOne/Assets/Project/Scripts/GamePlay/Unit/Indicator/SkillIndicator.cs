@@ -28,9 +28,11 @@ namespace ProjectOne.Unit
 			public bool refreshPending; // 다음 showTime 도달 시 위치/방향을 다시 갱신해야 함
 			public Transform fillTr;    // 캐스팅 채움용 자식(없으면 null = 비캐스팅 스킬)
 			public bool isCasting;      // 캐스팅 스킬 여부 — 표시/종료를 IsCasting 폴링으로 제어
-			public float castDuration;  // CastingParam(초) — 채움이 0→풀 크기로 도달하는 시간
+			public float castParam;     // CastingParam(초) — 테이블 원본. 시전할 때 castDuration 을 다시 만든다
+			public float castDuration;  // 채움이 0→풀 크기로 도달하는 시간 = CastingParam + 첫 효과 지연
 			public float castStartTime; // 캐스팅(표시) 시작 시각
 			public bool isLocation;     // 좌표 고정형 — 캐스터가 아니라 시전 시점 대상 좌표에 그린다
+			public bool fillLengthOnly; // 채움을 길이(X)만 늘린다 — 폭이 고정인 직선 전용
 		}
 
 		// 임의 월드 위치에 잠깐 띄우는 범위 표시 — OnHitTarget 프록이 피격자마다 동시에 띄울 수 있게 풀로 재사용.
@@ -291,13 +293,17 @@ namespace ProjectOne.Unit
 			item.isLocation = isLocation;
 			// 좌표 고정형은 원이라 방향이 없다
 			item.needsFacing = (isLocation == false) && (row.ScanType == SkillScanTypes.Sector || row.ScanType == SkillScanTypes.Line);
+			// 직선만 폭이 고정이다. 부채꼴은 반경이 자라야 하므로 원형과 같이 균등하게 늘린다 —
+			// X만 늘리면 부채꼴이 진행 방향으로 찌그러져 실제 판정 각도와 어긋나 보인다.
+			item.fillLengthOnly = (isLocation == false) && (row.ScanType == SkillScanTypes.Line);
 			item.showTime = 0f;
 			item.hideTime = 0f;
 			item.active = false;
 			item.visible = false;
 			item.refreshPending = false;
 			item.isCasting = isCasting;
-			item.castDuration = isCasting ? row.CastingParam : 0f;
+			item.castParam = isCasting ? row.CastingParam : 0f;
+			item.castDuration = item.castParam;
 			// 캐스팅 스킬은 같은 메시를 공유하는 채움 자식을 하나 더 만들어 범위 위에 그린다
 			if (isCasting == true)
 			{
@@ -350,6 +356,9 @@ namespace ProjectOne.Unit
 			// 캐스팅 스킬: 시전 시작 즉시 범위+채움을 띄우고, 종료는 IsCasting 폴링으로 처리(hideTime 미사용)
 			if (item.isCasting == true)
 			{
+				// 채움은 실제 타격 시점에 꽉 차야 한다 — SkillExecutor 가 효과를
+				// CastingParam + actionTime × EffectTime 에 예약하므로 같은 값을 쓴다.
+				item.castDuration = item.castParam + GetFirstEffectDelay(evt.SkillId);
 				item.showTime = Time.time;
 				item.castStartTime = Time.time;
 				item.refreshPending = true;
@@ -591,10 +600,10 @@ namespace ProjectOne.Unit
 				UpdateItemTransform(item);
 			}
 
-			// 진행 중 — 채움을 0→풀 크기로 스케일링 (CastingParam 이 0이면 즉시 가득)
+			// 진행 중 — 채움을 0→풀 크기로 스케일링 (채움 시간이 0이면 즉시 가득)
 			float t = (item.castDuration > 0f) ? Mathf.Clamp01((now - item.castStartTime) / item.castDuration) : 1f;
-			// 방향성 스킬(Line/Sector)은 폭 고정, 길이(X)만 성장 — 원형/도넛은 균등 성장
-			if (item.needsFacing == true)
+			// 직선만 폭 고정으로 길이(X)만 성장 — 원형/도넛/부채꼴은 반경이 자라야 하므로 균등 성장
+			if (item.fillLengthOnly == true)
 			{
 				item.fillTr.localScale = new Vector3(t, 1f, 1f);
 			}

@@ -291,11 +291,15 @@ namespace ProjectOne.Skill
 				case SkillEffectOrigin.Attacker:
 				case SkillEffectOrigin.Location:
 					// 탐색 결과를 그대로 쓴다. Attacker/Victim 의 구분은 트리거 경로가 이미 대상을 좁혀 넘긴다.
+					//
+					// IsTargetable 로 거르는 이유 — 시전 시점 스냅샷이라 그 사이에 대상이
+					// 무적이 됐을 수 있다. Caster/Owner 분기는 이 필터를 타지 않으므로
+					// 무적인 유닛도 자기 버프와 시전은 그대로 한다.
 					if (scanned != null)
 					{
 						for (int i = 0; i < scanned.Count; i++)
 						{
-							if (scanned[i] != null && scanned[i].IsDead == false)
+							if (scanned[i] != null && scanned[i].IsTargetable == true)
 							{
 								buffer.Add(scanned[i]);
 							}
@@ -429,6 +433,13 @@ namespace ProjectOne.Skill
 
 		static bool dealDamage(UnitBase caster, UnitBase target, EDT.Skill skillId, Table_SkillEffect.Row row, in DamageParams p)
 		{
+			// 무적 — 모든 피해가 이 함수를 지난다(단일·다단히트·투사체 착탄·연쇄).
+			// 여기서 막으면 새는 경로가 없다. 연출도 내지 않는다 — 맞았다는 인상 자체를 주지 않는다.
+			if (target.IsInvincible == true)
+			{
+				return false;
+			}
+
 			DamageCalculator.Result result = DamageCalculator.Calculate(caster, target, p.ScaleStat, p.Ratio, p.FlatValue, row.OnHitTrigger);
 			if (result.IsAvoided == true)
 			{

@@ -23,6 +23,10 @@ namespace ProjectOne.Buff
 		public UnitBase Owner { get; private set; }
 		public UnitBase Source { get; private set; }
 		public bool IsInfinite { get; private set; }
+
+		// 걸려 있는 동안 DEBUFF 모션을 유지하는가 (Buff.DebuffMotion).
+		// 매 프레임 Table_Buff.Get 을 다시 부르지 않으려고 생성 시 캐시한다.
+		public bool PlaysDebuffMotion { get; private set; }
 		public float RemainingDuration { get; private set; }
 		public float TickInterval { get; private set; }
 		public EDT.Skill SourceSkill { get; private set; }
@@ -62,6 +66,7 @@ namespace ProjectOne.Buff
 			}
 
 			IsDebuff = row.IsDebuff;
+			PlaysDebuffMotion = row.DebuffMotion;
 			TickInterval = row.TickInterval;
 			_effect01 = row.EffectID_01;
 			_effect02 = row.EffectID_02;

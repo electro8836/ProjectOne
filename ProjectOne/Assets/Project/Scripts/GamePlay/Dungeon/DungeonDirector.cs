@@ -117,6 +117,9 @@ namespace ProjectOne.Dungeon
 			// 월드 오브젝트 풀은 첫 처치 전에 준비돼 있어야 한다 — 없으면 보상 드랍이 유실된다.
 			await DropManager.Instance.PrepareAsync(_cts.Token);
 
+			// 유닛 위에 뜨는 게이지(보스 캐스팅·상호작용 진행)를 Canvas_World 에 올린다.
+			await UIManager.Instance.EnsureWorldGaugeAsync(_cts.Token);
+
 			// 던전 입장은 항상 완전한 상태에서 시작한다 (기반테이블 5.3)
 			healAllHeroes();
 
@@ -536,6 +539,11 @@ namespace ProjectOne.Dungeon
 			if (DropManager.HasInstance == true)
 			{
 				DropManager.Instance.Clear();
+			}
+
+			if (UIManager.HasInstance == true)
+			{
+				UIManager.Instance.ReleaseWorldGauge();
 			}
 
 			if (MapManager.HasInstance == true)

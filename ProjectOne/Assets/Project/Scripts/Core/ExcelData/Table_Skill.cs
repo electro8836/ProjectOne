@@ -27,6 +27,7 @@ namespace EDT {
             public bool SkillVFXFacing { get; set; } = false;
             public float SkillVFXOffset { get; set; } = 0f;
             public string SkillSFX { get; set; } = string.Empty;
+            public float BreakDamage { get; set; } = 0f;
         }
 
         public const string Filename = "edt_skill.bytes";
@@ -69,6 +70,7 @@ namespace EDT {
                 row.SkillVFXFacing = reader.ReadBoolean();
                 row.SkillVFXOffset = reader.ReadSingle();
                 row.SkillSFX = reader.ReadString();
+                row.BreakDamage = reader.ReadSingle();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

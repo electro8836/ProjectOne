@@ -15,6 +15,8 @@ namespace EDT {
             public BuffStackPolicy StackPolicy { get; set; } = BuffStackPolicy.None;
             public float TickInterval { get; set; } = 0f;
             public ActionBlockType[] BlockFlags { get; set; } = Array.Empty<ActionBlockType>();
+            public bool IgnoreImmune { get; set; } = false;
+            public bool DebuffMotion { get; set; } = false;
             public SkillEffect EffectID_01 { get; set; } = SkillEffect.None;
             public SkillEffect EffectID_02 { get; set; } = SkillEffect.None;
         }
@@ -47,6 +49,8 @@ namespace EDT {
                 row.StackPolicy = (BuffStackPolicy)reader.ReadInt32();
                 row.TickInterval = reader.ReadSingle();
                 { int _n = reader.ReadInt32(); row.BlockFlags = new ActionBlockType[_n]; for(int _i=0;_i<_n;_i++) row.BlockFlags[_i] = (ActionBlockType)reader.ReadInt32(); }
+                row.IgnoreImmune = reader.ReadBoolean();
+                row.DebuffMotion = reader.ReadBoolean();
                 row.EffectID_01 = (SkillEffect)reader.ReadInt32();
                 row.EffectID_02 = (SkillEffect)reader.ReadInt32();
                 _all.Add( row.ID, row );

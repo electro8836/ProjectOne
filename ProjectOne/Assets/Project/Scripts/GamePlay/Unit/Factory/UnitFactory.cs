@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
@@ -11,6 +12,7 @@ using ProjectOne.Buff;
 using ProjectOne.Dungeon;
 using ProjectOne.Unit.AI;
 using ProjectOne.UserData;
+using ProjectOne.Monsters;
 
 namespace ProjectOne.Unit
 {
@@ -193,7 +195,7 @@ namespace ProjectOne.Unit
 			unit.SetFaction(faction);
 		}
 
-		// 몬스터 구성 — Monster.SkillIDs 기반 스킬 등록 (MonsterPool 에서 호출)
+		// 몬스터 구성 — Monster.SkillSetGroupID 의 스킬세트 등록 (MonsterPool 에서 호출)
 		public void ComposeUnit(UnitBase unit, int monsterId, int statGroupId, int level, Faction faction)
 		{
 			ComposeBase(unit, monsterId, level, StatContainerFactory.ForMonster(statGroupId, level), faction);
@@ -269,19 +271,22 @@ namespace ProjectOne.Unit
 			skillIndicator.SetSkills(unit.SkillContainer.GetAll());
 		}
 
-		// 몬스터 보유 스킬 등록 — Monster.SkillIDs 배열 전체.
-		// 어느 것이 기본공격인지는 배열 순서가 아니라 Skill.SkillCategory=Normal 로 판정한다.
+		// 몬스터 보유 스킬 등록 — Monster.SkillSetGroupID 가 가리키는 스킬세트 전체.
+		// 보스는 전 페이즈 스킬 + 전멸기의 합집합이 이 그룹에 들어 있어야 한다 —
+		// 등록되지 않은 스킬은 TryCast 가 거부한다 (MonsterCatalog 가 누락을 검증한다).
+		// 어느 것이 기본공격인지는 순서가 아니라 Skill.SkillCategory=Normal 로 판정한다.
 		private static void RegisterMonsterSkills(SkillContainer sc, int monsterId)
 		{
 			Table_Monster.Row row = Table_Monster.Get(monsterId);
-			if (row == null || row.SkillIDs == null)
+			if (row == null)
 			{
 				return;
 			}
 
-			for (int i = 0; i < row.SkillIDs.Length; i++)
+			IReadOnlyList<EDT.Skill> set = MonsterCatalog.GetSkillSet(row.SkillSetGroupID);
+			for (int i = 0; i < set.Count; i++)
 			{
-				sc.Register(row.SkillIDs[i], SourceBase);
+				sc.Register(set[i], SourceBase);
 			}
 		}
 	}

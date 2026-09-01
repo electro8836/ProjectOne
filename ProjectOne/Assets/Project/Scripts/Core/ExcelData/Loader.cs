@@ -337,6 +337,28 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - BossMonsterPhase
+            {
+                CurrentFile = Table_BossMonsterPhase.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_BossMonsterPhase._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - MonsterSkillSet
+            {
+                CurrentFile = Table_MonsterSkillSet.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_MonsterSkillSet._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Npc
             {
                 CurrentFile = Table_Npc.Filename;

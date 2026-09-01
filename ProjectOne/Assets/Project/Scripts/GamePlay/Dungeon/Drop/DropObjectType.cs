@@ -9,5 +9,6 @@
 		HealOrb,
 		BuffRune,
 		Item,
+		BossGimmick,
 	}
 }

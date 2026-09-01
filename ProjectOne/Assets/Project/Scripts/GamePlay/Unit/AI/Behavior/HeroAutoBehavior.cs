@@ -18,6 +18,10 @@ namespace ProjectOne.Unit.AI
 	// 고유스킬(Special)은 HUD 버튼 수동이므로 castSpecial=false.
 	public sealed class HeroAutoBehavior : IAiBehavior
 	{
+		// [임시] DevTester 체크박스로 켜는 테스트 스위치 — 켜면 이동 중에도 조준/시전한다.
+		// 정식 사양이 정해지면 이 필드와 아래 조건을 함께 제거한다.
+		public static bool AllowAttackWhileMoving;
+
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
 			if (self.Mover == null)
@@ -27,7 +31,7 @@ namespace ProjectOne.Unit.AI
 
 			// 이동 중에는 조준도 시전도 하지 않는다 — 멈춰 서야 교전이 시작된다.
 			// SetFacing 을 부르지 않으면 UnitMover 의 자동 갱신이 시선을 이동 방향으로 유지한다.
-			if (self.Mover.IsMoving == true)
+			if (self.Mover.IsMoving == true && AllowAttackWhileMoving == false)
 			{
 				return;
 			}

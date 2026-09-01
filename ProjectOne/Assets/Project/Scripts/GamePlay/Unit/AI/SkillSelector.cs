@@ -22,67 +22,95 @@ namespace ProjectOne.Unit.AI
 			IReadOnlyList<EDT.Skill> all = sc.GetAll();
 			for (int i = 0; i < all.Count; i++)
 			{
-				EDT.Skill id = all[i];
-
-				// 사거리·탐색 형태는 모디파이어 대상이므로 리졸브 결과로 판단해야 한다.
-				ResolvedSkill resolved = self.Resolve(id);
-				if (resolved == null || resolved.IsValid == false)
-				{
-					continue;
-				}
-
-				Table_Skill.Row row = resolved.Row;
-
-				// 평타는 폴백용으로 보류, 조건 발동형·상시형은 직접 시전 대상 아님
-				if (row.SkillCategory == SkillCategoryTypes.Normal)
-				{
-					continue;
-				}
-
-				if (SkillContainer.IsDirectCastable(row.CastingType) == false)
-				{
-					continue;
-				}
-
-				// 고유(Special) 스킬은 HUD 버튼 수동 (castSpecial=true 인 PVP 등만 자동)
-				if (sc.IsSpecial(id) == true && castSpecial == false)
-				{
-					continue;
-				}
-
-				if (sc.IsOnCooldown(id) == true)
-				{
-					continue;
-				}
-
-				if (HasEnemyInRange(self, row) == false)
-				{
-					continue;
-				}
-
-				if (sc.TryCast(id) == true)
+				if (CanCastNow(self, sc, all[i], castSpecial) == true && sc.TryCast(all[i]) == true)
 				{
 					return;
 				}
 			}
 
-			// 폴백 — 기본 공격 (범위 내 적이 있을 때만)
+			TryBasicAttack(self, sc);
+		}
+
+		// 지정한 순서의 스킬 목록으로만 고른다 — 보스가 페이즈 스킬세트를 쓸 때 이 경로를 탄다.
+		// 판정은 Select 와 같은 것을 쓴다(CanCastNow). 시전했으면 true.
+		public static bool SelectFrom(UnitBase self, IReadOnlyList<EDT.Skill> ordered)
+		{
+			SkillContainer sc = self.SkillContainer;
+			if (sc == null || ordered == null)
+			{
+				return false;
+			}
+
+			for (int i = 0; i < ordered.Count; i++)
+			{
+				if (CanCastNow(self, sc, ordered[i], false) == true && sc.TryCast(ordered[i]) == true)
+				{
+					return true;
+				}
+			}
+
+			return TryBasicAttack(self, sc);
+		}
+
+		// 스킬 1개가 지금 시전 가능한 상태인가 — 실제 시전(TryCast)은 호출자가 한다.
+		// 쿨/차단/생존 가드는 TryCast 가 다시 보므로 여기서는 선별만 한다.
+		private static bool CanCastNow(UnitBase self, SkillContainer sc, EDT.Skill id, bool castSpecial)
+		{
+			// 사거리·탐색 형태는 모디파이어 대상이므로 리졸브 결과로 판단해야 한다.
+			ResolvedSkill resolved = self.Resolve(id);
+			if (resolved == null || resolved.IsValid == false)
+			{
+				return false;
+			}
+
+			Table_Skill.Row row = resolved.Row;
+
+			// 평타는 폴백용으로 보류, 조건 발동형·상시형은 직접 시전 대상 아님
+			if (row.SkillCategory == SkillCategoryTypes.Normal)
+			{
+				return false;
+			}
+
+			if (SkillContainer.IsDirectCastable(row.CastingType) == false)
+			{
+				return false;
+			}
+
+			// 고유(Special) 스킬은 HUD 버튼 수동 (castSpecial=true 인 PVP 등만 자동)
+			if (sc.IsSpecial(id) == true && castSpecial == false)
+			{
+				return false;
+			}
+
+			if (sc.IsOnCooldown(id) == true)
+			{
+				return false;
+			}
+
+			return HasEnemyInRange(self, row);
+		}
+
+		// 폴백 — 기본 공격 (범위 내 적이 있을 때만). 시전했으면 true.
+		private static bool TryBasicAttack(UnitBase self, SkillContainer sc)
+		{
 			EDT.Skill basic = sc.GetBasicAttack();
 			if (basic == EDT.Skill.None)
 			{
-				return;
+				return false;
 			}
 
 			ResolvedSkill basicResolved = self.Resolve(basic);
 			if (basicResolved == null || basicResolved.IsValid == false || sc.IsOnCooldown(basic) == true)
 			{
-				return;
+				return false;
 			}
 
-			if (HasEnemyInRange(self, basicResolved.Row) == true)
+			if (HasEnemyInRange(self, basicResolved.Row) == false)
 			{
-				sc.TryCast(basic);
+				return false;
 			}
+
+			return sc.TryCast(basic);
 		}
 
 		// 스킬의 실제 ScanType 범위(caster.Facing 기준) 안에 시전 가능한 적이 1명 이상 있는지 — SkillExecutor 와 동일 경로.

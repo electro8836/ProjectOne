@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System.Collections.Generic;
 using ProjectOne.Map;
 using ProjectOne.Unit;
@@ -25,7 +25,9 @@ public class UnitMover : MonoBehaviour
 	private readonly List<UnitBase> _queryBuffer = new List<UnitBase>(32);
 
 	public Vector2 Facing { get; private set; } = Vector2.right;
-	public bool IsMoving    { get { return _moveVelocity.sqrMagnitude > 0.01f; } }
+	// 이동이 막혀 있으면 움직이는 게 아니다 — AI 는 차단 중에도 Move() 를 계속 부르고
+	// SetMoveEnabled 는 적분만 막으므로, _moveVelocity 만 보면 스턴 중에 제자리걸음이 나온다.
+	public bool IsMoving    { get { return _moveEnabled && _moveVelocity.sqrMagnitude > 0.01f; } }
 	public bool IsImpulsed  { get { return _impulseVelocity.sqrMagnitude > 0.01f; } }
 	public bool MoveEnabled { get { return _moveEnabled; } }
 	public bool OverrideBlocked { get { return _overrideBlocked; } }

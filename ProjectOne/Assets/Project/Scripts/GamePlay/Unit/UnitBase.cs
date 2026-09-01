@@ -194,6 +194,31 @@ namespace ProjectOne.Unit
 			get { return EDT.MonsterType.None; }
 		}
 
+		// 상태이상·넉백 면역 — 엘리트/보스는 행동이 묶이거나 밀려나지 않는다.
+		//
+		// 넉백은 버프가 아니라 물리 임펄스라 BuffContainer 로는 막히지 않는다. 두 경로가
+		// 같은 규칙을 봐야 하므로 판정을 여기 한 곳에 둔다.
+		// 유일한 예외는 Buff.IgnoreImmune(브레이크 강제 기절)이고, 그건 BuffContainer 가 판단한다.
+		public bool IsCrowdControlImmune
+		{
+			get { return MonsterType == EDT.MonsterType.Elite || MonsterType == EDT.MonsterType.Boss; }
+		}
+
+		// 무적 — 보스 패턴처럼 아예 개입할 수 없어야 하는 구간. BUFF_Invincible 이 켜고 끈다.
+		//
+		// 피해감소 스탯으로 표현하지 않는 이유 — Stat_DamageReduction 은 상한이 0.8 이라
+		// 100% 에 도달할 수 없다(StatCatalog.ApplyClamp). 상한을 올리면 히어로 빌드 상한까지 풀린다.
+		public bool IsInvincible
+		{
+			get { return _buffContainer != null && _buffContainer.Has(EDT.Buff.BUFF_Invincible); }
+		}
+
+		// 조준·범위 탐색의 대상이 되는가. 무적이면 목록에서 통째로 빠진다.
+		public bool IsTargetable
+		{
+			get { return IsDead == false && IsInvincible == false; }
+		}
+
 		// 근접/원거리 성향 — 데미지 계산 [4]에서 어느 보너스를 쓸지 결정한다 (스킬 설계 10.4).
 		// 몬스터는 두 스탯을 쓰지 않으므로 None 이 기본이다. Hero 만 장착 무기의 마스터리 값을 돌려준다.
 		public virtual EDT.WeaponRangeType RangeType
@@ -291,12 +316,6 @@ namespace ProjectOne.Unit
 
 			if (!IsDead)
 			{
-				if (_animator != null && _mover != null)
-				{
-					_animator.SetMoving(_mover.IsMoving);
-					_animator.SetFacing(_mover.Facing);
-				}
-
 				// 이동 차단 상태를 mover 에 반영 (스턴/이동불가 등 CC)
 				if (_mover != null)
 				{
@@ -318,6 +337,18 @@ namespace ProjectOne.Unit
 				if (_brain != null)
 				{
 					_brain.Tick(deltaTime);
+				}
+
+				// AI/입력이 이번 프레임에 정한 속도를 그대로 반영한다 — 앞에 두면 이동 재개가
+				// 한 프레임 늦게 애니메이터에 도달해 스킬 모션이 끝나는 프레임과 어긋난다.
+				if (_animator != null && _mover != null)
+				{
+					_animator.SetMoving(_mover.IsMoving);
+					_animator.SetFacing(_mover.Facing);
+
+					// 죽은 뒤에는 끈다 — AnyState -> DEBUFF 전이에만 !IsDead 조건이 없어서
+					// 켜둔 채로 죽으면 DEAD 를 덮어쓴다.
+					_animator.SetDebuff(IsDead == false && _buffContainer != null && _buffContainer.HasDebuffMotion == true);
 				}
 
 				// 1초 주기 자동 회복 (브레이크 게이지 / 스테미너 / HP)
@@ -430,7 +461,9 @@ namespace ProjectOne.Unit
 					_brain.OnDamaged(info.Attacker);
 				}
 
-				if (info.KnockbackPower > 0f && _mover != null)
+				// 면역 대상은 밀려나지도, 시전이 끊기지도 않는다 — 넉백으로 보스 패턴을
+				// 스킵하는 것을 막는다. 끊을 수 있는 것은 브레이크 강제 기절뿐이다.
+				if (info.KnockbackPower > 0f && _mover != null && IsCrowdControlImmune == false)
 				{
 					_mover.AddImpulse(info.KnockbackDir * info.KnockbackPower);
 					// 넉백 발생 → 진행 중인 캐스팅/모션 취소
@@ -497,6 +530,14 @@ namespace ProjectOne.Unit
 		{
 			this.transform.position = pos;
 			IsDead = false;
+
+			// 이전 생의 버프를 전부 걷는다. 이게 없으면 스턴 중 죽은 개체가
+			// 행동차단(BlockFlags)과 DEBUFF 모션을 그대로 물고 되살아난다.
+			if (_buffContainer != null)
+			{
+				_buffContainer.Clear();
+			}
+
 			if (_vitals != null)
 			{
 				_vitals.InitHp();
@@ -505,6 +546,7 @@ namespace ProjectOne.Unit
 			if (_animator != null)
 			{
 				_animator.ResetDead();
+				_animator.ResetForSpawn();
 				_animator.SetOutlineEnabled(false);
 			}
 

@@ -140,6 +140,13 @@ namespace ProjectOne.Skill
 		// Friendly 는 시전자를 포함한다 — 자힐·자버프가 동작해야 한다.
 		private static bool passesApplyTarget(SkillApplyTarget target, UnitBase caster, UnitBase unit)
 		{
+			// 타겟 불가(무적 등)는 진영과 무관하게 빠진다 — All 분기까지 함께 막아야 한다.
+			// 이 함수가 모든 탐색의 유일한 관문이라 여기 한 줄이 조준·범위·착탄을 전부 덮는다.
+			if (unit.IsTargetable == false)
+			{
+				return false;
+			}
+
 			switch (target)
 			{
 			case SkillApplyTarget.Enemy:
