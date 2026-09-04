@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Cinemachine;
@@ -62,10 +62,7 @@ namespace ProjectOne.CameraSystem
 			if (_vcam != null)
 			{
 				_follow = _vcam.GetComponent<CinemachineFollow>();
-				if (_defaultOrthoSize <= 0f)
-				{
-					_defaultOrthoSize = _vcam.Lens.OrthographicSize;
-				}
+				applyDefaultOrthoSize();
 			}
 
 			BuildShakeSources();
@@ -116,16 +113,29 @@ namespace ProjectOne.CameraSystem
 
 			_vcam = vcam;
 			_follow = _vcam.GetComponent<CinemachineFollow>();
-			if (_defaultOrthoSize <= 0f)
-			{
-				_defaultOrthoSize = _vcam.Lens.OrthographicSize;
-			}
+			applyDefaultOrthoSize();
 
 			// 이미 추종 대상이 있으면(이벤트가 vcam 등록보다 먼저 온 경우) 즉시 재적용
 			if (_target != null)
 			{
 				SetFollowTarget(_target);
 			}
+		}
+
+		// 기본 줌 크기는 CameraManager 가 소유한다.
+		//
+		// 설정돼 있으면 vcam 렌즈를 여기에 맞춘다 — 씬 종속 vcam 프리팹과 값이 갈리면
+		// "시작 크기와 ZoomReset 목표가 다른" 상태가 에러도 경고도 없이 만들어진다.
+		// 0 이하면 반대로 vcam 값을 기본값으로 받아 온다(자동 모드).
+		private void applyDefaultOrthoSize()
+		{
+			if (_defaultOrthoSize <= 0f)
+			{
+				_defaultOrthoSize = _vcam.Lens.OrthographicSize;
+				return;
+			}
+
+			_vcam.Lens.OrthographicSize = _defaultOrthoSize;
 		}
 
 		// 등록 해제 — 현재 들고 있는 vcam과 같을 때만 (늦게 파괴되는 이전 vcam이 새 vcam을 덮어쓰지 않도록)

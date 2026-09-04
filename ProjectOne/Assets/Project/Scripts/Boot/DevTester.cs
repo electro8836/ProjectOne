@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EDT;
 using ProjectOne.Utils;
@@ -36,6 +36,14 @@ namespace ProjectOne.Boot
 		{
 			public int itemId;
 			public int count;
+		}
+
+		// 보유 재화 1종. 같은 종류를 여러 줄에 적으면 합산한다(스택 아이템과 같은 규칙).
+		[System.Serializable]
+		public struct DevCurrency
+		{
+			public EDT.Currency type;
+			public int amount;
 		}
 
 		// 마스터리 1종의 개발 진행도 — 레벨만 지정하면 누적 경험치를 역산해 넣는다.
@@ -88,6 +96,9 @@ namespace ProjectOne.Boot
 
 		[Header("보유 아이템 (소모품·재료 — 아이템 ID + 개수)")]
 		[SerializeField] private List<DevItem> _ownedItems = new List<DevItem>();
+
+		[Header("보유 재화 (재화 종류 + 수량)")]
+		[SerializeField] private List<DevCurrency> _currencies = new List<DevCurrency>();
 
 		[Header("마스터리 진행도 (무기 + 레벨)")]
 		[SerializeField] private List<DevMastery> _masteries = new List<DevMastery>();
@@ -170,9 +181,11 @@ namespace ProjectOne.Boot
 			Account.Instance.SetLoadout(buildLoadout());
 			Account.Instance.SetMastery(buildMastery());
 			Account.Instance.SetCostume(buildCostume());
+			Account.Instance.SetCurrency(buildCurrency());
 			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel
 				+ ", 장착:" + _equipSlots.Count + "칸, 보유장비:" + _ownedEquipments.Count + "개"
-				+ ", 보유아이템:" + _ownedItems.Count + "종, 코스튬:" + _ownedCostumes.Count + "종");
+				+ ", 보유아이템:" + _ownedItems.Count + "종, 코스튬:" + _ownedCostumes.Count + "종"
+				+ ", 재화:" + _currencies.Count + "종");
 		}
 
 		// 코스튬 개발 데이터 — 보유 목록과 착용 ID.
@@ -205,6 +218,50 @@ namespace ProjectOne.Boot
 			dto.equippedBodyId = _equippedBodyCostume;
 			dto.equippedWeaponId = _equippedWeaponCostume;
 			return dto;
+		}
+
+		// 보유 재화 개발 데이터.
+		//
+		// Account.SetCurrency 는 Wallet 을 통째로 새로 만들므로 ResourceChangeEvent 가 나가지 않는다.
+		// 부팅 시점이라 HUD 가 아직 없어 문제되지 않는다 — 런타임에 바꾸려면 CurrencyManager.SetAmount 를 써야 한다.
+		private CurrencyDto buildCurrency()
+		{
+			CurrencyDto dto = new CurrencyDto();
+			for (int i = 0; i < _currencies.Count; i++)
+			{
+				DevCurrency src = _currencies[i];
+				if (src.type == EDT.Currency.None || src.amount < 0)
+				{
+					continue;
+				}
+
+				CurrencyAmountDto existing = findCurrency(dto, src.type);
+				if (existing != null)
+				{
+					existing.amount += src.amount;
+					continue;
+				}
+
+				CurrencyAmountDto entry = new CurrencyAmountDto();
+				entry.currencyId = (int)src.type;
+				entry.amount = src.amount;
+				dto.amounts.Add(entry);
+			}
+
+			return dto;
+		}
+
+		private static CurrencyAmountDto findCurrency(CurrencyDto dto, EDT.Currency type)
+		{
+			for (int i = 0; i < dto.amounts.Count; i++)
+			{
+				if (dto.amounts[i].currencyId == (int)type)
+				{
+					return dto.amounts[i];
+				}
+			}
+
+			return null;
 		}
 
 		// 마스터리 레벨은 누적 경험치에서 파생되므로, 원하는 레벨의 누적값을 역으로 넣는다.

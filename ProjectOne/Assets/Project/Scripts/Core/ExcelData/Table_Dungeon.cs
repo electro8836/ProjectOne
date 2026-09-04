@@ -15,7 +15,7 @@ namespace EDT {
             public int MaxEnterCount { get; set; } = 0;
             public Currency RevivalCostType { get; set; } = Currency.None;
             public int RevivalCost { get; set; } = 0;
-            public int RevivalCostStep { get; set; } = 0;
+            public float RevivalCostRatioStep { get; set; } = 0f;
             public int MaxRevivalCount { get; set; } = 0;
         }
 
@@ -47,7 +47,7 @@ namespace EDT {
                 row.MaxEnterCount = reader.ReadInt32();
                 row.RevivalCostType = (Currency)reader.ReadInt32();
                 row.RevivalCost = reader.ReadInt32();
-                row.RevivalCostStep = reader.ReadInt32();
+                row.RevivalCostRatioStep = reader.ReadSingle();
                 row.MaxRevivalCount = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

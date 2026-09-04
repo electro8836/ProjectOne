@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Dungeon;
+using ProjectOne.Event;
 using ProjectOne.Loading;
 using ProjectOne.Map;
 using ProjectOne.Monsters;
@@ -22,7 +23,15 @@ namespace ProjectOne.Field
 	// 필드 이동에서는 회복하지 않는다 — 액트 진행이 연속된 소모전이 되도록 (기반테이블 5.3).
 	public sealed class FieldDirector : MonoBehaviour
 	{
+		private const string ContinuePopupAddress = "UIPrefab_ContinuePopup";
+
 		private static FieldDirector _instance;
+
+		// 사망 팝업이 떠 있는 동안 들어오는 사망 알림을 무시한다.
+		// 부활 직후 남은 몬스터가 다시 죽이는 경우 팝업이 겹쳐 열릴 수 있다.
+		private bool _handlingDeath;
+
+		private System.Action<UnitDiedEvent> _onUnitDied;
 
 		// 현재 로드된 액트
 		private int _currentActId;
@@ -66,8 +75,20 @@ namespace ProjectOne.Field
 
 		public static FieldDirector Instance => _instance;
 
+		private void Awake()
+		{
+			// 사망은 엣지 이벤트다 — Update 로 IsDead 를 훑으면 같은 프레임에 여러 번 잡힌다.
+			_onUnitDied = onUnitDied;
+			EventManager.Instance.Subscribe<UnitDiedEvent>(_onUnitDied);
+		}
+
 		private void OnDestroy()
 		{
+			EventManager.Instance.Unsubscribe<UnitDiedEvent>(_onUnitDied);
+
+			// 팝업 도중 씬이 바뀌면 정지된 채로 남는다.
+			Time.timeScale = 1f;
+
 			// 풀 오브젝트는 씬과 함께 사라지지만 Addressable 핸들은 명시적으로 놓아야 한다.
 			if (DropManager.HasInstance == true)
 			{
@@ -229,6 +250,60 @@ namespace ProjectOne.Field
 		private void Update()
 		{
 			updateFlowFieldBake();
+		}
+
+		// ── 사망 / 부활 ───────────────────────────────────────────────
+
+		private void onUnitDied(UnitDiedEvent evt)
+		{
+			if (evt.UnitType != UnitType.Hero || _handlingDeath == true)
+			{
+				return;
+			}
+
+			_handlingDeath = true;
+			handleDeathAsync(this.GetCancellationTokenOnDestroy()).Forget();
+		}
+
+		// 필드 사망은 되돌릴 수 없는 실패가 아니다 — 조건 없이 시작 지점에서 다시 시작한다.
+		private async UniTaskVoid handleDeathAsync(CancellationToken ct)
+		{
+			// 연출은 timeScale 1 에서 돈다 — 0 이면 사망 애니메이션도 카메라 줌도 멈춘다.
+			await DeathSequence.PlayAsync(ct);
+
+			Time.timeScale = 0f;
+
+			ContinuePopup popup = await UIManager.Instance.OpenWindowAsync<ContinuePopup>(ContinuePopupAddress, ct);
+			if (popup != null)
+			{
+				await popup.ShowAsync(ContinuePopupData.ForFieldDeath(), ct);
+				await UIManager.Instance.CloseWindowAsync(false);
+			}
+
+			Time.timeScale = 1f;
+
+			reviveAtStart();
+			DeathSequence.ResetZoom();
+			_handlingDeath = false;
+		}
+
+		// 시작 지점(MapAnchor)에서 완전 회복 상태로 되살린다.
+		// UnitSpawnedEvent 를 다시 발행해야 카메라·조이스틱이 대상을 새로 잡는다
+		// (DungeonDirector.reviveHeroes 와 같은 규약).
+		private void reviveAtStart()
+		{
+			if (_hero == null)
+			{
+				return;
+			}
+
+			Vector3 spawnPos = MapManager.Instance.GetAnchorPosition(_currentFieldId);
+
+			_hero.OnSpawnReset(spawnPos);
+			_hero.transform.position = spawnPos;
+			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
+
+			EventManager.Instance.Publish(new UnitSpawnedEvent(_hero, UnitType.Hero, _hero.GetID(), 0));
 		}
 
 		// 기준 히어로의 셀 변경 시에만 플로우필드 재베이크 (히어로가 있는 그리드만)

@@ -31,7 +31,7 @@ namespace ProjectOne.Dungeon
 
 		// UI 프리팹 주소(Addressable) — 씬 직렬화로 숨는 것을 막기 위해 코드 상수로 고정
 		private const string DungeonResultAddress = "UIPrefab_DungeonResult";
-		private const string DungeonContinueAddress = "Prefab_DungeonContinue";
+		private const string ContinuePopupAddress = "UIPrefab_ContinuePopup";
 
 		// 클리어 배너가 화면에 머무는 총 시간(초) — 결과창은 이 뒤에 뜬다.
 		// **WaveInfoUI 의 _titleHoldSeconds + _titleFadeSeconds 와 같은 값이어야 한다.**
@@ -72,6 +72,12 @@ namespace ProjectOne.Dungeon
 		private bool _hasTimeLimit;
 
 		private bool _timedOut;
+
+		// 사망 연출·팝업 동안 남은시간을 멈춘다.
+		//
+		// timeScale 0 만으로 멈추던 것을 플래그로 바꾼 이유 — 사망 연출 3초는 timeScale 이 1이어야
+		// 사망 애니메이션과 카메라 줌이 돈다. 그 구간에도 타이머는 멈춰 있어야 한다.
+		private bool _timerPaused;
 
 		// 플로우필드 재베이크 임계값 — 기준 히어로가 다른 셀로 이동했을 때만 재계산
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
@@ -176,7 +182,7 @@ namespace ProjectOne.Dungeon
 		// 제한시간 카운트다운. 0 에 닿으면 진행 루프가 다음 프레임에 실패로 종료한다.
 		private void updateRemainTime()
 		{
-			if (_hasTimeLimit == false || _timedOut == true || _ending == true)
+			if (_hasTimeLimit == false || _timedOut == true || _ending == true || _timerPaused == true)
 			{
 				return;
 			}
@@ -230,9 +236,10 @@ namespace ProjectOne.Dungeon
 					return true;
 				}
 
-				// 제한시간 초과는 부활로 되돌릴 수 있는 상태가 아니다 — 부활 절차 없이 끝낸다.
+				// 제한시간 초과는 부활로 되돌릴 수 있는 상태가 아니다 — 왜 끝났는지만 알리고 마을로 보낸다.
 				if (result == DungeonResult.Failed || _timedOut == true)
 				{
+					await showContinueAsync(ContinuePopupData.ForTimeout(), ct);
 					return false;
 				}
 
@@ -255,6 +262,7 @@ namespace ProjectOne.Dungeon
 			_hasTimeLimit = _stage.TimeLimit > 0;
 			_remainTime = _hasTimeLimit ? _stage.TimeLimit : 0f;
 			_timedOut = false;
+			_timerPaused = false;
 
 			_currentMode = StageModeFactory.Create(_ctx.DungeonType);
 			if (_currentMode == null)
@@ -279,37 +287,28 @@ namespace ProjectOne.Dungeon
 
 		// ── 사망 / 부활 ───────────────────────────────────────────────
 
-		// 부활을 선택하면 true. 귀환이거나 부활 불가면 false.
+		// 부활을 선택하면 true. 나가기이거나 부활 불가면 false.
+		//
+		// 부활 횟수가 없어도 팝업을 띄운다 — 왜 못 살아나는지 알려주고 나가기를 누르게 한다.
 		private async UniTask<bool> handleDefeatAsync(CancellationToken ct)
 		{
-			int used = DungeonRunState.Instance.ReviveUsedCount;
-			int max = _dungeon.MaxRevivalCount;
+			// 연출이 끝나고 팝업을 고르는 동안 남은시간은 흐르지 않는다.
+			_timerPaused = true;
 
-			// MaxRevivalCount 가 None(0)이면 부활 불가 던전이다 (맵 설계 6절).
-			if (max <= 0 || used >= max)
+			await DeathSequence.PlayAsync(ct);
+
+			ContinuePopupData data = ContinuePopupData.ForDungeonDeath(_dungeon, DungeonRunState.Instance.ReviveUsedCount);
+			ContinueChoice choice = await showContinueAsync(data, ct);
+
+			if (choice != ContinueChoice.Retry)
 			{
-				return false;
-			}
-
-			// n회차 부활 비용 = RevivalCost + RevivalCostStep × (n - 1)
-			int cost = _dungeon.RevivalCost + _dungeon.RevivalCostStep * used;
-
-			Time.timeScale = 0f;
-			bool revive = false;
-			DungeonContinueUI ui = await UIManager.Instance.OpenWindowAsync<DungeonContinueUI>(DungeonContinueAddress, ct);
-			if (ui != null)
-			{
-				revive = await ui.WaitChoiceAsync(_dungeon.RevivalCostType, cost, max - used, max, ct);
-				await UIManager.Instance.CloseWindowAsync(false);
-			}
-
-			Time.timeScale = 1f;
-
-			if (revive == false)
-			{
+				// 마을로 나간다 — 씬이 바뀌므로 줌은 되돌릴 필요가 없다.
 				_forcedLobbyReturn = true;
 				return false;
 			}
+
+			DeathSequence.ResetZoom();
+			_timerPaused = false;
 
 			DungeonRunState.Instance.IncrementReviveUsed();
 			reviveHeroes();
@@ -354,6 +353,26 @@ namespace ProjectOne.Dungeon
 					hero.Vitals.FullHeal();
 				}
 			}
+		}
+
+		// 팝업이 떠 있는 동안 게임을 멈춘다.
+		//
+		// 남은 제한시간은 updateRemainTime 이 Time.deltaTime 으로 깎으므로 timeScale 0 만으로 함께 멈춘다 —
+		// 정지 플래그를 따로 두면 두 벌이 되어 한쪽만 풀리는 사고가 난다.
+		private async UniTask<ContinueChoice> showContinueAsync(ContinuePopupData data, CancellationToken ct)
+		{
+			Time.timeScale = 0f;
+
+			ContinueChoice choice = ContinueChoice.Exit;
+			ContinuePopup popup = await UIManager.Instance.OpenWindowAsync<ContinuePopup>(ContinuePopupAddress, ct);
+			if (popup != null)
+			{
+				choice = await popup.ShowAsync(data, ct);
+				await UIManager.Instance.CloseWindowAsync(false);
+			}
+
+			Time.timeScale = 1f;
+			return choice;
 		}
 
 		// ── 종료 ──────────────────────────────────────────────────────
