@@ -113,6 +113,31 @@ namespace ProjectOne.Mastery
 			return true;
 		}
 
+		// 회수가 막힌 이유. 조회 때문에 항목이 생기지 않도록 Find 로 읽는다 — 없으면 회수할 것도 없다.
+		public RefundBlock GetRefundBlock(WeaponMastery id, int nodeId)
+		{
+			MasteryProgress progress = Find(id);
+			if (progress == null)
+			{
+				return RefundBlock.NoLevel;
+			}
+
+			return progress.GetRefundBlock(nodeId);
+		}
+
+		// 노드 회수. 투자와 마찬가지로 성공하면 스탯·리졸브 캐시가 모두 무효화된다 (설계 11.4).
+		public bool TryRefund(WeaponMastery id, int nodeId)
+		{
+			MasteryProgress progress = GetOrCreate(id);
+			if (progress == null || progress.TryRefund(nodeId) == false)
+			{
+				return false;
+			}
+
+			notifyChanged(id);
+			return true;
+		}
+
 		// 지식의 서 사용 (소모품 설계 5.3). 대상 마스터리는 호출자가 정한다 — 테이블에 없다.
 		// 가용 포인트가 늘어나는 것이므로 트리 변경과 같은 무효화 경로를 탄다.
 		public bool TryUseItemPoint(WeaponMastery id, int amount)

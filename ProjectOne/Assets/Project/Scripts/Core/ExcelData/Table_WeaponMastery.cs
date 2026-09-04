@@ -9,6 +9,7 @@ namespace EDT {
         public class Row {
             public WeaponMastery ID { get; set; } = WeaponMastery.None;
             public string Name { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
             public WeaponType WeaponType { get; set; } = WeaponType.None;
             public WeaponRangeType RangeType { get; set; } = WeaponRangeType.None;
             public string AnimControllerName { get; set; } = string.Empty;
@@ -43,6 +44,7 @@ namespace EDT {
                 Row row = new Row();
                 row.ID = (WeaponMastery)reader.ReadInt32();
                 row.Name = reader.ReadString();
+                row.Icon = reader.ReadString();
                 row.WeaponType = (WeaponType)reader.ReadInt32();
                 row.RangeType = (WeaponRangeType)reader.ReadInt32();
                 row.AnimControllerName = reader.ReadString();

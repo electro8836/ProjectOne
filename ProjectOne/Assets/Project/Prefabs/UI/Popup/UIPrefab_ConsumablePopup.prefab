@@ -1197,6 +1197,33 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &7311024865530917244
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4762583083895819597}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 550fc9d633900234190327362307eb1f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.ConsumableInfoPopup
+  _nameText: {fileID: 6949338130612733537}
+  _gradeText: {fileID: 4806371909465179069}
+  _descText: {fileID: 1277655783430196827}
+  _countText: {fileID: 9111330946422128684}
+  _topBg: {fileID: 6280066378952210783}
+  _deco2: {fileID: 2564509138737907040}
+  _itemSlotRoot: {fileID: 7145210009990094541}
+  _plusButton: {fileID: 5727864910415897655}
+  _minusButton: {fileID: 3110416868996221420}
+  _useButton: {fileID: 4248538511370368088}
+  _deleteButton: {fileID: 6041434154719168379}
+  _exitButton: {fileID: 7804123214881299220}
+  _dimmedButton: {fileID: 5021016236867272860}
+  _slotPrefab: {fileID: 1102261044167934370, guid: c38230cd97a2c8b4b80b41ff6f96125a, type: 3}
+  _gradeColors: {fileID: 11400000, guid: 9d4f27a1c6b3418e85f0d3c72a91e64b, type: 2}
 --- !u!1 &4946793183987202189
 GameObject:
   m_ObjectHideFlags: 0
@@ -2109,7 +2136,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2ac1b9f2e4c3d483ab0de045bf44aad4, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 9a8c56185c43af249ac5d837f2b79e7d, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2486,30 +2513,3 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &7311024865530917244
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4762583083895819597}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 550fc9d633900234190327362307eb1f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.ConsumableInfoPopup
-  _nameText: {fileID: 6949338130612733537}
-  _gradeText: {fileID: 4806371909465179069}
-  _descText: {fileID: 1277655783430196827}
-  _countText: {fileID: 9111330946422128684}
-  _topBg: {fileID: 6280066378952210783}
-  _deco2: {fileID: 2564509138737907040}
-  _itemSlotRoot: {fileID: 7145210009990094541}
-  _plusButton: {fileID: 5727864910415897655}
-  _minusButton: {fileID: 3110416868996221420}
-  _useButton: {fileID: 4248538511370368088}
-  _deleteButton: {fileID: 6041434154719168379}
-  _exitButton: {fileID: 7804123214881299220}
-  _dimmedButton: {fileID: 5021016236867272860}
-  _slotPrefab: {fileID: 1102261044167934370, guid: c38230cd97a2c8b4b80b41ff6f96125a, type: 3}
-  _gradeColors: {fileID: 11400000, guid: 9d4f27a1c6b3418e85f0d3c72a91e64b, type: 2}

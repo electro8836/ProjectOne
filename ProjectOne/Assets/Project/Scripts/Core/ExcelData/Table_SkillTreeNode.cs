@@ -11,6 +11,7 @@ namespace EDT {
             public int GroupID { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
+            public string Icon { get; set; } = string.Empty;
             public int NodePos_Row { get; set; } = 0;
             public int NodePos_Column { get; set; } = 0;
             public int PrevNodeID { get; set; } = 0;
@@ -45,6 +46,7 @@ namespace EDT {
                 row.GroupID = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
+                row.Icon = reader.ReadString();
                 row.NodePos_Row = reader.ReadInt32();
                 row.NodePos_Column = reader.ReadInt32();
                 row.PrevNodeID = reader.ReadInt32();

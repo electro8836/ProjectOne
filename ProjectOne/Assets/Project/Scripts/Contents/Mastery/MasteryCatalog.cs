@@ -31,6 +31,10 @@ namespace ProjectOne.Mastery
 		private static readonly Dictionary<int, Table_SkillTreeNode.Row> _nodeById =
 			new Dictionary<int, Table_SkillTreeNode.Row>();
 
+		// PrevNodeID → 그 노드를 선행으로 삼는 후속 노드들. 포인트 회수 가능 판정의 역방향 조회다.
+		private static readonly Dictionary<int, List<Table_SkillTreeNode.Row>> _nextNodes =
+			new Dictionary<int, List<Table_SkillTreeNode.Row>>();
+
 		// AnimControllerName → 무기별 애니메이터 오버라이드.
 		// 무기 교체 경로(Loadout.reapplyHero)가 완전 동기라 부트에서 미리 잡아 두고 동기로 꺼내 쓴다.
 		private static readonly Dictionary<string, RuntimeAnimatorController> _animControllers =
@@ -58,6 +62,7 @@ namespace ProjectOne.Mastery
 			_byWeaponType.Clear();
 			_nodesByGroup.Clear();
 			_nodeById.Clear();
+			_nextNodes.Clear();
 			_masteryExp.Clear();
 			_characterExp.Clear();
 
@@ -170,6 +175,18 @@ namespace ProjectOne.Mastery
 			return row;
 		}
 
+		// 이 노드를 선행으로 삼는 노드 전부. 없으면 빈 목록(널 아님).
+		public static IReadOnlyList<Table_SkillTreeNode.Row> GetNextNodes(int prevNodeId)
+		{
+			List<Table_SkillTreeNode.Row> list;
+			if (_nextNodes.TryGetValue(prevNodeId, out list) == true)
+			{
+				return list;
+			}
+
+			return _emptyNodes;
+		}
+
 		// ── 경험치 곡선 ───────────────────────────────────────────────
 
 		// 누적 경험치로 도달 레벨을 구한다 (설계 3.3 — 누적값이라 이분 탐색 1회면 된다).
@@ -257,6 +274,18 @@ namespace ProjectOne.Mastery
 
 				list.Add(row);
 				_nodeById[row.ID] = row;
+
+				if (row.PrevNodeID > 0)
+				{
+					List<Table_SkillTreeNode.Row> next;
+					if (_nextNodes.TryGetValue(row.PrevNodeID, out next) == false)
+					{
+						next = new List<Table_SkillTreeNode.Row>();
+						_nextNodes.Add(row.PrevNodeID, next);
+					}
+
+					next.Add(row);
+				}
 			}
 
 			// 보드 순회 순서를 좌표로 고정한다 — UI 배치와 누적 계산의 재현성 확보.

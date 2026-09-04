@@ -304,6 +304,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - MasteryLevelBonus
+            {
+                CurrentFile = Table_MasteryLevelBonus.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_MasteryLevelBonus._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Monster
             {
                 CurrentFile = Table_Monster.Filename;

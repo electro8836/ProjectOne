@@ -12,23 +12,15 @@ namespace ProjectOne.UI
 	{
 		None = 0,
 
-		// 상시 진입 화면
-		Character,
+		Shop,
 		Equipment,
+		World,
 		Mastery,
 		Quest,
 		Settings,
-
-		// 이동
 		FieldSelect,
 		DungeonSelect,
-
-		// NPC 기능 — 마을에서 NPC 로도 열고, 어디서든 메뉴로도 연다
-		Shop,
-		Blacksmith,
-		Storage,
-
-		// 대화
+		Craft,
 		Dialog
 	}
 
@@ -40,17 +32,14 @@ namespace ProjectOne.UI
 	{
 		private static readonly Dictionary<UIScreenId, string> _addresses = new Dictionary<UIScreenId, string>
 		{
-			{ UIScreenId.Character,     "UI_Character" },
-			{ UIScreenId.Equipment,     "UIPrefab_Equipment" },
-			{ UIScreenId.Mastery,       "UI_Mastery" },
-			{ UIScreenId.Quest,         "UI_Quest" },
-			{ UIScreenId.Settings,      "UI_Settings" },
-			{ UIScreenId.FieldSelect,   "UI_FieldSelect" },
-			{ UIScreenId.DungeonSelect, "UI_DungeonSelect" },
-			{ UIScreenId.Shop,          "UI_Shop" },
-			{ UIScreenId.Blacksmith,    "UI_Blacksmith" },
-			{ UIScreenId.Storage,       "UI_Storage" },
-			{ UIScreenId.Dialog,        "UI_Dialog" }
+			{ UIScreenId.Shop,			"UIPrefab_Shop" },
+			{ UIScreenId.Equipment,		"UIPrefab_Equipment" },
+			{ UIScreenId.World,			"UIPrefab_World" },
+			{ UIScreenId.Mastery,		"UIPrefab_MasteryTrait" },
+			{ UIScreenId.Quest,			"UIPrefab_Quest" },
+			{ UIScreenId.Craft,			"UIPrefab_Craft" },
+			{ UIScreenId.Settings,		"UIPrefab_Settings" },
+			{ UIScreenId.Dialog,		"UIPrefab_Dialog" }
 		};
 
 		// 주소를 못 찾으면 빈 문자열. 호출자(UIManager)가 경고를 낸다.
@@ -74,10 +63,7 @@ namespace ProjectOne.UI
 					return UIScreenId.Shop;
 
 				case EDT.NpcType.Blacksmith:
-					return UIScreenId.Blacksmith;
-
-				case EDT.NpcType.Storage:
-					return UIScreenId.Storage;
+					return UIScreenId.Craft;
 
 				case EDT.NpcType.Portal:
 					return UIScreenId.FieldSelect;

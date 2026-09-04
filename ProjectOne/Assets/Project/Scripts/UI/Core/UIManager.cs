@@ -48,6 +48,11 @@ namespace ProjectOne.UI
 		// 현재 진행 중인 팝업의 CancellationTokenSource
 		private CancellationTokenSource _popupCts;
 
+		// 공용 팝업은 별도 CTS 를 쓴다. _popupCts 를 같이 쓰면 확인 팝업을 여는 순간
+		// 그 아래 팝업(노드 팝업 등)이 취소되어 파괴된다 — 확인 팝업은 아래를 밀어내는 것이 아니라
+		// 그 위에 겹치는 존재다.
+		private CancellationTokenSource _commonPopupCts;
+
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
@@ -489,6 +494,9 @@ namespace ProjectOne.UI
 
 		// ── 공통 팝업 ───────────────────────────────────────────────────
 
+		private const string COMMON_POPUP_ADDRESS = "UIPrefab_CommonPopup";
+
+
 		// 아이템 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowItemInfoPopupAsync(string address, long uid, CancellationToken ct)
 		{
@@ -552,6 +560,76 @@ namespace ProjectOne.UI
 			{
 				ResourceManager.Instance.Release(address);
 			}
+		}
+
+		// 마스터리 트리 노드 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 다른 팝업과 달리 화면 중앙이 아니라 누른 노드 옆에 떠야 해서 위치 기준(anchor)을 함께 넘긴다.
+		public async UniTask ShowMasteryTraitPopupAsync(string address, int nodeId, TraitPopupAnchor anchor, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			MasteryTraitPopup popup = go.GetComponent<MasteryTraitPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return;
+			}
+
+			await popup.ShowAsync(nodeId, anchor, _popupCts.Token);
+			Destroy(go);
+
+			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(address);
+			}
+		}
+
+		// 공용 확인 팝업을 _popupCanvas(창보다 상위)에 열고 어떤 버튼이 눌렸는지 돌려준다.
+		//
+		// 다른 팝업과 달리 주소를 호출부에서 받지 않는다 — 공용 팝업은 하나뿐이라
+		// 주소가 호출부마다 흩어지면 UIScreenCatalog 주석이 경고하는 상황이 그대로 재현된다.
+		public async UniTask<CommonPopupResult> ShowCommonPopupAsync(CommonPopupData data, CancellationToken ct)
+		{
+			_commonPopupCts?.Cancel();
+			_commonPopupCts?.Dispose();
+			_commonPopupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(COMMON_POPUP_ADDRESS, _commonPopupCts.Token);
+			if (prefab == null)
+			{
+				return CommonPopupResult.Closed;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			CommonPopup popup = go.GetComponent<CommonPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(COMMON_POPUP_ADDRESS);
+				return CommonPopupResult.Closed;
+			}
+
+			CommonPopupResult result = await popup.ShowAsync(data, _commonPopupCts.Token);
+			Destroy(go);
+
+			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(COMMON_POPUP_ADDRESS);
+			}
+
+			return result;
 		}
 
 		// 캐릭터 디테일 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.

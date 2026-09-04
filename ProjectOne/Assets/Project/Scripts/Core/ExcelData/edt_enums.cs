@@ -596,6 +596,7 @@ namespace EDT {
         TableSkillTreeNode,
         TableSkillPoint,
         TableMasteryLevelExp,
+        TableMasteryLevelBonus,
         TableMonster,
         TableMonsterStat,
         TableMonsterSpawn,
