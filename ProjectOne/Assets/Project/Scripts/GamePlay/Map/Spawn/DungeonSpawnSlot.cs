@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace ProjectOne.Map
 {
@@ -42,5 +42,18 @@ namespace ProjectOne.Map
 			Vector2 offset = Random.insideUnitCircle * _radius;
 			return Position + new Vector3(offset.x, offset.y, 0f);
 		}
+
+#if UNITY_EDITOR
+		// 몬스터 스폰 포인트와 한눈에 구분되어야 한다.
+		private static readonly Color GizmoColor = new Color(1f, 0.55f, 0.1f);
+
+		// OnDrawGizmosSelected 를 따로 두지 않는다 — 선택된 오브젝트는 둘 다 불려서
+		// 라벨이 같은 자리에 두 번 그려진다. 하나만 두고 안에서 선택 여부를 묻는다.
+		private void OnDrawGizmos()
+		{
+			bool selected = UnityEditor.Selection.Contains(this.gameObject);
+			SpawnRadiusGizmo.Draw(this.transform, _radius, GizmoColor, selected, "슬롯 " + _slotIndex);
+		}
+#endif
 	}
 }

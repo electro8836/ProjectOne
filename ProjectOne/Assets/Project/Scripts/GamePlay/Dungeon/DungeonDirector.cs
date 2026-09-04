@@ -30,8 +30,13 @@ namespace ProjectOne.Dungeon
 		private static readonly Vector3 HeroBasePos = new Vector3(0f, 0f, 0f);
 
 		// UI 프리팹 주소(Addressable) — 씬 직렬화로 숨는 것을 막기 위해 코드 상수로 고정
-		private const string DungeonResultAddress = "Prefab_DungeonResult";
+		private const string DungeonResultAddress = "UIPrefab_DungeonResult";
 		private const string DungeonContinueAddress = "Prefab_DungeonContinue";
+
+		// 클리어 배너가 화면에 머무는 총 시간(초) — 결과창은 이 뒤에 뜬다.
+		// **WaveInfoUI 의 _titleHoldSeconds + _titleFadeSeconds 와 같은 값이어야 한다.**
+		// 인스펙터에서 연출 시간을 바꾸면 여기도 같이 바꾼다.
+		private const float ClearBannerSeconds = 2.5f;
 
 		private Table_Dungeon.Row _dungeon;
 		private Table_DungeonStage.Row _stage;
@@ -51,6 +56,23 @@ namespace ProjectOne.Dungeon
 		// 사망창에서 '귀환'을 선택했는지 — true 면 결과창 없이 즉시 마을로 복귀(보상 없음).
 		private bool _forcedLobbyReturn;
 
+		// 이번 판에 지급한 장비 인스턴스. 결과창이 등급·레벨·품질을 여기서 읽는다.
+		//
+		// GrantedRewardDto 에는 등급·품질이 없어(설계 STEP 14 한계) itemId 만으로는 슬롯을 채울 수 없다.
+		// 지급할 때 만든 인스턴스를 그대로 넘겨야 화면과 인벤토리가 어긋나지 않는다.
+		private readonly List<EquipmentInstance> _grantedEquipments = new List<EquipmentInstance>();
+
+		// 이번 단계의 남은 제한시간(초). 0 이하로 떨어지면 실패다.
+		//
+		// 제한시간은 웨이브 진행 규칙이 아니라 던전 한 판의 성격이므로 모드가 아니라 여기가 소유한다.
+		// HUD 도 여기서 읽는다 — 모드와 UI 가 각자 타이머를 돌리면 조용히 어긋난다.
+		private float _remainTime;
+
+		// TimeLimit 이 0(무제한)인 단계에서는 시간을 세지 않는다.
+		private bool _hasTimeLimit;
+
+		private bool _timedOut;
+
 		// 플로우필드 재베이크 임계값 — 기준 히어로가 다른 셀로 이동했을 때만 재계산
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
@@ -59,6 +81,12 @@ namespace ProjectOne.Dungeon
 		public static bool HasInstance => _instance != null;
 
 		public static DungeonDirector Instance => _instance;
+
+		// 남은 제한시간(초). 무제한 단계면 0 이다.
+		public float RemainTime => _remainTime;
+
+		// 진행 중인 던전 종류. 아직 Begin 전이면 None 이다.
+		public EDT.Dungeon DungeonType => (_ctx != null) ? _ctx.DungeonType : EDT.Dungeon.None;
 
 		// 던전 씬은 비어 있으므로 코드가 직접 생성한다.
 		public static DungeonDirector EnsureInstance()
@@ -111,6 +139,9 @@ namespace ProjectOne.Dungeon
 			// MonsterPoolHub 가 죽은 풀을 재사용해 스폰이 조용히 실패한다.
 			Map.GameplaySceneSetup.ClearGameplayUnits();
 
+			// 카메라 리그는 씬과 함께 파괴된다. 없으면 vcam 이 없어 화면이 히어로를 따라가지 않는다.
+			await Map.GameplaySceneSetup.EnsureCameraAsync(_cts.Token);
+
 			await loadMapAsync(_cts.Token);
 			await spawnHeroAsync(_cts.Token);
 
@@ -129,7 +160,7 @@ namespace ProjectOne.Dungeon
 			runGuardedAsync(_cts.Token).Forget();
 		}
 
-		// DungeonHUD 나가기 버튼 → 즉시 종료(보상 없음)
+		// HUD 나가기 버튼 → 즉시 종료(보상 없음)
 		public void RequestExit()
 		{
 			_forcedLobbyReturn = true;
@@ -138,7 +169,27 @@ namespace ProjectOne.Dungeon
 
 		private void Update()
 		{
+			updateRemainTime();
 			updateFlowFieldBake();
+		}
+
+		// 제한시간 카운트다운. 0 에 닿으면 진행 루프가 다음 프레임에 실패로 종료한다.
+		private void updateRemainTime()
+		{
+			if (_hasTimeLimit == false || _timedOut == true || _ending == true)
+			{
+				return;
+			}
+
+			_remainTime -= Time.deltaTime;
+			if (_remainTime > 0f)
+			{
+				return;
+			}
+
+			_remainTime = 0f;
+			_timedOut = true;
+			Debug.Log($"[DungeonDirector] 제한시간 초과 — {_ctx.DungeonType} Stage {_ctx.Stage}");
 		}
 
 		private void OnDestroy()
@@ -179,6 +230,12 @@ namespace ProjectOne.Dungeon
 					return true;
 				}
 
+				// 제한시간 초과는 부활로 되돌릴 수 있는 상태가 아니다 — 부활 절차 없이 끝낸다.
+				if (result == DungeonResult.Failed || _timedOut == true)
+				{
+					return false;
+				}
+
 				if (result == DungeonResult.Defeat)
 				{
 					// 부활을 선택하면 같은 단계를 계속 진행한다.
@@ -195,6 +252,10 @@ namespace ProjectOne.Dungeon
 
 		private void startStage()
 		{
+			_hasTimeLimit = _stage.TimeLimit > 0;
+			_remainTime = _hasTimeLimit ? _stage.TimeLimit : 0f;
+			_timedOut = false;
+
 			_currentMode = StageModeFactory.Create(_ctx.DungeonType);
 			if (_currentMode == null)
 			{
@@ -309,6 +370,9 @@ namespace ProjectOne.Dungeon
 
 			if (victory == true && _forcedLobbyReturn == false)
 			{
+				// 이전 판(다음 단계 재진입)의 지급 장비가 결과창에 섞이지 않게 비운다.
+				_grantedEquipments.Clear();
+
 				// 최고 클리어 단계 갱신 — 다음 단계 해금과 퀘스트 판정의 근거다.
 				DungeonProgress.MarkStageCleared(_ctx.DungeonType, _ctx.Stage);
 
@@ -316,8 +380,19 @@ namespace ProjectOne.Dungeon
 				EventManager.Instance.Publish(new DungeonStageClearedEvent(_ctx.DungeonType, _ctx.Stage));
 
 				beginClearRequestIfNeeded();
+
+				// 배너를 먼저 걸어 두고 응답을 기다린다 — 두 시계가 같이 흘러야 한다.
+				// 응답이 빨라도 배너가 끝날 때까지, 배너가 끝나도 응답이 올 때까지 기다린다.
+				// 이미 지난 배너를 await 하면 즉시 통과하므로 분기가 필요 없다.
+				UniTask banner = UniTask.Delay(System.TimeSpan.FromSeconds(ClearBannerSeconds), cancellationToken: _cts.Token);
+
 				DungeonClearResponse resp = await _clearTask;
+				await banner;
+
 				applyClearResponse(resp);
+
+				// TODO(임시) — 결과창 확인용 더미 보상. 지울 때 아래 "임시 테스트" 영역과 이 줄을 함께 지운다.
+				resp = TEMP_BuildDummyReward(resp);
 
 				await showDungeonResultAsync(resp, _cts.Token);
 			}
@@ -345,7 +420,7 @@ namespace ProjectOne.Dungeon
 			bool hasNext = DungeonProgress.HasNextStage(_ctx.DungeonType, _ctx.Stage);
 			bool canChallenge = hasNext && DungeonProgress.CanEnter(_ctx.DungeonType);
 
-			bool challengeNext = await ui.WaitAsync(rewards, _ctx.DungeonType, _ctx.Stage, canChallenge, ct);
+			bool challengeNext = await ui.WaitAsync(rewards, _grantedEquipments, _ctx.DungeonType, _ctx.Stage, canChallenge, ct);
 
 			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToDungeon, ct);
 			await UIManager.Instance.CloseWindowAsync(false);
@@ -386,6 +461,109 @@ namespace ProjectOne.Dungeon
 
 			await LoadingManager.Instance.HideAsync();
 			runGuardedAsync(ct).Forget();
+		}
+
+		// ── 임시 테스트 ───────────────────────────────────────────────
+		//
+		// TODO(임시) — 서버 미연동이라 결과창이 텅 비어 보인다. 눈으로 확인하려고 채우는 더미다.
+		// **패킷 작업 시 이 영역 전체와 endDungeonAsync 의 호출 한 줄을 통째로 지운다.**
+		//
+		// applyClearResponse 뒤에서 부르므로 계정에는 아무것도 지급되지 않는다 — 화면에만 채운다.
+
+		// 더미 골드 범위
+		private const int TempDummyGoldMin = 1200;
+		private const int TempDummyGoldMax = 8500;
+
+		// 더미 장비 개수 범위 — 등급 색상이 섞여 보이도록 여러 개 만든다.
+		private const int TempDummyEquipMin = 3;
+		private const int TempDummyEquipMax = 6;
+
+		// 더미 스택 아이템(소모품) 종류 수 범위
+		private const int TempDummyItemMin = 1;
+		private const int TempDummyItemMax = 3;
+
+		// 더미 획득 경험치
+		private const int TempDummyExp = 350;
+
+		private DungeonClearResponse TEMP_BuildDummyReward(DungeonClearResponse actual)
+		{
+			// 서버가 실제로 응답했다면 그대로 쓴다.
+			if (actual != null && actual.rewards != null && actual.rewards.Length > 0)
+			{
+				return actual;
+			}
+
+			// 경험치는 resp 가 아니라 DungeonStage.RewardExp 를 읽어 표시된다.
+			// 테이블이 비어 있어 "+0" 으로 뜨므로 메모리 값만 덮어쓴다(바이트 파일은 그대로).
+			Table_DungeonStage.Row stageRow = _stage;
+			if (stageRow != null && stageRow.RewardExp <= 0)
+			{
+				stageRow.RewardExp = TempDummyExp;
+			}
+
+			List<GrantedRewardDto> list = new List<GrantedRewardDto>();
+
+			GrantedRewardDto gold = new GrantedRewardDto();
+			gold.rewardType = (int)RewardType.Currency;
+			gold.itemId = (int)EDT.Currency.Gold;
+			gold.count = Random.Range(TempDummyGoldMin, TempDummyGoldMax);
+			list.Add(gold);
+
+			// 장비와 스택 아이템을 갈라 담는다 — 표시 경로가 다르다.
+			List<int> equipIds = new List<int>();
+			List<int> stackIds = new List<int>();
+			Dictionary<int, Table_Item.Row>.Enumerator e = Table_Item.All().GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				int id = e.Current.Key;
+				if (Table_Equipment.Get(id) != null)
+				{
+					equipIds.Add(id);
+				}
+				else
+				{
+					stackIds.Add(id);
+				}
+			}
+
+			// 장비 — 등급을 섞어 인스턴스로 만든다. 품질·순도는 팩토리가 굴린다.
+			// dto 로 싣지 않는 이유: GrantedRewardDto 에 등급·품질이 없어 결과창이 채울 수 없다.
+			int equipCount = Random.Range(TempDummyEquipMin, TempDummyEquipMax + 1);
+			for (int i = 0; i < equipCount && equipIds.Count > 0; i++)
+			{
+				int index = Random.Range(0, equipIds.Count);
+				int itemId = equipIds[index];
+				equipIds.RemoveAt(index);
+
+				ItemGradeType grade = (ItemGradeType)Random.Range((int)ItemGradeType.Normal, (int)ItemGradeType.Mythic + 1);
+				EquipmentInstance instance = EquipmentFactory.CreateFixed(itemId, grade);
+				if (instance != null)
+				{
+					_grantedEquipments.Add(instance);
+				}
+			}
+
+			// 스택 아이템 — 중복을 빼야 합산으로 한 칸이 되지 않고 칸 수가 눈에 보인다.
+			int stackCount = Random.Range(TempDummyItemMin, TempDummyItemMax + 1);
+			for (int i = 0; i < stackCount && stackIds.Count > 0; i++)
+			{
+				int index = Random.Range(0, stackIds.Count);
+
+				GrantedRewardDto item = new GrantedRewardDto();
+				item.rewardType = (int)RewardType.Item;
+				item.itemId = stackIds[index];
+				item.count = Random.Range(1, 4);
+				list.Add(item);
+
+				stackIds.RemoveAt(index);
+			}
+
+			DungeonClearResponse dummy = new DungeonClearResponse();
+			dummy.exp = (actual != null) ? actual.exp : 0;
+			dummy.rewards = list.ToArray();
+
+			Debug.Log($"[DungeonDirector] TODO(임시) 더미 보상 — 골드 {gold.count}, 장비 {_grantedEquipments.Count}개, 스택 {list.Count - 1}종");
+			return dummy;
 		}
 
 		// ── 서버 클리어 요청 ──────────────────────────────────────────
@@ -486,7 +664,7 @@ namespace ProjectOne.Dungeon
 		// **한계 — 서버가 등급을 내려주지 못한다.** GrantedRewardDto 에 등급·순도·품질·uid 가 없어
 		// 클라가 Item.Grade 기준으로 인스턴스를 만든다. 이건 설계가 금지한 "등급 자동 폴백"이 아니라
 		// **DTO 스키마의 한계**다. DTO 확장은 STEP 14 에서 하며, 그때 이 분기를 제거한다.
-		private static void grantItemFromServer(int itemId, int count)
+		private void grantItemFromServer(int itemId, int count)
 		{
 			if (itemId <= 0 || count <= 0)
 			{
@@ -508,6 +686,7 @@ namespace ProjectOne.Dungeon
 				if (instance != null)
 				{
 					Account.Instance.Inventory.AddEquipment(instance);
+					_grantedEquipments.Add(instance);
 				}
 			}
 		}

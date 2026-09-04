@@ -164,7 +164,33 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			if (map.MapType == MapType.Dungeon)
+			{
+				enterDungeon(mapId);
+				return;
+			}
+
 			Debug.LogWarning($"[MainHudPresenter] 아직 지원하지 않는 이동 대상입니다 — Map {mapId} ({map.MapType})");
+		}
+
+		// 던전은 목적지가 (DungeonType, Stage) 지만 그 둘을 DungeonStage 테이블이 MapID 와 함께 들고 있다.
+		// 버튼에 던전 전용 필드를 새로 다는 대신 맵으로 되찾는다 — 목적지 표현이 두 벌이 되지 않는다.
+		//
+		// 네임스페이스를 정규화하는 이유 — using ProjectOne.Dungeon 을 넣으면
+		// EDT.Dungeon enum 과 충돌해 이 파일의 다른 Dungeon 참조가 깨진다.
+		private static void enterDungeon(int mapId)
+		{
+			Table_DungeonStage.Row stage = ProjectOne.Dungeon.DungeonProgress.FindStageRowByMapId(mapId);
+			if (stage == null)
+			{
+				Debug.LogWarning($"[MainHudPresenter] Map {mapId} 를 쓰는 DungeonStage 가 없습니다 — DevWarpButton 의 MapId 를 확인하세요.");
+				return;
+			}
+
+			// 개발용 이동은 입장 횟수를 소모하지 않는다 — 반복 진입이 목적이다.
+			// 정식 경로(DungeonSelectUI)는 TryConsumeEnter 를 거친다.
+			ProjectOne.Dungeon.DungeonContext ctx = new ProjectOne.Dungeon.DungeonContext(stage.DungeonType, stage.Stage);
+			GameFlow.Instance.ChangeStateAsync(new DungeonState(ctx)).Forget();
 		}
 
 		// 같은 상태로 다시 들어가면 씬을 새로 로드해 히어로가 재스폰되고 위치가 초기화된다.

@@ -38,6 +38,8 @@ namespace ProjectOne.UI
 		[SerializeField] private GradeOptionView[] _gradeOptions;	// GradeOptionInfo_1~6
 
 		[Header("버튼")]
+		// 장착·강화 묶음. 디스플레이(읽기 전용)로 열 때 통째로 감춘다.
+		[SerializeField] private GameObject _bottomButtons;		// BottomButtons
 		[SerializeField] private UIButton _equipButton;			// EquipButton
 		[SerializeField] private TMP_Text _equipButtonLabel;	// EquipButton 라벨
 		[SerializeField] private UIButton _enchantButton;		// EnchantButton
@@ -122,9 +124,27 @@ namespace ProjectOne.UI
 		}
 
 		// UIManager 가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
+		//
+		// 인벤토리 경로 — 내 장비이므로 조작 버튼이 살아 있다.
 		public UniTask ShowAsync(long uid, CancellationToken ct)
 		{
 			return _presenter.ShowAsync(uid, ct);
+		}
+
+		// 디스플레이 경로 — 결과창·상점처럼 내 것이 아닌 목록에서 연다.
+		// 인벤토리를 조회하지 않으므로 보유하지 않은 인스턴스도 열린다.
+		public UniTask ShowAsync(EquipmentInstance instance, CancellationToken ct)
+		{
+			return _presenter.ShowAsync(instance, ct);
+		}
+
+		// 조작 기능을 잠근다. 내 아이템이 아닐 때는 장착·강화가 있으면 안 된다.
+		public void SetReadOnly(bool readOnly)
+		{
+			if (_bottomButtons != null)
+			{
+				_bottomButtons.SetActive(readOnly == false);
+			}
 		}
 
 		// Presenter 가 첫 렌더(아이콘 로드)를 끝낸 뒤 호출 — 채워진 상태로 한 번에 표시.

@@ -1,4 +1,4 @@
-using EDT;
+﻿using EDT;
 
 namespace ProjectOne.Dungeon
 {
@@ -8,6 +8,9 @@ namespace ProjectOne.Dungeon
 		InProgress,
 		Cleared,
 		Defeat,
+
+		// 부활로 되돌릴 수 없는 실패(제한시간 초과). Defeat 와 달리 부활 팝업을 거치지 않는다.
+		Failed,
 	}
 
 	// 던전 진입 파라미터. DungeonState → DungeonDirector 로 전달된다.

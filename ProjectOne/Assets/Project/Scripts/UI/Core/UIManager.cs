@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Utils;
 using ProjectOne.Event;
+using ProjectOne.Items;
 using ProjectOne.Resources;
 
 namespace ProjectOne.UI
@@ -495,6 +496,7 @@ namespace ProjectOne.UI
 		// ── 공통 팝업 ───────────────────────────────────────────────────
 
 		private const string COMMON_POPUP_ADDRESS = "UIPrefab_CommonPopup";
+		private const string SIMPLE_POPUP_ADDRESS = "UIPrefab_SimplePopup";
 
 
 		// 아이템 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -529,9 +531,42 @@ namespace ProjectOne.UI
 			}
 		}
 
+		// 장비 정보 팝업을 **디스플레이(읽기 전용)** 로 연다 — 결과창·상점처럼 내 것이 아닌 목록용.
+		// 인벤토리를 조회하지 않으므로 보유하지 않은 인스턴스도 열린다.
+		public async UniTask ShowItemInfoPopupAsync(string address, EquipmentInstance instance, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			ItemInfoPopup popup = go.GetComponent<ItemInfoPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return;
+			}
+
+			await popup.ShowAsync(instance, _popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(address);
+			}
+		}
+
 		// 소모품 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
 		// 소모품은 스택이라 장비처럼 인스턴스 UID 가 없어 아이템 ID 로 연다.
-		public async UniTask ShowConsumablePopupAsync(string address, int itemId, CancellationToken ct)
+		// readOnly = true 면 디스플레이 경로다 — 수량 조절·사용·파괴를 감춘다.
+		public async UniTask ShowConsumablePopupAsync(string address, int itemId, bool readOnly, CancellationToken ct)
 		{
 			_popupCts?.Cancel();
 			_popupCts?.Dispose();
@@ -552,13 +587,52 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			await popup.ShowAsync(itemId, _popupCts.Token);
+			await popup.ShowAsync(itemId, readOnly, _popupCts.Token);
 			Destroy(go);
 
 			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(address);
+			}
+		}
+
+		// 설명 툴팁을 누른 슬롯 위에 잠깐 띄운다(재화·재료처럼 정식 팝업을 열 만큼의 내용이 없는 대상).
+		//
+		// 주소를 호출부에서 받지 않는다 — 툴팁 프리팹은 하나뿐이라 주소가 흩어지면 같이 틀어진다.
+		// _popupCts 를 공유하므로 다른 슬롯을 연달아 누르면 이전 툴팁이 취소되고 새것이 뜬다.
+		public async UniTask ShowSimplePopupAsync(string text, RectTransform anchor, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(SIMPLE_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			SimplePopup popup = go.GetComponent<SimplePopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(SIMPLE_POPUP_ADDRESS);
+				return;
+			}
+
+			// 표시 시간이 다 차기 전에 다른 팝업이 열리면 취소된다 — 그때도 정리는 해야 한다.
+			await popup.ShowAsync(text, anchor, _popupCts.Token).SuppressCancellationThrow();
+
+			if (go != null)
+			{
+				Destroy(go);
+			}
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(SIMPLE_POPUP_ADDRESS);
 			}
 		}
 

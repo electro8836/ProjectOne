@@ -27,6 +27,9 @@ namespace ProjectOne.Dungeon
 		// 던전별 마지막 단계 번호
 		private static readonly Dictionary<EDT.Dungeon, int> _lastStage = new Dictionary<EDT.Dungeon, int>();
 
+		// MapID → 단계 행. 맵 하나로 던전 단계를 지목하는 경로(개발용 이동 버튼)가 쓴다.
+		private static readonly Dictionary<int, Table_DungeonStage.Row> _byMapId = new Dictionary<int, Table_DungeonStage.Row>();
+
 		private static bool _built;
 
 		// 테이블 로드 이후 1회. StatCatalog / SkillParamCatalog 와 같은 패턴이다.
@@ -34,6 +37,7 @@ namespace ProjectOne.Dungeon
 		{
 			_stageIndex.Clear();
 			_lastStage.Clear();
+			_byMapId.Clear();
 
 			Dictionary<int, Table_DungeonStage.Row> all = Table_DungeonStage.All();
 			Dictionary<int, Table_DungeonStage.Row>.Enumerator e = all.GetEnumerator();
@@ -52,6 +56,8 @@ namespace ProjectOne.Dungeon
 				{
 					_lastStage[row.DungeonType] = row.Stage;
 				}
+
+				registerMapId(row);
 			}
 
 			_built = true;
@@ -70,6 +76,33 @@ namespace ProjectOne.Dungeon
 			int last;
 			_lastStage.TryGetValue(type, out last);
 			return last;
+		}
+
+		// 맵으로 단계를 되찾는다. 없으면 null.
+		public static Table_DungeonStage.Row FindStageRowByMapId(int mapId)
+		{
+			Table_DungeonStage.Row row;
+			_byMapId.TryGetValue(mapId, out row);
+			return row;
+		}
+
+		// 두 단계가 같은 맵을 쓰면 MapID 만으로는 단계를 특정할 수 없다.
+		// 지금은 단계마다 맵이 다르지만, 맵을 재사용하는 순간 조용히 엉뚱한 단계로 들어가므로 여기서 알린다.
+		private static void registerMapId(Table_DungeonStage.Row row)
+		{
+			if (row.MapID <= 0)
+			{
+				return;
+			}
+
+			Table_DungeonStage.Row exist;
+			if (_byMapId.TryGetValue(row.MapID, out exist) == true)
+			{
+				Debug.LogWarning($"[DungeonProgress] Map {row.MapID} 를 여러 단계가 공유합니다 — {exist.DungeonType} {exist.Stage} 단계로 고정합니다 (무시: {row.DungeonType} {row.Stage}).");
+				return;
+			}
+
+			_byMapId[row.MapID] = row;
 		}
 
 		// ── 입장 횟수 ─────────────────────────────────────────────────

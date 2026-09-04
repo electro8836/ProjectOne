@@ -816,7 +816,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uCE90\uB9AD\uD130 \uC0AC\uB9DD"
+  m_text: "\uC81C\uD55C\uC2DC\uAC04 \uCD08\uACFC"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: d14a26d2ea559e1478400fc0344ccf42, type: 2}
   m_sharedMaterial: {fileID: -104884712738383476, guid: d14a26d2ea559e1478400fc0344ccf42, type: 2}
@@ -2071,8 +2071,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9458aece367c1f47afbf9b2297430b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.DungeonContinueUI
-  _rewardGrid: {fileID: 9159110479013812439}
-  _slotPrefab: {fileID: 4966315863974779526, guid: c0b8e814c58a89c41b6e8492509fd4fd, type: 3}
   _reviveButton: {fileID: 8504353050802161364}
   _returnButton: {fileID: 4047597132786760530}
   _costText: {fileID: 3016340427215645258}
@@ -2281,6 +2279,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: -1.7437286
       objectReference: {fileID: 0}
+    - target: {fileID: 2600771674312889525, guid: dce75ea39ccc50e4a838d159df7fef56, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 2209f7d42c06284479b6b9f49c5349b0, type: 3}
     - target: {fileID: 2951181317338873899, guid: dce75ea39ccc50e4a838d159df7fef56, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5

@@ -11,8 +11,9 @@ namespace EDT {
             public Dungeon DungeonType { get; set; } = Dungeon.None;
             public int Stage { get; set; } = 0;
             public int MapID { get; set; } = 0;
-            public int MonsterSpawnGroupIDs { get; set; } = 0;
+            public int[] MonsterSpawnGroupIDs { get; set; } = Array.Empty<int>();
             public int MonsterLevel { get; set; } = 0;
+            public int TimeLimit { get; set; } = 0;
             public int RewardExp { get; set; } = 0;
             public int RewardGroupID { get; set; } = 0;
         }
@@ -41,8 +42,9 @@ namespace EDT {
                 row.DungeonType = (Dungeon)reader.ReadInt32();
                 row.Stage = reader.ReadInt32();
                 row.MapID = reader.ReadInt32();
-                row.MonsterSpawnGroupIDs = reader.ReadInt32();
+                { int _n = reader.ReadInt32(); row.MonsterSpawnGroupIDs = new int[_n]; for(int _i=0;_i<_n;_i++) row.MonsterSpawnGroupIDs[_i] = reader.ReadInt32(); }
                 row.MonsterLevel = reader.ReadInt32();
+                row.TimeLimit = reader.ReadInt32();
                 row.RewardExp = reader.ReadInt32();
                 row.RewardGroupID = reader.ReadInt32();
                 _all.Add( row.ID, row );

@@ -26,6 +26,8 @@ namespace ProjectOne.UI
 		[SerializeField] private Transform _itemSlotRoot;	// ItemSlotRoot
 
 		[Header("버튼")]
+		// 수량 조절 묶음. 디스플레이(읽기 전용)로 열 때 감춘다.
+		[SerializeField] private GameObject _controll;		// Controll
 		[SerializeField] private UIButton _plusButton;		// PlusButton
 		[SerializeField] private UIButton _minusButton;		// MinusButton
 		[SerializeField] private UIButton _useButton;		// UseButton
@@ -40,6 +42,9 @@ namespace ProjectOne.UI
 		[Header("프리펩 / 데이터")]
 		[SerializeField] private ItemSlot _slotPrefab;				// UIPrefab_ItemSlot
 		[SerializeField] private ItemGradeColorTable _gradeColors;
+
+		// 디스플레이(읽기 전용)로 열렸는가. 이후 어떤 갱신이 와도 조작 버튼을 다시 켜지 않게 붙잡는다.
+		private bool _readOnly;
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action OnPlusClicked;
@@ -91,9 +96,28 @@ namespace ProjectOne.UI
 		}
 
 		// UIManager 가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
-		public UniTask ShowAsync(int itemId, CancellationToken ct)
+		// readOnly = true 면 결과창·상점처럼 내 것이 아닌 목록에서 여는 경로다.
+		public UniTask ShowAsync(int itemId, bool readOnly, CancellationToken ct)
 		{
-			return _presenter.ShowAsync(itemId, ct);
+			return _presenter.ShowAsync(itemId, readOnly, ct);
+		}
+
+		// 조작 기능을 잠근다. 내 아이템이 아닐 때는 수량 조절·사용·파괴가 동작하면 안 된다.
+		//
+		// 사용·파괴는 **감추지 않고 누를 수만 없게** 한다 — 버튼 자리가 사라지면 레이아웃이 달라진다.
+		// 수량 조절(Controll)은 표시할 값 자체가 없으므로 통째로 감춘다.
+		public void SetReadOnly(bool readOnly)
+		{
+			_readOnly = readOnly;
+
+			bool usable = (readOnly == false);
+
+			if (_controll != null)
+			{
+				_controll.SetActive(usable);
+			}
+
+			applyControlsInteractable(usable, usable, usable, usable);
 		}
 
 		// Presenter 가 첫 렌더(아이콘 로드)를 끝낸 뒤 호출 — 채워진 상태로 한 번에 표시.
@@ -139,12 +163,22 @@ namespace ProjectOne.UI
 		}
 
 		// 조작 버튼 활성/비활성. 숨기지 않고 interactable 만 끈다(회색 틴트는 UIButton 이 처리).
+		//
+		// 읽기 전용이면 넘어온 값과 무관하게 전부 잠근다. Presenter 의 applyCount 가
+		// SetReadOnly 뒤에 보유 수량으로 다시 켜기 때문에, 여기서 막지 않으면 곧바로 되살아난다.
 		public void SetControlsInteractable(bool plus, bool minus, bool use, bool delete)
 		{
-			_plusButton.interactable = plus;
-			_minusButton.interactable = minus;
-			_useButton.interactable = use;
-			_deleteButton.interactable = delete;
+			applyControlsInteractable(plus, minus, use, delete);
+		}
+
+		private void applyControlsInteractable(bool plus, bool minus, bool use, bool delete)
+		{
+			bool allowed = (_readOnly == false);
+
+			_plusButton.interactable = plus && allowed;
+			_minusButton.interactable = minus && allowed;
+			_useButton.interactable = use && allowed;
+			_deleteButton.interactable = delete && allowed;
 		}
 
 		// 닫힘 대기 — Presenter 의 ShowAsync 가 마지막에 await 한다.

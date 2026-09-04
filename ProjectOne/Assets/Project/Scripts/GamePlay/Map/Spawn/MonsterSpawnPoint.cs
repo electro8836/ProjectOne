@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace ProjectOne.Map
 {
@@ -44,5 +44,18 @@ namespace ProjectOne.Map
 			Vector2 offset = Random.insideUnitCircle * _radius;
 			return Position + new Vector3(offset.x, offset.y, 0f);
 		}
+
+#if UNITY_EDITOR
+		// 던전 슬롯과 한눈에 구분되어야 한다.
+		private static readonly Color GizmoColor = new Color(0.2f, 0.85f, 0.9f);
+
+		// OnDrawGizmosSelected 를 따로 두지 않는다 — 선택된 오브젝트는 둘 다 불려서
+		// 라벨이 같은 자리에 두 번 그려진다. 하나만 두고 안에서 선택 여부를 묻는다.
+		private void OnDrawGizmos()
+		{
+			bool selected = UnityEditor.Selection.Contains(this.gameObject);
+			SpawnRadiusGizmo.Draw(this.transform, _radius, GizmoColor, selected, "그룹 " + _spawnGroupId);
+		}
+#endif
 	}
 }

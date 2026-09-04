@@ -1,115 +1,79 @@
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using EDT;
 using ProjectOne.Event;
+using ProjectOne.Monsters;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Dungeon
 {
-	// 골드 던전 — 웨이브형. 스폰 그룹을 소환하고 전멸시키면 클리어한다 (몬스터 설계 8장).
+	// 골드 던전 — 웨이브형. `MonsterSpawnGroupIDs` 배열을 앞에서부터 한 그룹씩 소환하고,
+	// 그 그룹을 전멸시키면 다음 그룹으로 넘어간다. 더 소환할 그룹이 없으면 클리어다 (몬스터 설계 8장).
 	//
-	// 설계상 `DungeonStage.MonsterSpawnGroupIDs` 는 배열이고 "배열 순서 = 웨이브 순서"지만,
-	// 컨버터가 단수 int 로 생성해 현재는 1웨이브다. 배열이 되면 이 루프가 그대로 여러 웨이브를 돈다.
+	// **배열 순서가 곧 웨이브 순서**이므로 웨이브 수는 코드가 아니라 테이블이 정한다.
 	public sealed class GoldDungeonMode : StageModeBase
 	{
-		// 웨이브 간 대기 시간(초) — 대기 중 메인HUD에 스킵 버튼이 노출된다.
-		private const float WaveWaitSeconds = 30f;
-
-		private bool _skipRequested;
-		private Action<WaveSkipRequestedEvent> _onSkipRequested;
-
-		private CancellationTokenSource _spawnCts;
+		// 웨이브 시작 알림 후 실제 스폰까지의 고정 지연(초).
+		//
+		// UI 배너의 유지·페이드 시간과 **무관한 고정값**이다. 연출 시간을 바꿔도 스폰 시점은 움직이지 않는다.
+		private const float WaveStartDelay = 3f;
 
 		protected override async UniTask RunAsync(Table_DungeonStage.Row stage, CancellationToken ct)
 		{
-			_onSkipRequested = onSkipRequested;
-			EventManager.Instance.Subscribe<WaveSkipRequestedEvent>(_onSkipRequested);
+			int[] groups = GetSpawnGroups(stage);
+			int totalWaves = groups.Length;
 
-			int groupId = GetSpawnGroupId(stage);
-			int levelOverride = GetLevelOverride(stage);
-
-			// 스폰 그룹이 비어 있으면 전멸 판정이 즉시 참이 되어 그냥 클리어된다.
-			// 데이터 누락이 조용히 넘어가지 않도록 알린다.
-			if (groupId <= 0)
+			// 웨이브가 없으면 전멸 판정이 즉시 참이 되어 그냥 클리어된다.
+			// 데이터 누락이 조용히 넘어가지 않도록 알리고, 클리어로 처리하지 않는다.
+			if (totalWaves <= 0)
 			{
-				Debug.LogWarning($"[GoldDungeonMode] MonsterSpawnGroupIDs 가 비어 있음 — 몬스터 없이 즉시 클리어됩니다. DungeonStage:{stage.ID}");
+				Debug.LogError($"[GoldDungeonMode] MonsterSpawnGroupIDs 가 비어 있습니다 — DungeonStage:{stage.ID}");
+				return;
 			}
 
-			const int totalWaves = 1;
-			for (int wave = 1; wave <= totalWaves; wave++)
-			{
-				EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, false, 0f, false));
+			int levelOverride = GetLevelOverride(stage);
 
-				_spawnCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+			for (int wave = 0; wave < totalWaves; wave++)
+			{
+				int groupId = groups[wave];
+				EventManager.Instance.Publish(new WaveStartedEvent(wave + 1, totalWaves, countGroupMonsters(groupId)));
+
+				await UniTask.Delay(TimeSpan.FromSeconds(WaveStartDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
+
 				SpawnGroupRunner.SpawnGroup(groupId, levelOverride);
 
-				// 이 웨이브 몬스터 전멸까지 대기
+				// 이 웨이브 몬스터 전멸까지 대기.
+				// ActiveCount 는 스폰 요청 즉시 오르므로 소환 직후 조기 참이 되지 않는다.
 				await UniTask.WaitUntil(AreMonstersCleared, PlayerLoopTiming.Update, ct);
 
-				_spawnCts.Cancel();
-				_spawnCts.Dispose();
-				_spawnCts = null;
 				MonsterSpawnManager.Instance.ClearAlive();
-
-				if (wave < totalWaves)
-				{
-					await waitBetweenWavesAsync(wave, totalWaves, ct);
-				}
-				else
-				{
-					EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, true, 0f, false));
-				}
 			}
 
 			_result = DungeonResult.Cleared;
 		}
 
-		private async UniTask waitBetweenWavesAsync(int wave, int totalWaves, CancellationToken ct)
+		// 이 그룹이 소환하는 총 마리 수 — 진행 게이지의 분모다.
+		// SpawnGroupRunner 와 같은 규칙(Count 가 0 이하면 1마리)으로 세야 표시와 실제가 어긋나지 않는다.
+		private static int countGroupMonsters(int groupId)
 		{
-			_skipRequested = false;
-			EventManager.Instance.Publish(new WaveStateChangedEvent(wave, totalWaves, true, WaveWaitSeconds, true));
+			IReadOnlyList<Table_MonsterSpawn.Row> rows = MonsterCatalog.GetSpawnGroup(groupId);
 
-			// 시간 경과 자동 전환은 미사용 — 스킵(버튼/스페이스바)으로만 다음 웨이브로 진행한다.
-			while (_skipRequested == false)
+			int total = 0;
+			for (int i = 0; i < rows.Count; i++)
 			{
-				if (isSkipKeyPressed() == true)
+				Table_MonsterSpawn.Row row = rows[i];
+				if (row.MonsterID <= 0)
 				{
-					_skipRequested = true;
-					break;
+					continue;
 				}
 
-				await UniTask.Yield(PlayerLoopTiming.Update, ct);
-			}
-		}
-
-		private void onSkipRequested(WaveSkipRequestedEvent evt)
-		{
-			_skipRequested = true;
-		}
-
-		// 스페이스바 스킵 — 새 Input System 기준
-		private static bool isSkipKeyPressed()
-		{
-			Keyboard kb = Keyboard.current;
-			return kb != null && kb.spaceKey.wasPressedThisFrame;
-		}
-
-		protected override void OnFinished()
-		{
-			if (_onSkipRequested != null)
-			{
-				EventManager.Instance.Unsubscribe<WaveSkipRequestedEvent>(_onSkipRequested);
-				_onSkipRequested = null;
+				total += (row.Count > 0) ? row.Count : 1;
 			}
 
-			if (_spawnCts != null)
-			{
-				_spawnCts.Dispose();
-				_spawnCts = null;
-			}
+			return total;
 		}
 	}
 }

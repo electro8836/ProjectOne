@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
@@ -51,10 +51,25 @@ namespace ProjectOne.UI
 			view.OnExitClicked -= onExitClicked;
 		}
 
-		// 팝업 표시 — 데이터 계산 후 View 에 그리기 지시, 닫힘까지 대기.
-		public async UniTask ShowAsync(long uid, CancellationToken ct)
+		// 인벤토리 경로 — 내 장비를 UID 로 찾아 연다. 장착·강화가 살아 있다.
+		public UniTask ShowAsync(long uid, CancellationToken ct)
 		{
 			EquipmentInstance instance = Account.Instance.Inventory.GetEquipment(uid);
+			return showAsync(instance, uid, false, ct);
+		}
+
+		// 디스플레이 경로 — 결과창·상점처럼 내 것이 아닌 목록에서 연다.
+		//
+		// 인벤토리를 조회하지 않고 인스턴스를 그대로 받는다. 보유하지 않은 장비(보상 미리보기·
+		// 상점 진열)도 등급·품질을 정확히 보여줘야 하는데, UID 는 인벤토리에 들어가야 생긴다.
+		public UniTask ShowAsync(EquipmentInstance instance, CancellationToken ct)
+		{
+			return showAsync(instance, 0, true, ct);
+		}
+
+		// 팝업 표시 — 데이터 계산 후 View 에 그리기 지시, 닫힘까지 대기.
+		private async UniTask showAsync(EquipmentInstance instance, long uid, bool readOnly, CancellationToken ct)
+		{
 			Table_Item.Row row = (instance != null) ? instance.Item : null;
 			if (instance == null || row == null)
 			{
@@ -63,6 +78,7 @@ namespace ProjectOne.UI
 			}
 
 			_uid = uid;
+			view.SetReadOnly(readOnly);
 
 			Table_Equipment.Row equip = instance.Equipment;
 			_slot = (equip != null) ? equip.EquipSlotType : EquipSlotTypes.None;

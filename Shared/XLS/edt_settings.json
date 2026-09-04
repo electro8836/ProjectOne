@@ -3265,7 +3265,7 @@
       "IsAllowEmpty": true
     },
     "DungeonStage.MonsterSpawnGroupIDs": {
-      "IsArray": false,
+      "IsArray": true,
       "IsAllowEmpty": true
     },
     "DungeonStage.MonsterLevel": {
@@ -3981,6 +3981,10 @@
       "IsAllowEmpty": true
     },
     "SkillTreeNode.Icon": {
+      "IsArray": false,
+      "IsAllowEmpty": true
+    },
+    "DungeonStage.TimeLimit": {
       "IsArray": false,
       "IsAllowEmpty": true
     }

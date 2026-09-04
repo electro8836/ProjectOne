@@ -43,7 +43,10 @@ namespace ProjectOne.UI
 		// 스택 아이템은 인스턴스가 없어 uid 가 0 이다 — 구독자는 이것으로 둘을 구분한다.
 		private long _uid;
 		private int _itemId;
-		public event Action<long, int> OnClicked;
+		// 어느 슬롯이 눌렸는지(sender)를 함께 넘긴다.
+		// 소유 화면이 슬롯마다 무엇을 바인딩했는지 알아야 띄울 팝업을 정할 수 있다 —
+		// (uid, itemId) 만으로 재화와 아이템을 가르려면 테이블 조회로 추측해야 해서 조용히 깨진다.
+		public event Action<ItemSlot, long, int> OnClicked;
 
 		private void Awake()
 		{
@@ -102,6 +105,34 @@ namespace ProjectOne.UI
 			await setIcon((row != null) ? row.Icon : string.Empty, ct);
 		}
 
+		// 재화 바인딩 — 재화는 등급·분류·강화·품질이 없어 아이템 슬롯의 대부분을 끈다.
+		//
+		// _itemId 에 재화 종류를 담는다. 아이템 ID 와 값 범위가 겹치지 않지만,
+		// 구분은 소유 화면이 sender 로 하는 것이지 이 값으로 추측하는 것이 아니다.
+		public async UniTask BindCurrencyAsync(EDT.Currency currency, int count, ItemGradeColorTable colors, CancellationToken ct)
+		{
+			_uid = 0;
+			_itemId = (int)currency;
+
+			// 재화는 등급 축이 없다 — 일반 색상으로 고정한다.
+			applyGradeColor(colors, ItemGradeType.Normal);
+
+			_typeBg.gameObject.SetActive(false);
+			_levelText.gameObject.SetActive(false);
+			SetEquipped(false);
+
+			if (_qualitySlider != null)
+			{
+				_qualitySlider.gameObject.SetActive(false);
+			}
+
+			_countText.gameObject.SetActive(true);
+			_countText.text = count.ToString();
+
+			Table_Currency.Row row = Table_Currency.Get(currency);
+			await setIcon((row != null) ? row.Icon : string.Empty, ct);
+		}
+
 		// 장착중 표시를 켜고 끈다. Bind 없이 상태만 뒤집을 때도 쓴다(팝업의 장착/해제 토글).
 		public void SetEquipped(bool equipped)
 		{
@@ -151,7 +182,7 @@ namespace ProjectOne.UI
 		{
 			if (OnClicked != null)
 			{
-				OnClicked.Invoke(_uid, _itemId);
+				OnClicked.Invoke(this, _uid, _itemId);
 			}
 		}
 

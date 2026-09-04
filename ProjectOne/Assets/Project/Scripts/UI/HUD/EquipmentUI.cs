@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -143,7 +143,7 @@ namespace ProjectOne.UI
 			if (OnTabSelected != null) { OnTabSelected.Invoke(index); }
 		}
 
-		private void onSlotClicked(long uid, int itemId)
+		private void onSlotClicked(ItemSlot sender, long uid, int itemId)
 		{
 			if (OnSlotClicked != null) { OnSlotClicked.Invoke(uid, itemId); }
 		}

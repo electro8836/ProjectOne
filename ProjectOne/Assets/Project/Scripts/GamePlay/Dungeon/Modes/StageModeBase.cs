@@ -1,3 +1,4 @@
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -54,13 +55,15 @@ namespace ProjectOne.Dungeon
 			return MonsterSpawnManager.Instance.ActiveCount <= 0;
 		}
 
-		// 단계가 쓸 스폰 그룹. 신규 테이블은 단수 컬럼이라 그룹이 하나뿐이다.
-		//
-		// TODO(STEP 15) — 설계상 `MonsterSpawnGroupIDs` 는 배열(`!int[]`)이어야 하는데
-		// 컨버터가 단수 int 로 생성했다. 배열이 되면 웨이브별로 다른 그룹을 쓸 수 있다.
-		protected static int GetSpawnGroupId(Table_DungeonStage.Row stage)
+		// 단계가 쓸 스폰 그룹들. **배열 순서가 곧 웨이브 순서**다 (몬스터 설계 8장).
+		protected static int[] GetSpawnGroups(Table_DungeonStage.Row stage)
 		{
-			return (stage != null) ? stage.MonsterSpawnGroupIDs : 0;
+			if (stage == null || stage.MonsterSpawnGroupIDs == null)
+			{
+				return Array.Empty<int>();
+			}
+
+			return stage.MonsterSpawnGroupIDs;
 		}
 
 		// 몬스터 레벨 — DungeonStage.MonsterLevel 이 있으면 MonsterSpawn.Level 을 오버라이드한다 (몬스터 설계 8장).

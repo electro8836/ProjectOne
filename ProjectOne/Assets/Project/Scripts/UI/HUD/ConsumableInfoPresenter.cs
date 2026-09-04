@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.UserData;
@@ -34,8 +34,11 @@ namespace ProjectOne.UI
 		}
 
 		// 팝업 표시 — 데이터 조회 후 View 에 그리기 지시, 닫힘까지 대기.
-		public async UniTask ShowAsync(int itemId, CancellationToken ct)
+		// readOnly = true 면 디스플레이 경로다(결과창·상점) — 수량 조절·사용·파괴를 감춘다.
+		public async UniTask ShowAsync(int itemId, bool readOnly, CancellationToken ct)
 		{
+			view.SetReadOnly(readOnly);
+
 			Table_Item.Row row = Table_Item.Get(itemId);
 			if (row == null)
 			{

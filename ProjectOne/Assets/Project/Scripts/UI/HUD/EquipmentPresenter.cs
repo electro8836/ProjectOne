@@ -109,7 +109,7 @@ namespace ProjectOne.UI
 		{
 			if (uid == 0)
 			{
-				UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, itemId, view.GetDestroyToken()).Forget();
+				UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, itemId, false, view.GetDestroyToken()).Forget();
 				return;
 			}
 

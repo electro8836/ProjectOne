@@ -1,8 +1,7 @@
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
-using ProjectOne.Event;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Dungeon
@@ -23,18 +22,19 @@ namespace ProjectOne.Dungeon
 
 		protected override async UniTask RunAsync(Table_DungeonStage.Row stage, CancellationToken ct)
 		{
-			int groupId = GetSpawnGroupId(stage);
+			int[] groups = GetSpawnGroups(stage);
 			int levelOverride = GetLevelOverride(stage);
 
-			if (groupId <= 0)
+			if (groups.Length <= 0)
 			{
 				Debug.LogWarning($"[ExpDungeonMode] MonsterSpawnGroupIDs 가 비어 있음 — 몬스터가 나오지 않습니다. DungeonStage:{stage.ID}");
+				return;
 			}
 
 			_spawnCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-			// 제한시간을 웨이브 배너에 실어 남은 시간을 표시한다(총 1구간).
-			EventManager.Instance.Publish(new WaveStateChangedEvent(1, 1, false, DurationSeconds, false));
+			// 무한형이라 웨이브 개념이 없다 — 배열을 순환하며 계속 채워 넣는다 (몬스터 설계 8장).
+			int groupCursor = 0;
 
 			float elapsed = 0f;
 			float sinceSpawn = RespawnInterval;	// 시작 즉시 1회 소환
@@ -43,7 +43,8 @@ namespace ProjectOne.Dungeon
 				if (sinceSpawn >= RespawnInterval)
 				{
 					sinceSpawn = 0f;
-					SpawnGroupRunner.SpawnGroup(groupId, levelOverride);
+					SpawnGroupRunner.SpawnGroup(groups[groupCursor % groups.Length], levelOverride);
+					groupCursor++;
 				}
 
 				await UniTask.Yield(PlayerLoopTiming.Update, ct);
@@ -55,7 +56,6 @@ namespace ProjectOne.Dungeon
 			_spawnCts.Cancel();
 			MonsterSpawnManager.Instance.ClearAlive();
 
-			EventManager.Instance.Publish(new WaveStateChangedEvent(1, 1, true, 0f, false));
 			_result = DungeonResult.Cleared;
 		}
 

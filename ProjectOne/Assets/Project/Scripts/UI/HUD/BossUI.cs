@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -61,6 +61,12 @@ namespace ProjectOne.UI
 		// 마지막으로 표시한 브레이크 비율 — 회복 중에는 매 프레임 변하므로 값이 바뀐 프레임에만 대입한다.
 		private float _lastBreakRatio = -1f;
 
+		// 배너가 화면에 떠 있는가. 웨이브 배너가 자리를 비켜줄지 판단하는 근거다(보스 우선).
+		public bool IsShowing
+		{
+			get { return this.gameObject.activeSelf; }
+		}
+
 		private void Awake()
 		{
 			_onUnitSpawned = onUnitSpawned;
@@ -68,7 +74,9 @@ namespace ProjectOne.UI
 			EventManager.Instance.Subscribe<UnitSpawnedEvent>(_onUnitSpawned);
 			EventManager.Instance.Subscribe<UnitDiedEvent>(_onUnitDied);
 
-			_canvasGroup.alpha = 0f;
+			// 프리팹은 활성 상태로 저장돼 있어야 한다 — 비활성으로 저장하면 Awake 가 돌지 않아
+			// 위 구독이 없고 보스가 영영 뜨지 않는다. 구독은 오브젝트가 꺼져도 유지된다.
+			this.gameObject.SetActive(false);
 		}
 
 		private void OnDestroy()
@@ -96,7 +104,7 @@ namespace ProjectOne.UI
 			{
 				detachBoss();
 				stopFade();
-				_canvasGroup.alpha = 0f;
+				this.gameObject.SetActive(false);
 				return;
 			}
 
@@ -298,7 +306,10 @@ namespace ProjectOne.UI
 			}
 
 			stopFade();
+
+			// 직전 사망 페이드가 알파를 0 으로 남겨 두므로 되돌린다.
 			_canvasGroup.alpha = 1f;
+			this.gameObject.SetActive(true);
 		}
 
 		private void onUnitDied(UnitDiedEvent evt)
@@ -329,8 +340,8 @@ namespace ProjectOne.UI
 				yield return null;
 			}
 
-			_canvasGroup.alpha = 0f;
 			_fadeRoutine = null;
+			this.gameObject.SetActive(false);
 		}
 
 		private void stopFade()

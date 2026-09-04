@@ -193,30 +193,23 @@ namespace ProjectOne.Event
 				}
 		}
 
-		// 웨이브 상태 전이 알림 (웨이브 모드). 메인HUD의 스킵 버튼/웨이브 표시 등에서 구독.
-		// IsWaiting=true: 웨이브 클리어 배너("N/M단계 방어 완료"), WaitSeconds: 대기 총 시간(초)
-		// CanSkip=true: 다음 웨이브가 있어 스킵 버튼 노출. 마지막 웨이브 클리어 시엔 false(스킵 없음).
-		public readonly struct WaveStateChangedEvent
+		// 웨이브 시작 알림 (웨이브 모드 던전). 배너 표시와 진행 게이지 초기화의 근거다.
+		//
+		// 몬스터 스폰은 이 알림 뒤 고정 지연 후에 일어난다 — UI 연출 시간과 무관하다.
+		public readonly struct WaveStartedEvent
 		{
 				public readonly int CurrentWave;   // 1-based 현재 웨이브
 				public readonly int TotalWaves;
-				public readonly bool IsWaiting;
-				public readonly float WaitSeconds;
-				public readonly bool CanSkip;
 
-				public WaveStateChangedEvent(int currentWave, int totalWaves, bool isWaiting, float waitSeconds, bool canSkip)
+				// 이 웨이브에서 처치해야 하는 총 몬스터 수
+				public readonly int RequiredKills;
+
+				public WaveStartedEvent(int currentWave, int totalWaves, int requiredKills)
 				{
 						this.CurrentWave = currentWave;
 						this.TotalWaves = totalWaves;
-						this.IsWaiting = isWaiting;
-						this.WaitSeconds = waitSeconds;
-						this.CanSkip = canSkip;
+						this.RequiredKills = requiredKills;
 				}
-		}
-
-		// 메인HUD 스킵 버튼 → DefenseStageMode 가 구독해 웨이브 대기를 즉시 종료한다(Defense 모드일 때만 유효).
-		public readonly struct WaveSkipRequestedEvent
-		{
 		}
 
 		// 스택 아이템 수량 변경 알림 (재료·소모품·수집품). 인벤토리 UI 등에서 구독.
