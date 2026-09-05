@@ -72,6 +72,13 @@ namespace ProjectOne.Dungeon
 		{
 			_sensor = this.GetComponent<CircleCollider2D>();
 			_owner = this.GetComponentInParent<UnitBase>();
+
+			// 감지 원 중심을 판정 기준점(HitCenter)에 맞춘다 — 흡입 목표점과 동일 기준
+			if (_owner != null)
+			{
+				_sensor.offset = _owner.ColliderOffset;
+			}
+
 			applyRange();
 		}
 
