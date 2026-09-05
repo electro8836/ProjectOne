@@ -109,6 +109,8 @@ namespace ProjectOne.Unit
 
 			_meshRenderer.enabled = true;
 
+			alignCenter();
+
 			if (Mathf.Approximately(radius, _drawnRadius) == true)
 			{
 				return;
@@ -141,6 +143,14 @@ namespace ProjectOne.Unit
 			return resolved.Row.ScanRange;
 		}
 
+		// 스캔 판정 기준점(HitCenter)에 원 중심을 맞춘다.
+		// 반지름이 그대로여도 매 갱신마다 호출한다 — UnitBase 의 콜라이더가 아직 잡히기 전에
+		// 한 번 어긋나게 그려져도 다음 갱신에서 저절로 교정된다.
+		private void alignCenter()
+		{
+			_circleTr.localPosition = _owner.ColliderOffset;
+		}
+
 		private void rebuildMesh(float radius)
 		{
 			if (_mesh != null)
@@ -152,10 +162,6 @@ namespace ProjectOne.Unit
 			_mesh = IndicatorMeshBuilder.BuildRing(radius - _ringThickness, radius, _segments);
 			_meshFilter.sharedMesh = _mesh;
 			_drawnRadius = radius;
-
-			// 스캔 판정 기준점(HitCenter)에 원 중심을 맞춘다
-			Vector2 offset = _owner.HitCenter - (Vector2)this.transform.position;
-			_circleTr.localPosition = new Vector3(offset.x, offset.y, 0f);
 		}
 
 		// 단색 메시 자식 생성 — 2D 에 불필요한 렌더 기능 차단 (SkillIndicator 와 동일 패턴)
