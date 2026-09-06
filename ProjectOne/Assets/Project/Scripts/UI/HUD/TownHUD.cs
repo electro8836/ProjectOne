@@ -8,12 +8,12 @@ using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
-	// 마을 씬(3.Town) HUD. 게임의 허브 — 포탈로 필드에, 버튼으로 던전에 들어간다.
+	// 마을 씬(3.Town) HUD. 게임의 허브 — 하단 탭으로 장비 등 화면을 연다.
+	//
+	// 필드·던전 진입 UI(FieldSelect/DungeonSelect)는 폐기했다. 진입 방식을 새로 붙일 때
+	// 여기에 버튼과 배선을 다시 단다.
 	public class TownHUD : UIScreen
 	{
-		[SerializeField] private UIButton _portalButton;		// 포탈 — 액트/스테이지 선택 UI 열기
-		[SerializeField] private UIButton _dungeonButton;	// 던전 선택 UI 열기
-
 		[Header("하단 탭")]
 		[SerializeField] private TabGroup _tabGroup;
 
@@ -24,14 +24,9 @@ namespace ProjectOne.UI
 
 		// 탭이 열 화면의 Addressable 주소 (탭→화면 매핑은 코드에서 관리)
 		private const string EQUIPMENT_ADDRESS = "UIPrefab_Equipment";
-		private const string DUNGEON_ADDRESS = "UI_DungeonSelect";
-		private const string FIELD_SELECT_ADDRESS = "UI_FieldSelect";
 
 		private void Awake()
 		{
-			_portalButton.OnClickEvent += onPortalClicked;
-			_dungeonButton.OnClickEvent += onDungeonClicked;
-
 			// 배타 선택은 TabGroup이 담당하고, 여기선 선택된 탭의 화면 처리만 한다.
 			_tabGroup.OnTabChanged += onTabChanged;
 			EventManager.Instance.Subscribe<WindowClosedEvent>(onOverlayClosed);
@@ -47,9 +42,6 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
-			_portalButton.OnClickEvent -= onPortalClicked;
-			_dungeonButton.OnClickEvent -= onDungeonClicked;
-
 			_tabGroup.OnTabChanged -= onTabChanged;
 			EventManager.Instance.Unsubscribe<WindowClosedEvent>(onOverlayClosed);
 			EventManager.Instance.Unsubscribe<CharacterChangeEvent>(onCharacterChanged);
@@ -115,17 +107,6 @@ namespace ProjectOne.UI
 		{
 			Table_CharacterLevelExp.Row next = Table_CharacterLevelExp.Get(level + 1);
 			return next != null ? next.TotalExperience : 0;
-		}
-
-		// 포탈 — 액트를 고르고 스테이지를 골라 필드로 나간다.
-		private void onPortalClicked()
-		{
-			UIManager.Instance.OpenWindowAsync<FieldSelectUI>(FIELD_SELECT_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
-		}
-
-		private void onDungeonClicked()
-		{
-			UIManager.Instance.OpenWindowAsync<DungeonSelectUI>(DUNGEON_ADDRESS, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 	}
 }

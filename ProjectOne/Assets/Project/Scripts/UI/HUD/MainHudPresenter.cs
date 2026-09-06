@@ -188,7 +188,7 @@ namespace ProjectOne.UI
 			}
 
 			// 개발용 이동은 입장 횟수를 소모하지 않는다 — 반복 진입이 목적이다.
-			// 정식 경로(DungeonSelectUI)는 TryConsumeEnter 를 거친다.
+			// 정식 진입 경로는 TryConsumeEnter 를 거친다.
 			ProjectOne.Dungeon.DungeonContext ctx = new ProjectOne.Dungeon.DungeonContext(stage.DungeonType, stage.Stage);
 			GameFlow.Instance.ChangeStateAsync(new DungeonState(ctx)).Forget();
 		}

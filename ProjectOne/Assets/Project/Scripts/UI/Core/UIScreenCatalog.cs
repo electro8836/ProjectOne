@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace ProjectOne.UI
@@ -18,8 +18,6 @@ namespace ProjectOne.UI
 		Mastery,
 		Quest,
 		Settings,
-		FieldSelect,
-		DungeonSelect,
 		Craft,
 		Dialog
 	}
@@ -64,9 +62,6 @@ namespace ProjectOne.UI
 
 				case EDT.NpcType.Blacksmith:
 					return UIScreenId.Craft;
-
-				case EDT.NpcType.Portal:
-					return UIScreenId.FieldSelect;
 			}
 
 			return UIScreenId.None;
