@@ -34,7 +34,7 @@ namespace ProjectOne.Dungeon
 		private const string ContinuePopupAddress = "UIPrefab_ContinuePopup";
 
 		// 클리어 배너가 화면에 머무는 총 시간(초) — 결과창은 이 뒤에 뜬다.
-		// **WaveInfoUI 의 _titleHoldSeconds + _titleFadeSeconds 와 같은 값이어야 한다.**
+		// **GoldDungeonUI 의 _titleHoldSeconds + _titleFadeSeconds 와 같은 값이어야 한다.**
 		// 인스펙터에서 연출 시간을 바꾸면 여기도 같이 바꾼다.
 		private const float ClearBannerSeconds = 2.5f;
 
@@ -70,6 +70,9 @@ namespace ProjectOne.Dungeon
 
 		// TimeLimit 이 0(무제한)인 단계에서는 시간을 세지 않는다.
 		private bool _hasTimeLimit;
+
+		// 이번 단계 시작 시점의 계정 누적 경험치. 결과창에 보여줄 획득량의 기준선이다.
+		private int _expAtStageStart;
 
 		private bool _timedOut;
 
@@ -156,6 +159,10 @@ namespace ProjectOne.Dungeon
 
 			// 유닛 위에 뜨는 게이지(보스 캐스팅·상호작용 진행)를 Canvas_World 에 올린다.
 			await UIManager.Instance.EnsureWorldGaugeAsync(_cts.Token);
+
+			// 던전 전용 HUD(웨이브 배너 등)는 startStage 앞에 세운다 — 모드가 시작하자마자 1번 웨이브를
+			// 알리므로, 뒤에 두면 첫 배너를 통째로 놓친다.
+			await UIManager.Instance.EnsureDungeonHudAsync(_ctx.DungeonType, _cts.Token);
 
 			// 던전 입장은 항상 완전한 상태에서 시작한다 (기반테이블 5.3)
 			healAllHeroes();
@@ -259,6 +266,11 @@ namespace ProjectOne.Dungeon
 
 		private void startStage()
 		{
+			// 결과창의 "이번 판 획득 경험치"는 이 스냅샷과의 차이다 — 누적 집계 경로가 따로 없다.
+			// Loadout.Exp 는 늘기만 하고 줄지 않는다(ApplyLevelup 은 아직 호출부가 없다).
+			// 레벨업이 붙어 경험치를 되돌리게 되면 이 뺄셈을 다시 봐야 한다.
+			_expAtStageStart = currentExp();
+
 			_hasTimeLimit = _stage.TimeLimit > 0;
 			_remainTime = _hasTimeLimit ? _stage.TimeLimit : 0f;
 			_timedOut = false;
@@ -435,29 +447,56 @@ namespace ProjectOne.Dungeon
 
 			IReadOnlyList<GrantedRewardDto> rewards = (resp != null) ? resp.rewards : null;
 
-			// 다음 단계가 존재하고 입장 횟수가 남아 있을 때만 도전 버튼을 켠다.
+			// 입장 횟수는 결과창이 직접 읽는다 — 여기서는 다음 단계가 존재하는지만 알려준다.
 			bool hasNext = DungeonProgress.HasNextStage(_ctx.DungeonType, _ctx.Stage);
-			bool canChallenge = hasNext && DungeonProgress.CanEnter(_ctx.DungeonType);
 
-			bool challengeNext = await ui.WaitAsync(rewards, _grantedEquipments, _ctx.DungeonType, _ctx.Stage, canChallenge, ct);
+			int gainedExp = currentExp() - _expAtStageStart;
+			if (gainedExp < 0)
+			{
+				gainedExp = 0;
+			}
+
+			DungeonResultAction action = await ui.WaitAsync(rewards, _grantedEquipments,
+				_ctx.DungeonType, _ctx.Stage, gainedExp, hasNext, ct);
+
+			// 마을 복귀는 던전 로딩을 띄우지 않는다 — 마을행에 던전 로딩을 거는 건 어색하다.
+			// 다만 창은 반드시 닫는다. cleanupAll 은 윈도우를 걷지 않아서 그대로 두면 마을까지 따라간다.
+			if (action == DungeonResultAction.ReturnTown)
+			{
+				await UIManager.Instance.CloseWindowAsync(false);
+				return;
+			}
 
 			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToDungeon, ct);
 			await UIManager.Instance.CloseWindowAsync(false);
 
-			if (challengeNext == true && DungeonProgress.TryConsumeEnter(_ctx.DungeonType) == true)
+			// 재도전도 다음 단계도 새 입장이다 — 횟수를 못 쓰면 그대로 마을로 나간다.
+			if (DungeonProgress.TryConsumeEnter(_ctx.DungeonType) == false)
 			{
-				// 다음 단계는 새 입장이다 — 씬은 그대로 두고 맵만 교체한다.
-				await enterNextStageAsync(ct);
+				return;
 			}
+
+			int stage = (action == DungeonResultAction.NextStage) ? _ctx.Stage + 1 : _ctx.Stage;
+
+			// 씬은 그대로 두고 맵/모드만 교체한다.
+			await enterStageAsync(stage, ct);
 		}
 
-		// 다음 단계로 재진입 — 씬 전환 없이 맵/모드만 새로 세운다.
-		private async UniTask enterNextStageAsync(CancellationToken ct)
+		// 계정 누적 경험치. Account 는 순수 C# 싱글톤이고 Loadout 은 생성자에서 채워지므로 가드가 없다.
+		private static int currentExp()
 		{
-			DungeonContext next = new DungeonContext(_ctx.DungeonType, _ctx.Stage + 1);
+			return Account.Instance.Loadout.Exp;
+		}
+
+		// 지정한 단계로 재진입 — 씬 전환 없이 맵/모드만 새로 세운다.
+		// 재도전(같은 단계)과 다음 단계가 같은 경로를 탄다.
+		private async UniTask enterStageAsync(int stage, CancellationToken ct)
+		{
+			DungeonContext next = new DungeonContext(_ctx.DungeonType, stage);
 			Table_DungeonStage.Row nextStage = next.FindStageRow();
 			if (nextStage == null)
 			{
+				Debug.LogError($"[DungeonDirector] 재진입할 단계가 없습니다 — {_ctx.DungeonType} Stage {stage}");
 				return;
 			}
 
@@ -742,6 +781,7 @@ namespace ProjectOne.Dungeon
 			if (UIManager.HasInstance == true)
 			{
 				UIManager.Instance.ReleaseWorldGauge();
+				UIManager.Instance.ReleaseDungeonHud();
 			}
 
 			if (MapManager.HasInstance == true)

@@ -10,9 +10,13 @@ using ProjectOne.Shared;
 
 namespace ProjectOne.UI
 {
-	// 던전 결과창(Prefab_DungeonResult). 서버가 확정한 실제 획득 보상을 슬롯으로 나열하고,
-	// "다음 단계 도전" 또는 마을 복귀 중 하나를 기다린다.
-	// 도전은 새 입장이므로 입장 횟수를 다시 소모한다 — 호출부가 남은 횟수를 보고 버튼 활성을 결정한다.
+	// 던전 결과창(UIPrefab_DungeonResult). 서버가 확정한 실제 획득 보상을 슬롯으로 나열하고,
+	// 다시 도전 / 다음 단계 / 마을 복귀 중 하나를 기다린다.
+	//
+	// 재도전과 다음 단계는 둘 다 **새 입장**이라 입장 횟수를 다시 소모한다 — 남은 횟수가 0이면
+	// 두 버튼을 숨기지 않고 interactable 만 끈다(UIButton 이 회색 틴트를 처리한다).
+	//
+	// 딤 클릭으로 나가는 경로는 없앴다. 나가려면 ExitButton 을 누르거나 자동 복귀를 기다려야 한다.
 	public class DungeonResultUI : UIScreen
 	{
 		[Header("보상 목록")]
@@ -22,17 +26,30 @@ namespace ProjectOne.UI
 		[Header("등급 색상 테이블")]
 		[SerializeField] private ItemGradeColorTable _gradeColors;
 
-		[Header("복귀")]
-		[SerializeField] private UIButton _backgroundButton;             // 보상 외 영역 클릭 → 마을
-		[SerializeField] private TMP_Text _touchToContinueText;
-		[SerializeField] private TMP_Text _expText;                      // 획득 경험치 표시(선택)
+		[Header("정보")]
+		[SerializeField] private TMP_Text _dungeonNameText;
+		[SerializeField] private TMP_Text _dungeonStageText;
+		[SerializeField] private TMP_Text _expText;
+		[SerializeField] private TMP_Text _enterCountText;
+		[SerializeField] private TMP_Text _returnTownText;
+
+		[Header("버튼")]
+		[SerializeField] private UIButton _retryButton;
+		[SerializeField] private UIButton _nextButton;
+		[SerializeField] private UIButton _exitButton;
+
+		[Header("자동 복귀")]
 		[SerializeField] private float _autoReturnSeconds = 30f;
 
-		[Header("다음 단계")]
-		[SerializeField] private UIButton _nextStageButton;              // 다음 단계 도전 (입장 횟수 재소모)
+		// 남은 입장 횟수가 0임을 알리는 색. 중앙 색상 테이블이 없어 화면이 직접 들고 있는다.
+		private static readonly Color EnterCountEmptyColor = new Color32(0xE0, 0x4B, 0x4B, 0xFF);
+		private static readonly Color EnterCountNormalColor = Color.white;
 
-		// true = 다음 단계 도전, false = 마을 복귀
-		private UniTaskCompletionSource<bool> _closeSource;
+		// 플레이어가 고른 다음 행동. 자동 복귀는 ReturnTown 으로 확정된다.
+		private UniTaskCompletionSource<DungeonResultAction> _closeSource;
+
+		// 카운트다운 전용 수명. 버튼을 누르는 순간 끊어 자동 복귀가 뒤늦게 끼어들지 못하게 한다.
+		private CancellationTokenSource _countdownCts;
 
 		// 합산 중간 표현 — 대표 타입/아이템 + 합산 수량
 		private struct MergedReward
@@ -61,47 +78,79 @@ namespace ProjectOne.UI
 
 		private void Awake()
 		{
-			_backgroundButton.OnClickEvent += onBackgroundClicked;
-			if (_nextStageButton != null)
-			{
-				_nextStageButton.OnClickEvent += onNextStageClicked;
-			}
+			_retryButton.OnClickEvent += onRetryClicked;
+			_nextButton.OnClickEvent += onNextClicked;
+			_exitButton.OnClickEvent += onExitClicked;
 		}
 
 		private void OnDestroy()
 		{
-			_backgroundButton.OnClickEvent -= onBackgroundClicked;
-			if (_nextStageButton != null)
-			{
-				_nextStageButton.OnClickEvent -= onNextStageClicked;
-			}
+			_retryButton.OnClickEvent -= onRetryClicked;
+			_nextButton.OnClickEvent -= onNextClicked;
+			_exitButton.OnClickEvent -= onExitClicked;
+
+			stopCountdown();
 
 			unbindSlots();
 			_closeSource?.TrySetCanceled();
 		}
 
-		// 슬롯 빌드 + 카운트다운 시작. 다음 단계 도전(true) / 마을 복귀(false) 중 먼저 오는 것까지 대기.
+		// 슬롯 빌드 + 정보 표시 + 카운트다운 시작. 버튼 선택이나 자동 복귀 중 먼저 오는 것까지 대기.
+		//
 		// equipments 는 이번 판에 실제로 지급된 장비 인스턴스다.
 		// 등급·레벨·품질은 테이블이 아니라 인스턴스가 소유하므로(아이템 설계 4장) 따로 받는다.
-		public async UniTask<bool> WaitAsync(IReadOnlyList<GrantedRewardDto> rewards, IReadOnlyList<EquipmentInstance> equipments,
-			EDT.Dungeon dungeonType, int stage, bool canChallengeNext, CancellationToken ct)
+		//
+		// gainedExp 는 이번 판에서 실제로 오른 경험치다 — 단계 고정 보상이 아니라 Director 가 재는 값이다.
+		public async UniTask<DungeonResultAction> WaitAsync(IReadOnlyList<GrantedRewardDto> rewards, IReadOnlyList<EquipmentInstance> equipments,
+			EDT.Dungeon dungeonType, int stage, int gainedExp, bool hasNextStage, CancellationToken ct)
 		{
 			buildSlots(rewards, equipments);
 
-			updateExpText(dungeonType, stage);
+			applyInfo(dungeonType, stage, gainedExp, hasNextStage);
 
-			if (_nextStageButton != null)
-			{
-				_nextStageButton.gameObject.SetActive(canChallengeNext);
-			}
+			_closeSource = new UniTaskCompletionSource<DungeonResultAction>();
 
-			_closeSource = new UniTaskCompletionSource<bool>();
-			countdownAsync().Forget();
+			_countdownCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
+			countdownAsync(_countdownCts.Token).Forget();
 
 			using (ct.Register(onCanceled))
 			{
 				return await _closeSource.Task;
 			}
+		}
+
+		// 던전 이름·단계·획득 경험치·남은 입장 횟수와 그에 따른 버튼 활성 상태를 한 번에 채운다.
+		private void applyInfo(EDT.Dungeon dungeonType, int stage, int gainedExp, bool hasNextStage)
+		{
+			Table_Dungeon.Row dungeon = Table_Dungeon.Get(dungeonType);
+
+			if (_dungeonNameText != null)
+			{
+				_dungeonNameText.text = ((dungeon != null) ? dungeon.Name : string.Empty) + " 클리어!";
+			}
+
+			if (_dungeonStageText != null)
+			{
+				_dungeonStageText.text = "스테이지 " + stage;
+			}
+
+			if (_expText != null)
+			{
+				_expText.text = "경험치+" + gainedExp;
+			}
+
+			// 재도전·다음 단계는 새 입장이라 남은 횟수를 다시 쓴다.
+			int remaining = ProjectOne.Dungeon.DungeonProgress.GetRemainingCount(dungeonType);
+
+			if (_enterCountText != null)
+			{
+				_enterCountText.text = "남은 입장 횟수 " + remaining + "회";
+				_enterCountText.color = (remaining <= 0) ? EnterCountEmptyColor : EnterCountNormalColor;
+			}
+
+			// 숨기지 않고 잠근다 — 버튼 줄이 GridLayoutGroup 이라 하나를 빼면 나머지가 재배치된다.
+			_retryButton.interactable = (remaining > 0);
+			_nextButton.interactable = (remaining > 0 && hasNextStage == true);
 		}
 
 		// 장비 슬롯을 먼저, 그 다음 합산 슬롯.
@@ -230,26 +279,12 @@ namespace ProjectOne.UI
 			slot.BindItemAsync(row, reward.count, _gradeColors, ct).Forget();
 		}
 
-		// 획득 경험치 표시 — 경험치는 던전이 아니라 단계가 소유한다 (DungeonStage.RewardExp).
-		private void updateExpText(EDT.Dungeon dungeonType, int stage)
+		private async UniTaskVoid countdownAsync(CancellationToken ct)
 		{
-			if (_expText == null)
-			{
-				return;
-			}
-
-			Table_DungeonStage.Row row = ProjectOne.Dungeon.DungeonProgress.FindStageRow(dungeonType, stage);
-			int exp = (row != null) ? row.RewardExp : 0;
-			_expText.text = "경험치 +" + exp;
-		}
-
-		private async UniTaskVoid countdownAsync()
-		{
-			CancellationToken ct = this.GetCancellationTokenOnDestroy();
 			int remaining = Mathf.CeilToInt(_autoReturnSeconds);
 			while (remaining > 0)
 			{
-				updateTouchText(remaining);
+				updateReturnTownText(remaining);
 
 				bool cancelled = await UniTask.Delay(System.TimeSpan.FromSeconds(1), cancellationToken: ct).SuppressCancellationThrow();
 				if (cancelled == true)
@@ -260,15 +295,28 @@ namespace ProjectOne.UI
 				remaining -= 1;
 			}
 
-			updateTouchText(0);
-			_closeSource?.TrySetResult(false);
+			updateReturnTownText(0);
+			_closeSource?.TrySetResult(DungeonResultAction.ReturnTown);
 		}
 
-		private void updateTouchText(int seconds)
+		// 카운트다운을 끊는다. 버튼을 누른 뒤 남은 대기가 뒤늦게 깨어나 마을행을 또 확정하면 안 된다.
+		private void stopCountdown()
 		{
-			if (_touchToContinueText != null)
+			if (_countdownCts == null)
 			{
-				_touchToContinueText.text = "화면을 터치하면 마을로 이동합니다.\n(" + seconds + "초 후 이동)";
+				return;
+			}
+
+			_countdownCts.Cancel();
+			_countdownCts.Dispose();
+			_countdownCts = null;
+		}
+
+		private void updateReturnTownText(int seconds)
+		{
+			if (_returnTownText != null)
+			{
+				_returnTownText.text = seconds + "초 후 마을로 이동합니다.";
 			}
 		}
 
@@ -346,14 +394,32 @@ namespace ProjectOne.UI
 			_slotRewards.Clear();
 		}
 
-		private void onBackgroundClicked()
+		private void onRetryClicked()
 		{
-			_closeSource?.TrySetResult(false);
+			finish(DungeonResultAction.Retry);
 		}
 
-		private void onNextStageClicked()
+		private void onNextClicked()
 		{
-			_closeSource?.TrySetResult(true);
+			finish(DungeonResultAction.NextStage);
+		}
+
+		private void onExitClicked()
+		{
+			finish(DungeonResultAction.ReturnTown);
+		}
+
+		// 버튼 세 개의 공통 마무리 — 카운트다운을 끊고 안내를 걷은 뒤 결과를 확정한다.
+		private void finish(DungeonResultAction action)
+		{
+			stopCountdown();
+
+			if (_returnTownText != null)
+			{
+				_returnTownText.gameObject.SetActive(false);
+			}
+
+			_closeSource?.TrySetResult(action);
 		}
 
 		private void onCanceled()

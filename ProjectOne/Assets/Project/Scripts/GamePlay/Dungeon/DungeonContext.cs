@@ -13,6 +13,18 @@ namespace ProjectOne.Dungeon
 		Failed,
 	}
 
+	// 결과창에서 플레이어가 고른 다음 행동. 자동 복귀 타임아웃도 ReturnTown 이다.
+	public enum DungeonResultAction
+	{
+		ReturnTown,
+
+		// 같은 단계 재입장
+		Retry,
+
+		// 다음 단계 입장
+		NextStage,
+	}
+
 	// 던전 진입 파라미터. DungeonState → DungeonDirector 로 전달된다.
 	//
 	// 1회 입장 = DungeonStage 1단계다 (맵 설계 9장). 여러 단계를 연달아 진행하지 않는다.
