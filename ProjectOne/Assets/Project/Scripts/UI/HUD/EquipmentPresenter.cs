@@ -17,7 +17,6 @@ namespace ProjectOne.UI
 		public EquipmentInstance instance;
 		public Table_Item.Row row;
 		public int count;
-		public bool equipped;
 	}
 
 	// 장착 슬롯 렌더 데이터 — instance 가 null 이면 빈 슬롯.
@@ -217,11 +216,16 @@ namespace ProjectOne.UI
 					continue;
 				}
 
+				// 장착중인 장비는 위쪽 장착 칸에 이미 있다 — 그리드에 또 그리면 같은 것이 두 번 보인다.
+				if (loadout.GetSlot(equip.EquipSlotType) == instance.uid)
+				{
+					continue;
+				}
+
 				ItemSlotData data;
 				data.instance = instance;
 				data.row = instance.Item;
 				data.count = 0;
-				data.equipped = loadout.GetSlot(equip.EquipSlotType) == instance.uid;
 				_equipBuffer.Add(data);
 			}
 		}
@@ -245,7 +249,6 @@ namespace ProjectOne.UI
 				data.instance = null;
 				data.row = row;
 				data.count = owned.count;
-				data.equipped = false;
 				_itemBuffer.Add(data);
 			}
 		}

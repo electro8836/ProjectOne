@@ -177,7 +177,8 @@ namespace ProjectOne.UI
 		{
 			if (data.instance != null)
 			{
-				return slot.BindEquipmentAsync(data.instance, data.equipped, _gradeColors, ct);
+				// 그리드에는 미장착 장비만 들어온다 (EquipmentPresenter.collectEquipments 가 걸러낸다).
+				return slot.BindEquipmentAsync(data.instance, false, _gradeColors, ct);
 			}
 
 			return slot.BindItemAsync(data.row, data.count, _gradeColors, ct);
