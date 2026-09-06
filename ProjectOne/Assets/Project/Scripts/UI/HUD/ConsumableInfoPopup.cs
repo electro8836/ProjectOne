@@ -2,7 +2,6 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
 using TMPro;
 using EDT;
 
@@ -17,10 +16,6 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _gradeText;	// GradeText
 		[SerializeField] private TMP_Text _descText;	// DescText
 		[SerializeField] private TMP_Text _countText;	// CountText — 선택 수량
-
-		[Header("등급 색상 대상")]
-		[SerializeField] private Image _topBg;	// TopBg — 등급 bg
-		[SerializeField] private Image _deco2;	// Deco2 — 등급 border
 
 		[Header("슬롯")]
 		[SerializeField] private Transform _itemSlotRoot;	// ItemSlotRoot
@@ -206,9 +201,8 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			// TopBg·Deco2 는 등급을 따르지 않는다 — 프리팹에 칠해 둔 색을 그대로 쓴다.
 			ItemGradeColorTable.GradeColor gc = _gradeColors.Get(grade);
-			_topBg.color = gc.bg;
-			_deco2.color = gc.border;
 			_gradeText.color = gc.text;
 		}
 

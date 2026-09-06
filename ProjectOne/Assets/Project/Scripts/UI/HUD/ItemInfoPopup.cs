@@ -28,10 +28,6 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _qualityText;	// QualityText
 		[SerializeField] private TMP_Text _descText;		// DescText
 
-		[Header("등급 색상 대상")]
-		[SerializeField] private Image _topBg;	// TopBg — 등급 bg
-		[SerializeField] private Image _deco2;	// Deco2 — 등급 border
-
 		[Header("슬롯 / 옵션")]
 		[SerializeField] private Transform _itemSlotRoot;			// ItemSlotRoot
 		[SerializeField] private BasicOptionView[] _basicOptions;	// BasicOptionInfo_1~4
@@ -254,15 +250,6 @@ namespace ProjectOne.UI
 			_itemSlot.HideLevel();
 		}
 
-		// 장착/해제 토글 직후 슬롯 표시만 뒤집는다 — 재바인딩(아이콘 재로드)을 피한다.
-		public void SetSlotEquipped(bool equipped)
-		{
-			if (_itemSlot != null)
-			{
-				_itemSlot.SetEquipped(equipped);
-			}
-		}
-
 		public void SetEquipInteractable(bool interactable)
 		{
 			_equipButton.interactable = interactable;
@@ -326,9 +313,8 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			// TopBg·Deco2 는 등급을 따르지 않는다 — 프리팹에 칠해 둔 색을 그대로 쓴다.
 			ItemGradeColorTable.GradeColor gc = _gradeColors.Get(grade);
-			_topBg.color = gc.bg;
-			_deco2.color = gc.border;
 			_gradeText.color = gc.text;
 		}
 

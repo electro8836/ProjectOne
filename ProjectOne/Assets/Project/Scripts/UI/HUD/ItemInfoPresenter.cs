@@ -117,8 +117,9 @@ namespace ProjectOne.UI
 				loadout.TryEquip(_uid);
 			}
 
-			view.SetEquipLabel(equipLabel());
-			view.SetSlotEquipped(isEquipped());
+			// 장착·해제는 목록으로 돌아가 결과를 확인하는 흐름이라 팝업을 닫는다.
+			// 닫히는 마당에 라벨·슬롯 표시를 갱신할 이유가 없다.
+			view.CloseFromInput();
 		}
 
 		private void onEnchantClicked()
@@ -133,7 +134,10 @@ namespace ProjectOne.UI
 
 		private bool isEquipped()
 		{
-			if (_slot == EquipSlotTypes.None)
+			// 디스플레이 경로(결과창·상점)는 인벤토리에 없는 장비라 _uid 가 0 이다.
+			// 빈 슬롯의 GetSlot 도 0 을 돌려주므로, 가드가 없으면 그 부위를 비워 둔 것만으로
+			// 보상 장비가 "장착중" 으로 보인다.
+			if (_uid <= 0 || _slot == EquipSlotTypes.None)
 			{
 				return false;
 			}

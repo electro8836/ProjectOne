@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using DG.Tweening;
 using TMPro;
 using EDT;
 
@@ -27,6 +28,10 @@ namespace ProjectOne.UI
 
 		[Header("캐릭터")]
 		[SerializeField] private TMP_Text _levelText;	// LevelText
+
+		// 장착/해제 강조 — 커진 상태에서 제자리로 줄어들며 안착하는 느낌.
+		private const float PopStartScale = 1.5f;
+		private const float PopDuration = 0.5f;
 
 		[System.Serializable]
 		private class EquippedSlotView
@@ -55,6 +60,8 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
+			killEquippedSlotTweens();
+
 			_presenter.Dispose();
 
 			_tabGroup.OnTabChanged -= onTabChanged;
@@ -136,6 +143,21 @@ namespace ProjectOne.UI
 			_levelText.text = "LV." + level;
 		}
 
+		// 장착/해제된 칸을 강조한다. 대상은 Slot_XXX 컨테이너다 —
+		// 안쪽 ItemSlot 은 해제 시 파괴되므로 컨테이너를 키워야 장착·해제가 같은 경로를 탄다.
+		public void PlayEquippedSlotPop(EquipSlotTypes type)
+		{
+			Transform root = findEquippedRoot(type);
+			if (root == null)
+			{
+				return;
+			}
+
+			root.DOKill();
+			root.localScale = Vector3.one * PopStartScale;
+			root.DOScale(Vector3.one, PopDuration).SetEase(Ease.OutBack);
+		}
+
 		// ── 내부: 입력 → 이벤트 ────────────────────────────────────────────
 
 		private void onTabChanged(int index)
@@ -201,6 +223,42 @@ namespace ProjectOne.UI
 			}
 
 			slotView.uid = 0;
+		}
+
+		private Transform findEquippedRoot(EquipSlotTypes type)
+		{
+			if (_equippedSlots == null)
+			{
+				return null;
+			}
+
+			for (int i = 0; i < _equippedSlots.Length; i++)
+			{
+				if (_equippedSlots[i].type == type)
+				{
+					return _equippedSlots[i].root;
+				}
+			}
+
+			return null;
+		}
+
+		// 파괴된 Transform 을 트윈이 붙들지 않도록 화면이 사라질 때 전부 끊는다.
+		private void killEquippedSlotTweens()
+		{
+			if (_equippedSlots == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < _equippedSlots.Length; i++)
+			{
+				Transform root = _equippedSlots[i].root;
+				if (root != null)
+				{
+					root.DOKill();
+				}
+			}
 		}
 
 		private EquippedSlotData findData(IReadOnlyList<EquippedSlotData> data, EquipSlotTypes type)

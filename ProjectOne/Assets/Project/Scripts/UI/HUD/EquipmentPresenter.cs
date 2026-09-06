@@ -51,6 +51,10 @@ namespace ProjectOne.UI
 
 		private CancellationTokenSource _rebuildCts;	// rebuild 단위 취소 (연속 호출 경합 방지)
 
+		// 이번 rebuild 에서 강조할 장착 칸. None 이면 연출 없이 다시 그리기만 한다.
+		// rebuild 는 인벤토리·장비 변경으로도 불리므로 프리셋 변경에서만 채운다.
+		private EquipSlotTypes _pendingPopSlot = EquipSlotTypes.None;
+
 		protected override void OnInitialize()
 		{
 			view.OnTabSelected += onTabSelected;
@@ -128,6 +132,7 @@ namespace ProjectOne.UI
 
 		private void onPresetChanged(PresetChangeEvent e)
 		{
+			_pendingPopSlot = e.Slot;
 			rebuild();
 		}
 
@@ -153,6 +158,13 @@ namespace ProjectOne.UI
 
 			buildEquippedData();
 			await view.RenderEquippedAsync(_equippedData, ct);
+
+			// 아이콘 바인딩이 끝난 뒤에 재생한다 — 새 아이콘이 보이는 채로 줄어들어야 한다.
+			if (_pendingPopSlot != EquipSlotTypes.None)
+			{
+				view.PlayEquippedSlotPop(_pendingPopSlot);
+				_pendingPopSlot = EquipSlotTypes.None;
+			}
 		}
 
 		// 그리드는 보유한 것만 나열한다. 장비는 인스턴스, 소모품은 스택으로 소스가 달라 따로 모은 뒤
