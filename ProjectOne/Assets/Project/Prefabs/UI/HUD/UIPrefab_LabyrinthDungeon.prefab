@@ -1064,7 +1064,7 @@ RectTransform:
   m_Father: {fileID: 5939766921888289820}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0.000030517578}
   m_SizeDelta: {x: 0.000009536743, y: 0.0000009536743}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -1115,9 +1115,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2515496834495249590}
-  - component: {fileID: 8607689584164109117}
   m_Layer: 0
-  m_Name: UIPrefab_WaveInfo
+  m_Name: UIPrefab_LabyrinthDungeon
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1144,29 +1143,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1080, y: 1920}
   m_Pivot: {x: 0.5, y: 1}
---- !u!114 &8607689584164109117
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6703577124943514954}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49f0a349f200d9a41ba60f38d08aceb1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.WaveInfoUI
-  _waveTitleGroup: {fileID: 5628513129901463173}
-  _waveTitleText: {fileID: 7932584615022679193}
-  _waveProgress: {fileID: 8359261824424399972}
-  _titleText: {fileID: 4240907075973208939}
-  _waveText: {fileID: 3257525813612302832}
-  _progressText: {fileID: 106253239570867882}
-  _progressSlider: {fileID: 5327179159289459088}
-  _remainTimeText: {fileID: 4145316476598752080}
-  _bossUI: {fileID: 0}
-  _titleHoldSeconds: 2
-  _titleFadeSeconds: 0.5
 --- !u!1 &7932584614752610164
 GameObject:
   m_ObjectHideFlags: 0
@@ -1183,7 +1159,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &7932584614752610171
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1709,7 +1685,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &4585551678751293580
 RectTransform:
   m_ObjectHideFlags: 0

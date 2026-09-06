@@ -10,11 +10,14 @@ using ProjectOne.Unit;
 
 namespace ProjectOne.UI
 {
-	// 웨이브형 던전의 진행 표시. MainHUD 안에 상주한다.
+	// 골드던전의 진행 표시.
 	//
-	// **ContextGroup(SetActive)으로 켜지 않는다.** GameStateChangedEvent 는 DungeonState.EnterAsync
-	// (= DungeonDirector.Begin → 첫 웨이브 시작) 가 끝난 뒤에 발행되므로, 맥락으로 켜면 이 컴포넌트의
-	// Awake 가 1번 웨이브 알림보다 늦게 돌아 첫 배너를 통째로 놓친다. BossInfo 와 같은 이유로 같은 형태다.
+	// **MainHUD 에 상주하지 않는다.** 던전마다 필요한 위젯이 달라서, 안 쓰는 것까지 한 프리팹에 넣어 두면
+	// 유지가 안 된다. MainHUD 에는 어느 던전에서나 쓰는 보스 정보만 남기고, 던전 전용 위젯은 그 던전에
+	// 들어갈 때 UIManager.EnsureDungeonHudAsync 가 Canvas_Overlay 에 만들고 종료 시 파괴한다.
+	//
+	// **생성이 startStage 보다 앞이어야 한다.** GoldDungeonMode 는 시작하자마자 1번 웨이브를 알리므로,
+	// 이 컴포넌트의 Awake 가 그보다 늦게 돌면 첫 배너를 통째로 놓친다.
 	//
 	// 구성이 둘로 나뉜다.
 	//  - WaveTitle    : 웨이브 시작 배너. 즉시 뜨고 유지 후 페이드아웃한다.
@@ -26,7 +29,7 @@ namespace ProjectOne.UI
 	//
 	// **연출 시간은 스폰 시점과 무관하다.** 몬스터는 GoldDungeonMode 의 고정 지연으로 나오며,
 	// 여기 값을 바꿔도 스폰이 따라 움직이지 않는다.
-	public class WaveInfoUI : MonoBehaviour
+	public class GoldDungeonUI : MonoBehaviour
 	{
 		[Header("웨이브 시작 배너")]
 		[SerializeField] private CanvasGroup _waveTitleGroup;
@@ -40,16 +43,16 @@ namespace ProjectOne.UI
 		[SerializeField] private Slider _progressSlider;
 		[SerializeField] private TMP_Text _remainTimeText;
 
-		[Header("보스 배너 (자리 양보 대상)")]
-		[SerializeField] private BossUI _bossUI;
-
 		[Header("연출")]
 		[SerializeField] private float _titleHoldSeconds = 2f;
 		[SerializeField] private float _titleFadeSeconds = 0.5f;
 
+		// 자리 양보 대상인 보스 배너. MainHUD 안에 살아 다른 프리팹이므로 인스펙터로 이을 수 없다 —
+		// 소유자인 UIManager 에게 물어 Awake 에서 한 번만 잡는다.
+		private BossUI _bossUI;
+
 		private Action<WaveStartedEvent> _onWaveStarted;
 		private Action<DungeonStageClearedEvent> _onStageCleared;
-		private Action<GameStateChangedEvent> _onGameStateChanged;
 		private Coroutine _titleRoutine;
 
 		// 논리적 표시 상태 — 실제 활성 여부는 여기에 보스 우선을 곱한 결과다(applyVisibility).
@@ -69,12 +72,15 @@ namespace ProjectOne.UI
 
 		private void Awake()
 		{
+			if (UIManager.HasInstance == true)
+			{
+				_bossUI = UIManager.Instance.BossUI;
+			}
+
 			_onWaveStarted = onWaveStarted;
 			_onStageCleared = onStageCleared;
-			_onGameStateChanged = onGameStateChanged;
 			EventManager.Instance.Subscribe<WaveStartedEvent>(_onWaveStarted);
 			EventManager.Instance.Subscribe<DungeonStageClearedEvent>(_onStageCleared);
-			EventManager.Instance.Subscribe<GameStateChangedEvent>(_onGameStateChanged);
 
 			hideAll();
 		}
@@ -83,16 +89,6 @@ namespace ProjectOne.UI
 		{
 			EventManager.Instance.Unsubscribe<WaveStartedEvent>(_onWaveStarted);
 			EventManager.Instance.Unsubscribe<DungeonStageClearedEvent>(_onStageCleared);
-			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(_onGameStateChanged);
-		}
-
-		// 던전을 벗어나면 배너를 걷는다. 다음 입장에 이전 판의 잔상이 남으면 안 된다.
-		private void onGameStateChanged(GameStateChangedEvent evt)
-		{
-			if (HudContexts.FromState(evt.StateType) != HudContext.Dungeon)
-			{
-				hideAll();
-			}
 		}
 
 		private void Update()

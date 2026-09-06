@@ -1,4 +1,4 @@
-using EDT;
+﻿using EDT;
 using UnityEngine;
 
 namespace ProjectOne.Dungeon
@@ -15,8 +15,8 @@ namespace ProjectOne.Dungeon
 			{
 				case EDT.Dungeon.Gold:
 					return new GoldDungeonMode();
-				case EDT.Dungeon.Exp:
-					return new ExpDungeonMode();
+				case EDT.Dungeon.Rift:
+					return new RiftDungeonMode();
 				default:
 					Debug.LogError($"[StageModeFactory] 대응하는 모드가 없는 던전 종류: {dungeonType}");
 					return null;

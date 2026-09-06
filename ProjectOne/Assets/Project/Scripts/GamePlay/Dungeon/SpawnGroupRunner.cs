@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using EDT;
 using ProjectOne.Map;
@@ -22,6 +22,10 @@ namespace ProjectOne.Dungeon
 
 		// 벽 밀어내기용 유닛 반지름 근사
 		private const float SpawnClearance = 0.5f;
+
+		// SpawnFromGroup 호출 간에 유지되는 순환 커서.
+		// 나눠서 소환해도 그룹의 Count 비율과 슬롯 분배가 한쪽으로 치우치지 않게 한다.
+		private static int _flatCursor;
 
 		// 그룹의 모든 행을 즉시 소환한다.
 		// levelOverride > 0 이면 MonsterSpawn.Level 대신 그 값을 쓴다 (DungeonStage.MonsterLevel).
@@ -68,7 +72,92 @@ namespace ProjectOne.Dungeon
 			}
 		}
 
+		// 그룹을 Count 만큼 펼친 가상 배열을 커서가 순환하며 count 마리만 소환한다.
+		// 균열 던전처럼 화면 유지 인원을 조금씩 채우는 모드용 — 그룹 전체를 한 번에 쏟지 않는다.
+		public static void SpawnFromGroup(int groupId, int levelOverride, int count)
+		{
+			if (groupId <= 0 || count <= 0)
+			{
+				return;
+			}
+
+			IReadOnlyList<Table_MonsterSpawn.Row> rows = MonsterCatalog.GetSpawnGroup(groupId);
+			if (rows.Count == 0)
+			{
+				Debug.LogWarning($"[SpawnGroupRunner] GroupID {groupId} 에 해당하는 MonsterSpawn 행이 없습니다.");
+				return;
+			}
+
+			int total = countFlattened(rows);
+			if (total <= 0)
+			{
+				return;
+			}
+
+			IReadOnlyList<DungeonSpawnSlot> slots = getSlots();
+
+			for (int n = 0; n < count; n++)
+			{
+				Table_MonsterSpawn.Row row = rowAtFlatIndex(rows, _flatCursor % total);
+				Vector3 pos = resolvePosition(slots, _flatCursor);
+				_flatCursor++;
+
+				if (row == null)
+				{
+					continue;
+				}
+
+				int level = (levelOverride > 0) ? levelOverride : row.Level;
+				if (level <= 0)
+				{
+					level = 1;
+				}
+
+				MonsterSpawnManager.Instance.SpawnOneShot(row.MonsterID, level, pos, row.RewardGroupID);
+			}
+		}
+
 		// ── 내부 ──────────────────────────────────────────────────────
+
+		// SpawnGroup 과 같은 규칙(Count <= 0 이면 1마리)으로 그룹을 펼쳤을 때의 총 마리 수
+		private static int countFlattened(IReadOnlyList<Table_MonsterSpawn.Row> rows)
+		{
+			int total = 0;
+			for (int i = 0; i < rows.Count; i++)
+			{
+				if (rows[i].MonsterID <= 0)
+				{
+					continue;
+				}
+
+				total += (rows[i].Count > 0) ? rows[i].Count : 1;
+			}
+
+			return total;
+		}
+
+		// 펼쳤을 때의 index 번째 개체가 속한 행. 행 수가 적어 선형 탐색으로 충분하다.
+		private static Table_MonsterSpawn.Row rowAtFlatIndex(IReadOnlyList<Table_MonsterSpawn.Row> rows, int index)
+		{
+			for (int i = 0; i < rows.Count; i++)
+			{
+				Table_MonsterSpawn.Row row = rows[i];
+				if (row.MonsterID <= 0)
+				{
+					continue;
+				}
+
+				int size = (row.Count > 0) ? row.Count : 1;
+				if (index < size)
+				{
+					return row;
+				}
+
+				index -= size;
+			}
+
+			return null;
+		}
 
 		private static IReadOnlyList<DungeonSpawnSlot> getSlots()
 		{

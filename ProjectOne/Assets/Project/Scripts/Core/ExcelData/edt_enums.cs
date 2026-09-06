@@ -367,7 +367,9 @@ namespace EDT {
     public enum Dungeon {
         None,
         Gold,
-        Exp,
+        Rift,
+        Labyrinth,
+        Ruins,
     }
 
     public enum WeaponMastery {

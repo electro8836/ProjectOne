@@ -253,6 +253,15 @@ namespace ProjectOne.UI
 
 		private GameObject _mainHud;
 
+		// MainHUD 안에 중첩된 보스 배너. 던전 전용 HUD 가 자리를 양보할 대상을 찾는 유일한 경로다 —
+		// 서로 다른 프리팹이라 인스펙터로 이을 수 없다.
+		private BossUI _bossUI;
+
+		public BossUI BossUI
+		{
+			get { return _bossUI; }
+		}
+
 		// 마을 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
 		//
 		// **히어로 스폰보다 먼저 불려야 한다.** JoystickController 가 Awake 에서 UnitSpawnedEvent 를
@@ -275,6 +284,89 @@ namespace ProjectOne.UI
 			// HUD 캔버스(100) 자식으로 둔다 — 창(200)·네비(300)·팝업(350)·시스템(400)이 자연히 위를 덮는다.
 			// UIManager 자신이 영속이라 별도 DontDestroyOnLoad 가 필요 없다.
 			_mainHud = Instantiate(prefab, _hudCanvas.transform);
+
+			// 비활성 포함으로 찾는다 — BossUI 는 Awake 에서 스스로 꺼진다.
+			_bossUI = _mainHud.GetComponentInChildren<BossUI>(true);
+			if (_bossUI == null)
+			{
+				Debug.LogWarning("[UIManager] MainHUD 안에서 BossUI 를 찾지 못했습니다 — 던전 HUD 가 보스 배너에 자리를 비켜주지 못합니다.");
+			}
+		}
+
+		// ── 던전 전용 HUD ──────────────────────────────────────────────
+		//
+		// 던전마다 필요한 위젯이 달라 MainHUD 한 프리팹에 다 넣지 않는다. 들어간 던전의 것만 만들어
+		// HUD 캔버스의 **마지막 자식**으로 붙인다 — 같은 캔버스에서는 뒤 자식이 위에 그려진다.
+		//
+		// 수명은 던전 한 판이다. DungeonDirector.Begin 이 만들고 cleanupAll 이 걷는다.
+
+		private GameObject _dungeonHud;
+		private string _dungeonHudAddress;
+
+		// 던전 종류 → 프리팹 주소. 모드가 없는 던전은 빈 문자열이다 — 구현되면 여기에 한 줄 늘린다.
+		private static string getDungeonHudAddress(EDT.Dungeon type)
+		{
+			switch (type)
+			{
+				case EDT.Dungeon.Gold:
+					return "UIPrefab_GoldDungeon";
+				case EDT.Dungeon.Rift:
+					return "UIPrefab_RiftDungeon";
+			}
+
+			return string.Empty;
+		}
+
+		// 던전 진입 시 1회. **모드 시작(startStage)보다 먼저 불려야 한다** — 웨이브 알림을 놓치면
+		// 첫 배너가 통째로 사라진다.
+		public async UniTask EnsureDungeonHudAsync(EDT.Dungeon type, CancellationToken ct)
+		{
+			string address = getDungeonHudAddress(type);
+			if (string.IsNullOrEmpty(address) == true)
+			{
+				// 아직 전용 UI 가 없는 던전 — 띄울 것이 없을 뿐 흐름은 막지 않는다.
+				return;
+			}
+
+			// 같은 던전의 다음 단계로 재진입하는 경로 — 이미 떠 있는 것을 그대로 쓴다.
+			if (_dungeonHud != null && _dungeonHudAddress == address)
+			{
+				return;
+			}
+
+			ReleaseDungeonHud();
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct);
+			if (prefab == null)
+			{
+				// HUD 가 없어도 던전 진행 자체는 막지 않는다 (MainHUD 와 같은 규약).
+				Debug.LogWarning($"[UIManager] 던전 HUD 프리팹을 찾지 못했습니다: {address}");
+				return;
+			}
+
+			_dungeonHud = Instantiate(prefab, _hudCanvas.transform);
+			_dungeonHud.transform.SetAsLastSibling();
+			_dungeonHudAddress = address;
+		}
+
+		// 던전 종료 시. UIManager 가 영속이라 명시적으로 걷지 않으면 마을까지 따라간다.
+		public void ReleaseDungeonHud()
+		{
+			if (_dungeonHud == null)
+			{
+				return;
+			}
+
+			Destroy(_dungeonHud);
+			_dungeonHud = null;
+
+			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(_dungeonHudAddress);
+			}
+
+			_dungeonHudAddress = null;
 		}
 
 		// ── 영속 네비게이션 바 ──────────────────────────────────────────
