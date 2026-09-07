@@ -33,7 +33,7 @@ namespace ProjectOne.UI
 			{ UIScreenId.Shop,			"UIPrefab_Shop" },
 			{ UIScreenId.Equipment,		"UIPrefab_Equipment" },
 			{ UIScreenId.World,			"UIPrefab_World" },
-			{ UIScreenId.Mastery,		"UIPrefab_MasteryTrait" },
+			{ UIScreenId.Mastery,		"UIPrefab_Mastery" },
 			{ UIScreenId.Quest,			"UIPrefab_Quest" },
 			{ UIScreenId.Craft,			"UIPrefab_Craft" },
 			{ UIScreenId.Settings,		"UIPrefab_Settings" },

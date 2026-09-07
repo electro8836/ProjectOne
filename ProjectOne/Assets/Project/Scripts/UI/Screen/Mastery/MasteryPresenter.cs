@@ -58,7 +58,7 @@ namespace ProjectOne.UI
 	// 무기를 끼지 않으면 활성 마스터리가 없다(MasteryBook.CurrentMastery 가 null). 그때는 현재 마스터리 탭을
 	// 잠그고 전체 탭으로 시작한다 — 빈 화면을 보여주는 대신 아예 못 들어가게 한다.
 	//
-	public sealed class MasteryTraitPresenter : Presenter<MasteryTraitUI>
+	public sealed class MasteryPresenter : Presenter<MasteryUI>
 	{
 		// 탭 인덱스 — 프리펩 TabButtonGrid 의 Hierarchy 순서와 일대일로 맞춘다.
 		private const int TAB_CURRENT = 0;
@@ -300,7 +300,7 @@ namespace ProjectOne.UI
 				// 조용히 버리면 테이블 오타가 "노드 하나가 안 보인다"로만 드러난다.
 				if (r < 0 || r >= rows || c < 0 || c >= columns)
 				{
-					Debug.LogError($"[MasteryTrait] 노드 좌표가 보드를 벗어났습니다 — node:{node.ID} pos:({node.NodePos_Row},{node.NodePos_Column}) board:{rows}x{columns}");
+					Debug.LogError($"[Mastery] 노드 좌표가 보드를 벗어났습니다 — node:{node.ID} pos:({node.NodePos_Row},{node.NodePos_Column}) board:{rows}x{columns}");
 					continue;
 				}
 

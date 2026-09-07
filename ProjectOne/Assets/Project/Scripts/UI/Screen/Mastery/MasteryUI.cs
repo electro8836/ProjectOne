@@ -9,12 +9,12 @@ using ProjectOne.Resources;
 
 namespace ProjectOne.UI
 {
-	// 마스터리 화면의 View(MVP). 네비게이션 바의 마스터리 탭이 UIPrefab_MasteryTrait 를 창 캔버스에 연다.
-	// 표시(텍스트·게이지·아이콘)와 입력 전달만 담당하고, 어떤 마스터리를 보여줄지·잠글지는 MasteryTraitPresenter 가 정한다.
+	// 마스터리 화면의 View(MVP). 네비게이션 바의 마스터리 탭이 UIPrefab_Mastery 를 창 캔버스에 연다.
+	// 표시(텍스트·게이지·아이콘)와 입력 전달만 담당하고, 어떤 마스터리를 보여줄지·잠글지는 MasteryPresenter 가 정한다.
 	//
 	// 장비 화면과 달리 닫기 버튼(HomeButton)이 있다 — 눌리면 창을 닫고, 그때 발행되는 WindowClosedEvent 가
 	// 네비게이션 바의 탭 선택까지 함께 푼다.
-	public class MasteryTraitUI : UIScreen, IView
+	public class MasteryUI : UIScreen, IView
 	{
 		[Header("탭")]
 		[SerializeField] private TabGroup _tabGroup;			// TopMenu/TabButtonGrid
@@ -59,7 +59,7 @@ namespace ProjectOne.UI
 		public event Action OnResetClicked;
 		public event Action<int> OnTraitSlotClicked;	// 트리 노드 ID
 
-		private readonly MasteryTraitPresenter _presenter = new MasteryTraitPresenter();
+		private readonly MasteryPresenter _presenter = new MasteryPresenter();
 
 		// 마스터리 목록 슬롯 풀 — 탭을 오갈 때마다 새로 찍지 않고 재사용한다.
 		private readonly List<MasteryInfoSlot> _slots = new List<MasteryInfoSlot>();

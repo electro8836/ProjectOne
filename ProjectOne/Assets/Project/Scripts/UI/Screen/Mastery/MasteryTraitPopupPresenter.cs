@@ -17,7 +17,7 @@ namespace ProjectOne.UI
 		public string requireText;	// 요구 포인트를 채웠으면 빈 문자열 — View 가 문구를 끈다
 	}
 
-	// 누른 노드의 위치를 팝업에 넘기기 위한 참조 묶음. MasteryTraitUI 가 만든다.
+	// 누른 노드의 위치를 팝업에 넘기기 위한 참조 묶음. MasteryUI 가 만든다.
 	//
 	// 팝업은 창보다 상위 캔버스에 뜨므로 트리와 좌표계가 다르다. 스크린 좌표를 거쳐 환산하려면
 	// 노드뿐 아니라 기준이 되는 뷰포트와, 노드를 화면 안으로 끌어올 스크롤까지 함께 필요하다.
@@ -31,7 +31,7 @@ namespace ProjectOne.UI
 	// 마스터리 트리 노드 팝업 Presenter — 노드 조회와 투자/회수 판정을 담당한다.
 	//
 	// 대상 마스터리는 항상 **현재 장착 무기의 것**이다. 트리 화면 자체가 무기 미착용이면 잠기므로
-	// (MasteryTraitPresenter.applyInitialTab) 팝업이 열린 시점엔 CurrentProgress 가 반드시 있다.
+	// (MasteryPresenter.applyInitialTab) 팝업이 열린 시점엔 CurrentProgress 가 반드시 있다.
 	public sealed class MasteryTraitPopupPresenter : Presenter<MasteryTraitPopup>
 	{
 		private int _nodeId;
