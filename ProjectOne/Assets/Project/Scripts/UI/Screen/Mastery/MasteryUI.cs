@@ -12,7 +12,7 @@ namespace ProjectOne.UI
 	// 마스터리 화면의 View(MVP). 네비게이션 바의 마스터리 탭이 UIPrefab_Mastery 를 창 캔버스에 연다.
 	// 표시(텍스트·게이지·아이콘)와 입력 전달만 담당하고, 어떤 마스터리를 보여줄지·잠글지는 MasteryPresenter 가 정한다.
 	//
-	// 장비 화면과 달리 닫기 버튼(HomeButton)이 있다 — 눌리면 창을 닫고, 그때 발행되는 WindowClosedEvent 가
+	// 닫기 버튼(HomeButton)이 눌리면 창을 닫고, 그때 발행되는 WindowClosedEvent 가
 	// 네비게이션 바의 탭 선택까지 함께 푼다.
 	public class MasteryUI : UIScreen, IView
 	{

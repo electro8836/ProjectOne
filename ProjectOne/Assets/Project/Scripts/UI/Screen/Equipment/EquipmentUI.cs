@@ -29,6 +29,9 @@ namespace ProjectOne.UI
 		[Header("캐릭터")]
 		[SerializeField] private TMP_Text _levelText;	// LevelText
 
+		[Header("닫기")]
+		[SerializeField] private UIButton _homeButton;	// Top/HomeButton
+
 		// 장착/해제 강조 — 커진 상태에서 제자리로 줄어들며 안착하는 느낌.
 		private const float PopStartScale = 1.5f;
 		private const float PopDuration = 0.5f;
@@ -45,6 +48,7 @@ namespace ProjectOne.UI
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action<int> OnTabSelected;
 		public event Action<long, int> OnSlotClicked;
+		public event Action OnHomeClicked;
 
 		private readonly EquipmentPresenter _presenter = new EquipmentPresenter();
 
@@ -54,6 +58,7 @@ namespace ProjectOne.UI
 		private void Awake()
 		{
 			_tabGroup.OnTabChanged += onTabChanged;
+			_homeButton.OnClickEvent += onHomeClicked;
 
 			_presenter.Initialize(this);
 		}
@@ -65,6 +70,7 @@ namespace ProjectOne.UI
 			_presenter.Dispose();
 
 			_tabGroup.OnTabChanged -= onTabChanged;
+			_homeButton.OnClickEvent -= onHomeClicked;
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
@@ -163,6 +169,11 @@ namespace ProjectOne.UI
 		private void onTabChanged(int index)
 		{
 			if (OnTabSelected != null) { OnTabSelected.Invoke(index); }
+		}
+
+		private void onHomeClicked()
+		{
+			if (OnHomeClicked != null) { OnHomeClicked.Invoke(); }
 		}
 
 		private void onSlotClicked(ItemSlot sender, long uid, int itemId)

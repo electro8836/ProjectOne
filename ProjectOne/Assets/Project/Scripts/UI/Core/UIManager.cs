@@ -41,7 +41,21 @@ namespace ProjectOne.UI
 		private const float NetworkBlockerShowDelaySec = 0.2f;
 
 		// 열린 창 스택 (Back키 처리, 직렬 닫기용)
-		private readonly Stack<UIScreen> _windowStack = new Stack<UIScreen>();
+		// 주소를 함께 들고 있어야 닫을 때 참조카운트를 되돌릴 수 있다 — 화면만으로는 무엇을 Acquire 했는지 모른다.
+		private readonly Stack<WindowEntry> _windowStack = new Stack<WindowEntry>();
+
+		// 열린 창 하나. 화면과 그 화면을 불러온 Addressable 주소를 짝지어 둔다.
+		private readonly struct WindowEntry
+		{
+			public readonly UIScreen screen;
+			public readonly string address;
+
+			public WindowEntry(UIScreen screen, string address)
+			{
+				this.screen = screen;
+				this.address = address;
+			}
+		}
 
 		// 씬에 직접 배치된 HUD 등 화면 레지스트리 — 깨어날 때 등록/사라질 때 해제하여 타입으로 O(1) 조회
 		private readonly Dictionary<System.Type, UIScreen> _screens = new Dictionary<System.Type, UIScreen>();
@@ -550,8 +564,56 @@ namespace ProjectOne.UI
 				return null;
 			}
 
-			_windowStack.Push(screen);
+			_windowStack.Push(new WindowEntry(screen, address));
 			await screen.OnOpenAsync(ct);
+			return screen;
+		}
+
+		// 탭 전환 전용 — 새 창을 다 세운 뒤에 이전 창을 치운다.
+		//
+		// 닫고 나서 여는 순서로 하면 Addressable 로드를 기다리는 동안 창이 하나도 없는 화면이 그대로 보인다.
+		// 새 창은 창 캔버스의 마지막 자식으로 붙어 이전 창 위에 그려지므로 그 사이에도 빈 화면이 없다.
+		public async UniTask<UIScreen> SwitchWindowAsync(UIScreenId id, CancellationToken ct)
+		{
+			string address = UIScreenCatalog.GetAddress(id);
+			if (string.IsNullOrEmpty(address) == true)
+			{
+				Debug.LogError($"[UIManager] {id} 의 주소가 UIScreenCatalog 에 없습니다.");
+				return null;
+			}
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct);
+			if (prefab == null)
+			{
+				return null;
+			}
+
+			GameObject go = Instantiate(prefab, _windowCanvas.transform);
+			UIScreen screen = go.GetComponent<UIScreen>();
+			if (screen == null)
+			{
+				// 아직 스택을 건드리기 전이다 — 실패해도 이전 창이 그대로 남는다.
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return null;
+			}
+
+			// 새 창만 남기고, 밀려난 것들은 아래에서 정리한다.
+			WindowEntry[] closing = _windowStack.ToArray();
+			_windowStack.Clear();
+			_windowStack.Push(new WindowEntry(screen, address));
+
+			await screen.OnOpenAsync(ct);
+
+			// 새 창이 화면을 덮은 뒤에 이전 것을 치운다.
+			// WindowClosedEvent 는 내지 않는다 — 새 창이 열려 있는데 발행하면 방금 누른 탭의 선택이 풀린다.
+			for (int i = 0; i < closing.Length; i++)
+			{
+				await closing[i].screen.OnCloseAsync();
+				Destroy(closing[i].screen.gameObject);
+				releaseWindow(closing[i].address);
+			}
+
 			return screen;
 		}
 
@@ -565,15 +627,28 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			UIScreen screen = _windowStack.Pop();
-			await screen.OnCloseAsync();
-			Destroy(screen.gameObject);
+			WindowEntry entry = _windowStack.Pop();
+			await entry.screen.OnCloseAsync();
+			Destroy(entry.screen.gameObject);
+			releaseWindow(entry.address);
 
 			// 마지막 창이 닫혀 스택이 비면 통지 (탭 그룹 등이 선택 해제).
 			if (publishWhenEmpty && _windowStack.Count == 0)
 			{
 				EventManager.Instance.Publish(new WindowClosedEvent());
 			}
+		}
+
+		// 창 프리팹의 참조카운트를 되돌린다.
+		// 종료/씬 전환 흐름에서 ResourceManager 가 먼저 파괴됐으면 Instance 는 null 이라 가드가 필요하다.
+		private static void releaseWindow(string address)
+		{
+			if (string.IsNullOrEmpty(address) == true || ResourceManager.HasInstance == false)
+			{
+				return;
+			}
+
+			ResourceManager.Instance.Release(address);
 		}
 
 		// 모든 창을 닫는다 (탭 전환·씬 전환 시 호출 — 조용히 닫음).

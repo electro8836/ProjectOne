@@ -58,6 +58,7 @@ namespace ProjectOne.UI
 		{
 			view.OnTabSelected += onTabSelected;
 			view.OnSlotClicked += onSlotClicked;
+			view.OnHomeClicked += onHomeClicked;
 
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Subscribe<InventoryChangeEvent>(onInventoryChanged);
@@ -75,6 +76,7 @@ namespace ProjectOne.UI
 
 			view.OnTabSelected -= onTabSelected;
 			view.OnSlotClicked -= onSlotClicked;
+			view.OnHomeClicked -= onHomeClicked;
 
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Unsubscribe<InventoryChangeEvent>(onInventoryChanged);
@@ -104,6 +106,12 @@ namespace ProjectOne.UI
 		{
 			_currentTab = index;
 			rebuild();
+		}
+
+		// 창을 닫는다. 마지막 창이면 WindowClosedEvent 가 발행되어 네비게이션 바의 탭 선택도 함께 풀린다.
+		private void onHomeClicked()
+		{
+			UIManager.Instance.CloseWindowAsync().Forget();
 		}
 
 		// 슬롯 클릭 — 정보 팝업을 상위 캔버스에 연다(네비게이션 결정은 Presenter).

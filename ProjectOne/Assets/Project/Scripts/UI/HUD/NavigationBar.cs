@@ -92,22 +92,28 @@ namespace ProjectOne.UI
 			switchScreenAsync(screen, index).Forget();
 		}
 
-		// 탭 전환은 교체지 겹치기가 아니다 — 먼저 열린 창을 모두 닫지 않으면
-		// 탭을 옮길 때마다 UIManager 의 창 스택에 쌓인다.
-		// 닫기는 조용히(false) 한다. WindowClosedEvent 가 발행되면 방금 누른 탭이 곧바로 해제된다.
+		// 탭 전환은 교체지 겹치기가 아니다 — 새 창만 남고 이전 창은 정리된다.
+		// 닫고 나서 여는 것이 아니라 SwitchWindowAsync 가 새 창을 세운 뒤에 이전 것을 치운다.
+		// 그래야 프리팹을 불러오는 동안 빈 화면이 비쳐 화면이 튀지 않는다.
 		private async UniTaskVoid switchScreenAsync(UIScreenId screen, int index)
 		{
 			_isSwitching = true;
 
-			await UIManager.Instance.CloseAllWindowsAsync();
-			UIScreen opened = await UIManager.Instance.OpenAsync(screen, this.GetCancellationTokenOnDestroy());
+			UIScreen opened = await UIManager.Instance.SwitchWindowAsync(screen, this.GetCancellationTokenOnDestroy());
 
-			// 열기에 실패하면(주소 누락·프리팹 없음) 창이 뜨지 않은 것이다.
-			// 선택 표시만 남겨두면 "선택돼 있는데 화면은 없는" 탭이 되어 재클릭이 닫기로 빠진다.
+			// 열기에 실패해도(주소 누락·프리팹 없음) 이전 창은 그대로 남아 있다.
+			// 선택 표시만 새 탭에 두면 "표시된 탭과 보이는 화면이 다른" 상태가 되므로 원래 탭으로 되돌린다.
 			if (opened == null)
 			{
-				_openedIndex = -1;
-				_tabs.ClearSelection();
+				if (_openedIndex >= 0)
+				{
+					_tabs.Select(_openedIndex);
+				}
+				else
+				{
+					_tabs.ClearSelection();
+				}
+
 				_isSwitching = false;
 				return;
 			}
