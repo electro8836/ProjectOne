@@ -10,6 +10,7 @@ namespace EDT {
             public int ID { get; set; } = 0;
             public int ActID { get; set; } = 0;
             public int Order { get; set; } = 0;
+            public string Name { get; set; } = string.Empty;
             public int ReqLevel { get; set; } = 0;
             public int ReqQuestID { get; set; } = 0;
         }
@@ -37,6 +38,7 @@ namespace EDT {
                 row.ID = reader.ReadInt32();
                 row.ActID = reader.ReadInt32();
                 row.Order = reader.ReadInt32();
+                row.Name = reader.ReadString();
                 row.ReqLevel = reader.ReadInt32();
                 row.ReqQuestID = reader.ReadInt32();
                 _all.Add( row.ID, row );

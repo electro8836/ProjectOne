@@ -761,6 +761,72 @@ namespace ProjectOne.UI
 			}
 		}
 
+		// 액트·필드 목록 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 이동으로 닫혔으면 true — 호출부(월드 화면)가 그때 자기 창도 닫는다.
+		public async UniTask<bool> ShowActListPopupAsync(string address, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
+			if (prefab == null)
+			{
+				return false;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			ActListPopup popup = go.GetComponent<ActListPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return false;
+			}
+
+			bool moved = await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(address);
+			}
+
+			return moved;
+		}
+
+		// 골드던전 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		public async UniTask ShowGoldDungeonPopupAsync(string address, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GoldDungeonPopup popup = go.GetComponent<GoldDungeonPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return;
+			}
+
+			await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(address);
+			}
+		}
+
 		// 공용 확인 팝업을 _popupCanvas(창보다 상위)에 열고 어떤 버튼이 눌렸는지 돌려준다.
 		//
 		// 다른 팝업과 달리 주소를 호출부에서 받지 않는다 — 공용 팝업은 하나뿐이라

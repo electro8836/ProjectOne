@@ -112,7 +112,7 @@ namespace ProjectOne.Map
 			for (int i = 0; i < fields.Count; i++)
 			{
 				Table_Field.Row field = fields[i];
-				Vector3 origin = GetFieldOrigin(act.Order, field.Order);
+				Vector3 origin = GetFieldOrigin(act.ID, field.Order);
 
 				// Field 는 Map 과 ID 를 공유한다 (맵 설계 8장).
 				bool ok = await loadOneAsync(field.ID, origin, ct);
@@ -123,10 +123,11 @@ namespace ProjectOne.Map
 		}
 
 		// 배치 좌표 규칙 — 액트는 Y축, 필드는 X축으로 나열한다.
-		public static Vector3 GetFieldOrigin(int actOrder, int fieldOrder)
+		// 액트는 ID 가 곧 진행 순서다 (Act 테이블에 Order 컬럼이 없다).
+		public static Vector3 GetFieldOrigin(int actId, int fieldOrder)
 		{
 			float x = (fieldOrder - 1) * MapSpacing;
-			float y = (actOrder - 1) * MapSpacing;
+			float y = (actId - 1) * MapSpacing;
 			return new Vector3(x, y, 0f);
 		}
 
@@ -146,7 +147,7 @@ namespace ProjectOne.Map
 			}
 
 			Table_Act.Row act = Table_Act.Get(field.ActID);
-			return GetFieldOrigin(act != null ? act.Order : 1, field.Order);
+			return GetFieldOrigin(act != null ? act.ID : 1, field.Order);
 		}
 
 		private async UniTask<bool> loadOneAsync(int mapId, Vector3 origin, CancellationToken ct)

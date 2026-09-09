@@ -11,7 +11,6 @@ namespace EDT {
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
-            public int Order { get; set; } = 0;
         }
 
         public const string Filename = "edt_act.bytes";
@@ -38,7 +37,6 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
-                row.Order = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );
