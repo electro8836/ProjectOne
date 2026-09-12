@@ -149,6 +149,23 @@ namespace ProjectOne.UI
 			_levelText.gameObject.SetActive(false);
 		}
 
+		// 부모 칸에 꽉 차도록 늘려 붙인다.
+		// 프리펩 크기가 고정이라 ItemSlotRoot 처럼 크기가 다른 칸에 그냥 붙이면 넘치거나 남는다.
+		public void StretchToParent()
+		{
+			RectTransform rect = transform as RectTransform;
+			if (rect == null)
+			{
+				return;
+			}
+
+			rect.anchorMin = Vector2.zero;
+			rect.anchorMax = Vector2.one;
+			rect.offsetMin = Vector2.zero;
+			rect.offsetMax = Vector2.zero;
+			rect.localScale = Vector3.one;
+		}
+
 		private void applyGradeColor(ItemGradeColorTable colors, ItemGradeType grade)
 		{
 			if (colors == null)

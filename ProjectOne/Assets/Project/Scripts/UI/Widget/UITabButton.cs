@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
+using TMPro;
 using ProjectOne.Audio;
 using ProjectOne.Utils;
 
@@ -31,6 +32,9 @@ namespace ProjectOne.UI
 
 		[Header("Theme & Feedback")]
 		[SerializeField] private ButtonThemeData _themeData;
+
+		[Header("라벨")]
+		[SerializeField] private TMP_Text _label;	// 탭 이름. 테이블이 이름을 정하는 탭만 물린다
 
 		private Vector3 _originalScale = Vector3.one;
 		private bool _pressActive;	// 눌림 스케일이 적용됐는지 — Up에서 반드시 원복 보장
@@ -130,6 +134,15 @@ namespace ProjectOne.UI
 			applyStateColors(immediate);
 			applyStateObjects();
 			interactable = _currentState != TabState.Locked;
+		}
+
+		// 탭 이름 교체 — 상점처럼 테이블이 탭 구성을 정하는 화면이 호출한다.
+		public void SetLabel(string text)
+		{
+			if (_label != null)
+			{
+				_label.text = text;
+			}
 		}
 
 		// 배지 전환 — Lock/Alert 중 하나만 표시, 나머지는 숨김

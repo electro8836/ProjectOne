@@ -15,6 +15,9 @@ namespace EDT {
             public int MinCount { get; set; } = 0;
             public int MaxCount { get; set; } = 0;
             public float Chance { get; set; } = 0f;
+            public ItemGradeType FixedGrade { get; set; } = ItemGradeType.None;
+            public EquipPurity FixedPurity { get; set; } = EquipPurity.None;
+            public int FixedQuality { get; set; } = 0;
         }
 
         public const string Filename = "edt_reward.bytes";
@@ -45,6 +48,9 @@ namespace EDT {
                 row.MinCount = reader.ReadInt32();
                 row.MaxCount = reader.ReadInt32();
                 row.Chance = reader.ReadSingle();
+                row.FixedGrade = (ItemGradeType)reader.ReadInt32();
+                row.FixedPurity = (EquipPurity)reader.ReadInt32();
+                row.FixedQuality = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

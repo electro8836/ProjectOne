@@ -346,6 +346,18 @@ namespace ProjectOne.Reward
 
 			bool mayBeEquipment = canYieldEquipment(entry);
 
+			// FixedGrade 로 등급을 확정한 행은 가중치를 쓰지 않는다 — 확정 지급 상품(상점 패키지 등)이 그렇다.
+			if (row.FixedGrade != ItemGradeType.None)
+			{
+				if (row.EquipGradeWeightID != 0)
+				{
+					Debug.LogWarning($"[RewardCatalog] Reward {row.ID} 는 FixedGrade 가 있어 EquipGradeWeightID 가 무시됩니다.");
+					return 1;
+				}
+
+				return 0;
+			}
+
 			if (row.EquipGradeWeightID == 0)
 			{
 				if (mayBeEquipment == true)

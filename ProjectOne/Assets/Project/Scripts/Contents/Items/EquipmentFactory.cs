@@ -70,6 +70,26 @@ namespace ProjectOne.Items
 			return instance;
 		}
 
+		// 등급·순도·품질을 전부 지정해 만든다 — 확정 지급 상품과 그 미리보기가 같은 값을 쓰게 하는 경로.
+		// 추첨이 끼지 않으므로 같은 인자로는 항상 같은 인스턴스가 나온다.
+		public static EquipmentInstance CreateExact(int itemId, ItemGradeType grade, EquipPurity purity, int quality)
+		{
+			if (Table_Equipment.Get(itemId) == null)
+			{
+				Debug.LogError($"[EquipmentFactory] 장비 아이템이 아닙니다: {itemId}");
+			return null;
+			}
+
+			EquipmentInstance instance = new EquipmentInstance();
+			instance.itemId = itemId;
+			instance.grade = grade;
+			instance.level = 1;
+			instance.purity = purity;
+			instance.quality = quality;
+			instance.equippedSlot = EquipSlotTypes.None;
+			return instance;
+		}
+
 		// ── 추첨 ──────────────────────────────────────────────────────
 
 		public static EquipPurity RollPurity()

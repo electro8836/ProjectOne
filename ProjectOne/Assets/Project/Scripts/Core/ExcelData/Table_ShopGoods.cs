@@ -11,7 +11,7 @@ namespace EDT {
             public int GroupID { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
-            public string Discount { get; set; } = string.Empty;
+            public string Bonus { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
             public GoodsType GoodsType { get; set; } = GoodsType.None;
             public int RewardGroupID { get; set; } = 0;
@@ -46,7 +46,7 @@ namespace EDT {
                 row.GroupID = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
-                row.Discount = reader.ReadString();
+                row.Bonus = reader.ReadString();
                 row.Icon = reader.ReadString();
                 row.GoodsType = (GoodsType)reader.ReadInt32();
                 row.RewardGroupID = reader.ReadInt32();

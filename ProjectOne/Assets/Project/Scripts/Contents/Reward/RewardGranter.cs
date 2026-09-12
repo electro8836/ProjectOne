@@ -162,7 +162,7 @@ namespace ProjectOne.Reward
 					break;
 
 				case RewardType.Item:
-					rollItem(entry.itemId, row.EquipGradeWeightID, count, buffer);
+					rollItem(entry.itemId, row, count, buffer);
 					break;
 
 				case RewardType.ItemPool:
@@ -172,7 +172,7 @@ namespace ProjectOne.Reward
 						int itemId = pickFromPool(entry.poolId);
 						if (itemId > 0)
 						{
-							rollItem(itemId, row.EquipGradeWeightID, 1, buffer);
+							rollItem(itemId, row, 1, buffer);
 						}
 					}
 
@@ -211,7 +211,7 @@ namespace ProjectOne.Reward
 		}
 
 		// 장비냐 아니냐는 RewardType 이 아니라 **최종 지급 대상**이 기준이다 (설계 6.1).
-		private static void rollItem(int itemId, int gradeWeightId, int count, List<GrantedReward> buffer)
+		private static void rollItem(int itemId, Table_Reward.Row row, int count, List<GrantedReward> buffer)
 		{
 			if (itemId <= 0 || count <= 0)
 			{
@@ -233,7 +233,16 @@ namespace ProjectOne.Reward
 			// 가중치 합이 0이면 null 을 돌려준다 = 드랍 스킵 (설계 6.1).
 			for (int i = 0; i < count; i++)
 			{
-				EquipmentInstance instance = EquipmentFactory.Create(itemId, gradeWeightId);
+				// FixedGrade 가 적혀 있으면 확정 상품이다 — 미리보기와 같은 값을 그대로 지급한다.
+				EquipmentInstance instance;
+				if (row.FixedGrade != ItemGradeType.None)
+				{
+					instance = EquipmentFactory.CreateExact(itemId, row.FixedGrade, row.FixedPurity, row.FixedQuality);
+				}
+				else
+				{
+					instance = EquipmentFactory.Create(itemId, row.EquipGradeWeightID);
+				}
 				if (instance == null)
 				{
 					continue;

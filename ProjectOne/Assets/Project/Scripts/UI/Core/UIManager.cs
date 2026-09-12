@@ -664,6 +664,7 @@ namespace ProjectOne.UI
 
 		private const string COMMON_POPUP_ADDRESS = "UIPrefab_CommonPopup";
 		private const string SIMPLE_POPUP_ADDRESS = "UIPrefab_SimplePopup";
+		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
 
 
 		// 아이템 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -899,6 +900,37 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(address);
+			}
+		}
+
+		// 상자 확률표. 프리펩이 하나뿐이라 주소를 호출부에서 받지 않는다.
+		public async UniTask ShowBoxRewardPopupAsync(int rewardGroupId, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(BOX_REWARD_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			BoxRewardPopup popup = go.GetComponent<BoxRewardPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(BOX_REWARD_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(rewardGroupId, _popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(BOX_REWARD_POPUP_ADDRESS);
 			}
 		}
 

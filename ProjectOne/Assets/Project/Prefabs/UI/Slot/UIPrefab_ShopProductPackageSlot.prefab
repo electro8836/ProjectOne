@@ -84,6 +84,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6665731467045995055}
+  - component: {fileID: 5320612207728930179}
   m_Layer: 0
   m_Name: UIPrefab_ShopProductPackageSlot
   m_TagString: Untagged
@@ -113,8 +114,30 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1013.6, y: 450}
+  m_SizeDelta: {x: 1013.6, y: 350}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &5320612207728930179
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 602112972584802899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a24758d99ef015489cf7acb0fe7c34e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.ShopPackageSlot
+  _titleText: {fileID: 1361855173513061434}
+  _goodsIcon: {fileID: 0}
+  _buyButton: {fileID: 3088961215214700239}
+  _priceIcon: {fileID: 0}
+  _priceText: {fileID: 7342582373712000830}
+  _limitText: {fileID: 0}
+  _lackColor: {r: 1, g: 0, b: 0, a: 1}
+  _packageGrid: {fileID: 9185731924689504760}
+  _itemSlotPrefab: {fileID: 1102261044167934370, guid: c38230cd97a2c8b4b80b41ff6f96125a, type: 3}
+  _gradeColors: {fileID: 11400000, guid: 9d4f27a1c6b3418e85f0d3c72a91e64b, type: 2}
 --- !u!1 &2353795421079398356
 GameObject:
   m_ObjectHideFlags: 0
@@ -494,13 +517,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 38.05
+  m_fontSize: 41.5
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 42
-  m_fontStyle: 1
+  m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -794,7 +817,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: fd6806221623c42419b6ff515c18d6fb, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d3ee9a1a20b5fac48996836da83abc13, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -822,5 +845,7 @@ MonoBehaviour:
   _holdInterval: 0.1
   _themeData: {fileID: 11400000, guid: b09be0d5eaaf9bd45ba8f842edc9b987, type: 2}
   _targetGraphic: {fileID: 0}
-  _disabledTintTargets: []
+  _disabledTintTargets:
+  - {fileID: 2368305430285011336}
+  - {fileID: 7342582373712000830}
   _disabledColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}

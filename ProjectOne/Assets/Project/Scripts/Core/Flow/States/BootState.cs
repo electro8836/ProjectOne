@@ -16,6 +16,7 @@ using ProjectOne.Mastery;
 using ProjectOne.Monsters;
 using ProjectOne.Quests;
 using ProjectOne.Reward;
+using ProjectOne.Shop;
 using ProjectOne.Skill;
 using ProjectOne.Unit.Stats;
 
@@ -65,6 +66,7 @@ namespace ProjectOne.Flow
 			ConsumableCatalog.Build();
 			QuestCatalog.Build();	// RewardCatalog 이후여야 한다 — 상자의 보상 그룹 존재를 검증한다
 			DungeonProgress.Build();
+			ShopCatalog.Build();
 
 			// 2) SFX 클립 일괄 프리로드 (Addressables 라벨 "SFX") — 첫 재생 끊김 방지
 			cancelled = await AudioManager.Instance.PreloadSFXByLabelAsync("SFX", ct).SuppressCancellationThrow();
