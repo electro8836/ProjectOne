@@ -199,6 +199,25 @@ namespace EDT {
         Currency,
     }
 
+    public enum GoodsType {
+        None,
+        HeroPass,
+        NoAd,
+        Package,
+        Box,
+        Item,
+        Currency,
+    }
+
+    public enum PriceType {
+        None,
+        Currency,
+        Item,
+        Cash,
+        Ad,
+        Free,
+    }
+
     public enum SkillCategoryTypes {
         None,
         Normal,
@@ -429,6 +448,16 @@ namespace EDT {
         PJT_Monster_Arrow,
     }
 
+    public enum ShopCategory {
+        None,
+        Special,
+        Currency,
+        TreasureBox,
+        Pet,
+        Costume,
+        AdShop,
+    }
+
     public enum Skill {
         None,
         Skill_DualBlades_Attack,
@@ -612,6 +641,9 @@ namespace EDT {
         TableQuest,
         TableReward,
         TableRewardItemPool,
+        TableShopCategory,
+        TableShopGoodsGroup,
+        TableShopGoods,
         TableSkill,
         TableSkillEffect,
         TableSkillModifier,

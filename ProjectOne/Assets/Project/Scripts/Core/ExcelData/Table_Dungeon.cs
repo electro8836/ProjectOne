@@ -11,6 +11,7 @@ namespace EDT {
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
+            public string Thumbnail { get; set; } = string.Empty;
             public int DefaultEnterCount { get; set; } = 0;
             public int MaxEnterCount { get; set; } = 0;
             public Currency RevivalCostType { get; set; } = Currency.None;
@@ -43,6 +44,7 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
+                row.Thumbnail = reader.ReadString();
                 row.DefaultEnterCount = reader.ReadInt32();
                 row.MaxEnterCount = reader.ReadInt32();
                 row.RevivalCostType = (Currency)reader.ReadInt32();

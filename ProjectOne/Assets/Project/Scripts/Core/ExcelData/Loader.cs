@@ -458,6 +458,39 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - ShopCategory
+            {
+                CurrentFile = Table_ShopCategory.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ShopCategory._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - ShopGoodsGroup
+            {
+                CurrentFile = Table_ShopGoodsGroup.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ShopGoodsGroup._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - ShopGoods
+            {
+                CurrentFile = Table_ShopGoods.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ShopGoods._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Skill
             {
                 CurrentFile = Table_Skill.Filename;
