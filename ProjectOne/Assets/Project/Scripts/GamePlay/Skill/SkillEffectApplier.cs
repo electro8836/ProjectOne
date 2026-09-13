@@ -21,18 +21,27 @@ namespace ProjectOne.Skill
 	// - OnHitTrigger 가 TRUE 인 효과만 OnHit/OnCrit/흡혈을 발동시킨다 (설계 5.7).
 	public static class SkillEffectApplier
 	{
-		// EffectOrigin 해석 결과를 담는 버퍼 — 재진입 시 덮어쓰지 않도록 깊이별로 나눠 쓴다.
-		static readonly List<UnitBase>[] _originBuffers = createOriginBuffers();
+		// EffectOrigin 해석 결과를 담는 버퍼 — 재진입 시 덮어쓰지 않도록 Apply 중첩 깊이별로 나눠 쓴다.
+		//
+		// 연쇄(ChainEffectIDs)뿐 아니라 트리거 재진입도 중첩이다. OnCombo/OnHit/OnKill 스킬은 평타의
+		// 데미지 처리 콜스택 안에서 동기로 Apply 까지 내려오는데, 이때 ChainEffectIDs 깊이는 다시 0 이다.
+		// 슬롯을 연쇄 깊이로 잡으면 그 재진입이 상위 프레임의 대상 목록을 지워 버린다.
+		static readonly List<List<UnitBase>> _originBuffers = new List<List<UnitBase>>();
 
-		static List<UnitBase>[] createOriginBuffers()
+		// 현재 실행 중인 Apply 의 중첩 깊이. Apply 진입에서 올리고 빠져나가면서 내린다.
+		static int _originDepth;
+
+		static List<UnitBase> rentOriginBuffer(int slot)
 		{
-			List<UnitBase>[] buffers = new List<UnitBase>[SkillConstants.CHAIN_DEPTH_LIMIT + 1];
-			for (int i = 0; i < buffers.Length; i++)
+			while (_originBuffers.Count <= slot)
 			{
-				buffers[i] = new List<UnitBase>(8);
+				_originBuffers.Add(new List<UnitBase>(8));
 			}
 
-			return buffers;
+			List<UnitBase> buffer = _originBuffers[slot];
+			buffer.Clear();
+
+			return buffer;
 		}
 
 		// depth 는 ChainEffectIDs 재귀 깊이다. 0에서 시작한다.
@@ -61,58 +70,69 @@ namespace ProjectOne.Skill
 			// 한 칸 밀려 적은 데이터를 잡는 유일한 장치
 			SkillParamCatalog.WarnUndefinedSlots(row);
 
-			List<UnitBase> targets = resolveOrigin(row.EffectOrigin, caster, scanned, depth);
-
-			bool succeeded = false;
-			switch (row.EffectType)
+			int slot = _originDepth;
+			_originDepth++;
+			try
 			{
-				case SkillEffectTypes.Damage:
-					succeeded = applyDamage(row, caster, skillId, targets);
-					break;
-				case SkillEffectTypes.Heal:
-					succeeded = applyHeal(row, caster, skillId, targets);
-					break;
-				case SkillEffectTypes.Buff:
-					succeeded = applyBuff(row, caster, skillId, targets);
-					break;
-				case SkillEffectTypes.StatChange:
-					succeeded = applyStatChange(row, caster, targets, buffOwner);
-					break;
-				case SkillEffectTypes.Projectile:
-					succeeded = applyProjectile(row, caster, skillId, targets);
-					break;
-				case SkillEffectTypes.Summon:
-					succeeded = applySummon(row, caster, targets);
-					break;
-				case SkillEffectTypes.Force:
-					succeeded = applyForce(row, caster, targets);
-					break;
-				case SkillEffectTypes.CooldownReduce:
-					succeeded = applyCooldownReduce(row, caster);
-					break;
-				case SkillEffectTypes.BuffConsume:
-					succeeded = applyBuffConsume(row, targets);
-					break;
-				default:
-					Debug.LogError($"[SkillEffectApplier] 알 수 없는 EffectType — Effect:{row.ID} Type:{row.EffectType}");
-					break;
+				List<UnitBase> targets = resolveOrigin(row.EffectOrigin, caster, scanned, slot);
+
+				bool succeeded = false;
+				switch (row.EffectType)
+				{
+					case SkillEffectTypes.Damage:
+						succeeded = applyDamage(row, caster, skillId, targets);
+						break;
+					case SkillEffectTypes.Heal:
+						succeeded = applyHeal(row, caster, skillId, targets);
+						break;
+					case SkillEffectTypes.Buff:
+						succeeded = applyBuff(row, caster, skillId, targets);
+						break;
+					case SkillEffectTypes.StatChange:
+						succeeded = applyStatChange(row, caster, targets, buffOwner);
+						break;
+					case SkillEffectTypes.Projectile:
+						succeeded = applyProjectile(row, caster, skillId, targets);
+						break;
+					case SkillEffectTypes.Summon:
+						succeeded = applySummon(row, caster, targets);
+						break;
+					case SkillEffectTypes.Force:
+						succeeded = applyForce(row, caster, targets);
+						break;
+					case SkillEffectTypes.CooldownReduce:
+						succeeded = applyCooldownReduce(row, caster);
+						break;
+					case SkillEffectTypes.BuffConsume:
+						succeeded = applyBuffConsume(row, targets);
+						break;
+					default:
+						Debug.LogError($"[SkillEffectApplier] 알 수 없는 EffectType — Effect:{row.ID} Type:{row.EffectType}");
+						break;
+				}
+
+				// 타격 연출은 실제로 효과가 적용된 대상에만 나가야 한다.
+				// applyDamage/applyForce 는 시전자를 건너뛰므로 연출도 같은 규칙을 따른다.
+				// 반대로 자힐·자버프는 시전자가 정당한 대상이라 제외하면 안 된다.
+				UnitBase vfxExcluded = null;
+				if (row.EffectType == SkillEffectTypes.Damage || row.EffectType == SkillEffectTypes.Force)
+				{
+					vfxExcluded = caster;
+				}
+
+				playEffectPresentation(row, targets, vfxExcluded, hasCenter, center);
+
+				// 적중 개념이 없는 효과는 "성공"을 적중으로 간주한다 (설계 5.6).
+				if (succeeded == true)
+				{
+					applyChain(row, caster, skillId, scanned, depth);
+				}
 			}
-
-			// 타격 연출은 실제로 효과가 적용된 대상에만 나가야 한다.
-			// applyDamage/applyForce 는 시전자를 건너뛰므로 연출도 같은 규칙을 따른다.
-			// 반대로 자힐·자버프는 시전자가 정당한 대상이라 제외하면 안 된다.
-			UnitBase vfxExcluded = null;
-			if (row.EffectType == SkillEffectTypes.Damage || row.EffectType == SkillEffectTypes.Force)
+			finally
 			{
-				vfxExcluded = caster;
-			}
-
-			playEffectPresentation(row, targets, vfxExcluded, hasCenter, center);
-
-			// 적중 개념이 없는 효과는 "성공"을 적중으로 간주한다 (설계 5.6).
-			if (succeeded == true)
-			{
-				applyChain(row, caster, skillId, scanned, depth);
+				// 연쇄 자식은 스스로 다음 슬롯을 잡으므로, 반납은 연쇄까지 끝난 맨 마지막이어야 한다.
+				// catch 는 두지 않는다 — 예외는 그대로 전파시키고 슬롯 반납만 보장한다.
+				_originDepth--;
 			}
 		}
 
@@ -270,10 +290,9 @@ namespace ProjectOne.Skill
 
 		// ── EffectOrigin 해석 (설계 2.6) ──────────────────────────────
 
-		static List<UnitBase> resolveOrigin(SkillEffectOrigin origin, UnitBase caster, List<UnitBase> scanned, int depth)
+		static List<UnitBase> resolveOrigin(SkillEffectOrigin origin, UnitBase caster, List<UnitBase> scanned, int slot)
 		{
-			List<UnitBase> buffer = _originBuffers[depth];
-			buffer.Clear();
+			List<UnitBase> buffer = rentOriginBuffer(slot);
 
 			switch (origin)
 			{
@@ -407,9 +426,9 @@ namespace ProjectOne.Skill
 			// 콤보 통지는 targets 를 다 쓴 뒤에 몰아서 한다.
 			//
 			// 통지는 TriggerOnCombo → SkillExecutor.Execute 로 이어지고, 콤보 스킬의 지연이 0이면
-			// 그 자리에서 SkillEffectApplier.Apply(depth:0) 까지 동기로 내려간다. 그 안의 resolveOrigin 이
-			// _originBuffers[0] 을 Clear 하는데 여기서 순회 중인 targets 가 바로 그 버퍼라,
-			// 스윙 도중에 통지하면 뒤따르는 다단히트 루프와 ScheduleRepeat 이 빈 리스트를 보게 된다.
+			// 그 자리에서 SkillEffectApplier.Apply 까지 동기로 내려간다. 대상 버퍼는 중첩 깊이로
+			// 분리돼 있어 이제 targets 가 파괴되지는 않지만, 스윙 도중에 통지하면 콤보 스킬의 피해가
+			// 다단히트 2타보다 먼저 들어가 순서가 뒤집힌다. 스윙 집계를 끝낸 뒤 한 번에 알린다.
 			for (int s = 0; s < hitSwings; s++)
 			{
 				notifyNormalHit(caster, skillId, swingOrigin);
