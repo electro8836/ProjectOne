@@ -53,6 +53,12 @@ namespace ProjectOne.Unit
 
 		protected CircleCollider2D _collider;
 
+		// 콜라이더 반경·오프셋은 스폰 후 변하지 않는다 — Awake 에서 한 번만 받아 둔다.
+		// 프레임 캐시(RefreshFrameCache)가 매 프레임 네이티브 프로퍼티를 읽지 않게 하는 게 목적이다.
+		private float _colliderRadius;
+
+		private Vector2 _colliderOffset;
+
 		// 체력 또는 최대 체력이 바뀐 프레임에 1회 발행한다.
 		// 다단히트·흡혈·DoT 스택이면 한 프레임에 수십 번 변하므로 Vitals 는 dirty 만 세우고
 		// 여기서 모아서 통지한다. 사망 판정(IsHpZero)은 합치면 안 되므로 TakeDamage 가 즉시 한다.
@@ -77,19 +83,11 @@ namespace ProjectOne.Unit
 
 		public float Radius
 		{
-			get
-			{
-				if (!(_collider != null))
-				{
-					return 0f;
-				}
-
-				return _collider.radius;
-			}
+			get { return _colliderRadius; }
 		}
 
 		// 콜라이더 중심 오프셋 — 충돌 기준점은 transform.position 이 아니라 transform.position + offset.
-		public Vector2 ColliderOffset => (_collider != null) ? _collider.offset : Vector2.zero;
+		public Vector2 ColliderOffset => _colliderOffset;
 
 		// 프레임 시작 위치/반경을 캐시. UnitSimulator 가 모든 유닛에 대해 프레임당 1회 호출.
 		// CachedPos 는 콜라이더 중심(transform.position + offset) 기준 — 모든 충돌/분리/AI 가 동일 기준 사용.
@@ -99,7 +97,7 @@ namespace ProjectOne.Unit
 			CachedRadius = Radius;
 		}
 
-		public Vector2 HitCenter => (Vector2)this.transform.position + ((_collider != null) ? _collider.offset : Vector2.zero);
+		public Vector2 HitCenter => (Vector2)this.transform.position + _colliderOffset;
 
 		public StatContainer Stats => _stats;
 
@@ -204,6 +202,16 @@ namespace ProjectOne.Unit
 			get { return MonsterType == EDT.MonsterType.Elite || MonsterType == EDT.MonsterType.Boss; }
 		}
 
+		// 이동 차단체 — 히어로의 이동을 몸으로 막는 유닛.
+		//
+		// 일반 몬스터와 소환물은 통과시킨다. 엘리트·보스끼리도 서로 통과하며, 몬스터 밀집 정렬은
+		// UnitSimulator 의 분리 벡터(CachedSeparation)가 전담한다.
+		// 차단이 "히어로 → 엘리트·보스" 한 방향뿐이라, 몬스터의 이동은 유닛 충돌 검사를 아예 건너뛴다.
+		public bool BlocksMovement
+		{
+			get { return MonsterType == EDT.MonsterType.Elite || MonsterType == EDT.MonsterType.Boss; }
+		}
+
 		// 무적 — 보스 패턴처럼 아예 개입할 수 없어야 하는 구간. BUFF_Invincible 이 켜고 끈다.
 		//
 		// 피해감소 스탯으로 표현하지 않는 이유 — Stat_DamageReduction 은 상한이 0.8 이라
@@ -249,6 +257,11 @@ namespace ProjectOne.Unit
 			_mover = this.GetComponent<UnitMover>();
 			_animator = this.GetComponent<UnitAnimator>();
 			_collider = this.GetComponent<CircleCollider2D>();
+			if (_collider != null)
+			{
+				_colliderRadius = _collider.radius;
+				_colliderOffset = _collider.offset;
+			}
 		}
 
 		protected virtual void OnEnable()

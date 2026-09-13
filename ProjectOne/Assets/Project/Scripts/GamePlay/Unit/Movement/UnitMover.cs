@@ -17,12 +17,34 @@ public class UnitMover : MonoBehaviour
 	private bool _facingLocked;   // 캐스팅 중 조준 고정 — SetFacing/자동 갱신 무시
 	private bool _overridePierce;   // override 이동 중 유닛 충돌 무시(벽만 차단) — 대시 공격 관통용
 	private bool _overrideBlocked;  // override 이동이 다음 위치로 갈 수 없어 막힌 상태(latch) — 코드 버프가 종료 판정에 사용
+
+	// 차단 거리 배율 — 엘리트·보스에 얼마나 붙을 수 있는지 정한다.
+	// 차단 거리 = 내 반경 × 이 값 + 상대 반경. 상대 반경은 배율 없이 그대로 들어가므로
+	// 큰 적일수록 자동으로 멀리 선다.
+	//
+	// 이 값은 히어로 프리팹의 것만 의미가 있다 — 몬스터·소환물은 _collidesWithUnits 가 false 라
+	// 이 수식을 타지 않는다.
+	//
+	// 1.0 을 넘기지 말 것 — 몬스터 AI 정지 거리가 self.Radius + target.Radius(합)라서,
+	// 배율이 1.0 을 넘으면 차단 거리가 AI 정지 거리보다 멀어진다. 그러면 몬스터는 계속
+	// 전진하려 하는데 히어로는 밀려나지 않아 몬스터가 히어로를 덮은 채 공격하게 된다.
+	[SerializeField] private float _blockRadiusMul = 0.5f;
 	// 넉백 배율 — SkillEffect 의 Power 를 실제 속도로 바꾸는 계수.
 	// 이동 배율(_moveSpeedMultiplier)은 제거했지만 이쪽은 데이터가 0행이라 기준 단위를 알 수 없어 남겨 둔다.
 	private readonly float _knockbackMultiplier = 0.1f;
 
 	// 공간 해시 조회 결과 재사용 버퍼 — 충돌 검사마다 채워 씀 (할당 방지)
 	private readonly List<UnitBase> _queryBuffer = new List<UnitBase>(32);
+
+	// 소유 유닛 — 프레임 캐시(CachedPos)와 유닛 종류를 읽는다.
+	private UnitBase _owner;
+
+	// 유닛-유닛 충돌을 검사하는 주체인지 — 히어로만 검사한다 (UnitBase.BlocksMovement 참고).
+	// 몬스터·소환물은 후보 조회부터 건너뛰므로 이동 비용이 벽 판정만 남는다.
+	private bool _collidesWithUnits;
+
+	// 유닛 충돌을 검사하지 않는 주체가 쓰는 빈 후보 목록 — 아래 판정 루프를 분기 없이 그대로 통과시킨다.
+	private static readonly List<UnitBase> _noCandidates = new List<UnitBase>(0);
 
 	public Vector2 Facing { get; private set; } = Vector2.right;
 	// 이동이 막혀 있으면 움직이는 게 아니다 — AI 는 차단 중에도 Move() 를 계속 부르고
@@ -85,11 +107,17 @@ public class UnitMover : MonoBehaviour
 	private void ApplyMovement(Vector2 velocity, float dt)
 	{
 		// 충돌 판정은 콜라이더 중심(center) 기준 — transform 에 기록할 때만 _unitOffset 을 차감해 환원한다.
-		Vector2 currentCenter = (Vector2)transform.position + _unitOffset;
+		// UnitSimulator 가 이 틱의 TickMovers 직전에 RefreshCache 를 돌리므로 CachedPos 가 곧 현재 중심이다.
+		Vector2 currentCenter = (_owner != null) ? _owner.CachedPos : (Vector2)transform.position + _unitOffset;
 		Vector2 desired       = currentCenter + velocity * dt;
 
 		// 인접 유닛 후보를 프레임당 1회만 조회 — currentCenter 기준 3×3 (이동 스텝이 셀보다 훨씬 작아 desired 커버)
-		List<UnitBase> cands = QueryNeighbors(currentCenter);
+		// 유닛 충돌을 검사하지 않는 주체(몬스터·소환물)는 조회 자체를 건너뛴다.
+		List<UnitBase> cands = _noCandidates;
+		if (_collidesWithUnits == true)
+		{
+			cands = QueryNeighbors(currentCenter);
+		}
 
 		// override 이동(대시/대시 공격): 슬라이딩 없이 벽에 닿으면 정지하고 막힘 latch
 		if (_hasOverride == true)
@@ -174,12 +202,13 @@ public class UnitMover : MonoBehaviour
 		for (int i = 0; i < cands.Count; i++)
 		{
 			UnitBase u = cands[i];
-			if (u == null || u.transform == transform || u.IsDead == true)
+			// 차단체가 아니면 통과 — 가장 싼 검사를 앞에 둬 대부분의 후보를 여기서 걸러낸다.
+			if (u == null || u.BlocksMovement == false || u.IsDead == true || u.transform == transform)
 			{
 				continue;
 			}
 
-			float min    = (_unitRadius + u.CachedRadius) * 0.5f;
+			float min    = _unitRadius * _blockRadiusMul + u.CachedRadius;
 			float minSqr = min * min;
 			Vector2 up   = u.CachedPos;
 
@@ -221,12 +250,13 @@ public class UnitMover : MonoBehaviour
 		for (int i = 0; i < cands.Count; i++)
 		{
 			UnitBase u = cands[i];
-			if (u == null || u.transform == transform || u.IsDead == true)
+			// 차단체가 아니면 통과 — 가장 싼 검사를 앞에 둬 대부분의 후보를 여기서 걸러낸다.
+			if (u == null || u.BlocksMovement == false || u.IsDead == true || u.transform == transform)
 			{
 				continue;
 			}
 
-			float min = (_unitRadius + u.CachedRadius) * 0.5f;
+			float min = _unitRadius * _blockRadiusMul + u.CachedRadius;
 			float minSqr = min * min;
 			Vector2 up = u.CachedPos;
 
@@ -246,8 +276,13 @@ public class UnitMover : MonoBehaviour
 		return false;
 	}
 
-	public void Initialize(float radius, Vector2 offset, float mass)
+	public void Initialize(UnitBase owner, float radius, Vector2 offset, float mass)
 	{
+		_owner = owner;
+
+		// 유닛 충돌 검사는 히어로만 수행한다 — 몬스터·소환물은 서로를 통과한다.
+		_collidesWithUnits = (owner != null && owner.GetUnitType() == UnitType.Hero);
+
 		_unitRadius = radius;
 		_unitOffset = offset;
 

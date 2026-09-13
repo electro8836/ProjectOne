@@ -189,7 +189,7 @@ namespace ProjectOne.Unit
 			UnitMover component = unit.GetComponent<UnitMover>();
 			if (component != null)
 			{
-				component.Initialize(unit.Radius, unit.ColliderOffset, 1f);
+				component.Initialize(unit, unit.Radius, unit.ColliderOffset, 1f);
 			}
 
 			unit.SetFaction(faction);

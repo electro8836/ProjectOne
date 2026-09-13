@@ -17,6 +17,20 @@ namespace ProjectOne.Map
 			new Vector2Int(-1,  1),
 		};
 
+		// _neighborOffsets 를 미리 정규화한 단위벡터 — 인덱스가 1:1로 대응한다.
+		// 이웃 방향은 항상 -1/0/1 조합이라 흐름 벡터에 normalized 가 필요 없다(셀 수만큼의 sqrt 제거).
+		private static readonly Vector2[] _neighborDirections =
+		{
+			new Vector2( 0f,  1f),
+			new Vector2( 1f,  0f),
+			new Vector2( 0f, -1f),
+			new Vector2(-1f,  0f),
+			new Vector2( 0.70710678f,  0.70710678f),
+			new Vector2( 0.70710678f, -0.70710678f),
+			new Vector2(-0.70710678f, -0.70710678f),
+			new Vector2(-0.70710678f,  0.70710678f),
+		};
+
 		private bool[]    _costField;
 		private ushort[]  _integrationField;
 		private Vector2[] _flowField;
@@ -137,8 +151,8 @@ namespace ProjectOne.Map
 						continue;
 					}
 
-					int    bestIndex = -1;
-					ushort bestCost  = _integrationField[index];
+					int    bestDir  = -1;
+					ushort bestCost = _integrationField[index];
 
 					for (int i = 0; i < _neighborOffsets.Length; i++)
 					{
@@ -153,20 +167,18 @@ namespace ProjectOne.Map
 						int neighborIndex = GetIndex(nx, ny);
 						if (_integrationField[neighborIndex] < bestCost)
 						{
-							bestCost  = _integrationField[neighborIndex];
-							bestIndex = neighborIndex;
+							bestCost = _integrationField[neighborIndex];
+							bestDir  = i;
 						}
 					}
 
-					if (bestIndex < 0)
+					if (bestDir < 0)
 					{
 						_flowField[index] = Vector2.zero;
 						continue;
 					}
 
-					int bx = bestIndex % Width;
-					int by = bestIndex / Width;
-					_flowField[index] = new Vector2(bx - x, by - y).normalized;
+					_flowField[index] = _neighborDirections[bestDir];
 				}
 			}
 		}

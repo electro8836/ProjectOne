@@ -7,8 +7,8 @@ using ProjectOne.Skill;
 namespace ProjectOne.Unit.AI
 {
 	// 몬스터 접근형 전략 — 가장 가까운 히어로로 플로우필드 접근, 기본공격 사거리에서 정지하고 스킬 자동 시전.
-	// 정지/재접근은 히스테리시스 밴드로 떨림 방지. 몬스터끼리 겹치면 UnitMover.ComputeCircleSlide 가
-	// 원형 충돌 법선 기반으로 미끄러지게 하여 자연스러운 포위 형성.
+	// 정지/재접근은 히스테리시스 밴드로 떨림 방지. 몬스터는 서로를 통과하므로(UnitBase.BlocksMovement)
+	// 겹침 정리와 포위 형성은 UnitSimulator 의 분리 벡터(CachedSeparation)가 전담한다.
 	// 비용 분산: 타겟 탐색/사거리·시야 판정/스킬 시전은 _decisionInterval 주기로만 수행하고(다수 몬스터 O(N²) 완화),
 	// 이동(접근 방향 + 분리)·시선은 매 프레임 갱신해 회피 반응성을 유지한다.
 	public sealed class MonsterApproachBehavior : IAiBehavior
