@@ -25,6 +25,13 @@ namespace ProjectOne.Map
 		private Vector2 _cellSize;       // 셀 크기
 		private Vector2 _cellOrigin;     // _boundsMin 셀의 중심 월드좌표
 
+		// 오브젝트 장애물(MapBlocker)은 셀에 굽지 않고 사각형 그대로 들고 검사한다 —
+		// 셀에 구우면 차단 영역이 셀 크기 단위로 부풀어 스프라이트 주변에 못 다가간다.
+		private Vector2[] _blockerMin;
+		private Vector2[] _blockerMax;
+		private bool[]    _blockerStopsProjectile;
+		private int       _blockerCount;
+
 		[SerializeField] bool DEV_ShowDrawGizmos = false;
 
 		// ── 스폰 마커 (설계 7장) ──────────────────────────────────────
@@ -35,6 +42,9 @@ namespace ProjectOne.Map
 		private DungeonSpawnSlot[] _slots;
 		private NpcSpawnPoint[] _npcPoints;
 		private MapAnchor _anchor;
+
+		// 타일이 아니라 오브젝트로 놓인 장애물 — InitializeFlowField 가 사각형을 캐시한다.
+		private MapBlocker[] _blockers;
 
 		public IReadOnlyList<MonsterSpawnPoint> SpawnPoints
 		{
@@ -86,6 +96,7 @@ namespace ProjectOne.Map
 			_slots = this.GetComponentsInChildren<DungeonSpawnSlot>(true);
 			_npcPoints = this.GetComponentsInChildren<NpcSpawnPoint>(true);
 			_anchor = this.GetComponentInChildren<MapAnchor>(true);
+			_blockers = this.GetComponentsInChildren<MapBlocker>(true);
 
 			System.Array.Sort(_slots, compareSlotIndex);
 		}
@@ -120,9 +131,18 @@ namespace ProjectOne.Map
 				}
 			}
 
-			_flowField.Initialize(width, height, walkable);
+			cacheBlockers();
 
-			// 충돌 핫 루프 캐시 — 동일 walkable 배열과 셀 좌표 변환 상수를 보관
+			// 경로탐색은 셀 격자라 사각형을 그대로 반영할 수 없다 — 셀 중심이 사각형 안일 때만 막는다.
+			// 충돌용 walkable 은 타일만 담은 채로 둔다(블로커는 사각형으로 따로 검사).
+			// FlowField.Initialize 가 배열을 복사하므로 임시 배열을 넘겨도 안전하다.
+			bool[] pathable = new bool[width * height];
+			System.Array.Copy(walkable, pathable, width * height);
+			applyBlockersToPathing(pathable, width, height);
+
+			_flowField.Initialize(width, height, pathable);
+
+			// 충돌 핫 루프 캐시 — 타일 전용 배열과 셀 좌표 변환 상수를 보관
 			_walkable    = walkable;
 			_blocked     = blocked;
 			_fieldWidth  = width;
@@ -136,6 +156,104 @@ namespace ProjectOne.Map
 			_worldMin = min;
 			_worldMax = max;
 			_boundsReady = true;
+		}
+
+		// 활성 MapBlocker 의 월드 사각형을 캐시한다. 셀에 굽지 않는 이유 —
+		// 셀 단위로 마킹하면 차단 영역이 셀 크기(0.32)만큼 부풀어 스프라이트 주변 빈 공간까지 막힌다.
+		// 충돌·발사체 판정은 이 사각형을 직접 검사하므로 콜라이더 크기 그대로 막힌다.
+		private void cacheBlockers()
+		{
+			ensureMarkers();
+
+			_blockerCount = 0;
+			if (_blockers == null || _blockers.Length == 0)
+			{
+				return;
+			}
+
+			if (_blockerMin == null || _blockerMin.Length < _blockers.Length)
+			{
+				_blockerMin             = new Vector2[_blockers.Length];
+				_blockerMax             = new Vector2[_blockers.Length];
+				_blockerStopsProjectile = new bool[_blockers.Length];
+			}
+
+			for (int i = 0; i < _blockers.Length; i++)
+			{
+				MapBlocker blocker = _blockers[i];
+				if (blocker == null || blocker.isActiveAndEnabled == false)
+				{
+					continue;
+				}
+
+				Vector2 min;
+				Vector2 max;
+				if (blocker.GetWorldRect(out min, out max) == false)
+				{
+					continue;
+				}
+
+				_blockerMin[_blockerCount]             = min;
+				_blockerMax[_blockerCount]             = max;
+				_blockerStopsProjectile[_blockerCount] = blocker.BlocksProjectile;
+				_blockerCount++;
+			}
+		}
+
+		// 경로탐색(FlowField)용 마킹 — 셀 격자라 사각형을 그대로 반영할 수 없다.
+		// 셀 중심이 사각형 안에 들어올 때만 막는다.
+		//
+		// FlowField 는 차단 셀로는 절대 경로를 내지 않는다(_costField 가 false 면 방향이 zero 이고,
+		// 적분값이 ushort.MaxValue 라 이웃으로도 선택되지 않는다). 그래서 위험은 반대쪽 하나뿐이다 —
+		// "경로탐색상 통행 가능인데 물리적으로는 사각형이 막고 있는 셀".
+		//
+		// 사각형 가장자리가 걸친 셀은 유닛이 파고들었다 밀려나며 벽면을 따라 미끄러질 뿐 관통하지 않는다.
+		// 진짜 위험은 블로커 두 개 사이의 좁은 틈이다 — 셀 중심 기준으로는 뚫려 보이는데
+		// 실제 폭이 유닛 지름보다 좁으면 몬스터가 낀다.
+		// 따라서 몬스터가 경로탐색으로 돌아다니는 맵에서는 좁은 틈이 생기지 않는 크기로만 쓴다.
+		//
+		// _groundMap.cellBounds 밖의 셀은 애초에 배열이 없어 무시된다 — 타일 페인팅과 같은 제약이다.
+		private void applyBlockersToPathing(bool[] pathable, int width, int height)
+		{
+			if (_grid == null || _blockerCount == 0)
+			{
+				return;
+			}
+
+			for (int i = 0; i < _blockerCount; i++)
+			{
+				Vector2 min = _blockerMin[i];
+				Vector2 max = _blockerMax[i];
+
+				Vector3Int minCell = _grid.WorldToCell(new Vector3(min.x, min.y, 0f));
+				Vector3Int maxCell = _grid.WorldToCell(new Vector3(max.x, max.y, 0f));
+
+				for (int cy = minCell.y; cy <= maxCell.y; cy++)
+				{
+					int ly = cy - _boundsMin.y;
+					if (ly < 0 || ly >= height)
+					{
+						continue;
+					}
+
+					for (int cx = minCell.x; cx <= maxCell.x; cx++)
+					{
+						int lx = cx - _boundsMin.x;
+						if (lx < 0 || lx >= width)
+						{
+							continue;
+						}
+
+						Vector2 center = CellToWorld(new Vector3Int(cx, cy, 0));
+						if (center.x < min.x || center.x > max.x || center.y < min.y || center.y > max.y)
+						{
+							continue;
+						}
+
+						pathable[ly * width + lx] = false;
+					}
+				}
+			}
 		}
 
 		private Vector2 _worldMin;
@@ -205,22 +323,37 @@ namespace ProjectOne.Map
 			return obstacle == false && block == false;
 		}
 
-		// 발사체 차단 여부 — 해당 월드 위치 셀에 blockMap 타일이 있으면 true. 캐시 O(1) 조회.
+		// 발사체 차단 여부 — 셀에 blockMap 타일이 있거나, MapBlocker 사각형 안이면 true.
+		// 타일은 캐시 O(1) 조회, 블로커는 사각형 직접 검사(셀 양자화 없음).
 		public bool IsProjectileBlocked(Vector2 worldPos)
 		{
-			if (_blocked == null)
+			if (_blocked != null)
 			{
-				return false;
+				int lx = LocalCellX(worldPos.x);
+				int ly = LocalCellY(worldPos.y);
+				if (lx >= 0 && lx < _fieldWidth && ly >= 0 && ly < _fieldHeight
+					&& _blocked[ly * _fieldWidth + lx] == true)
+				{
+					return true;
+				}
 			}
 
-			int lx = LocalCellX(worldPos.x);
-			int ly = LocalCellY(worldPos.y);
-			if (lx < 0 || lx >= _fieldWidth || ly < 0 || ly >= _fieldHeight)
+			for (int i = 0; i < _blockerCount; i++)
 			{
-				return false;
+				if (_blockerStopsProjectile[i] == false)
+				{
+					continue;
+				}
+
+				Vector2 min = _blockerMin[i];
+				Vector2 max = _blockerMax[i];
+				if (worldPos.x >= min.x && worldPos.x <= max.x && worldPos.y >= min.y && worldPos.y <= max.y)
+				{
+					return true;
+				}
 			}
 
-			return _blocked[ly * _fieldWidth + lx];
+			return false;
 		}
 
 		// 두 월드점 사이 시야(발사체 경로) 확보 여부 — 셀 크기 간격으로 샘플링하다 차단 셀을 만나면 false.
@@ -288,7 +421,7 @@ namespace ProjectOne.Map
 		// 핫 루프 — 네이티브 Grid/Tilemap 호출 없이 캐시된 셀 상수 + walkable 배열만 사용.
 		public Vector2 ResolveWallCollision(Vector2 pos, float radius)
 		{
-			if (_walkable == null)
+			if (_walkable == null && _blockerCount == 0)
 			{
 				return pos;
 			}
@@ -299,65 +432,49 @@ namespace ProjectOne.Map
 			// 코너/오목부 안정화를 위해 최대 2패스 — 변화 없으면 조기 종료
 			for (int pass = 0; pass < 2; pass++)
 			{
-				int minX = LocalCellX(pos.x - radius);
-				int maxX = LocalCellX(pos.x + radius);
-				int minY = LocalCellY(pos.y - radius);
-				int maxY = LocalCellY(pos.y + radius);
 				bool pushed = false;
 
-				for (int ly = minY; ly <= maxY; ly++)
+				if (_walkable != null)
 				{
-					for (int lx = minX; lx <= maxX; lx++)
+					int minX = LocalCellX(pos.x - radius);
+					int maxX = LocalCellX(pos.x + radius);
+					int minY = LocalCellY(pos.y - radius);
+					int maxY = LocalCellY(pos.y + radius);
+
+					for (int ly = minY; ly <= maxY; ly++)
 					{
-						if (IsWalkableLocal(lx, ly) == true)
+						for (int lx = minX; lx <= maxX; lx++)
 						{
-							continue;
-						}
-
-						Vector2 center  = new Vector2(_cellOrigin.x + lx * _cellSize.x, _cellOrigin.y + ly * _cellSize.y);
-						Vector2 minB    = center - half;
-						Vector2 maxB    = center + half;
-						Vector2 closest = new Vector2(Mathf.Clamp(pos.x, minB.x, maxB.x), Mathf.Clamp(pos.y, minB.y, maxB.y));
-						Vector2 delta   = pos - closest;
-						float   distSqr = delta.sqrMagnitude;
-
-						if (distSqr >= radiusSqr)
-						{
-							continue;
-						}
-
-						if (distSqr > 1e-8f)
-						{
-							float dist = Mathf.Sqrt(distSqr);
-							pos += delta / dist * (radius - dist);
-						}
-						else
-						{
-							// 중심이 셀 내부 — 4변 중 최소 침투 축으로 밀어낸다
-							float left  = pos.x - minB.x;
-							float right = maxB.x - pos.x;
-							float down  = pos.y - minB.y;
-							float up    = maxB.y - pos.y;
-							float minPen = Mathf.Min(Mathf.Min(left, right), Mathf.Min(down, up));
-
-							if (minPen == left)
+							if (IsWalkableLocal(lx, ly) == true)
 							{
-								pos.x = minB.x - radius;
+								continue;
 							}
-							else if (minPen == right)
+
+							Vector2 center = new Vector2(_cellOrigin.x + lx * _cellSize.x, _cellOrigin.y + ly * _cellSize.y);
+							if (pushOutOfRect(ref pos, center - half, center + half, radius, radiusSqr) == true)
 							{
-								pos.x = maxB.x + radius;
-							}
-							else if (minPen == down)
-							{
-								pos.y = minB.y - radius;
-							}
-							else
-							{
-								pos.y = maxB.y + radius;
+								pushed = true;
 							}
 						}
+					}
+				}
 
+				// 오브젝트 장애물은 셀이 아니라 사각형 그대로 밀어낸다 — 같은 패스 안에서 처리해야
+				// 셀 벽과 사각형이 만나는 코너에서도 2패스 안정화가 동작한다.
+				for (int i = 0; i < _blockerCount; i++)
+				{
+					Vector2 minB = _blockerMin[i];
+					Vector2 maxB = _blockerMax[i];
+
+					// 브로드페이즈 — 원의 AABB 와 겹치지 않으면 정밀 검사 생략
+					if (pos.x + radius < minB.x || pos.x - radius > maxB.x
+						|| pos.y + radius < minB.y || pos.y - radius > maxB.y)
+					{
+						continue;
+					}
+
+					if (pushOutOfRect(ref pos, minB, maxB, radius, radiusSqr) == true)
+					{
 						pushed = true;
 					}
 				}
@@ -369,6 +486,54 @@ namespace ProjectOne.Map
 			}
 
 			return pos;
+		}
+
+		// 반지름 radius 인 원을 AABB 밖으로 밀어낸다. 밀어냈으면 true.
+		// 셀과 MapBlocker 사각형이 같은 수학을 쓴다 — 차단원이 무엇이든 거동이 동일해야 한다.
+		private static bool pushOutOfRect(ref Vector2 pos, Vector2 minB, Vector2 maxB, float radius, float radiusSqr)
+		{
+			Vector2 closest = new Vector2(Mathf.Clamp(pos.x, minB.x, maxB.x), Mathf.Clamp(pos.y, minB.y, maxB.y));
+			Vector2 delta   = pos - closest;
+			float   distSqr = delta.sqrMagnitude;
+
+			if (distSqr >= radiusSqr)
+			{
+				return false;
+			}
+
+			if (distSqr > 1e-8f)
+			{
+				float dist = Mathf.Sqrt(distSqr);
+				pos += delta / dist * (radius - dist);
+			}
+			else
+			{
+				// 중심이 사각형 내부 — 4변 중 최소 침투 축으로 밀어낸다
+				float left  = pos.x - minB.x;
+				float right = maxB.x - pos.x;
+				float down  = pos.y - minB.y;
+				float up    = maxB.y - pos.y;
+				float minPen = Mathf.Min(Mathf.Min(left, right), Mathf.Min(down, up));
+
+				if (minPen == left)
+				{
+					pos.x = minB.x - radius;
+				}
+				else if (minPen == right)
+				{
+					pos.x = maxB.x + radius;
+				}
+				else if (minPen == down)
+				{
+					pos.y = minB.y - radius;
+				}
+				else
+				{
+					pos.y = maxB.y + radius;
+				}
+			}
+
+			return true;
 		}
 
 #if UNITY_EDITOR
