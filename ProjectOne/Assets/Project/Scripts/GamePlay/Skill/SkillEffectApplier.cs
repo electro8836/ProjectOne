@@ -854,6 +854,9 @@ namespace ProjectOne.Skill
 		}
 
 		// 타격 연출 — Additive 정책. 누적을 허용하고 각자 수명대로 소멸한다 (설계 4.8).
+		//
+		// VFX 만 Additive 다. EffectSFX 는 PlaySFXThrottled 로 낸다 — 여러 유닛이 같은 프레임에
+		// 같은 피격음을 내면 파형이 그대로 합쳐져 소리가 찢어진다. 상한은 AudioManager 인스펙터에서 조정한다.
 		static void playEffectPresentation(Table_SkillEffect.Row row, List<UnitBase> targets, UnitBase excluded, bool hasCenter, Vector2 center)
 		{
 			// 좌표 고정 효과는 대상이 아니라 고정 좌표에서 1회 터진다 —
@@ -867,7 +870,7 @@ namespace ProjectOne.Skill
 
 				if (string.IsNullOrEmpty(row.EffectSFX) == false)
 				{
-					AudioManager.Instance.PlaySFX(row.EffectSFX);
+					AudioManager.Instance.PlaySFXThrottled(row.EffectSFX);
 				}
 
 				return;
@@ -890,7 +893,7 @@ namespace ProjectOne.Skill
 
 			if (string.IsNullOrEmpty(row.EffectSFX) == false && targets.Count > 0)
 			{
-				AudioManager.Instance.PlaySFX(row.EffectSFX);
+				AudioManager.Instance.PlaySFXThrottled(row.EffectSFX);
 			}
 		}
 
