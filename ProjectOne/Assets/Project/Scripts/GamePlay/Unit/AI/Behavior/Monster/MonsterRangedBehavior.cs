@@ -1,4 +1,6 @@
 using UnityEngine;
+using EDT;
+using ProjectOne.Map;
 using ProjectOne.Skill;
 
 namespace ProjectOne.Unit.AI
@@ -10,6 +12,8 @@ namespace ProjectOne.Unit.AI
 	// 몬스터가 흩어지면 DPS 체감이 나빠진다.
 	//
 	// 사거리는 Skill 테이블이 이미 갖고 있으므로 AI 테이블에 중복해 두지 않는다.
+	//
+	// 접근은 접근형과 같이 플로우필드를 따른다 — 직선으로 밀면 구덩이/벽에 막혀 벽면을 따라 미끄러지기만 한다.
 	public sealed class MonsterRangedBehavior : IAiBehavior
 	{
 		// 타겟/사거리 판단 주기. 이동은 매 프레임이라 반응성은 유지된다.
@@ -24,6 +28,12 @@ namespace ProjectOne.Unit.AI
 		private float _decisionAccum = Random.Range(0f, DecisionInterval);
 		private float _cachedRange = -1f;
 		private bool _approaching = true;
+
+		// 의사결정에서 산출한 접근 방향 — 매 프레임 이동이 이 값 + 최신 분리벡터로 조향한다
+		private Vector2 _cachedApproachDir;
+
+		// 평타가 발사체인지 — 불변이라 _cachedRange 와 함께 최초 1회만 조회
+		private bool _basicIsProjectile;
 
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
@@ -71,8 +81,7 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			Vector2 dir = target.CachedPos - self.CachedPos;
-			self.Mover.Move(dir + self.CachedSeparation, self.MoveSpeed);
+			self.Mover.Move(_cachedApproachDir + self.CachedSeparation, self.MoveSpeed);
 		}
 
 		private void decideState(UnitBase self, Blackboard bb)
@@ -83,13 +92,17 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			// 정지 사거리는 불변 — 최초 1회만 구한다
+			// 정지 사거리·발사체여부는 불변 — 최초 1회만 구한다
 			if (_cachedRange < 0f)
 			{
 				_cachedRange = getStoppingRange(self);
+				Table_Skill.Row basicRow = getBasicAttackRow(self);
+				_basicIsProjectile = (basicRow != null && SkillSelector.IsProjectileSkill(basicRow) == true);
 			}
 
-			float distSqr = (target.CachedPos - self.CachedPos).sqrMagnitude;
+			Vector2 selfPos = self.CachedPos;
+			Vector2 dirToTarget = target.CachedPos - selfPos;
+			float distSqr = dirToTarget.sqrMagnitude;
 
 			// 스킬 발동 조건(TargetResolver: ScanRange + 타겟 반지름)과 같은 기준으로 멈춘다.
 			// 기준이 어긋나면 사거리에서 시전해 놓고 시전이 끝난 뒤 그 차이만큼 더 걸어 들어간다.
@@ -97,17 +110,33 @@ namespace ProjectOne.Unit.AI
 			float inRange = stopDist;
 			float outRange = stopDist * Hysteresis;
 
+			// LoS 는 정지 판단이 필요한 순간에만 계산한다. 구덩이/벽 건너에서 사거리에만 들었다고 멈추면
+			// 발사체가 나가지 않아(SkillSelector 가 시야를 본다) 쏘지도 못한 채 서 있게 된다.
 			if (_approaching == true)
 			{
-				if (distSqr <= inRange * inRange)
+				if (distSqr <= inRange * inRange && hasClearShot(self, target) == true)
 				{
 					_approaching = false;
 				}
 			}
-			else if (distSqr > outRange * outRange)
+			else if (distSqr > outRange * outRange || hasClearShot(self, target) == false)
 			{
 				_approaching = true;
 			}
+
+			// 접근 방향 — 플로우필드 우선, 타겟 근처(flow 0)나 맵 없음이면 직선
+			Vector2 approach = Vector2.zero;
+			if (MapManager.HasInstance == true)
+			{
+				approach = MapManager.Instance.GetFlowDirection(selfPos);
+			}
+
+			if (approach.sqrMagnitude < 1e-6f)
+			{
+				approach = dirToTarget.normalized;
+			}
+
+			_cachedApproachDir = approach;
 		}
 
 		// 정지 사거리 — 평타 사거리. 평타가 없는 캐스터 전용 몬스터는 보유 스킬 최소 사거리로 폴백한다.
@@ -127,6 +156,41 @@ namespace ProjectOne.Unit.AI
 
 			range = sc.GetMinSkillRange();
 			return (range > 0f) ? range : FallbackRange;
+		}
+
+		// 기본공격 스킬 행 — 없으면 null
+		private static Table_Skill.Row getBasicAttackRow(UnitBase self)
+		{
+			SkillContainer sc = self.SkillContainer;
+			if (sc == null)
+			{
+				return null;
+			}
+
+			EDT.Skill basic = sc.GetBasicAttack();
+			if (basic == EDT.Skill.None)
+			{
+				return null;
+			}
+
+			ProjectOne.Skill.ResolvedSkill resolved = self.Resolve(basic);
+			return (resolved != null) ? resolved.Row : null;
+		}
+
+		// 발사체 평타일 때만 시야(LoS)를 따진다 — 근접/비발사체나 맵 없음이면 항상 사격 가능으로 본다.
+		private bool hasClearShot(UnitBase self, UnitBase target)
+		{
+			if (_basicIsProjectile == false)
+			{
+				return true;
+			}
+
+			if (MapManager.HasInstance == false)
+			{
+				return true;
+			}
+
+			return MapManager.Instance.HasLineOfSight(self.HitCenter, target.HitCenter);
 		}
 	}
 }
