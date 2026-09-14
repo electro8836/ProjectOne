@@ -63,6 +63,9 @@ namespace ProjectOne.Unit.AI
 		private float _cachedRange = -1f;
 		private bool _basicIsProjectile;
 
+		// 시야(LoS) 캐시 — 계산은 Decide 주기로만 하고, 매 프레임 정지 판정은 이 값을 읽는다
+		private bool _hasClearShot = true;
+
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
 			// 스킬/평타 모션이 도는 동안은 그 자리에서 마친다 — 이동도 판단도 하지 않는다
@@ -95,6 +98,10 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
+			// 정지/재접근은 매 프레임 판정한다 — 판단 주기(0.25초)에 묶어 두면 사거리에 들고도
+			// 그 시간만큼 더 걸어 들어가 찔끔찔끔 떨림이 된다. 거리 비교는 sqrMagnitude 한 번이라 싸다.
+			UpdateApproaching(self, target);
+
 			// 사거리에 든 스킬이 있으면 접근 도중에도 그 자리에서 시전한다 — 정지 거리는 평타 기준이라
 			// 사거리가 긴 스킬을 정지할 때까지 묵혀 두면 안 된다. 시전 중 정지는 SkillContainer 의
 			// 액션 락(IsInAction)과 캐스팅의 BlockMove 가 처리한다.
@@ -113,14 +120,17 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			// 접근 — 사거리 안으로는 전진하지 않는다(오버슈트로 너무 붙는 것 방지). 분리·접선은 그대로 둬 측면 정렬 유지.
-			// 정지 거리(=max(스킬 사거리+타겟 반지름, 반지름합))에 들어서면 radial 0 → Decide 가 inRange 로 공격 전환한다.
+			// 접근 — 정지 거리(=max(스킬 사거리+타겟 반지름, 반지름합)) 안이면 다음 공격까지 자리를 바꾸지 않는다.
+			// 접근 성분만 0으로 두고 분리 벡터를 남기면 Move 가 방향을 정규화하는 탓에 아주 작은 반발도
+			// 전속력 이동이 되어 찔끔찔끔 밀려난다. 시야가 막힌 발사체 몬스터는 사거리 안에서도
+			// _approaching 이 true 로 남아 위 분기를 통과하므로 여기서 한 번 더 막는다.
 			Vector2 radial = _cachedApproachDir;
 			float distToTarget = (target.CachedPos - self.CachedPos).magnitude;
-			float stopDist = GetStopDistance(self, target);
-			if (distToTarget <= stopDist)
+			if (distToTarget <= GetStopDistance(self, target))
 			{
-				radial = Vector2.zero;
+				self.Mover.Stop();
+				self.Mover.SetFacing(target.CachedPos - self.CachedPos);
+				return;
 			}
 
 			Vector2 final = radial + self.CachedSeparation * _separationWeight;
@@ -182,7 +192,37 @@ namespace ProjectOne.Unit.AI
 			self.Mover.Move(final, self.MoveSpeed);
 		}
 
-		// 주기적 의사결정 — 타겟 탐색, 정지/재접근 전환(히스테리시스+시야), 접근 방향 산출
+		// 정지/재접근 밴드 판정 — 매 프레임 호출된다. 비싼 시야 판정은 Decide 가 갱신한 _hasClearShot 을 쓰고
+		// 여기서는 거리만 본다. _cachedRange 는 첫 Decide 에서 채워지므로 그 전에는 판정을 미룬다.
+		private void UpdateApproaching(UnitBase self, UnitBase target)
+		{
+			if (_cachedRange < 0f)
+			{
+				return;
+			}
+
+			float distSqr = (target.CachedPos - self.CachedPos).sqrMagnitude;
+			float stoppingDist = GetStopDistance(self, target);
+
+			if (_approaching == true)
+			{
+				if (distSqr <= stoppingDist * stoppingDist && _hasClearShot == true)
+				{
+					_approaching = false;
+				}
+
+				return;
+			}
+
+			// 거리 히스테리시스로 재접근하거나, 시야가 막히면(LoS) 즉시 재접근
+			float reapproach = stoppingDist * _hysteresis;
+			if (distSqr > reapproach * reapproach || _hasClearShot == false)
+			{
+				_approaching = true;
+			}
+		}
+
+		// 주기적 의사결정 — 타겟 탐색, 시야 갱신, 접근 방향 산출 (정지/재접근 전환은 UpdateApproaching 이 매 프레임)
 		private void Decide(UnitBase self, Blackboard bb)
 		{
 			// DetectRange · AggroType 을 따른다 — 예전처럼 맵 끝까지 보지 않는다.
@@ -203,32 +243,9 @@ namespace ProjectOne.Unit.AI
 				_basicIsProjectile = (basicRow != null && SkillSelector.IsProjectileSkill(basicRow) == true);
 			}
 
-			float range = _cachedRange;
-			float distSqr = dirToTarget.sqrMagnitude;
-
-			// 물리 접촉 거리와 공격 사거리 중 더 큰 값으로 정지 — ScanParam1 이 작아도 닿으면 정지
-			float stoppingDist = GetStopDistance(self, target);
-			float stoppingDistSqr = stoppingDist * stoppingDist;
-
-			// LoS(HasClearShot)는 정지 판단이 필요한 순간에만 계산한다. 발사체 기본공격이 벽에 가려져 있으면
-			// 정지해도 헛스킬이므로, 그때만 접근을 계속해 시야가 트일 위치로 이동한다.
-			if (_approaching == true)
-			{
-				bool inRange = distSqr <= stoppingDistSqr;
-				if (inRange == true && HasClearShot(self, target) == true)
-				{
-					_approaching = false;
-				}
-			}
-			else
-			{
-				// 거리 히스테리시스로 재접근하거나, 시야가 막히면(LoS) 즉시 재접근
-				float reapproach = stoppingDist * _hysteresis;
-				if (distSqr > reapproach * reapproach || HasClearShot(self, target) == false)
-				{
-					_approaching = true;
-				}
-			}
+			// LoS(HasClearShot)는 비싸므로 이 주기에만 갱신한다. 발사체 기본공격이 벽에 가려져 있으면
+			// 정지해도 헛스킬이므로, 그때는 접근을 계속해 시야가 트일 위치로 이동한다.
+			_hasClearShot = HasClearShot(self, target);
 
 			// 접근 방향 — 플로우필드 우선, 타겟 근처(flow 0)나 맵 없음이면 직선
 			Vector2 approach = Vector2.zero;

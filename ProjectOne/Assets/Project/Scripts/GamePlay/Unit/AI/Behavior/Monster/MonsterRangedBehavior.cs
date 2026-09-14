@@ -35,6 +35,9 @@ namespace ProjectOne.Unit.AI
 		// 평타가 발사체인지 — 불변이라 _cachedRange 와 함께 최초 1회만 조회
 		private bool _basicIsProjectile;
 
+		// 시야(LoS) 캐시 — 계산은 decideState 주기로만 하고, 매 프레임 정지 판정은 이 값을 읽는다
+		private bool _hasClearShot = true;
+
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
 			// 스킬/평타 모션이 도는 동안은 그 자리에서 마친다 — 이동도 판단도 하지 않는다
@@ -67,6 +70,10 @@ namespace ProjectOne.Unit.AI
 
 			self.Mover.SetFacing(target.CachedPos - self.CachedPos);
 
+			// 정지/재접근은 매 프레임 판정한다 — 판단 주기(0.25초)에 묶어 두면 사거리에 들고도
+			// 그 시간만큼 더 걸어 들어가 찔끔찔끔 떨림이 된다.
+			updateApproaching(self, target);
+
 			// 사거리에 든 스킬이 있으면 접근 도중에도 쏜다 — 정지 거리는 평타 기준이라
 			// 사거리가 긴 스킬을 정지할 때까지 묵혀 두면 안 된다.
 			if (decide == true)
@@ -82,6 +89,36 @@ namespace ProjectOne.Unit.AI
 			}
 
 			self.Mover.Move(_cachedApproachDir + self.CachedSeparation, self.MoveSpeed);
+		}
+
+		// 정지/재접근 밴드 판정 — 매 프레임 호출된다. 비싼 시야 판정은 decideState 가 갱신한 _hasClearShot 을 쓴다.
+		// 정지 거리는 스킬 발동 조건(TargetResolver: ScanRange + 타겟 반지름)과 같은 기준으로 맞춘다 —
+		// 기준이 어긋나면 사거리에서 시전해 놓고 시전이 끝난 뒤 그 차이만큼 더 걸어 들어간다.
+		private void updateApproaching(UnitBase self, UnitBase target)
+		{
+			if (_cachedRange < 0f)
+			{
+				return;
+			}
+
+			float distSqr = (target.CachedPos - self.CachedPos).sqrMagnitude;
+			float stopDist = _cachedRange + target.Radius;
+
+			if (_approaching == true)
+			{
+				if (distSqr <= stopDist * stopDist && _hasClearShot == true)
+				{
+					_approaching = false;
+				}
+
+				return;
+			}
+
+			float outRange = stopDist * Hysteresis;
+			if (distSqr > outRange * outRange || _hasClearShot == false)
+			{
+				_approaching = true;
+			}
 		}
 
 		private void decideState(UnitBase self, Blackboard bb)
@@ -102,27 +139,10 @@ namespace ProjectOne.Unit.AI
 
 			Vector2 selfPos = self.CachedPos;
 			Vector2 dirToTarget = target.CachedPos - selfPos;
-			float distSqr = dirToTarget.sqrMagnitude;
 
-			// 스킬 발동 조건(TargetResolver: ScanRange + 타겟 반지름)과 같은 기준으로 멈춘다.
-			// 기준이 어긋나면 사거리에서 시전해 놓고 시전이 끝난 뒤 그 차이만큼 더 걸어 들어간다.
-			float stopDist = _cachedRange + target.Radius;
-			float inRange = stopDist;
-			float outRange = stopDist * Hysteresis;
-
-			// LoS 는 정지 판단이 필요한 순간에만 계산한다. 구덩이/벽 건너에서 사거리에만 들었다고 멈추면
+			// LoS 는 비싸므로 이 주기에만 갱신한다. 구덩이/벽 건너에서 사거리에만 들었다고 멈추면
 			// 발사체가 나가지 않아(SkillSelector 가 시야를 본다) 쏘지도 못한 채 서 있게 된다.
-			if (_approaching == true)
-			{
-				if (distSqr <= inRange * inRange && hasClearShot(self, target) == true)
-				{
-					_approaching = false;
-				}
-			}
-			else if (distSqr > outRange * outRange || hasClearShot(self, target) == false)
-			{
-				_approaching = true;
-			}
+			_hasClearShot = hasClearShot(self, target);
 
 			// 접근 방향 — 플로우필드 우선, 타겟 근처(flow 0)나 맵 없음이면 직선
 			Vector2 approach = Vector2.zero;
