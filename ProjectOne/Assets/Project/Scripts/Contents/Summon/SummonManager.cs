@@ -137,6 +137,33 @@ namespace ProjectOne.Summons
 			_byOwner.Clear();
 		}
 
+		// 같은 주인·같은 종류 소환물 중 이 개체가 몇 번째인지와 총 몇 마리인지. 없으면 -1.
+		//
+		// 결과를 캐싱하면 안 된다 — sweep 이 죽은 개체를 목록 중간에서 걷어내고 상한 초과분은 앞에서 빠지므로
+		// 형제가 하나 사라지면 뒤쪽 번호가 전부 당겨진다. 쓰는 순간에 물어야 한다.
+		// 번호와 총수를 함께 돌려주는 것도 같은 이유다. 따로 물으면 그 사이에 목록이 바뀔 수 있다.
+		public int GetIndexOf(SummonUnit unit, out int total)
+		{
+			total = 0;
+			if (unit == null || unit.Owner == null)
+			{
+				return -1;
+			}
+
+			Key key;
+			key.owner = unit.Owner;
+			key.summonId = unit.SummonId;
+
+			List<SummonUnit> list;
+			if (_byOwner.TryGetValue(key, out list) == false)
+			{
+				return -1;
+			}
+
+			total = list.Count;
+			return list.IndexOf(unit);
+		}
+
 		private List<SummonUnit> getOrCreateList(UnitBase owner, EDT.Summon summonId)
 		{
 			Key key;

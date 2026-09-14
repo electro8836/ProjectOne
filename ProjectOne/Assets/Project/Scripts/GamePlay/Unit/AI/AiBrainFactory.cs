@@ -47,9 +47,7 @@ namespace ProjectOne.Unit.AI
 					return new SummonWanderBehavior();
 
 				case SummonAIType.Orbit:
-					// 설계 2.11 — 예약된 값이다. 데이터에 들어오면 즉시 드러내야 한다.
-					UnityEngine.Debug.LogError($"[AiBrainFactory] SummonAIType.Orbit 은 예약 값입니다 — Summon:{(row != null ? row.ID.ToString() : "null")}");
-					break;
+					return new SummonOrbitBehavior();
 			}
 
 			// Stationary 와 None(데이터 누락) 은 고정형. 몬스터와 같은 behavior 를 쓴다.

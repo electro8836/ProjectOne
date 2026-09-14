@@ -99,6 +99,14 @@ namespace ProjectOne.Unit
 
 		public Vector2 HitCenter => (Vector2)this.transform.position + _colliderOffset;
 
+		// 스킬 탐색(사거리 판정)의 기준점. 기본은 자기 자신이다.
+		// 주인에게 매달려 도는 소환물만 이걸 덮어 주인 기준으로 잰다 — 공전 위치에 따라 사거리가 출렁이면 안 된다.
+		// 연출 기점인 HitCenter 와는 별개다. 빔은 여전히 소환물 자신에게서 나가야 한다.
+		public virtual Vector2 ScanOrigin
+		{
+			get { return HitCenter; }
+		}
+
 		public StatContainer Stats => _stats;
 
 		public Vitals Vitals => _vitals;
@@ -222,7 +230,8 @@ namespace ProjectOne.Unit
 		}
 
 		// 조준·범위 탐색의 대상이 되는가. 무적이면 목록에서 통째로 빠진다.
-		public bool IsTargetable
+		// 아예 피격 대상이 아닌 유닛(소환물 등)은 이걸 덮어 false 로 고정한다.
+		public virtual bool IsTargetable
 		{
 			get { return IsDead == false && IsInvincible == false; }
 		}

@@ -33,12 +33,38 @@ namespace ProjectOne.Unit
 		// 주인 스탯 버전 — 달라졌을 때만 상속을 다시 건다.
 		private int _ownerStatVersion = -1;
 
+		// 풀에서 생성될 때의 부모(SummonPool). 궤도형이 주인 밑으로 옮겨 갔다가 반환될 때 되돌아올 자리다.
+		private Transform _homeParent;
+
 		// 이 인스턴스 전용 리졸브 캐시. 전역 패스스루 캐시에 쓰면 테이블이 오염된다.
 		private readonly Dictionary<EDT.Skill, ResolvedSkill> _resolveCache = new Dictionary<EDT.Skill, ResolvedSkill>();
 
 		public override UnitType GetUnitType()
 		{
 			return UnitType.Summon;
+		}
+
+		// 조준·범위 탐색에서 통째로 빠진다 — 소환물은 체력 개념이 없어 피격 대상이 아니다.
+		// TargetResolver.passesApplyTarget 이 모든 탐색의 유일한 관문이라 여기 하나로 조준·범위·착탄이 전부 덮인다.
+		public override bool IsTargetable
+		{
+			get { return false; }
+		}
+
+		// 주인에게 매달려 다니는 소환물은 사거리를 주인 기준으로 잰다.
+		// 제 위치로 재면 공전하다 적 반대편으로 돌아간 개체만 사거리에서 빠져 같은 적을 두고도 혼자 안 쏜다.
+		// 스스로 움직이거나(Chase/Wander) 제자리에 박힌(Stationary) 소환물은 제 위치가 맞다.
+		public override Vector2 ScanOrigin
+		{
+			get
+			{
+				if (_owner != null && _row != null && (_row.AIType == SummonAIType.Orbit || _row.AIType == SummonAIType.Follow))
+				{
+					return _owner.HitCenter;
+				}
+
+				return base.ScanOrigin;
+			}
 		}
 
 		public override UnitBase Owner
@@ -61,6 +87,9 @@ namespace ProjectOne.Unit
 		{
 			_summonId = id;
 			_row = row;
+
+			// 궤도형은 스폰 때 주인 밑으로 옮겨 가므로, 돌아올 자리를 여기서 기억해 둔다 (= SummonPool).
+			_homeParent = transform.parent;
 		}
 
 		// 스폰마다 주입 — 주인 / 수명 / 반경. 풀 재사용이므로 매번 덮어써야 한다.
@@ -82,6 +111,15 @@ namespace ProjectOne.Unit
 			else
 			{
 				transform.localScale = Vector3.one;
+			}
+
+			// 궤도형은 주인을 쫓지 않고 주인에게 달라붙는다 — 위치는 SummonOrbitBehavior 가 localPosition 으로만 정한다.
+			// 부모는 반드시 주인 루트다. UnitAnimator 의 _flipRoot 밑에 붙이면 좌우 반전 때 궤도가 거울반전된다.
+			// OnSpawnReset 이 이미 월드 좌표를 찍어 둔 뒤라 여기서 localPosition 을 덮어써야 첫 프레임이 튀지 않는다.
+			if (_row != null && _row.AIType == SummonAIType.Orbit && owner != null)
+			{
+				transform.SetParent(owner.transform, false);
+				transform.localPosition = (Vector3)owner.ColliderOffset + Vector3.right * _row.FollowDistance;
 			}
 
 			if (_brain != null)
@@ -203,17 +241,13 @@ namespace ProjectOne.Unit
 			_stats.SetBase(detail, _owner.Stats.GetStat(statType) * ratio);
 		}
 
+		// 소환물은 피해를 받지 않는다 — 체력 개념이 없다 (설계 7장).
+		//
+		// IsTargetable 이 false 라 TargetResolver 의 탐색에는 애초에 걸리지 않지만,
+		// EffectOrigin=Caster/Owner 처럼 대상을 직접 지정하는 경로는 그 필터를 타지 않는다.
+		// 여기서 무시해 그 뒷문까지 닫는다. 피격 연출도 내지 않는다 — 맞았다는 인상 자체를 주지 않는다.
 		public void TakeDamage(in DamageInfo info)
 		{
-			HandleHit(in info);
-			if (_vitals != null)
-			{
-				_vitals.ModifyHp(-info.Damage);
-				if (_vitals.IsHpZero)
-				{
-					Die();
-				}
-			}
 		}
 
 		public void OnActivate()
@@ -222,6 +256,13 @@ namespace ProjectOne.Unit
 
 		public void OnDeactivate()
 		{
+			// 주인 밑에 붙어 있던 궤도형을 풀 자리로 되돌린다.
+			// 안 되돌리면 주인이 파괴될 때 풀 인스턴스가 함께 죽어 풀이 깨진다.
+			if (_homeParent != null && transform.parent != _homeParent)
+			{
+				transform.SetParent(_homeParent, false);
+			}
+
 			_owner = null;
 			_resolveCache.Clear();
 		}

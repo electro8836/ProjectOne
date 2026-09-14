@@ -478,6 +478,8 @@ namespace EDT {
         Skill_Monster_CastAttack_01,
         Skill_Monster_OrcGeneral_Active_01,
         Skill_Monster_Boss_Doom_01,
+        Skill_SummonSpark_Attack,
+        Skill_DualBlades_Passive_02,
     }
 
     public enum SkillEffect {
@@ -502,6 +504,8 @@ namespace EDT {
         SE_BuffRune_DefUp,
         SE_Monster_OrcGeneral_Active_01_Damage,
         SE_Boss_Doom_Damage,
+        SE_SummonSpark_Attack_Damage,
+        SE_DualBlades_Passive_02_Summon,
     }
 
     public enum SkillModifier {
@@ -597,6 +601,7 @@ namespace EDT {
 
     public enum Summon {
         None,
+        Summon_Spark,
     }
 
     public enum TableType {

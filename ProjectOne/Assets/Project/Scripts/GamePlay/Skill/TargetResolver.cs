@@ -41,7 +41,7 @@ namespace ProjectOne.Skill
 				return _scratch;
 			default:
 			{
-				Vector2 hitCenter = useOverride ? centerOverride : caster.HitCenter;
+				Vector2 hitCenter = useOverride ? centerOverride : caster.ScanOrigin;
 				Vector2 facing = useOverride ? facingOverride : GetFacing(caster);
 				IReadOnlyList<UnitBase> all = UnitManager.Instance.All;
 				if (scanType == SkillScanTypes.Target)

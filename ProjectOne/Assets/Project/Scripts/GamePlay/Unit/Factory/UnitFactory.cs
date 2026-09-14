@@ -209,6 +209,15 @@ namespace ProjectOne.Unit
 		{
 			ComposeBase(unit, 0, 1, StatContainerFactory.ForMonster(0, 1), faction);
 
+			// 공격속도만은 1배속을 기본으로 깔아 둔다. 0으로 두면 Table_Stat 하한(0.1)까지 올라가
+			// 평타 주기가 10배가 된다 (SkillRuntime.GetCycleTime = Cooldown / useSpeed).
+			// 주인 공속과는 무관하다 — 소환물 강화로 공속을 올릴 때 이 Base 위에 모디파이어를 얹으면 된다.
+			StatDetail atkSpeedDetail;
+			if (StatCatalog.TryGetBaseDetail(Stat.Stat_AtkSpeed, out atkSpeedDetail) == true)
+			{
+				unit.Stats.SetBase(atkSpeedDetail, 1f);
+			}
+
 			if (row == null)
 			{
 				return;
