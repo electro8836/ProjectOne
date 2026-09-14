@@ -37,10 +37,10 @@ namespace ProjectOne.Unit
 			avatar.ResetAll();
 
 			// 바디가 먼저다 — 몸 27파츠를 완전히 지정한다.
-			avatar.ApplyBodySet(resolveBodySet());
+			avatar.ApplyBodySet(ResolveBodySet());
 
 			// 무기가 나중이다 — 코스튬 무기가 장비 무기를 덮어쓴다.
-			avatar.ApplyWeaponSet(resolveWeaponSet());
+			avatar.ApplyWeaponSet(ResolveWeaponSet());
 		}
 
 		public void RemoveFrom(Hero hero)
@@ -48,7 +48,7 @@ namespace ProjectOne.Unit
 		}
 
 		// 입고 있는 바디 코스튬. 미착용이면 기본 코스튬(IsDefault)으로 되돌아간다.
-		static AvatarBodySet resolveBodySet()
+		public static AvatarBodySet ResolveBodySet()
 		{
 			CostumeBook book = Account.Instance.Costume;
 			int equippedId = (book != null) ? book.EquippedBodyId : 0;
@@ -70,7 +70,7 @@ namespace ProjectOne.Unit
 
 		// 손에 보일 무기. 코스튬 무기가 우선이고, 없거나 직업이 안 맞으면 장비 무기다.
 		// 둘 다 없으면 null — 양손이 비워진다.
-		static AvatarWeaponSet resolveWeaponSet()
+		public static AvatarWeaponSet ResolveWeaponSet()
 		{
 			Loadout loadout = Account.Instance.Loadout;
 			if (loadout == null)
