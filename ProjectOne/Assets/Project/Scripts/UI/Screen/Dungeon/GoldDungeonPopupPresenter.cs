@@ -159,7 +159,7 @@ namespace ProjectOne.UI
 
 			DungeonInfoData data;
 			data.name = row.Name;
-			data.iconAddress = row.Icon;
+			data.thumbnailAddress = row.Thumbnail;
 
 			if (_renderCts != null)
 			{

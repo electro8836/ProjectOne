@@ -14,7 +14,7 @@ namespace ProjectOne.UI
 	public struct DungeonInfoData
 	{
 		public string name;
-		public string iconAddress;
+		public string thumbnailAddress;
 	}
 
 	// 골드던전 팝업의 View(MVP). UIManager.ShowGoldDungeonPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
@@ -23,7 +23,7 @@ namespace ProjectOne.UI
 	{
 		[Header("던전 정보")]
 		[SerializeField] private TMP_Text _nameText;			// Frame/Top/DungeonName
-		[SerializeField] private Image _iconImage;				// Frame/DungeonInfo/Frame/DungeonIcon
+		[SerializeField] private Image _thumbnailImage;				// Frame/DungeonInfo/Frame/Thumbnail
 
 		[Header("현황")]
 		[SerializeField] private TMP_Text _maxStageText;		// Frame/DungeonInfo/Info/MaxLevel/RightText
@@ -52,7 +52,7 @@ namespace ProjectOne.UI
 		private readonly GoldDungeonPopupPresenter _presenter = new GoldDungeonPopupPresenter();
 		private readonly List<DungeonStageSlot> _slots = new List<DungeonStageSlot>();
 
-		private string _iconAddress;
+		private string _thumbnailAddress;
 		private UniTaskCompletionSource _tcs;
 
 		private void Awake()
@@ -67,7 +67,7 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
-			releaseIcon();
+			releaseThumbnail();
 
 			for (int i = 0; i < _slots.Count; i++)
 			{
@@ -122,7 +122,7 @@ namespace ProjectOne.UI
 		{
 			_nameText.text = data.name;
 
-			await setIcon(data.iconAddress, ct);
+			await setThumbnail(data.thumbnailAddress, ct);
 		}
 
 		// 팝업이 떠 있는 동안 변하지 않는 현황 — 입장하면 팝업이 닫히므로 한 번만 그린다.
@@ -216,58 +216,58 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private async UniTask setIcon(string address, CancellationToken ct)
+		private async UniTask setThumbnail(string address, CancellationToken ct)
 		{
-			if (_iconAddress == address)
+			if (_thumbnailAddress == address)
 			{
 				return;
 			}
 
-			releaseIcon();
-			_iconAddress = address;
+			releaseThumbnail();
+			_thumbnailAddress = address;
 
 			if (string.IsNullOrEmpty(address) == true)
 			{
-				_iconImage.sprite = null;
-				_iconImage.enabled = false;
+				_thumbnailImage.sprite = null;
+				_thumbnailImage.enabled = false;
 				return;
 			}
 
 			Sprite atlasSprite = AtlasManager.Instance.Get(address);
 			if (atlasSprite != null)
 			{
-				_iconImage.sprite = atlasSprite;
-				_iconImage.enabled = true;
-				_iconAddress = null;	// 참조카운트 대상이 아니다 — 해제가 헛돌지 않도록 지운다
+				_thumbnailImage.sprite = atlasSprite;
+				_thumbnailImage.enabled = true;
+				_thumbnailAddress = null;	// 참조카운트 대상이 아니다 — 해제가 헛돌지 않도록 지운다
 				return;
 			}
 
-			_iconImage.enabled = false;
+			_thumbnailImage.enabled = false;
 
-			(bool cancelled, Sprite icon) = await ResourceManager.Instance.AcquireAsync<Sprite>(address, ct).SuppressCancellationThrow();
+			(bool cancelled, Sprite sprite) = await ResourceManager.Instance.AcquireAsync<Sprite>(address, ct).SuppressCancellationThrow();
 			if (cancelled == true)
 			{
 				return;
 			}
 
-			if (_iconAddress != address)
+			if (_thumbnailAddress != address)
 			{
 				return;
 			}
 
-			if (icon != null)
+			if (sprite != null)
 			{
-				_iconImage.sprite = icon;
-				_iconImage.enabled = true;
+				_thumbnailImage.sprite = sprite;
+				_thumbnailImage.enabled = true;
 			}
 		}
 
-		private void releaseIcon()
+		private void releaseThumbnail()
 		{
-			if (string.IsNullOrEmpty(_iconAddress) == false && ResourceManager.HasInstance)
+			if (string.IsNullOrEmpty(_thumbnailAddress) == false && ResourceManager.HasInstance)
 			{
-				ResourceManager.Instance.Release(_iconAddress);
-				_iconAddress = null;
+				ResourceManager.Instance.Release(_thumbnailAddress);
+				_thumbnailAddress = null;
 			}
 		}
 
