@@ -218,6 +218,13 @@ namespace ProjectOne.Dungeon
 				_cts.Dispose();
 				_cts = null;
 			}
+
+			// 정상 종료(cleanupAll)를 거치지 않고 씬이 바뀌는 경로(전투 중 마을 이동 등)에서도 던전 HUD 를 걷는다.
+			// UIManager 가 영속이라 여기서 놓치면 마을까지 따라간다. 이미 걷혔으면 아무것도 하지 않는다.
+			if (UIManager.HasInstance == true)
+			{
+				UIManager.Instance.ReleaseDungeonHud();
+			}
 		}
 
 		// ── 진행 ──────────────────────────────────────────────────────

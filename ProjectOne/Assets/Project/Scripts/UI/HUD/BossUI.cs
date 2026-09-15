@@ -92,15 +92,16 @@ namespace ProjectOne.UI
 
 		private void Update()
 		{
-			if (_boss == null)
+			// 참조 자체가 비어 있을 때만 건너뛴다 — == null 은 파괴된 보스에도 true 라 아래 걷기 경로를 막는다.
+			if (ReferenceEquals(_boss, null) == true)
 			{
 				return;
 			}
 
-			// 맵 이동·스테이지 정리(MonsterSpawnManager.ClearAlive)는 사망이 아니라 풀 반환이라
-			// UnitDiedEvent 가 나가지 않는다. 파괴가 아니라 SetActive(false) 뿐이라 == null 에도 안 걸린다.
+			// 맵 이동·스테이지 정리(MonsterSpawnManager.ClearAlive)는 풀 반환(SetActive(false)),
+			// 씬 전환(마을 이동 등)은 풀이 씬과 함께 파괴된다. 둘 다 사망이 아니라 UnitDiedEvent 가 나가지 않는다.
 			// 그 경우 배너가 영영 남으므로 여기서 직접 걷는다 — 보스가 이미 없으니 페이드 없이 즉시 감춘다.
-			if (_boss.isActiveAndEnabled == false)
+			if (_boss == null || _boss.isActiveAndEnabled == false)
 			{
 				detachBoss();
 				stopFade();

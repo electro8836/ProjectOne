@@ -205,32 +205,70 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 그리드는 보유한 것만 나열한다. 장비는 인스턴스, 소모품은 스택으로 소스가 달라 따로 모은 뒤
-		// 각각 정렬해 이어붙인다 (전체 탭에서 장비가 앞, 소모품이 뒤).
+		// 그리드는 보유한 것만 나열한다. 장비는 인스턴스, 소모품은 스택으로 소스가 달라 따로 모아 각각 정렬한다.
+		// 전체 탭 등급순은 둘을 등급 기준으로 섞고, 그 외에는 장비가 앞, 소모품이 뒤로 이어붙인다.
 		private void buildGridData()
 		{
 			_gridData.Clear();
+			_equipBuffer.Clear();
+			_itemBuffer.Clear();
 
 			if (_currentTab != TAB_CONSUMABLE)
 			{
 				collectEquipments();
 				sortEquipments();
-
-				for (int i = 0; i < _equipBuffer.Count; i++)
-				{
-					_gridData.Add(_equipBuffer[i]);
-				}
 			}
 
 			if (_currentTab == TAB_ALL || _currentTab == TAB_CONSUMABLE)
 			{
 				collectConsumables();
 				_itemBuffer.Sort(compareItem);
+			}
 
-				for (int i = 0; i < _itemBuffer.Count; i++)
+			if (_currentTab == TAB_ALL && _sortMode == SortModes.Grade)
+			{
+				mergeByGrade();
+				return;
+			}
+
+			for (int i = 0; i < _equipBuffer.Count; i++)
+			{
+				_gridData.Add(_equipBuffer[i]);
+			}
+
+			for (int i = 0; i < _itemBuffer.Count; i++)
+			{
+				_gridData.Add(_itemBuffer[i]);
+			}
+		}
+
+		// 두 버퍼는 이미 등급 내림차순이다 — 등급만 비교해 하나로 합친다. 동급이면 장비가 먼저 온다.
+		private void mergeByGrade()
+		{
+			int e = 0;
+			int c = 0;
+			while (e < _equipBuffer.Count && c < _itemBuffer.Count)
+			{
+				if ((int)_equipBuffer[e].instance.grade >= (int)_itemBuffer[c].row.Grade)
 				{
-					_gridData.Add(_itemBuffer[i]);
+					_gridData.Add(_equipBuffer[e]);
+					e++;
 				}
+				else
+				{
+					_gridData.Add(_itemBuffer[c]);
+					c++;
+				}
+			}
+
+			for (; e < _equipBuffer.Count; e++)
+			{
+				_gridData.Add(_equipBuffer[e]);
+			}
+
+			for (; c < _itemBuffer.Count; c++)
+			{
+				_gridData.Add(_itemBuffer[c]);
 			}
 		}
 
