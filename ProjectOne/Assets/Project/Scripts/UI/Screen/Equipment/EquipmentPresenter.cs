@@ -6,6 +6,7 @@ using ProjectOne.Event;
 using ProjectOne.Items;
 using ProjectOne.Network;
 using ProjectOne.UserData;
+using UnityEngine;
 
 namespace ProjectOne.UI
 {
@@ -41,7 +42,19 @@ namespace ProjectOne.UI
 		private const int TAB_RELIC = 4;
 		private const int TAB_CONSUMABLE = 5;
 
+		// 그리드 정렬 기준 — Button_Sorting 클릭 시 선언 순서대로 순환한다.
+		private enum SortModes
+		{
+			Grade,		// 등급순(기본)
+			Enhance,	// 강화도순
+			Quality,	// 품질순
+		}
+
+		private const int SORT_MODE_COUNT = 3;
+		private const string SORT_MODE_PREF_KEY = "EquipSortMode";
+
 		private int _currentTab = TAB_ALL;
+		private SortModes _sortMode = SortModes.Grade;
 
 		private readonly List<ItemSlotData> _gridData = new List<ItemSlotData>();
 		private readonly List<ItemSlotData> _equipBuffer = new List<ItemSlotData>();
@@ -59,10 +72,13 @@ namespace ProjectOne.UI
 			view.OnTabSelected += onTabSelected;
 			view.OnSlotClicked += onSlotClicked;
 			view.OnHomeClicked += onHomeClicked;
+			view.OnSortClicked += onSortClicked;
 
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Subscribe<InventoryChangeEvent>(onInventoryChanged);
 			EventManager.Instance.Subscribe<PresetChangeEvent>(onPresetChanged);
+
+			loadSortMode();
 		}
 
 		protected override void OnDispose()
@@ -77,6 +93,7 @@ namespace ProjectOne.UI
 			view.OnTabSelected -= onTabSelected;
 			view.OnSlotClicked -= onSlotClicked;
 			view.OnHomeClicked -= onHomeClicked;
+			view.OnSortClicked -= onSortClicked;
 
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Unsubscribe<InventoryChangeEvent>(onInventoryChanged);
@@ -88,6 +105,8 @@ namespace ProjectOne.UI
 		{
 			_currentTab = TAB_ALL;
 			view.SelectTab(TAB_ALL);	// Select 는 OnTabChanged 를 발행하지 않으므로 직접 rebuild
+			view.SetSortLabel(getSortLabel(_sortMode));
+			view.SetSortVisible(_currentTab != TAB_CONSUMABLE);
 			view.RenderCharacterLevel(Account.Instance.Loadout.Level);
 			rebuild();
 			return UniTask.CompletedTask;
@@ -105,6 +124,18 @@ namespace ProjectOne.UI
 		private void onTabSelected(int index)
 		{
 			_currentTab = index;
+			view.SetSortVisible(_currentTab != TAB_CONSUMABLE);
+			rebuild();
+		}
+
+		// 정렬 버튼 — 기준을 다음 것으로 넘기고 라벨을 갱신한 뒤 다시 그린다.
+		private void onSortClicked()
+		{
+			_sortMode = (SortModes)(((int)_sortMode + 1) % SORT_MODE_COUNT);
+			PlayerPrefs.SetInt(SORT_MODE_PREF_KEY, (int)_sortMode);
+			PlayerPrefs.Save();
+
+			view.SetSortLabel(getSortLabel(_sortMode));
 			rebuild();
 		}
 
@@ -183,7 +214,7 @@ namespace ProjectOne.UI
 			if (_currentTab != TAB_CONSUMABLE)
 			{
 				collectEquipments();
-				_equipBuffer.Sort(compareEquipment);
+				sortEquipments();
 
 				for (int i = 0; i < _equipBuffer.Count; i++)
 				{
@@ -287,6 +318,25 @@ namespace ProjectOne.UI
 			return false;
 		}
 
+		// 현재 정렬 기준에 맞는 비교자를 골라 장비 버퍼를 정렬한다.
+		private void sortEquipments()
+		{
+			switch (_sortMode)
+			{
+			case SortModes.Enhance:
+				_equipBuffer.Sort(compareByEnhance);
+				break;
+
+			case SortModes.Quality:
+				_equipBuffer.Sort(compareByQuality);
+				break;
+
+			default:
+				_equipBuffer.Sort(compareEquipment);
+				break;
+			}
+		}
+
 		// 등급 내림차순 → 동급은 강화 레벨 내림차순 → 그래도 같으면 UID 오름차순.
 		private int compareEquipment(ItemSlotData a, ItemSlotData b)
 		{
@@ -303,6 +353,68 @@ namespace ProjectOne.UI
 			}
 
 			return a.instance.uid.CompareTo(b.instance.uid);
+		}
+
+		// 강화 레벨 내림차순 → 동레벨은 등급 내림차순 → 그래도 같으면 UID 오름차순.
+		private int compareByEnhance(ItemSlotData a, ItemSlotData b)
+		{
+			if (a.instance.level != b.instance.level)
+			{
+				return b.instance.level.CompareTo(a.instance.level);
+			}
+
+			return compareGradeThenUid(a, b);
+		}
+
+		// 품질 내림차순 → 동일 품질은 등급 내림차순 → 그래도 같으면 UID 오름차순.
+		private int compareByQuality(ItemSlotData a, ItemSlotData b)
+		{
+			if (a.instance.quality != b.instance.quality)
+			{
+				return b.instance.quality.CompareTo(a.instance.quality);
+			}
+
+			return compareGradeThenUid(a, b);
+		}
+
+		// 강화도·품질 정렬의 공통 뒤순위 — 등급 내림차순 → UID 오름차순.
+		private int compareGradeThenUid(ItemSlotData a, ItemSlotData b)
+		{
+			int ga = (int)a.instance.grade;
+			int gb = (int)b.instance.grade;
+			if (ga != gb)
+			{
+				return gb.CompareTo(ga);
+			}
+
+			return a.instance.uid.CompareTo(b.instance.uid);
+		}
+
+		// 저장된 정렬 기준을 불러온다. 범위 밖 값은 기본값으로 되돌린다.
+		private void loadSortMode()
+		{
+			int saved = PlayerPrefs.GetInt(SORT_MODE_PREF_KEY, (int)SortModes.Grade);
+			if (saved < 0 || saved >= SORT_MODE_COUNT)
+			{
+				saved = (int)SortModes.Grade;
+			}
+
+			_sortMode = (SortModes)saved;
+		}
+
+		// 정렬 버튼에 표시할 기준명.
+		private string getSortLabel(SortModes mode)
+		{
+			switch (mode)
+			{
+			case SortModes.Enhance:
+				return "강화도순";
+
+			case SortModes.Quality:
+				return "품질순";
+			}
+
+			return "등급순";
 		}
 
 		// 등급 내림차순 → 동급은 아이템 ID 오름차순.

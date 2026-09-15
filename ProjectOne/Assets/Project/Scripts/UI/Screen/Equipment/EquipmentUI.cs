@@ -32,6 +32,10 @@ namespace ProjectOne.UI
 		[Header("닫기")]
 		[SerializeField] private UIButton _homeButton;	// Top/HomeButton
 
+		[Header("정렬")]
+		[SerializeField] private UIButton _sortButton;	// Button_Sorting
+		[SerializeField] private TMP_Text _sortLabel;	// Button_Sorting/Text (TMP)
+
 		// 장착/해제 강조 — 커진 상태에서 제자리로 줄어들며 안착하는 느낌.
 		private const float PopStartScale = 1.5f;
 		private const float PopDuration = 0.5f;
@@ -49,6 +53,7 @@ namespace ProjectOne.UI
 		public event Action<int> OnTabSelected;
 		public event Action<long, int> OnSlotClicked;
 		public event Action OnHomeClicked;
+		public event Action OnSortClicked;
 
 		private readonly EquipmentPresenter _presenter = new EquipmentPresenter();
 
@@ -59,6 +64,7 @@ namespace ProjectOne.UI
 		{
 			_tabGroup.OnTabChanged += onTabChanged;
 			_homeButton.OnClickEvent += onHomeClicked;
+			_sortButton.OnClickEvent += onSortClicked;
 
 			_presenter.Initialize(this);
 		}
@@ -71,6 +77,7 @@ namespace ProjectOne.UI
 
 			_tabGroup.OnTabChanged -= onTabChanged;
 			_homeButton.OnClickEvent -= onHomeClicked;
+			_sortButton.OnClickEvent -= onSortClicked;
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
@@ -149,6 +156,18 @@ namespace ProjectOne.UI
 			_levelText.text = "LV." + level;
 		}
 
+		// 현재 정렬 기준을 버튼 라벨에 표시한다.
+		public void SetSortLabel(string label)
+		{
+			_sortLabel.text = label;
+		}
+
+		// 소모품 탭에는 강화도·품질이 없어 정렬 버튼 자체를 숨긴다.
+		public void SetSortVisible(bool visible)
+		{
+			_sortButton.gameObject.SetActive(visible);
+		}
+
 		// 장착/해제된 칸을 강조한다. 대상은 Slot_XXX 컨테이너다 —
 		// 안쪽 ItemSlot 은 해제 시 파괴되므로 컨테이너를 키워야 장착·해제가 같은 경로를 탄다.
 		public void PlayEquippedSlotPop(EquipSlotTypes type)
@@ -174,6 +193,11 @@ namespace ProjectOne.UI
 		private void onHomeClicked()
 		{
 			if (OnHomeClicked != null) { OnHomeClicked.Invoke(); }
+		}
+
+		private void onSortClicked()
+		{
+			if (OnSortClicked != null) { OnSortClicked.Invoke(); }
 		}
 
 		private void onSlotClicked(ItemSlot sender, long uid, int itemId)
