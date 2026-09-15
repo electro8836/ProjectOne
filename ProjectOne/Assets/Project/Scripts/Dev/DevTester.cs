@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Utils;
@@ -6,6 +8,7 @@ using ProjectOne.Currency;
 using ProjectOne.Event;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
+using ProjectOne.Resources;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
 
@@ -113,6 +116,9 @@ namespace ProjectOne.Boot
 		[Header("임시 — 체크 시 이동 중에도 공격")]
 		[SerializeField] private bool _attackWhileMoving;
 
+		[Header("임시 — 체크 시 히어로에게 자석펫을 붙인다")]
+		[SerializeField] private bool _spawnPet;
+
 		[Header("런타임 조회 (읽기 전용)")]
 		[SerializeField] private float _viewRefreshInterval = 0.5f;
 		[SerializeField] private int _viewCharacterLevel;
@@ -124,6 +130,12 @@ namespace ProjectOne.Boot
 		private EDT.Currency[] _currencyTypes;
 		private float _viewTimer;
 		private System.Action<DataLoadedEvent> _onDataLoaded;
+
+		// [임시] 자석펫 지급용 — 정식 펫 콜렉션이 들어오면 아래 펫 관련 멤버를 통째로 걷어낸다
+		private const string PetAddress = "Prefab_Pet";
+		private System.Action<UnitSpawnedEvent> _onUnitSpawned;
+		private GameObject _petInstance;
+		private bool _isPetHandleHeld;
 
 		protected override void Awake()
 		{
@@ -139,6 +151,10 @@ namespace ProjectOne.Boot
 			// Account 를 직접 오버라이드한다(인메모리, 비영속).
 			_onDataLoaded = onDataLoaded;
 			EventManager.Instance.Subscribe<DataLoadedEvent>(_onDataLoaded);
+
+			// [임시] 히어로가 생길 때마다 자석펫을 붙인다 (씬마다 히어로가 새로 만들어진다)
+			_onUnitSpawned = onUnitSpawned;
+			EventManager.Instance.Subscribe<UnitSpawnedEvent>(_onUnitSpawned);
 		}
 
 		protected override void OnDestroy()
@@ -147,6 +163,13 @@ namespace ProjectOne.Boot
 			{
 				EventManager.Instance.Unsubscribe<DataLoadedEvent>(_onDataLoaded);
 			}
+
+			if (this == Instance && _onUnitSpawned != null)
+			{
+				EventManager.Instance.Unsubscribe<UnitSpawnedEvent>(_onUnitSpawned);
+			}
+
+			releasePet();
 
 			base.OnDestroy();
 		}
@@ -164,6 +187,79 @@ namespace ProjectOne.Boot
 
 			_viewTimer = 0f;
 			rebuildViews();
+		}
+
+		// ── [임시] 자석펫 지급 ───────
+		//
+		// 펫 콜렉션/보유 데이터가 아직 없어서 "가지고 있다"고 가정하고 붙여 준다.
+		// 정식 시스템이 들어오면 이 구역과 _spawnPet / PetAddress / _onUnitSpawned / _petInstance 를 함께 지운다.
+
+		private void onUnitSpawned(UnitSpawnedEvent evt)
+		{
+			if (_spawnPet == false || evt.UnitType != ProjectOne.Unit.UnitType.Hero)
+			{
+				return;
+			}
+
+			spawnPetAsync(evt.Unit, this.GetCancellationTokenOnDestroy()).Forget();
+		}
+
+		private async UniTask spawnPetAsync(ProjectOne.Unit.UnitBase hero, CancellationToken ct)
+		{
+			// 히어로가 새로 만들어졌으므로 이전 펫은 버린다 (씬 전환 시엔 씬과 함께 이미 사라져 있다)
+			releasePet();
+
+			(bool canceled, GameObject prefab) = await ResourceManager.Instance.AcquireAsync<GameObject>(PetAddress, ct).SuppressCancellationThrow();
+			if (canceled == true)
+			{
+				return;
+			}
+
+			if (prefab == null)
+			{
+				Debug.LogError($"[DevTester] 펫 프리팹 로드 실패: {PetAddress}");
+				return;
+			}
+
+			_isPetHandleHeld = true;
+
+			// await 사이에 히어로가 사라졌으면(씬 전환 등) 붙일 대상이 없다 — 핸들만 돌려준다
+			if (hero == null)
+			{
+				releasePet();
+				return;
+			}
+
+			// 부모를 두지 않는다 — 활성 씬에 속하므로 씬 전환 시 함께 파괴된다
+			_petInstance = Instantiate(prefab);
+
+			ProjectOne.Unit.Pet pet = _petInstance.GetComponent<ProjectOne.Unit.Pet>();
+			if (pet == null)
+			{
+				Debug.LogError($"[DevTester] {PetAddress} 에 Pet 컴포넌트가 없다 — 펫이 따라다니지 않는다.");
+				return;
+			}
+
+			pet.SetOwner(hero);
+		}
+
+		// 펫 인스턴스 파괴 + 프리팹 핸들 반납. 재스폰과 종료 양쪽에서 쓴다.
+		private void releasePet()
+		{
+			if (_petInstance != null)
+			{
+				Destroy(_petInstance);
+				_petInstance = null;
+			}
+
+			// 종료 중에는 ResourceManager 가 먼저 사라져 있을 수 있다
+			if (_isPetHandleHeld == false || ResourceManager.HasInstance == false)
+			{
+				return;
+			}
+
+			_isPetHandleHeld = false;
+			ResourceManager.Instance.Release(PetAddress);
 		}
 
 		// ── 개발 데이터 주입 (데이터 로드 후 Account 오버라이드) ───────
