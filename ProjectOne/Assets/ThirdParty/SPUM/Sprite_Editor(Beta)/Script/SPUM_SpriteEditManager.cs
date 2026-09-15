@@ -1,9 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
 #if UNITY_2023_1_OR_NEWER
 using UnityEditor.U2D.Sprites;
+#endif
 #endif
 
 [ExecuteInEditMode]
