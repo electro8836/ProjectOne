@@ -355,6 +355,7 @@ namespace EDT {
         BUFF_CombatRune,
         BUFF_Invincible,
         BUFF_BreakStun,
+        BUFF_DualBlades_AtkSpeedUp,
     }
 
     public enum Currency {
@@ -440,6 +441,10 @@ namespace EDT {
         OPT_PICKUP_RANGE_ADD,
         OPT_GOLD_DROP_BONUS_ADD,
         OPT_DAMAGE_TAKEN_AMP_ADD,
+        OPT_LEARN_DualBlades_Active_01,
+        OPT_DMG_DualBlades_Active_01,
+        OPT_APPEND_DualBlades_AtkSpeedBuff,
+        OPT_ATKSPEED_DualBlades_Buff,
     }
 
     public enum Projectile {
@@ -506,10 +511,15 @@ namespace EDT {
         SE_Boss_Doom_Damage,
         SE_SummonSpark_Attack_Damage,
         SE_DualBlades_Passive_02_Summon,
+        SE_DualBlades_AtkSpeedUp_StatChange,
+        SE_DualBlades_Active_01_AtkSpeedBuff,
     }
 
     public enum SkillModifier {
         None,
+        SKM_DualBlades_Active_01_Ratio,
+        SKM_DualBlades_Active_01_AppendAtkSpeedBuff,
+        SKM_DualBlades_AtkSpeedBuff_Ratio,
     }
 
     public enum Stat {

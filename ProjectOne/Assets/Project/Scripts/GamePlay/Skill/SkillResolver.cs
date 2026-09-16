@@ -469,6 +469,7 @@ namespace ProjectOne.Skill
 				}
 
 				add(node.Option, MasteryProgress.GetNodeValue(node, level));
+				add(node.Option_02, MasteryProgress.GetNodeValue02(node, level));
 			}
 		}
 

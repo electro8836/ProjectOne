@@ -34,6 +34,9 @@ namespace ProjectOne.Buff
 		// 현재 중첩 수. StackPolicy 가 Independent 일 때만 2 이상이 된다.
 		public int Stack { get; private set; }
 
+		// 이 버프가 거는 StatChange 의 Value 에 곱해지는 배율. 부여한 SkillEffect 의 Ratio 에서 온다.
+		public float ValueScale { get; private set; }
+
 		IntervalTimer _intervalTimer;
 		readonly List<StatModifier> _modHandles = new List<StatModifier>(2);
 		SkillEffect _effect01;
@@ -46,7 +49,7 @@ namespace ProjectOne.Buff
 			get { return _expired; }
 		}
 
-		public BuffRuntime(EDT.Buff id, UnitBase owner, UnitBase source, float duration, EDT.Skill sourceSkill)
+		public BuffRuntime(EDT.Buff id, UnitBase owner, UnitBase source, float duration, EDT.Skill sourceSkill, float valueScale = 1f)
 		{
 			Id = id;
 			Owner = owner;
@@ -55,6 +58,7 @@ namespace ProjectOne.Buff
 			IsInfinite = duration <= 0f;
 			RemainingDuration = IsInfinite ? 0f : duration;
 			Stack = 1;
+			ValueScale = valueScale;
 			_blockKey = "Buff_" + id;
 
 			Table_Buff.Row row = Table_Buff.Get(id);
@@ -213,7 +217,7 @@ namespace ProjectOne.Buff
 			UnitBase caster = (Source != null) ? Source : Owner;
 
 			// 자신을 넘겨 StatChange 모디파이어가 이 버프의 회수 목록에 등록되게 한다.
-			SkillEffectApplier.Apply(effectId, caster, SourceSkill, _selfTarget, 0, buffOwner: this);
+			SkillEffectApplier.Apply(effectId, caster, SourceSkill, _selfTarget, 0, buffOwner: this, valueScale: ValueScale);
 		}
 
 		// BlockFlags 자체가 효과다 — 기절 계열은 EffectID 가 비어 있어도 된다 (설계 8.2).

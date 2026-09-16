@@ -315,12 +315,34 @@ namespace ProjectOne.Mastery
 		// 노드 효과값 — 1레벨 기준이다 (설계 6.3). 장비의 Val 은 0레벨 기준이라 규칙이 반대다.
 		public static float GetNodeValue(Table_SkillTreeNode.Row node, int level)
 		{
-			if (node == null || level <= 0)
+			if (node == null)
 			{
 				return 0f;
 			}
 
-			return node.BaseValue + node.PerLevelValue * (level - 1);
+			return calcNodeValue(node.BaseValue, node.PerLevelValue, level);
+		}
+
+		// 두 번째 옵션 슬롯의 값. 계산 규칙은 첫 번째와 같다.
+		// 한 노드가 "스킬 습득(SkillGrant) + 레벨별 배율(Modifier)" 처럼 성격이 다른 옵션을 함께 갖기 위한 자리다.
+		public static float GetNodeValue02(Table_SkillTreeNode.Row node, int level)
+		{
+			if (node == null)
+			{
+				return 0f;
+			}
+
+			return calcNodeValue(node.BaseValue_02, node.PerLevelValue_02, level);
+		}
+
+		private static float calcNodeValue(float baseValue, float perLevelValue, int level)
+		{
+			if (level <= 0)
+			{
+				return 0f;
+			}
+
+			return baseValue + perLevelValue * (level - 1);
 		}
 
 		// ── 직렬화 ────────────────────────────────────────────────────

@@ -154,7 +154,11 @@ namespace ProjectOne.Skill
 
 			p.Duration = readFloat(row, "Duration", 0f);
 			p.StackMax = readInt(row, "StackMax", 1);
-			p.Ratio = readFloat(row, "Ratio", 0f);
+
+			// Ratio 는 버프가 거는 StatChange 의 Value 에 곱해지는 배율이다.
+			// 빈 칸은 0(=효과 무력화)이 아니라 "배율 없음"으로 해석한다 — 값 칸이 없는 기존 버프가 그대로 동작해야 한다.
+			string rawRatio = SkillParamCatalog.GetRawParamByKey(row, "Ratio");
+			p.Ratio = string.IsNullOrEmpty(rawRatio) ? 1f : readFloat(row, "Ratio", 1f);
 
 			// Chance 빈 칸은 0(=절대 안 걸림)이 아니라 확정 부여로 해석한다.
 			// Reward.Chance 와 달리 "확률 0으로 봉인"을 표현할 필요가 없는 슬롯이다.

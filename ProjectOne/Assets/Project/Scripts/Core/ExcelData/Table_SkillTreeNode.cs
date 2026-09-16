@@ -20,6 +20,9 @@ namespace EDT {
             public float BaseValue { get; set; } = 0f;
             public float PerLevelValue { get; set; } = 0f;
             public int MaxLevel { get; set; } = 0;
+            public Option Option_02 { get; set; } = Option.None;
+            public float BaseValue_02 { get; set; } = 0f;
+            public float PerLevelValue_02 { get; set; } = 0f;
         }
 
         public const string Filename = "edt_skilltreenode.bytes";
@@ -55,6 +58,9 @@ namespace EDT {
                 row.BaseValue = reader.ReadSingle();
                 row.PerLevelValue = reader.ReadSingle();
                 row.MaxLevel = reader.ReadInt32();
+                row.Option_02 = (Option)reader.ReadInt32();
+                row.BaseValue_02 = reader.ReadSingle();
+                row.PerLevelValue_02 = reader.ReadSingle();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

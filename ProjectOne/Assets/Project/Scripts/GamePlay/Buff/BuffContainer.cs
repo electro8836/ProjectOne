@@ -35,7 +35,8 @@ namespace ProjectOne.Buff
 		public event System.Action<BuffRuntime> BuffRemoved;
 
 		// duration / stackMax 는 부여하는 SkillEffect 가 정한다 (설계 8.3).
-		public void Apply(EDT.Buff id, float duration, int stackMax, UnitBase source, EDT.Skill sourceSkill)
+		// valueScale 은 버프가 거는 StatChange 의 Value 에 곱해지는 배율이다 — 같은 버프를 세기만 달리 걸 때 쓴다.
+		public void Apply(EDT.Buff id, float duration, int stackMax, UnitBase source, EDT.Skill sourceSkill, float valueScale = 1f)
 		{
 			if (id == EDT.Buff.None)
 			{
@@ -61,7 +62,7 @@ namespace ProjectOne.Buff
 			BuffRuntime existing;
 			if (_firstById.TryGetValue(id, out existing) == false)
 			{
-				addNew(id, duration, source, sourceSkill);
+				addNew(id, duration, source, sourceSkill, valueScale);
 				return;
 			}
 
@@ -81,7 +82,7 @@ namespace ProjectOne.Buff
 						break;
 					}
 
-					addNew(id, duration, source, sourceSkill);
+					addNew(id, duration, source, sourceSkill, valueScale);
 					break;
 
 				case BuffStackPolicy.Extend:
@@ -258,9 +259,9 @@ namespace ProjectOne.Buff
 
 		// ── 내부 ──────────────────────────────────────────────────────
 
-		void addNew(EDT.Buff id, float duration, UnitBase source, EDT.Skill sourceSkill)
+		void addNew(EDT.Buff id, float duration, UnitBase source, EDT.Skill sourceSkill, float valueScale)
 		{
-			BuffRuntime rt = new BuffRuntime(id, _owner, source, duration, sourceSkill);
+			BuffRuntime rt = new BuffRuntime(id, _owner, source, duration, sourceSkill, valueScale);
 			_ordered.Add(rt);
 			if (_firstById.ContainsKey(id) == false)
 			{

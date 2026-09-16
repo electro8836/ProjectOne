@@ -47,8 +47,9 @@ namespace ProjectOne.Skill
 		// depth 는 ChainEffectIDs 재귀 깊이다. 0에서 시작한다.
 		// hasCenter/center 는 좌표 고정형(EffectOrigin=Location) 전용 — 연출을 대상마다가 아니라 그 좌표에서 1회 낸다.
 		// buffOwner 는 버프가 부여한 효과일 때만 넘어온다 — StatChange 모디파이어 회수를 버프 수명에 맡긴다.
+		// valueScale 은 버프가 전달하는 수치 배율이다 — StatChange 의 Value 에만 곱한다.
 		public static void Apply(SkillEffect effectId, UnitBase caster, EDT.Skill skillId, List<UnitBase> scanned, int depth,
-			bool hasCenter = false, Vector2 center = default(Vector2), BuffRuntime buffOwner = null)
+			bool hasCenter = false, Vector2 center = default(Vector2), BuffRuntime buffOwner = null, float valueScale = 1f)
 		{
 			if (effectId == SkillEffect.None || caster == null)
 			{
@@ -89,7 +90,7 @@ namespace ProjectOne.Skill
 						succeeded = applyBuff(row, caster, skillId, targets);
 						break;
 					case SkillEffectTypes.StatChange:
-						succeeded = applyStatChange(row, caster, targets, buffOwner);
+						succeeded = applyStatChange(row, caster, targets, buffOwner, valueScale);
 						break;
 					case SkillEffectTypes.Projectile:
 						succeeded = applyProjectile(row, caster, skillId, targets);
@@ -578,14 +579,14 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				target.BuffContainer.Apply(p.RefID, p.Duration, p.StackMax, caster, skillId);
+				target.BuffContainer.Apply(p.RefID, p.Duration, p.StackMax, caster, skillId, p.Ratio);
 				anyApplied = true;
 			}
 
 			return anyApplied;
 		}
 
-		static bool applyStatChange(Table_SkillEffect.Row row, UnitBase caster, List<UnitBase> targets, BuffRuntime buffOwner)
+		static bool applyStatChange(Table_SkillEffect.Row row, UnitBase caster, List<UnitBase> targets, BuffRuntime buffOwner, float valueScale)
 		{
 			StatChangeParams p;
 			if (SkillEffectParams.TryParseStatChange(row, out p) == false || targets.Count == 0)
@@ -609,7 +610,7 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				StatModifier mod = target.Stats.AddModifier(p.StatDetailID, p.Value, row.ID.ToString());
+				StatModifier mod = target.Stats.AddModifier(p.StatDetailID, p.Value * valueScale, row.ID.ToString());
 				anyApplied = true;
 
 				// 버프가 부여한 효과면 회수를 버프에 맡긴다 — 만료·중첩 갱신이 한 곳에서만 일어나야

@@ -155,16 +155,23 @@ namespace ProjectOne.Unit
 					continue;
 				}
 
-				applyNode(hero, node, MasteryProgress.GetNodeValue(node, level));
+				applyNode(hero, node, node.Option, MasteryProgress.GetNodeValue(node, level));
+				applyNode(hero, node, node.Option_02, MasteryProgress.GetNodeValue02(node, level));
 			}
 		}
 
-		private void applyNode(Hero hero, Table_SkillTreeNode.Row node, float value)
+		// 노드는 옵션 슬롯을 두 개 갖는다. 비어 있는 슬롯은 대부분의 노드가 해당하므로 조용히 넘긴다.
+		private void applyNode(Hero hero, Table_SkillTreeNode.Row node, Option option, float value)
 		{
-			OptionCatalog.Entry entry;
-			if (OptionCatalog.TryGet(node.Option, out entry) == false)
+			if (option == Option.None)
 			{
-				Debug.LogWarning($"[MasteryAspect] 정의되지 않은 옵션 — node:{node.ID} option:{node.Option}");
+				return;
+			}
+
+			OptionCatalog.Entry entry;
+			if (OptionCatalog.TryGet(option, out entry) == false)
+			{
+				Debug.LogWarning($"[MasteryAspect] 정의되지 않은 옵션 — node:{node.ID} option:{option}");
 				return;
 			}
 

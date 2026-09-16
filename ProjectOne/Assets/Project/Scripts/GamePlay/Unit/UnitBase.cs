@@ -67,6 +67,7 @@ namespace ProjectOne.Unit
 		// 최대 체력 변경 감지용. StatContainer 는 지연 계산이라 변경 시점을 알려주지 못하므로
 		// 프로젝트 관용구인 Version 비교로 잡는다 (SummonUnit.inheritOwnerStats 와 동일).
 		private int _lastStatVersion = int.MinValue;
+		private int _lastAnimStatVersion = int.MinValue;
 
 		private float _lastMaxHp;
 
@@ -304,7 +305,30 @@ namespace ProjectOne.Unit
 		private void resetHpTracking()
 		{
 			_lastStatVersion = int.MinValue;
+			_lastAnimStatVersion = int.MinValue;
 			_lastMaxHp = 0f;
+		}
+
+		// 공속·이속이 바뀌면 애니메이션 배속을 다시 맞춘다.
+		//
+		// 공격 주기는 SkillContainer 가 매 시전마다 스탯을 직접 읽어 즉시 반영되지만,
+		// 모션 배속은 RefreshAnimationStats 안에서만 갱신된다. 이걸 두지 않으면
+		// 공속 버프가 걸렸을 때 주기만 빨라지고 모션은 예전 배속으로 남아 어긋난다.
+		private void tickAnimationStats()
+		{
+			if (_stats == null)
+			{
+				return;
+			}
+
+			int statVersion = _stats.Version;
+			if (statVersion == _lastAnimStatVersion)
+			{
+				return;
+			}
+
+			_lastAnimStatVersion = statVersion;
+			RefreshAnimationStats();
 		}
 
 		public void SetSkillContainer(SkillContainer sc)
@@ -354,6 +378,8 @@ namespace ProjectOne.Unit
 				{
 					_skillContainer.Tick(deltaTime);
 				}
+
+				tickAnimationStats();
 
 				// AI 두뇌 갱신 — 타겟 탐색/이동/스킬 결정 (주입된 경우만)
 				if (_brain != null)
