@@ -14,6 +14,7 @@ namespace EDT {
             public StatValueTypes ValueType { get; set; } = StatValueTypes.None;
             public float MinValue { get; set; } = 0f;
             public float MaxValue { get; set; } = 0f;
+            public bool Display { get; set; } = false;
         }
 
         public const string Filename = "edt_stat.bytes";
@@ -43,6 +44,7 @@ namespace EDT {
                 row.ValueType = (StatValueTypes)reader.ReadInt32();
                 row.MinValue = reader.ReadSingle();
                 row.MaxValue = reader.ReadSingle();
+                row.Display = reader.ReadBoolean();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

@@ -1,4 +1,4 @@
-using ProjectOne.Mastery;
+﻿using ProjectOne.Mastery;
 using ProjectOne.Quests;
 using ProjectOne.Shared;
 using ProjectOne.Utils;
@@ -78,7 +78,13 @@ namespace ProjectOne.UserData
 			}
 
 			Loadout.AddExp(amount);
-			Mastery.AddExpToCurrent(amount);
+
+			// 마스터리 레벨이 오르면 레벨 보너스 스탯이 달라진다 — 즉시 다시 굽지 않으면
+			// 다음 장비 교체 때까지 옛 스탯으로 싸운다.
+			if (Mastery.AddExpToCurrent(amount) == true)
+			{
+				Loadout.ReapplyMastery();
+			}
 		}
 
 		// 서버가 절대값으로 내려준 캐릭터 경험치를 반영한다(던전 클리어 등).
@@ -88,9 +94,9 @@ namespace ProjectOne.UserData
 			int gained = newExp - Loadout.Exp;
 			Loadout.SetExp(newExp);
 
-			if (gained > 0)
+			if (gained > 0 && Mastery.AddExpToCurrent(gained) == true)
 			{
-				Mastery.AddExpToCurrent(gained);
+				Loadout.ReapplyMastery();
 			}
 		}
 	}

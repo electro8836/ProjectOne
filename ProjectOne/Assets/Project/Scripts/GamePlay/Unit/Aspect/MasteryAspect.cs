@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using EDT;
 using UnityEngine;
 using ProjectOne.Items;
@@ -34,6 +34,7 @@ namespace ProjectOne.Unit
 			MasteryBook book = Account.Instance.Mastery;
 
 			applyLevelBonuses(hero, book);
+			applyTotalLevelBonuses(hero, book);
 
 			Table_WeaponMastery.Row mastery = book.CurrentMastery;
 
@@ -119,14 +120,34 @@ namespace ProjectOne.Unit
 					continue;
 				}
 
-				// 한 번도 들지 않은 무기는 항목이 없다 — 조회 때문에 항목이 생기지 않도록 Find 를 쓴다.
-				MasteryProgress progress = book.Find(row.ID);
-				if (progress == null)
+				// 한 번도 들지 않은 무기도 Lv1 로 센다 — GetLevel 이 그 축을 소유한다.
+				float value = row.LevelBonusPerLevel * book.GetLevel(row.ID);
+				if (value == 0f)
 				{
 					continue;
 				}
 
-				float value = row.LevelBonusPerLevel * progress.Level;
+				applyStatOption(hero, row.LevelBonusOption, value, true);
+			}
+		}
+
+		// 전 마스터리의 레벨 합에 한 번 곱해지는 보너스. 무기별 보너스와 달리 마스터리마다가 아니라
+		// 총합에 걸리므로 행마다 한 번씩만 적용한다 (마스터리 창에 뜨는 문구와 같은 계산이다).
+		private void applyTotalLevelBonuses(Hero hero, MasteryBook book)
+		{
+			int totalLevel = book.TotalLevel;
+
+			Dictionary<int, Table_MasteryLevelBonus.Row> all = Table_MasteryLevelBonus.All();
+			Dictionary<int, Table_MasteryLevelBonus.Row>.Enumerator e = all.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				Table_MasteryLevelBonus.Row row = e.Current.Value;
+				if (row.LevelBonusOption == Option.None)
+				{
+					continue;
+				}
+
+				float value = row.LevelBonusPerLevel * totalLevel;
 				if (value == 0f)
 				{
 					continue;

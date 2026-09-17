@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
@@ -323,7 +323,7 @@ namespace ProjectOne.UI
 		// (한 번에 한 페이지만 그리므로 서로 취소해도 문제가 없다).
 		private void renderAll()
 		{
-			int totalLevel = getTotalLevel();
+			int totalLevel = Account.Instance.Mastery.TotalLevel;
 			int maxTotalLevel = MasteryCatalog.MasteryMaxLevel * MasteryCatalog.All().Count;
 
 			MasteryTotalData data;
@@ -391,25 +391,6 @@ namespace ProjectOne.UI
 		private int compareMasteryId(Table_WeaponMastery.Row a, Table_WeaponMastery.Row b)
 		{
 			return ((int)a.ID).CompareTo((int)b.ID);
-		}
-
-		// 전 마스터리의 레벨 합. 한 번도 들지 않은 무기도 Lv1 로 센다 —
-		// MasteryBook.GetOrCreate 가 "없으면 Lv1" 로 정의하므로 표시도 같은 축을 쓴다.
-		// 조회 때문에 항목이 생기지 않도록 Find 로 읽는다 (MasteryAspect.applyLevelBonuses 와 같은 이유).
-		private int getTotalLevel()
-		{
-			MasteryBook book = Account.Instance.Mastery;
-
-			int sum = 0;
-			Dictionary<WeaponMastery, Table_WeaponMastery.Row> all = MasteryCatalog.All();
-			Dictionary<WeaponMastery, Table_WeaponMastery.Row>.Enumerator e = all.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				MasteryProgress progress = book.Find(e.Current.Key);
-				sum += (progress != null) ? progress.Level : 1;
-			}
-
-			return sum;
 		}
 
 		// 레벨 보너스는 마스터리별이 아니라 총합 레벨에 한 번 곱해진다.

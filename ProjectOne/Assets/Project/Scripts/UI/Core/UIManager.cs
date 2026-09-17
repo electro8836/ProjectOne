@@ -665,7 +665,40 @@ namespace ProjectOne.UI
 		private const string COMMON_POPUP_ADDRESS = "UIPrefab_CommonPopup";
 		private const string SIMPLE_POPUP_ADDRESS = "UIPrefab_SimplePopup";
 		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
+		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
 
+
+		// 내 캐릭터 능력치 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
+		public async UniTask ShowStatPopupAsync(CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(STAT_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			StatPopup popup = go.GetComponent<StatPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(STAT_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(STAT_POPUP_ADDRESS);
+			}
+		}
 
 		// 아이템 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowItemInfoPopupAsync(string address, long uid, CancellationToken ct)

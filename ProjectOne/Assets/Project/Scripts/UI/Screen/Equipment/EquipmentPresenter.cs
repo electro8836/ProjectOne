@@ -72,6 +72,7 @@ namespace ProjectOne.UI
 			view.OnTabSelected += onTabSelected;
 			view.OnSlotClicked += onSlotClicked;
 			view.OnHomeClicked += onHomeClicked;
+			view.OnStatClicked += onStatClicked;
 			view.OnSortClicked += onSortClicked;
 
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
@@ -93,6 +94,7 @@ namespace ProjectOne.UI
 			view.OnTabSelected -= onTabSelected;
 			view.OnSlotClicked -= onSlotClicked;
 			view.OnHomeClicked -= onHomeClicked;
+			view.OnStatClicked -= onStatClicked;
 			view.OnSortClicked -= onSortClicked;
 
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
@@ -143,6 +145,12 @@ namespace ProjectOne.UI
 		private void onHomeClicked()
 		{
 			UIManager.Instance.CloseWindowAsync().Forget();
+		}
+
+		// 능력치 버튼 — 히어로의 최종 스탯 팝업을 상위 캔버스에 연다.
+		private void onStatClicked()
+		{
+			UIManager.Instance.ShowStatPopupAsync(view.GetDestroyToken()).Forget();
 		}
 
 		// 슬롯 클릭 — 정보 팝업을 상위 캔버스에 연다(네비게이션 결정은 Presenter).

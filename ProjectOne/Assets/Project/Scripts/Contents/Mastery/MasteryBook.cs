@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Shared;
@@ -55,6 +55,31 @@ namespace ProjectOne.Mastery
 			MasteryProgress progress;
 			_byId.TryGetValue(id, out progress);
 			return progress;
+		}
+
+		// 마스터리 레벨. 한 번도 들지 않은 무기는 항목이 없지만 GetOrCreate 가 "없으면 Lv1" 로 정의하므로
+		// 읽는 쪽도 같은 축을 쓴다. 조회 때문에 항목이 생기지 않도록 Find 로 읽는다.
+		public int GetLevel(WeaponMastery id)
+		{
+			MasteryProgress progress = Find(id);
+			return (progress != null) ? progress.Level : 1;
+		}
+
+		// 전 마스터리의 레벨 합. 총 레벨 보너스(Table_MasteryLevelBonus)가 이 값에 곱해진다.
+		public int TotalLevel
+		{
+			get
+			{
+				int sum = 0;
+				Dictionary<WeaponMastery, Table_WeaponMastery.Row> all = MasteryCatalog.All();
+				Dictionary<WeaponMastery, Table_WeaponMastery.Row>.Enumerator e = all.GetEnumerator();
+				while (e.MoveNext() == true)
+				{
+					sum += GetLevel(e.Current.Key);
+				}
+
+				return sum;
+			}
 		}
 
 		// 현재 장착 무기의 마스터리. 무기 미착용이면 null (설계 4.3).
