@@ -132,7 +132,7 @@ namespace ProjectOne.Boot
 		private System.Action<DataLoadedEvent> _onDataLoaded;
 
 		// [임시] 자석펫 지급용 — 정식 펫 콜렉션이 들어오면 아래 펫 관련 멤버를 통째로 걷어낸다
-		private const string PetAddress = "Prefab_Pet";
+		private const string PetAddress = "Prefab_Pet_01";
 		private System.Action<UnitSpawnedEvent> _onUnitSpawned;
 		private GameObject _petInstance;
 		private bool _isPetHandleHeld;
