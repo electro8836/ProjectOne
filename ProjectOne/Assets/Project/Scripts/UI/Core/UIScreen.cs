@@ -10,5 +10,12 @@ namespace ProjectOne.UI
 	{
 		public virtual UniTask OnOpenAsync(CancellationToken ct) => UniTask.CompletedTask;
 		public virtual UniTask OnCloseAsync() => UniTask.CompletedTask;
+
+		// 이 창이 떠 있는 동안 네비게이션 바를 가릴지.
+		// 창 스택 최상단의 값만 반영된다 — 팝업은 스택을 타지 않으므로 이 값을 봐도 의미가 없다.
+		public virtual bool HidesNavigationBar
+		{
+			get { return false; }
+		}
 	}
 }

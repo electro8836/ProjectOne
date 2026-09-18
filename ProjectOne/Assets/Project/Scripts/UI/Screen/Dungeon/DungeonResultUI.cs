@@ -76,6 +76,12 @@ namespace ProjectOne.UI
 		private readonly Dictionary<ItemSlot, EquipmentInstance> _slotEquipments = new Dictionary<ItemSlot, EquipmentInstance>();
 		private readonly Dictionary<ItemSlot, MergedReward> _slotRewards = new Dictionary<ItemSlot, MergedReward>();
 
+		// 결과를 고를 때까지 화면을 덮으므로 네비게이션 바를 가린다.
+		public override bool HidesNavigationBar
+		{
+			get { return true; }
+		}
+
 		private void Awake()
 		{
 			_retryButton.OnClickEvent += onRetryClicked;

@@ -31,6 +31,12 @@ namespace ProjectOne.UI
 		// 다음 클릭이 들어와 "같은 탭인가" 판정이 어긋난다.
 		private bool _isSwitching;
 
+		// 맥락상 보여야 하는가 (GameState 기준)
+		private bool _contextVisible;
+
+		// 위에 뜬 창이 가리고 있는가 (UIManager 가 창 스택 최상단 기준으로 알려준다)
+		private bool _hiddenByWindow;
+
 		private void Awake()
 		{
 			if (_tabs != null)
@@ -55,6 +61,22 @@ namespace ProjectOne.UI
 
 			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
 			EventManager.Instance.Unsubscribe<WindowClosedEvent>(onWindowClosed);
+		}
+
+		// ── 가시성 ──────────────────────────────
+
+		// UIManager 전용 — 창이 열리고 닫힐 때마다 불린다.
+		public void SetHiddenByWindow(bool hidden)
+		{
+			_hiddenByWindow = hidden;
+
+			applyVisible();
+		}
+
+		// 맥락과 창, 둘 다 통과해야 보인다.
+		private void applyVisible()
+		{
+			gameObject.SetActive(_contextVisible == true && _hiddenByWindow == false);
 		}
 
 		// ── 탭 ────────────────────────────────────────────────────────
@@ -160,7 +182,12 @@ namespace ProjectOne.UI
 		private void onGameStateChanged(GameStateChangedEvent e)
 		{
 			HudContext context = HudContexts.FromState(e.StateType);
-			gameObject.SetActive((_visibleContexts & context) != 0);
+			_contextVisible = (_visibleContexts & context) != 0;
+
+			// 상태 전이는 UIManager 가 열린 창을 모두 닫는 시점이다 — 가림 상태도 같이 푼다.
+			_hiddenByWindow = false;
+
+			applyVisible();
 
 			_openedIndex = -1;
 

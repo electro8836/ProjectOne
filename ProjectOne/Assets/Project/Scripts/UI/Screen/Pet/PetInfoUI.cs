@@ -7,13 +7,11 @@ using TMPro;
 
 namespace ProjectOne.UI
 {
-	// 펫 목록 팝업의 View(MVP). UIManager.ShowPetInfoPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
+	// 펫 목록 창의 View(MVP). 장비창의 PetButton 이 창 캔버스에 겹쳐 연다.
 	//
-	// 루트가 전체화면 stretch 라 팝업 캔버스에서 화면을 통째로 덮는다(네비게이션 바까지).
-	// 창 스택에 들어가지 않으므로 닫기는 CloseWindowAsync 가 아니라 Close 로 한다 —
-	// 스택을 건드리면 아래에 열려 있는 장비창이 닫힌다.
-	// 표시와 입력 전달만 담당하고, 무엇을 어떤 색·문구로 깔지는 PetInfoPopupPresenter 가 정한다.
-	public class PetInfoPopup : UIScreen, IView
+	// 창 스택에 쌓이는 방식이라 아래의 장비창은 살아 있다 — 이 창을 닫으면 장비창이 그대로 다시 보인다.
+	// 표시와 입력 전달만 담당하고, 무엇을 어떤 색·문구로 깔지는 PetInfoPresenter 가 정한다.
+	public class PetInfoUI : UIScreen, IView
 	{
 		[Header("목록")]
 		[SerializeField] private TMP_Text _titleText;			// Top/TitleText
@@ -32,17 +30,21 @@ namespace ProjectOne.UI
 		public event Action OnSortClicked;
 		public event Action OnReturnClicked;
 
-		private readonly PetInfoPopupPresenter _presenter = new PetInfoPopupPresenter();
+		private readonly PetInfoPresenter _presenter = new PetInfoPresenter();
 
 		private readonly List<PetInfoSlot> _slots = new List<PetInfoSlot>();
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();	// 렌더 일괄 대기용
-
-		private UniTaskCompletionSource _tcs;
 
 		// Presenter 가 등급 색을 정해야 해서 열어 둔다 (EquipmentUI 가 SO 를 들고 있는 것과 같은 자리).
 		public ItemGradeColorTable GradeColors
 		{
 			get { return _gradeColors; }
+		}
+
+		// 전체화면으로 목록을 덮으므로 네비게이션 바를 가린다.
+		public override bool HidesNavigationBar
+		{
+			get { return true; }
 		}
 
 		private void Awake()
@@ -66,26 +68,19 @@ namespace ProjectOne.UI
 			_presenter.Dispose();
 		}
 
+		public override UniTask OnOpenAsync(CancellationToken ct)
+		{
+			return _presenter.OnOpenAsync(ct);
+		}
+
+		public override UniTask OnCloseAsync()
+		{
+			return _presenter.OnCloseAsync();
+		}
+
 		public CancellationToken GetDestroyToken()
 		{
 			return this.GetCancellationTokenOnDestroy();
-		}
-
-		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
-		public async UniTask ShowAsync(CancellationToken ct)
-		{
-			await _presenter.ShowAsync(ct);
-
-			_tcs = new UniTaskCompletionSource();
-			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
-		}
-
-		public void Close()
-		{
-			if (_tcs != null)
-			{
-				_tcs.TrySetResult();
-			}
 		}
 
 		// ── Presenter → View ──────────────────────────────────────────────

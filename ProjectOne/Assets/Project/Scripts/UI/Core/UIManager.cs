@@ -68,10 +68,6 @@ namespace ProjectOne.UI
 		// 그 위에 겹치는 존재다.
 		private CancellationTokenSource _commonPopupCts;
 
-		// 펫 목록 팝업도 전용 CTS 를 쓴다. _popupCts 를 같이 쓰면 슬롯에서 강화 팝업을 여는 순간
-		// 그 아래 펫 팝업이 취소되어 파괴된다 — 강화 팝업은 아래를 밀어내는 것이 아니라 위에 겹치는 존재다.
-		private CancellationTokenSource _petInfoCts;
-
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
@@ -396,6 +392,9 @@ namespace ProjectOne.UI
 
 		private GameObject _navigationBar;
 
+		// 창이 가릴지 알려 줄 대상. 프리팹을 세울 때 한 번만 찾아 둔다.
+		private NavigationBar _navigationBarView;
+
 		// 마을 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
 		public async UniTask EnsureNavigationBarAsync(CancellationToken ct)
 		{
@@ -413,6 +412,10 @@ namespace ProjectOne.UI
 			}
 
 			_navigationBar = Instantiate(prefab, _navigationCanvas.transform);
+			_navigationBarView = _navigationBar.GetComponent<NavigationBar>();
+
+			// 네비게이션 바가 뒤늦게 서는 경우가 있다 — 이미 열려 있는 창의 요구를 바로 반영한다.
+			applyNavigationBarVisibility();
 		}
 
 		// ── 월드 게이지 ────────────────────────────────────────────────
@@ -536,6 +539,24 @@ namespace ProjectOne.UI
 
 		// ── 창(Window) ──────────────────────────────────────────────────
 
+		// 창 스택 최상단이 네비게이션 바를 가리는지에 따라 표시를 다시 맞춘다.
+		// 스택이 비면 아무도 가리지 않는다. 네비게이션 바가 아직 없으면(던전 등) 할 일이 없다.
+		private void applyNavigationBarVisibility()
+		{
+			if (_navigationBarView == null)
+			{
+				return;
+			}
+
+			bool hidden = false;
+			if (_windowStack.Count > 0)
+			{
+				hidden = _windowStack.Peek().screen.HidesNavigationBar;
+			}
+
+			_navigationBarView.SetHiddenByWindow(hidden);
+		}
+
 		// 화면 열기의 단일 진입점. NPC 클릭이든 HUD 버튼이든 여기로 들어온다 —
 		// 그래야 "굳이 NPC 에게 가지 않아도 같은 창이 열린다"가 한 벌의 코드로 성립한다.
 		public async UniTask<UIScreen> OpenAsync(UIScreenId id, CancellationToken ct)
@@ -569,6 +590,8 @@ namespace ProjectOne.UI
 			}
 
 			_windowStack.Push(new WindowEntry(screen, address));
+			applyNavigationBarVisibility();
+
 			await screen.OnOpenAsync(ct);
 			return screen;
 		}
@@ -606,6 +629,7 @@ namespace ProjectOne.UI
 			WindowEntry[] closing = _windowStack.ToArray();
 			_windowStack.Clear();
 			_windowStack.Push(new WindowEntry(screen, address));
+			applyNavigationBarVisibility();
 
 			await screen.OnOpenAsync(ct);
 
@@ -635,6 +659,9 @@ namespace ProjectOne.UI
 			await entry.screen.OnCloseAsync();
 			Destroy(entry.screen.gameObject);
 			releaseWindow(entry.address);
+
+			// 최상단이 바뀌었다 — 아래 창이 네비게이션 바를 가리지 않으면 다시 보인다.
+			applyNavigationBarVisibility();
 
 			// 마지막 창이 닫혀 스택이 비면 통지 (탭 그룹 등이 선택 해제).
 			if (publishWhenEmpty && _windowStack.Count == 0)
@@ -671,40 +698,7 @@ namespace ProjectOne.UI
 		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
 		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
 		private const string PET_ENHANCE_POPUP_ADDRESS = "UIPrefab_PetEnhancePopup";
-		private const string PET_INFO_POPUP_ADDRESS = "UIPrefab_PetInfoPopup";
 
-
-		// 펫 목록 팝업을 _popupCanvas 에 전체화면으로 열고 닫힘을 기다린다.
-		// 루트가 stretch 라 네비게이션 바까지 덮는다.
-		public async UniTask ShowPetInfoPopupAsync(CancellationToken ct)
-		{
-			_petInfoCts?.Cancel();
-			_petInfoCts?.Dispose();
-			_petInfoCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(PET_INFO_POPUP_ADDRESS, _petInfoCts.Token);
-			if (prefab == null)
-			{
-				return;
-			}
-
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
-			PetInfoPopup popup = go.GetComponent<PetInfoPopup>();
-			if (popup == null)
-			{
-				Destroy(go);
-				ResourceManager.Instance.Release(PET_INFO_POPUP_ADDRESS);
-				return;
-			}
-
-			await popup.ShowAsync(_petInfoCts.Token);
-			Destroy(go);
-
-			if (ResourceManager.HasInstance)
-			{
-				ResourceManager.Instance.Release(PET_INFO_POPUP_ADDRESS);
-			}
-		}
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowPetEnhancePopupAsync(EDT.Pet petId, CancellationToken ct)
