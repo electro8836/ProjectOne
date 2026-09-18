@@ -85,6 +85,18 @@ namespace ProjectOne.Buff
 					addNew(id, duration, source, sourceSkill, valueScale);
 					break;
 
+				case BuffStackPolicy.IndependentShared:
+					// 중첩은 독립 인스턴스로 쌓아 효과가 실제로 겹치게 하되, 수명은 하나로 묶는다 —
+					// 새로 쌓일 때마다 이미 붙어 있던 것들의 지속시간까지 함께 초기화한다 (쌍검 공속).
+					// 상한에 닿으면 인스턴스를 늘리지 않고 시간만 되돌린다.
+					if (stackMax <= 0 || countOf(id) < stackMax)
+					{
+						addNew(id, duration, source, sourceSkill, valueScale);
+					}
+
+					refreshAll(id, duration);
+					break;
+
 				case BuffStackPolicy.Extend:
 					// 남은 시간에 가산 — 보호막
 					existing.Extend(duration);
@@ -294,6 +306,18 @@ namespace ProjectOne.Buff
 			if (BuffRemoved != null)
 			{
 				BuffRemoved(rt);
+			}
+		}
+
+		// 같은 ID 인스턴스 전부의 지속시간을 되돌린다 (IndependentShared 의 수명 공유).
+		void refreshAll(EDT.Buff id, float duration)
+		{
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				if (_ordered[i].Id == id)
+				{
+					_ordered[i].Refresh(duration);
+				}
 			}
 		}
 

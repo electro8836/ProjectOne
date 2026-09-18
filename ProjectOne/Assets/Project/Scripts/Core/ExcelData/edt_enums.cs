@@ -9,6 +9,7 @@ namespace EDT {
         Independent,
         Extend,
         Ignore,
+        IndependentShared,
     }
 
     public enum ActionBlockType {
