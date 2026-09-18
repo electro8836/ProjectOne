@@ -1,4 +1,4 @@
-using EDT;
+﻿using EDT;
 using ProjectOne.Items;
 
 namespace ProjectOne.UI
@@ -112,6 +112,41 @@ namespace ProjectOne.UI
 
 			detail = entry.statDetail;
 			return true;
+		}
+
+		// 수치를 뺀 스탯 이름만.
+		//
+		// **DisplayFormat 을 자르지 않고 부모 스탯의 Name 을 쓴다** — 세부 스탯의 포맷에는
+		// "이동 속도 증가 {0}" 처럼 서술이 섞여 있어서, 잘라 쓰면 "이동 속도 증가 증가" 가 된다.
+		// Table_Stat.Name 은 순수한 이름("이동 속도")이라 뒤에 무엇을 붙여도 문장이 깨지지 않는다.
+		public static string GetStatName(StatDetail detail)
+		{
+			Table_StatDetail.Row row = Table_StatDetail.Get(detail);
+			if (row == null)
+			{
+				return detail.ToString();
+			}
+
+			Table_Stat.Row statRow = Table_Stat.Get(row.StatID);
+			if (statRow != null && string.IsNullOrEmpty(statRow.Name) == false)
+			{
+				return statRow.Name;
+			}
+
+			// 이름 컬럼이 비었으면 포맷의 앞부분으로 물러선다 — enum 이름이 마지막 보루다.
+			if (string.IsNullOrEmpty(row.DisplayFormat) == true)
+			{
+				return detail.ToString();
+			}
+
+			int index = row.DisplayFormat.IndexOf("{0}");
+			return (index > 0) ? row.DisplayFormat.Substring(0, index).TrimEnd() : row.DisplayFormat;
+		}
+
+		// 수치를 감춘 요약 문구 — 잠긴 항목이 "무엇이 오르는지"만 알리는 자리에 쓴다.
+		public static string FormatIncrease(StatDetail detail)
+		{
+			return GetStatName(detail) + " 증가";
 		}
 
 		// 아이콘은 세부 스탯이 아니라 부모 스탯이 소유한다 (공격력 Add/Ratio/Amp 가 같은 아이콘을 쓴다).

@@ -254,6 +254,18 @@ namespace ProjectOne.Event
 		{
 		}
 
+		// 펫 변경 알림 (지급 / 장착·해제 / 강화 / 승급).
+		// 보유 효과가 달라지므로 스탯 캐시와 펫 화면 표시를 함께 무효화하는 지점이다.
+		public readonly struct PetChangeEvent
+		{
+			public readonly EDT.Pet Pet;
+
+			public PetChangeEvent(EDT.Pet pet)
+			{
+				this.Pet = pet;
+			}
+		}
+
 		// 마스터리 변경 알림 (노드 투자 / 트리 초기화 / 레벨업).
 		// 리졸브 캐시와 스탯 캐시를 함께 무효화해야 하는 지점이다 (스킬 설계 11.4).
 		public readonly struct MasteryChangeEvent

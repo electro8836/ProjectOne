@@ -28,6 +28,7 @@ namespace ProjectOne.Unit
 		private readonly EquipmentAspect _equipmentAspect = new EquipmentAspect();
 		private readonly MasteryAspect _masteryAspect = new MasteryAspect();
 		private readonly HeroAvatarAspect _avatarAspect = new HeroAvatarAspect();
+		private readonly PetAspect _petAspect = new PetAspect();
 
 		// 히어로 프리팹 Addressable 주소 — 캐릭터가 하나뿐이라 테이블이 아닌 부트에서 주입받는다.
 		private string _heroPrefabAddress = string.Empty;
@@ -72,6 +73,7 @@ namespace ProjectOne.Unit
 			HeroAspectRegistry.Instance.Register(_equipmentAspect);
 			HeroAspectRegistry.Instance.Register(_masteryAspect);
 			HeroAspectRegistry.Instance.Register(_avatarAspect);
+			HeroAspectRegistry.Instance.Register(_petAspect);
 			HeroAspectRegistry.Instance.ApplyAll(hero);
 
 			// 장비/레벨 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전
@@ -79,6 +81,9 @@ namespace ProjectOne.Unit
 
 			// 드랍 흡입 센서 — 히어로 프리팹에 없으므로 여기서 붙인다.
 			HeroMagnet.AttachTo(hero);
+
+			// 장착한 펫을 이 히어로에 붙인다. 씬이 바뀌면 펫도 함께 사라지므로 히어로를 만들 때마다 다시 세운다.
+			PetSpawner.Instance.Refresh();
 
 			// 보유 스킬은 MasteryAspect 가 등록하므로 인디케이터 갱신은 ApplyAll 이후여야 한다.
 			RefreshSkillIndicator(hero);

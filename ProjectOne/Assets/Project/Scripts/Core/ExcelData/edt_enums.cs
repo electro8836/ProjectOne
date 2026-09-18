@@ -447,6 +447,16 @@ namespace EDT {
         OPT_ATKSPEED_DualBlades_Buff,
     }
 
+    public enum Pet {
+        None,
+        Pet_01,
+        Pet_02,
+        Pet_03,
+        Pet_04,
+        Pet_05,
+        Pet_06,
+    }
+
     public enum Projectile {
         None,
         PJT_CrossBow_Bolt,
@@ -652,6 +662,9 @@ namespace EDT {
         TableNpcSpawn,
         TableNpcDialog,
         TableOption,
+        TablePet,
+        TablePetEnhance,
+        TablePetPromotion,
         TableProjectile,
         TableQuest,
         TableReward,

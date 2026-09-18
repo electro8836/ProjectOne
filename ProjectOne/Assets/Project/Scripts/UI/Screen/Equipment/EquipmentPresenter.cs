@@ -33,6 +33,7 @@ namespace ProjectOne.UI
 	{
 		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
 		private const string CONSUMABLE_POPUP_ADDRESS = "UIPrefab_ConsumablePopup";
+		private const string PET_INFO_ADDRESS = "UIPrefab_PetInfo";
 
 		// 분류 탭 인덱스 — 프리펩 TabMenu_Middle 의 Hierarchy 순서와 일대일로 맞춘다.
 		private const int TAB_ALL = 0;
@@ -73,6 +74,7 @@ namespace ProjectOne.UI
 			view.OnSlotClicked += onSlotClicked;
 			view.OnHomeClicked += onHomeClicked;
 			view.OnStatClicked += onStatClicked;
+			view.OnPetClicked += onPetClicked;
 			view.OnSortClicked += onSortClicked;
 
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
@@ -95,6 +97,7 @@ namespace ProjectOne.UI
 			view.OnSlotClicked -= onSlotClicked;
 			view.OnHomeClicked -= onHomeClicked;
 			view.OnStatClicked -= onStatClicked;
+			view.OnPetClicked -= onPetClicked;
 			view.OnSortClicked -= onSortClicked;
 
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
@@ -151,6 +154,13 @@ namespace ProjectOne.UI
 		private void onStatClicked()
 		{
 			UIManager.Instance.ShowStatPopupAsync(view.GetDestroyToken()).Forget();
+		}
+
+		// 펫 버튼 — 펫 목록 창을 이 창 위에 겹쳐 연다.
+		// 탭 전환이 아니라 쌓기라서 장비창은 살아 있고, 펫 창을 닫으면 그대로 다시 보인다.
+		private void onPetClicked()
+		{
+			UIManager.Instance.OpenWindowAsync<PetInfoUI>(PET_INFO_ADDRESS, view.GetDestroyToken()).Forget();
 		}
 
 		// 슬롯 클릭 — 정보 팝업을 상위 캔버스에 연다(네비게이션 결정은 Presenter).

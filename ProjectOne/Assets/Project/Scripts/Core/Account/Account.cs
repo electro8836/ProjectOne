@@ -1,4 +1,5 @@
 ﻿using ProjectOne.Mastery;
+using ProjectOne.Pets;
 using ProjectOne.Quests;
 using ProjectOne.Shared;
 using ProjectOne.Utils;
@@ -15,6 +16,7 @@ namespace ProjectOne.UserData
 		public QuestBook Quests { get; private set; }
 		public ClearedDungeons ClearedDungeons { get; private set; }
 		public CostumeBook Costume { get; private set; }
+		public PetBook Pet { get; private set; }
 		public Wallet Wallet { get; private set; }
 
 		private Account()
@@ -25,6 +27,7 @@ namespace ProjectOne.UserData
 			Quests = new QuestBook(null);
 			ClearedDungeons = new ClearedDungeons(null);
 			Costume = new CostumeBook(null);
+			Pet = new PetBook(null);
 			Wallet = new Wallet(null);
 		}
 
@@ -57,6 +60,11 @@ namespace ProjectOne.UserData
 		public void SetCostume(CostumeDto data)
 		{
 			Costume = new CostumeBook(data);
+		}
+
+		public void SetPet(PetDto data)
+		{
+			Pet = new PetBook(data);
 		}
 
 		public void SetCurrency(CurrencyDto data)

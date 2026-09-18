@@ -13,6 +13,7 @@ using ProjectOne.Costumes;
 using ProjectOne.Dungeon;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
+using ProjectOne.Pets;
 using ProjectOne.Monsters;
 using ProjectOne.Quests;
 using ProjectOne.Reward;
@@ -62,6 +63,7 @@ namespace ProjectOne.Flow
 			SkillModifierCatalog.Build();
 			MonsterCatalog.Build();
 			CostumeCatalog.Build();
+			PetCatalog.Build();
 			RewardCatalog.Build();
 			ConsumableCatalog.Build();
 			QuestCatalog.Build();	// RewardCatalog 이후여야 한다 — 상자의 보상 그룹 존재를 검증한다

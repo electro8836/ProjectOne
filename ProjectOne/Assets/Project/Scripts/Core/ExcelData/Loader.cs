@@ -414,6 +414,39 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - Pet
+            {
+                CurrentFile = Table_Pet.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_Pet._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - PetEnhance
+            {
+                CurrentFile = Table_PetEnhance.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_PetEnhance._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - PetPromotion
+            {
+                CurrentFile = Table_PetPromotion.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_PetPromotion._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Projectile
             {
                 CurrentFile = Table_Projectile.Filename;

@@ -35,6 +35,9 @@ namespace ProjectOne.UI
 		[Header("스탯")]
 		[SerializeField] private UIButton _statButton;	// Top/Buttons/StatButton
 
+		[Header("펫")]
+		[SerializeField] private UIButton _petButton;	// Top/Buttons/PetButton
+
 		[Header("정렬")]
 		[SerializeField] private UIButton _sortButton;	// Button_Sorting
 		[SerializeField] private TMP_Text _sortLabel;	// Button_Sorting/Text (TMP)
@@ -57,6 +60,7 @@ namespace ProjectOne.UI
 		public event Action<long, int> OnSlotClicked;
 		public event Action OnHomeClicked;
 		public event Action OnStatClicked;
+		public event Action OnPetClicked;
 		public event Action OnSortClicked;
 
 		private readonly EquipmentPresenter _presenter = new EquipmentPresenter();
@@ -69,6 +73,7 @@ namespace ProjectOne.UI
 			_tabGroup.OnTabChanged += onTabChanged;
 			_homeButton.OnClickEvent += onHomeClicked;
 			_statButton.OnClickEvent += onStatClicked;
+			_petButton.OnClickEvent += onPetClicked;
 			_sortButton.OnClickEvent += onSortClicked;
 
 			_presenter.Initialize(this);
@@ -83,6 +88,7 @@ namespace ProjectOne.UI
 			_tabGroup.OnTabChanged -= onTabChanged;
 			_homeButton.OnClickEvent -= onHomeClicked;
 			_statButton.OnClickEvent -= onStatClicked;
+			_petButton.OnClickEvent -= onPetClicked;
 			_sortButton.OnClickEvent -= onSortClicked;
 		}
 
@@ -204,6 +210,11 @@ namespace ProjectOne.UI
 		private void onStatClicked()
 		{
 			if (OnStatClicked != null) { OnStatClicked.Invoke(); }
+		}
+
+		private void onPetClicked()
+		{
+			if (OnPetClicked != null) { OnPetClicked.Invoke(); }
 		}
 
 		private void onSortClicked()

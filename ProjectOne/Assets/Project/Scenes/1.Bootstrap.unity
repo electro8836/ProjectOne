@@ -602,11 +602,11 @@ MonoBehaviour:
     count: 1
   _currencies:
   - type: 1
-    amount: 1200000
+    amount: 1000000
   - type: 2
     amount: 5400
   - type: 3
-    amount: 700
+    amount: 1000
   _masteries:
   - mastery: 1
     level: 22
@@ -620,7 +620,14 @@ MonoBehaviour:
   _equippedBodyCostume: 1002
   _equippedWeaponCostume: 0
   _attackWhileMoving: 1
-  _spawnPet: 1
+  _pets:
+  - pet: 1
+    level: 1
+    grade: 5
+  - pet: 3
+    level: 1
+    grade: 4
+  _equippedPet: 2
   _viewRefreshInterval: 1
   _viewCharacterLevel: 0
   _viewCharacterExp: 0

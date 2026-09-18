@@ -666,7 +666,39 @@ namespace ProjectOne.UI
 		private const string SIMPLE_POPUP_ADDRESS = "UIPrefab_SimplePopup";
 		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
 		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
+		private const string PET_ENHANCE_POPUP_ADDRESS = "UIPrefab_PetEnhancePopup";
 
+
+		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		public async UniTask ShowPetEnhancePopupAsync(EDT.Pet petId, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(PET_ENHANCE_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			PetEnhancePopup popup = go.GetComponent<PetEnhancePopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(PET_ENHANCE_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(petId, _popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(PET_ENHANCE_POPUP_ADDRESS);
+			}
+		}
 
 		// 내 캐릭터 능력치 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
 		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
