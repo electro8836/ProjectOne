@@ -33,7 +33,6 @@ namespace ProjectOne.UI
 	{
 		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
 		private const string CONSUMABLE_POPUP_ADDRESS = "UIPrefab_ConsumablePopup";
-		private const string PET_INFO_ADDRESS = "UIPrefab_PetInfo";
 
 		// 분류 탭 인덱스 — 프리펩 TabMenu_Middle 의 Hierarchy 순서와 일대일로 맞춘다.
 		private const int TAB_ALL = 0;
@@ -156,11 +155,11 @@ namespace ProjectOne.UI
 			UIManager.Instance.ShowStatPopupAsync(view.GetDestroyToken()).Forget();
 		}
 
-		// 펫 버튼 — 펫 목록 창을 이 창 위에 겹쳐 연다.
-		// 탭 전환이 아니라 쌓기라서 장비창은 살아 있고, 펫 창을 닫으면 그대로 다시 보인다.
+		// 펫 버튼 — 펫 목록 팝업을 상위 캔버스에 전체화면으로 연다.
+		// 창 스택과 무관하므로 장비창은 아래에 그대로 살아 있고, 팝업을 닫으면 다시 보인다.
 		private void onPetClicked()
 		{
-			UIManager.Instance.OpenWindowAsync<PetInfoUI>(PET_INFO_ADDRESS, view.GetDestroyToken()).Forget();
+			UIManager.Instance.ShowPetInfoPopupAsync(view.GetDestroyToken()).Forget();
 		}
 
 		// 슬롯 클릭 — 정보 팝업을 상위 캔버스에 연다(네비게이션 결정은 Presenter).

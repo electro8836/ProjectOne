@@ -68,6 +68,10 @@ namespace ProjectOne.UI
 		// 그 위에 겹치는 존재다.
 		private CancellationTokenSource _commonPopupCts;
 
+		// 펫 목록 팝업도 전용 CTS 를 쓴다. _popupCts 를 같이 쓰면 슬롯에서 강화 팝업을 여는 순간
+		// 그 아래 펫 팝업이 취소되어 파괴된다 — 강화 팝업은 아래를 밀어내는 것이 아니라 위에 겹치는 존재다.
+		private CancellationTokenSource _petInfoCts;
+
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
@@ -667,7 +671,40 @@ namespace ProjectOne.UI
 		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
 		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
 		private const string PET_ENHANCE_POPUP_ADDRESS = "UIPrefab_PetEnhancePopup";
+		private const string PET_INFO_POPUP_ADDRESS = "UIPrefab_PetInfoPopup";
 
+
+		// 펫 목록 팝업을 _popupCanvas 에 전체화면으로 열고 닫힘을 기다린다.
+		// 루트가 stretch 라 네비게이션 바까지 덮는다.
+		public async UniTask ShowPetInfoPopupAsync(CancellationToken ct)
+		{
+			_petInfoCts?.Cancel();
+			_petInfoCts?.Dispose();
+			_petInfoCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(PET_INFO_POPUP_ADDRESS, _petInfoCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			PetInfoPopup popup = go.GetComponent<PetInfoPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(PET_INFO_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_petInfoCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(PET_INFO_POPUP_ADDRESS);
+			}
+		}
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowPetEnhancePopupAsync(EDT.Pet petId, CancellationToken ct)

@@ -9,8 +9,8 @@ using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
-	// 펫 목록 창 Presenter — 무엇을 어떤 순서·색·문구로 깔지 정한다.
-	public sealed class PetInfoPresenter : Presenter<PetInfoUI>
+	// 펫 목록 팝업 Presenter — 무엇을 어떤 순서·색·문구로 깔지 정한다.
+	public sealed class PetInfoPopupPresenter : Presenter<PetInfoPopup>
 	{
 		// 정렬 기준. 인덱스를 PlayerPrefs 에 저장하므로 순서를 바꾸면 저장된 값의 의미가 달라진다.
 		private enum SortModes
@@ -62,7 +62,8 @@ namespace ProjectOne.UI
 			EventManager.Instance.Unsubscribe<PetChangeEvent>(onPetChanged);
 		}
 
-		public override UniTask OnOpenAsync(CancellationToken ct)
+		// View 가 인스턴스화 직후 부른다. 표시를 채우고 돌아온다(닫힘 대기는 View 가 한다).
+		public UniTask ShowAsync(CancellationToken ct)
 		{
 			view.SetSortLabel(getSortLabel(_sortMode));
 			render();
@@ -89,10 +90,10 @@ namespace ProjectOne.UI
 			render();
 		}
 
-		// 창을 닫는다. 아래에 장비창이 그대로 살아 있으므로 그것이 다시 보인다.
+		// 팝업을 닫는다. 창 스택을 건드리면 아래에 열려 있는 장비창이 닫히므로 View 의 Close 를 쓴다.
 		private void onReturnClicked()
 		{
-			UIManager.Instance.CloseWindowAsync().Forget();
+			view.Close();
 		}
 
 		private void onPetChanged(PetChangeEvent e)
