@@ -68,6 +68,10 @@ namespace ProjectOne.UI
 		// 그 위에 겹치는 존재다.
 		private CancellationTokenSource _commonPopupCts;
 
+		// 재화 목록 팝업도 별도 CTS 를 쓴다. 이 팝업의 슬롯은 설명 툴팁(SimplePopup)을 띄우는데,
+		// 툴팁이 _popupCts 를 취소하면 그것을 띄운 목록 팝업 자신이 닫혀 버린다.
+		private CancellationTokenSource _currencyListCts;
+
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
@@ -698,6 +702,7 @@ namespace ProjectOne.UI
 		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
 		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
 		private const string PET_ENHANCE_POPUP_ADDRESS = "UIPrefab_PetEnhancePopup";
+		private const string CURRENCY_LIST_POPUP_ADDRESS = "UIPrefab_CurrencyListPopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -760,6 +765,37 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(STAT_POPUP_ADDRESS);
+			}
+		}
+
+		// 보유 재화 목록 팝업을 _popupCanvas 에 열고 닫힘을 기다린다.
+		public async UniTask ShowCurrencyListPopupAsync(CancellationToken ct)
+		{
+			_currencyListCts?.Cancel();
+			_currencyListCts?.Dispose();
+			_currencyListCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(CURRENCY_LIST_POPUP_ADDRESS, _currencyListCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			CurrencyListPopup popup = go.GetComponent<CurrencyListPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(CURRENCY_LIST_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_currencyListCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(CURRENCY_LIST_POPUP_ADDRESS);
 			}
 		}
 

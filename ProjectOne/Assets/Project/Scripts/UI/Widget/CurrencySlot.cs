@@ -82,10 +82,10 @@ namespace ProjectOne.UI
 
 		private void updateAmount(int amount)
 		{
-			_amountText.text = formatAmount(amount);
+			_amountText.text = FormatAmount(amount);
 		}
 
-		private static string formatAmount(int amount)
+		public static string FormatAmount(int amount)
 		{
 			if (amount >= 1_000_000_000) 
 			{

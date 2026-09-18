@@ -74,6 +74,7 @@ namespace ProjectOne.UI
 			view.OnSlotClicked += onSlotClicked;
 			view.OnHomeClicked += onHomeClicked;
 			view.OnStatClicked += onStatClicked;
+			view.OnCurrencyClicked += onCurrencyClicked;
 			view.OnPetClicked += onPetClicked;
 			view.OnSortClicked += onSortClicked;
 
@@ -97,6 +98,7 @@ namespace ProjectOne.UI
 			view.OnSlotClicked -= onSlotClicked;
 			view.OnHomeClicked -= onHomeClicked;
 			view.OnStatClicked -= onStatClicked;
+			view.OnCurrencyClicked -= onCurrencyClicked;
 			view.OnPetClicked -= onPetClicked;
 			view.OnSortClicked -= onSortClicked;
 
@@ -154,6 +156,12 @@ namespace ProjectOne.UI
 		private void onStatClicked()
 		{
 			UIManager.Instance.ShowStatPopupAsync(view.GetDestroyToken()).Forget();
+		}
+
+		// 재화 버튼 — 보유 재화 전체를 훑어보는 목록 팝업을 상위 캔버스에 연다.
+		private void onCurrencyClicked()
+		{
+			UIManager.Instance.ShowCurrencyListPopupAsync(view.GetDestroyToken()).Forget();
 		}
 
 		// 펫 버튼 — 펫 목록 창을 이 창 위에 겹쳐 연다.

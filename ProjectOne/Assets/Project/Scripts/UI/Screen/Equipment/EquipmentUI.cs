@@ -35,6 +35,9 @@ namespace ProjectOne.UI
 		[Header("스탯")]
 		[SerializeField] private UIButton _statButton;	// Top/Buttons/StatButton
 
+		[Header("재화")]
+		[SerializeField] private UIButton _currencyButton;	// Top/Buttons/CurrencyButton
+
 		[Header("펫")]
 		[SerializeField] private UIButton _petButton;	// Top/Buttons/PetButton
 
@@ -60,6 +63,7 @@ namespace ProjectOne.UI
 		public event Action<long, int> OnSlotClicked;
 		public event Action OnHomeClicked;
 		public event Action OnStatClicked;
+		public event Action OnCurrencyClicked;
 		public event Action OnPetClicked;
 		public event Action OnSortClicked;
 
@@ -73,6 +77,7 @@ namespace ProjectOne.UI
 			_tabGroup.OnTabChanged += onTabChanged;
 			_homeButton.OnClickEvent += onHomeClicked;
 			_statButton.OnClickEvent += onStatClicked;
+			_currencyButton.OnClickEvent += onCurrencyClicked;
 			_petButton.OnClickEvent += onPetClicked;
 			_sortButton.OnClickEvent += onSortClicked;
 
@@ -88,6 +93,7 @@ namespace ProjectOne.UI
 			_tabGroup.OnTabChanged -= onTabChanged;
 			_homeButton.OnClickEvent -= onHomeClicked;
 			_statButton.OnClickEvent -= onStatClicked;
+			_currencyButton.OnClickEvent -= onCurrencyClicked;
 			_petButton.OnClickEvent -= onPetClicked;
 			_sortButton.OnClickEvent -= onSortClicked;
 		}
@@ -215,6 +221,11 @@ namespace ProjectOne.UI
 		private void onPetClicked()
 		{
 			if (OnPetClicked != null) { OnPetClicked.Invoke(); }
+		}
+
+		private void onCurrencyClicked()
+		{
+			if (OnCurrencyClicked != null) { OnCurrencyClicked.Invoke(); }
 		}
 
 		private void onSortClicked()
