@@ -703,6 +703,7 @@ namespace ProjectOne.UI
 		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
 		private const string PET_ENHANCE_POPUP_ADDRESS = "UIPrefab_PetEnhancePopup";
 		private const string CURRENCY_LIST_POPUP_ADDRESS = "UIPrefab_CurrencyListPopup";
+		private const string MENU_POPUP_ADDRESS = "UIPrefab_MenuPopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -765,6 +766,37 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(STAT_POPUP_ADDRESS);
+			}
+		}
+
+		// 메인 HUD 의 메뉴 팝업을 _popupCanvas 에 열고 닫힘을 기다린다.
+		public async UniTask ShowMenuPopupAsync(CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(MENU_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			MenuPopup popup = go.GetComponent<MenuPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(MENU_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(MENU_POPUP_ADDRESS);
 			}
 		}
 

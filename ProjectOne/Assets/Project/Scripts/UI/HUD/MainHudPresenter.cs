@@ -40,6 +40,7 @@ namespace ProjectOne.UI
 
 			view.OnScreenRequested += onScreenRequested;
 			view.OnWarpRequested += onWarpRequested;
+			view.OnMenuRequested += onMenuRequested;
 
 			refreshCharacter();
 
@@ -57,6 +58,7 @@ namespace ProjectOne.UI
 			{
 				view.OnScreenRequested -= onScreenRequested;
 				view.OnWarpRequested -= onWarpRequested;
+				view.OnMenuRequested -= onMenuRequested;
 			}
 
 			if (_hero != null)
@@ -204,6 +206,18 @@ namespace ProjectOne.UI
 		private async UniTaskVoid openAsync(UIScreenId id)
 		{
 			await UIManager.Instance.OpenAsync(id, view.GetCancellationTokenOnDestroy());
+		}
+
+		// ── 메뉴 팝업 ─────────────────────────────────────────────────
+
+		private void onMenuRequested()
+		{
+			openMenuAsync().Forget();
+		}
+
+		private async UniTaskVoid openMenuAsync()
+		{
+			await UIManager.Instance.ShowMenuPopupAsync(view.GetCancellationTokenOnDestroy());
 		}
 
 		// ── 이동 ──────────────────────────────────────────────────────

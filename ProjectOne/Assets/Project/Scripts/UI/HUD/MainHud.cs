@@ -95,8 +95,15 @@ namespace ProjectOne.UI
 		[Header("개발용 이동 버튼 (비우면 자식에서 자동 수집)")]
 		[SerializeField] private DevWarpButton[] _warpButtons;
 
+		// 메뉴 팝업을 여는 버튼. 창(Window)이 아니라 팝업이라 ScreenOpenButton 경로를 타지 않는다.
+		[Header("메뉴")]
+		[SerializeField] private UIButton _menuButton;
+
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────
 		public event Action<UIScreenId> OnScreenRequested;
+
+		// 메뉴 팝업 요청 — 어떻게 여는지는 Presenter 가 정한다.
+		public event Action OnMenuRequested;
 
 		// 이동 요청 — 목적지는 Table_Map.ID. 어디로 갈지는 Presenter 가 판단한다.
 		public event Action<int> OnWarpRequested;
@@ -114,6 +121,11 @@ namespace ProjectOne.UI
 			collectWarpButtons();
 			bindWarpButtons();
 
+			if (_menuButton != null)
+			{
+				_menuButton.OnClickEvent += onMenuButtonClicked;
+			}
+
 			_presenter.Initialize(this);
 		}
 
@@ -129,6 +141,11 @@ namespace ProjectOne.UI
 			_presenter.Dispose();
 			unbindScreenButtons();
 			unbindWarpButtons();
+
+			if (_menuButton != null)
+			{
+				_menuButton.OnClickEvent -= onMenuButtonClicked;
+			}
 		}
 
 		// ── 표시 (Presenter 가 지시) ───────────────────────────────────
@@ -299,6 +316,14 @@ namespace ProjectOne.UI
 			if (OnScreenRequested != null)
 			{
 				OnScreenRequested.Invoke(id);
+			}
+		}
+
+		private void onMenuButtonClicked()
+		{
+			if (OnMenuRequested != null)
+			{
+				OnMenuRequested.Invoke();
 			}
 		}
 
