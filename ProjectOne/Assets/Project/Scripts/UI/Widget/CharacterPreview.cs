@@ -38,6 +38,11 @@ namespace ProjectOne.UI
 		// 리그를 실제로 얻었을 때만 Release 하기 위한 표시. 취소로 끊기면 짝이 안 맞는다.
 		private bool _acquired;
 
+		// 입어보기로 덮어쓸 코스튬 ID. -1 이면 실제 착용을 따른다.
+		// 리그는 비동기로 뒤늦게 세워지므로 여기서 들고 있다가 생성 직후 넘긴다.
+		private int _previewWeaponId = -1;
+		private int _previewBodyId = -1;
+
 		private void Start()
 		{
 			initAsync(this.GetCancellationTokenOnDestroy()).Forget();
@@ -45,6 +50,7 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
+			EventManager.Instance.Unsubscribe<CostumeChangeEvent>(onCostumeChanged);
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Unsubscribe<PresetChangeEvent>(onPresetChanged);
 			EventManager.Instance.Unsubscribe<MasteryChangeEvent>(onMasteryChanged);
@@ -73,6 +79,28 @@ namespace ProjectOne.UI
 				ResourceManager.Instance.Release(RigAddress);
 				_acquired = false;
 			}
+		}
+
+		// 입어보기 대상을 지정하고 곧바로 다시 그린다. -1 을 넘기면 그 부위는 실제 착용으로 되돌아간다.
+		// 리그가 아직 로드 중이면 값만 남고, 리그가 서는 순간 함께 반영된다.
+		public void SetPreviewCostume(int weaponCostumeId, int bodyCostumeId)
+		{
+			_previewWeaponId = weaponCostumeId;
+			_previewBodyId = bodyCostumeId;
+
+			if (_rig == null)
+			{
+				return;
+			}
+
+			_rig.SetPreviewCostume(_previewWeaponId, _previewBodyId);
+			_rig.Refresh();
+		}
+
+		// 착용 상태가 바뀐 뒤 외부에서 다시 그리게 할 때 쓴다.
+		public void Refresh()
+		{
+			refresh();
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
@@ -111,8 +139,10 @@ namespace ProjectOne.UI
 			_target.raycastTarget = false;
 			_target.enabled = true;
 
+			_rig.SetPreviewCostume(_previewWeaponId, _previewBodyId);
 			_rig.Refresh();
 
+			EventManager.Instance.Subscribe<CostumeChangeEvent>(onCostumeChanged);
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Subscribe<PresetChangeEvent>(onPresetChanged);
 			EventManager.Instance.Subscribe<MasteryChangeEvent>(onMasteryChanged);
@@ -126,6 +156,11 @@ namespace ProjectOne.UI
 			position.x += SlotStride * _slotCounter;
 			_slotCounter++;
 			return position;
+		}
+
+		private void onCostumeChanged(CostumeChangeEvent e)
+		{
+			refresh();
 		}
 
 		private void onEquipmentChanged(EquipmentChangeEvent e)

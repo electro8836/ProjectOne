@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using ProjectOne.Costumes;
+using ProjectOne.Event;
 using ProjectOne.Shared;
 using ProjectOne.Unit;
 
@@ -123,6 +124,9 @@ namespace ProjectOne.UserData
 		// 스탯·스킬은 코스튬과 무관하므로 Avatar 출처만 재적용한다.
 		private void reapplyAvatar()
 		{
+			// 인게임 히어로가 없어도 UI 프리뷰는 다시 그려야 하므로 발행이 먼저다.
+			EventManager.Instance.Publish(new CostumeChangeEvent());
+
 			if (UnitManager.HasInstance == false)
 			{
 				return;

@@ -11,6 +11,8 @@ namespace EDT {
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
+            public ItemGradeType Grade { get; set; } = ItemGradeType.None;
+            public string Acquisition { get; set; } = string.Empty;
             public CostumeType CostumeType { get; set; } = CostumeType.None;
             public WeaponType WeaponType { get; set; } = WeaponType.None;
             public string SetAddress { get; set; } = string.Empty;
@@ -43,6 +45,8 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
+                row.Grade = (ItemGradeType)reader.ReadInt32();
+                row.Acquisition = reader.ReadString();
                 row.CostumeType = (CostumeType)reader.ReadInt32();
                 row.WeaponType = (WeaponType)reader.ReadInt32();
                 row.SetAddress = reader.ReadString();

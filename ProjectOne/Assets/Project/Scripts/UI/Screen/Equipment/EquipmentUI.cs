@@ -41,6 +41,9 @@ namespace ProjectOne.UI
 		[Header("펫")]
 		[SerializeField] private UIButton _petButton;	// Top/Buttons/PetButton
 
+		[Header("코스튬")]
+		[SerializeField] private UIButton _costumeButton;	// Top/Buttons/CostumeButton
+
 		[Header("정렬")]
 		[SerializeField] private UIButton _sortButton;	// Button_Sorting
 		[SerializeField] private TMP_Text _sortLabel;	// Button_Sorting/Text (TMP)
@@ -65,6 +68,7 @@ namespace ProjectOne.UI
 		public event Action OnStatClicked;
 		public event Action OnCurrencyClicked;
 		public event Action OnPetClicked;
+		public event Action OnCostumeClicked;
 		public event Action OnSortClicked;
 
 		private readonly EquipmentPresenter _presenter = new EquipmentPresenter();
@@ -79,6 +83,7 @@ namespace ProjectOne.UI
 			_statButton.OnClickEvent += onStatClicked;
 			_currencyButton.OnClickEvent += onCurrencyClicked;
 			_petButton.OnClickEvent += onPetClicked;
+			_costumeButton.OnClickEvent += onCostumeClicked;
 			_sortButton.OnClickEvent += onSortClicked;
 
 			_presenter.Initialize(this);
@@ -95,6 +100,7 @@ namespace ProjectOne.UI
 			_statButton.OnClickEvent -= onStatClicked;
 			_currencyButton.OnClickEvent -= onCurrencyClicked;
 			_petButton.OnClickEvent -= onPetClicked;
+			_costumeButton.OnClickEvent -= onCostumeClicked;
 			_sortButton.OnClickEvent -= onSortClicked;
 		}
 
@@ -221,6 +227,11 @@ namespace ProjectOne.UI
 		private void onPetClicked()
 		{
 			if (OnPetClicked != null) { OnPetClicked.Invoke(); }
+		}
+
+		private void onCostumeClicked()
+		{
+			if (OnCostumeClicked != null) { OnCostumeClicked.Invoke(); }
 		}
 
 		private void onCurrencyClicked()

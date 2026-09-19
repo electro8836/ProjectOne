@@ -322,4 +322,10 @@ namespace ProjectOne.Event
 						this.Stage = stage;
 				}
 		}
+
+		// 코스튬 착용 변경 알림 (무기/바디 코스튬 착용·해제).
+		// 무엇이 바뀌었는지 구분할 소비자가 없어 값을 싣지 않는다 — 받는 쪽은 외형을 다시 그리기만 한다.
+		public readonly struct CostumeChangeEvent
+		{
+		}
 }
