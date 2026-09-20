@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace ProjectOne.UI
@@ -71,12 +68,8 @@ namespace ProjectOne.UI
 		[Header("맥락별 표시 묶음")]
 		[SerializeField] private ContextGroup[] _contextGroups;
 
-		// 체력·레벨·전투력은 HeroInfo 가 전담한다 — 같은 캔버스에 두면 체력 변동이 HUD 전체 리빌드로 번진다.
-
-		// 내 히어로에게 걸린 버프를 깔 자리. 슬롯은 런타임에 찍어 넣는다.
-		[Header("버프")]
-		[SerializeField] private RectTransform _buffParent;	// BuffInfo
-		[SerializeField] private BuffSlot _buffSlotPrefab;	// UIPrefab_BuffSlot
+		// 체력·레벨·전투력은 HeroInfo 가, 버프 목록은 BuffInfo 가 전담한다 —
+		// 같은 캔버스에 두면 그쪽 갱신이 HUD 전체 리빌드로 번진다.
 
 		// 화면 열기 버튼 — 비워두면 자식에서 자동 수집한다. 사용자가 UI 를 재구성해도 배열을 다시 채울 필요가 없다.
 		[Header("화면 열기 버튼 (비우면 자식에서 자동 수집)")]
@@ -101,9 +94,6 @@ namespace ProjectOne.UI
 
 		private readonly MainHudPresenter _presenter = new MainHudPresenter();
 
-		private readonly List<BuffSlot> _buffSlots = new List<BuffSlot>();
-		private readonly List<UniTask> _buffBindTasks = new List<UniTask>();	// 렌더 일괄 대기용
-
 		private void Awake()
 		{
 			collectScreenButtons();
@@ -120,12 +110,6 @@ namespace ProjectOne.UI
 			_presenter.Initialize(this);
 		}
 
-		// 버프는 "추가" 이벤트가 없어 주기 폴링으로 갱신한다. 주기 판단은 Presenter 가 한다.
-		private void Update()
-		{
-			_presenter.Tick(Time.deltaTime);
-		}
-
 		private void OnDestroy()
 		{
 			_presenter.Dispose();
@@ -139,49 +123,6 @@ namespace ProjectOne.UI
 		}
 
 		// ── 표시 (Presenter 가 지시) ───────────────────────────────────
-
-		// 버프 목록을 다시 깐다. 슬롯은 파괴하지 않고 재사용한다 —
-		// 0.1초마다 들어오는 호출에서 매번 Instantiate 하면 GC 가 튄다.
-		public void RenderBuffs(IReadOnlyList<BuffSlotData> data)
-		{
-			if (_buffParent == null || _buffSlotPrefab == null)
-			{
-				return;
-			}
-
-			CancellationToken ct = this.GetCancellationTokenOnDestroy();
-
-			_buffBindTasks.Clear();
-
-			for (int i = 0; i < data.Count; i++)
-			{
-				BuffSlot slot = getOrCreateBuffSlot(i);
-				slot.gameObject.SetActive(true);
-
-				_buffBindTasks.Add(slot.BindAsync(data[i], ct));
-			}
-
-			for (int i = data.Count; i < _buffSlots.Count; i++)
-			{
-				_buffSlots[i].gameObject.SetActive(false);
-			}
-
-			// HUD 는 아이콘 로드를 기다릴 이유가 없다 — 늦게 도착하면 그때 그려진다.
-			UniTask.WhenAll(_buffBindTasks).SuppressCancellationThrow().Forget();
-		}
-
-		private BuffSlot getOrCreateBuffSlot(int index)
-		{
-			if (index < _buffSlots.Count)
-			{
-				return _buffSlots[index];
-			}
-
-			BuffSlot slot = Instantiate(_buffSlotPrefab, _buffParent);
-			_buffSlots.Add(slot);
-
-			return slot;
-		}
 
 		// 맥락에 맞지 않는 묶음을 숨긴다. 레이드에서 가이드 버튼을 감추는 장치가 이것이다.
 		public void ApplyContext(HudContext context)

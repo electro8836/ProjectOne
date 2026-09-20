@@ -148,6 +148,37 @@ namespace ProjectOne.Buff
 			return rt;
 		}
 
+		// 같은 ID 인스턴스 중 가장 늦게 끝나는 것 — 표시용 남은 시간에 쓴다.
+		//
+		// 대표(_firstById)는 "가장 먼저 걸린 것" = 가장 빨리 끝나는 것이라, Independent 로 여러 개
+		// 중첩되면 남은 시간이 가장 짧은 값으로 보이고 그것이 만료될 때 숫자가 위로 튄다.
+		// 대표 선정 규칙 자체는 건드리지 않는다 — Apply 의 상한 회전과 Extend 가산이 그 의미에 기댄다.
+		public BuffRuntime GetLongestRuntime(EDT.Buff id)
+		{
+			BuffRuntime best = null;
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				BuffRuntime rt = _ordered[i];
+				if (rt.Id != id)
+				{
+					continue;
+				}
+
+				// 무한 지속은 RemainingDuration 이 0 으로 고정되므로 크기 비교에 넣으면 꼴찌가 된다.
+				if (rt.IsInfinite == true)
+				{
+					return rt;
+				}
+
+				if (best == null || rt.RemainingDuration > best.RemainingDuration)
+				{
+					best = rt;
+				}
+			}
+
+			return best;
+		}
+
 		// 현재 중첩 수 — Independent 는 인스턴스 개수, 나머지는 대표 인스턴스의 Stack.
 		public int GetStack(EDT.Buff id)
 		{
