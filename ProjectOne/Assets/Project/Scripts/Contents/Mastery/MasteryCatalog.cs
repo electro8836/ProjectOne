@@ -207,6 +207,13 @@ namespace ProjectOne.Mastery
 			return row != null ? row.TotalExperience : 0;
 		}
 
+		// 위와 같되 캐릭터 커브. 테이블에 없으면 0(만렙 초과).
+		public static int GetCharacterTotalExp(int level)
+		{
+			Table_CharacterLevelExp.Row row = Table_CharacterLevelExp.Get(level);
+			return row != null ? row.TotalExperience : 0;
+		}
+
 		// ── 스킬포인트 상한 ───────────────────────────────────────────
 
 		// 해당 출처로 얻을 수 있는 최대 포인트. 행이 없으면 0(획득 불가).

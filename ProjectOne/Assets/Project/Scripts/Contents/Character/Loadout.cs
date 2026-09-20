@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Items;
+using ProjectOne.Mastery;
 using ProjectOne.Shared;
 using ProjectOne.Unit;
+using ProjectOne.Unit.Stats;
 
 namespace ProjectOne.UserData
 {
@@ -22,7 +24,6 @@ namespace ProjectOne.UserData
 
 		// 인덱스 = EquipSlotTypes 정수값. 0번(None)은 사용하지 않는다. 0 = 미장착.
 		private readonly long[] _slots = new long[LoadoutDto.SlotCount];
-		private int _level = 1;
 		private int _exp;
 
 		// 장착 변경 누적 플래그 — 클릭마다 서버 전송하지 않고, flush 시점에 dirty 면 1회만 저장한다.
@@ -35,9 +36,12 @@ namespace ProjectOne.UserData
 
 		// ── 레벨 / 경험치 ─────────────────────────────────────────────
 
+		// 누적 경험치에서 파생된다 — 마스터리(MasteryProgress.Level)와 같은 방식이다.
+		// 커브와 만렙이 서로 달라 같은 경험치를 먹어도 레벨은 따로 오른다.
+		// 만렙 초과분은 레벨에 반영되지 않고 쌓이기만 한다.
 		public int Level
 		{
-			get { return _level; }
+			get { return MasteryCatalog.GetCharacterLevel(_exp); }
 		}
 
 		public int Exp
@@ -45,7 +49,7 @@ namespace ProjectOne.UserData
 			get { return _exp; }
 		}
 
-		// 경험치 누적만 한다(레벨은 자동 상승하지 않음 — 레벨업은 서버 함수로만 +1). 변경 시 알림.
+		// 경험치 누적. 레벨이 넘어갔으면 활성 히어로의 기본 스탯을 다시 굽는다. 변경 시 알림.
 		public void AddExp(int amount)
 		{
 			if (amount <= 0)
@@ -53,22 +57,25 @@ namespace ProjectOne.UserData
 				return;
 			}
 
-			_exp += amount;
-			EventManager.Instance.Publish(new CharacterChangeEvent());
+			setExpInternal(_exp + amount);
 		}
 
-		// 레벨업 적용 — 서버 응답 후 호출. 레벨/경험치를 권위값으로 갱신하고 알림.
-		public void ApplyLevelup(int newLevel, int newExp)
-		{
-			_level = newLevel;
-			_exp = newExp;
-			EventManager.Instance.Publish(new CharacterChangeEvent());
-		}
-
-		// 경험치를 권위값으로 갱신(레벨 불변) — 던전 보상 등 서버 가산 결과를 로컬에 반영하고 알림.
+		// 경험치를 권위값으로 갱신 — 던전 보상 등 서버 가산 결과를 로컬에 반영하고 알림.
 		public void SetExp(int newExp)
 		{
+			setExpInternal(newExp);
+		}
+
+		private void setExpInternal(int newExp)
+		{
+			int before = Level;
 			_exp = newExp;
+
+			if (Level != before)
+			{
+				reapplyHeroLevel();
+			}
+
 			EventManager.Instance.Publish(new CharacterChangeEvent());
 		}
 
@@ -191,7 +198,7 @@ namespace ProjectOne.UserData
 		public LoadoutDto ToDto()
 		{
 			LoadoutDto dto = new LoadoutDto();
-			dto.level = _level;
+			dto.level = Level;
 			dto.exp = _exp;
 			for (int i = 0; i < LoadoutDto.SlotCount; i++)
 			{
@@ -212,12 +219,11 @@ namespace ProjectOne.UserData
 
 			if (dto == null)
 			{
-				_level = 1;
 				_exp = 0;
 				return;
 			}
 
-			_level = dto.level > 0 ? dto.level : 1;
+			// dto.level 은 읽지 않는다 — 레벨은 누적 경험치에서 파생된다.
 			_exp = dto.exp;
 			if (dto.slots == null)
 			{
@@ -262,6 +268,35 @@ namespace ProjectOne.UserData
 		// 무기를 바꾸면 마스터리가 통째로 교체되므로 장비 Aspect 만으로는 부족하다 —
 		// 평타·트리·근접성향이 전부 마스터리 소유다 (마스터리 설계 4.2).
 		// 리졸브 캐시도 함께 버린다 (스킬 설계 11.4 — 무기 교체는 가장 무거운 무효화 이벤트다).
+		// 레벨이 바뀌었을 때 활성 히어로의 Base 스탯만 새 레벨로 덮어쓴다.
+		//
+		// ComposeBase 를 다시 부르지 않는 이유 — 그쪽은 Vitals 를 InitHp 로 풀피 회복시키고
+		// BuffContainer / SkillContainer 를 새로 만든다. 전투 중에 부르면 버프가 전부 날아간다.
+		private void reapplyHeroLevel()
+		{
+			int level = Level;
+
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
+			{
+				Hero hero = heroes[i] as Hero;
+				if (hero == null)
+				{
+					continue;
+				}
+
+				// 최대 체력 변경 "직전" 값을 넘겨야 현재 체력 비율이 유지된다.
+				float previousMaxHp = hero.Stats.GetStat(Stat.Stat_MaxHp);
+
+				StatContainerFactory.ApplyCharacterBase(hero.Stats, level);
+				hero.SetLevel(level);
+				hero.Vitals.RescaleToNewMaxHp(previousMaxHp);
+
+				// 공속이 바뀌면 모션 배속도 다시 밀어야 한다.
+				hero.RefreshAnimationStats();
+			}
+		}
+
 		private void reapplyHero()
 		{
 			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);

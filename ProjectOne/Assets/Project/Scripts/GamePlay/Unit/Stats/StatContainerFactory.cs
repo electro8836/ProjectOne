@@ -11,14 +11,24 @@ namespace ProjectOne.Unit.Stats
 		public static StatContainer ForCharacter(int level)
 		{
 			StatContainer c = new StatContainer();
+			ApplyCharacterBase(c, level);
+			return c;
+		}
+
+		// 이미 쓰고 있는 컨테이너의 Base 레이어만 새 레벨로 덮어쓴다 — 레벨업 시 사용.
+		// Base 는 절대 대입(SetBase)이라 다시 적용해도 누적되지 않고, 모디파이어(장비·트리·버프)는 그대로 남는다.
+		public static void ApplyCharacterBase(StatContainer target, int level)
+		{
+			if (target == null)
+			{
+				return;
+			}
 
 			List<Table_CharacterStat.Row> all = new List<Table_CharacterStat.Row>(Table_CharacterStat.All().Values);
 			for (int i = 0; i < all.Count; i++)
 			{
-				applyRow(c, all[i].StatDetailID, all[i].BaseValue, all[i].PerLevel, level);
+				applyRow(target, all[i].StatDetailID, all[i].BaseValue, all[i].PerLevel, level);
 			}
-
-			return c;
 		}
 
 		public static StatContainer ForMonster(int statGroupId, int level)

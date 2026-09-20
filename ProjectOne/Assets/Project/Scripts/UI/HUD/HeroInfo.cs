@@ -32,6 +32,10 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _levelText;
 		[SerializeField] private TMP_Text _battlePowerText;
 
+		[Header("경험치")]
+		[SerializeField] private Slider _heroExpSlider;
+		[SerializeField] private Slider _masteryExpSlider;
+
 		private Action<UnitSpawnedEvent> _onUnitSpawned;
 		private Action<CharacterChangeEvent> _onCharacterChanged;
 		private Action<MasteryChangeEvent> _onMasteryChanged;
@@ -45,6 +49,8 @@ namespace ProjectOne.UI
 		private float _lastMaxHp = -1f;
 		private int _lastLevel = -1;
 		private int _lastMasteryLevel = -1;
+		private float _lastHeroExpRatio = -1f;
+		private float _lastMasteryExpRatio = -1f;
 
 		// 전투력은 전용 이벤트가 없어 스탯 버전으로 감지한다 (게임플레이 쪽 UnitBase.tickHpNotify 와 같은 방식).
 		// 영향 이벤트(EquipmentChange/MasteryChange/PetChange/…)를 구독하면 Aspect 재적용과 발행 순서가
@@ -65,6 +71,7 @@ namespace ProjectOne.UI
 			EventManager.Instance.Subscribe<PresetChangeEvent>(_onPresetChanged);
 
 			refreshLevel();
+			refreshExp();
 		}
 
 		private void OnDestroy()
@@ -166,6 +173,64 @@ namespace ProjectOne.UI
 			}
 		}
 
+		// ── 경험치 ────────────────────────────────────────────────────
+
+		// 두 게이지는 각자의 커브를 본다 — 같은 경험치를 먹어도 요구량과 만렙이 달라 따로 움직인다.
+		// refreshLevel 에 합치지 않는 이유 — 그쪽은 레벨이 같으면 조기 리턴하는데
+		// 경험치는 레벨이 안 바뀌어도 계속 오른다.
+		private void refreshExp()
+		{
+			if (_heroExpSlider != null)
+			{
+				int level = Account.Instance.Loadout.Level;
+				float ratio = bandRatio(Account.Instance.Loadout.Exp,
+					MasteryCatalog.GetCharacterTotalExp(level),
+					MasteryCatalog.GetCharacterTotalExp(level + 1));
+
+				if (Mathf.Approximately(_lastHeroExpRatio, ratio) == false)
+				{
+					_lastHeroExpRatio = ratio;
+					_heroExpSlider.value = ratio;
+				}
+			}
+
+			if (_masteryExpSlider == null)
+			{
+				return;
+			}
+
+			// 무기를 착용하지 않았으면 적립 대상 마스터리가 없다 — 빈 게이지로 둔다.
+			float masteryRatio = 0f;
+			MasteryProgress progress = Account.Instance.Mastery.CurrentProgress;
+			if (progress != null)
+			{
+				int masteryLevel = progress.Level;
+				masteryRatio = bandRatio(progress.TotalExp,
+					MasteryCatalog.GetMasteryTotalExp(masteryLevel),
+					MasteryCatalog.GetMasteryTotalExp(masteryLevel + 1));
+			}
+
+			if (Mathf.Approximately(_lastMasteryExpRatio, masteryRatio) == true)
+			{
+				return;
+			}
+
+			_lastMasteryExpRatio = masteryRatio;
+			_masteryExpSlider.value = masteryRatio;
+		}
+
+		// 현재 레벨 구간의 진행도. 테이블 값이 누적치라 구간을 떼어내야 레벨업 직후 0에서 시작한다.
+		// 다음 레벨 행이 없으면(만렙) 꽉 찬 상태로 둔다.
+		private static float bandRatio(int exp, int currentTotal, int nextTotal)
+		{
+			if (nextTotal <= currentTotal)
+			{
+				return 1f;
+			}
+
+			return Mathf.Clamp01((float)(exp - currentTotal) / (nextTotal - currentTotal));
+		}
+
 		// ── 전투력 ────────────────────────────────────────────────────
 
 		private void refreshBattlePower()
@@ -231,6 +296,7 @@ namespace ProjectOne.UI
 			// 히어로 스폰은 Aspect 적용이 끝난 뒤 통지되므로 Loadout 이 확실히 채워진 시점이다.
 			// Awake 가 데이터보다 앞서는 경우의 보험이다.
 			refreshLevel();
+			refreshExp();
 		}
 
 		// 레벨업·경험치 적립이 함께 타는 통지다. 마스터리 레벨업은 전용 이벤트가 없고
@@ -238,6 +304,7 @@ namespace ProjectOne.UI
 		private void onCharacterChanged(CharacterChangeEvent e)
 		{
 			refreshLevel();
+			refreshExp();
 		}
 
 		// 스킬 트리 투자·환불·초기화. 마스터리 레벨은 경험치 파생이라 이 신호로는 바뀌지 않지만,
@@ -245,6 +312,7 @@ namespace ProjectOne.UI
 		private void onMasteryChanged(MasteryChangeEvent e)
 		{
 			refreshLevel();
+			refreshExp();
 		}
 
 		// 장비 슬롯 변경 — **무기 교체가 마스터리 대상을 통째로 갈아치우는 유일한 경로다**
@@ -253,6 +321,7 @@ namespace ProjectOne.UI
 		private void onPresetChanged(PresetChangeEvent e)
 		{
 			refreshLevel();
+			refreshExp();
 		}
 	}
 }

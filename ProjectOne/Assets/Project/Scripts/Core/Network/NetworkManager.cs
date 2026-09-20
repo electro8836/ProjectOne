@@ -162,17 +162,6 @@ namespace ProjectOne.Network
 			_caller.Invoke<SaveLoadoutRequest, SaveLoadoutResponse>(FunctionName.SaveLoadout, request, callback, false);
 		}
 
-		// 레벨업 — 서버가 경험치 충족 + 비용 검증·차감 후 레벨 +1, 권위 레벨/경험치 반환.
-		public void RequestLevelup(LevelupRequest request, ResponseCallback<LevelupResponse> callback)
-		{
-			if (ensureLoggedIn(callback) == false)
-			{
-				return;
-			}
-
-			_caller.Invoke<LevelupRequest, LevelupResponse>(FunctionName.LevelupCharacter, request, callback);
-		}
-
 		// ── 장착 flush 코디네이터 ─────────────────────────────────────────
 
 		// dirty(미저장 장착 변경)면 8슬롯을 1회 전송한다(화면 닫기·앱 일시정지/종료 트리거).

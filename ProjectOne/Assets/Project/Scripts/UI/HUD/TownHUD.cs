@@ -2,8 +2,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using EDT;
 using ProjectOne.Event;
+using ProjectOne.Mastery;
 using ProjectOne.UserData;
 
 namespace ProjectOne.UI
@@ -87,26 +87,27 @@ namespace ProjectOne.UI
 
 			_levelText.text = level.ToString();
 
-			// 슬라이더/텍스트 — 현재/필요 표기, 최대 레벨은 MAX.
-			int reqExp = requiredExpForNext(level);
-			if (reqExp <= 0)
+			// 테이블 값은 누적치다 — 현재 레벨 구간만 떼어내야 레벨업 직후 게이지가 0에서 시작한다.
+			int nextTotal = totalExpFor(level + 1);
+			if (nextTotal <= 0)
 			{
 				_expText.text = "MAX";
 				_expSlider.value = 1f;
+				return;
 			}
-			else
-			{
-				_expText.text = exp.ToString() + "/" + reqExp.ToString();
-				// 수동 레벨업이라 현재가 필요를 초과할 수 있어 1로 클램프.
-				_expSlider.value = Mathf.Clamp01((float)exp / reqExp);
-			}
+
+			int currentTotal = totalExpFor(level);
+			int gained = exp - currentTotal;
+			int required = nextTotal - currentTotal;
+
+			_expText.text = gained.ToString() + "/" + required.ToString();
+			_expSlider.value = (required > 0) ? Mathf.Clamp01((float)gained / required) : 0f;
 		}
 
-		// 다음 레벨 도달에 필요한 누적 경험치(Table_CharacterLevelExp). 없으면 0(최대 레벨).
-		private static int requiredExpForNext(int level)
+		// 해당 레벨 도달에 필요한 누적 경험치. 없으면 0(최대 레벨 초과).
+		private static int totalExpFor(int level)
 		{
-			Table_CharacterLevelExp.Row next = Table_CharacterLevelExp.Get(level + 1);
-			return next != null ? next.TotalExperience : 0;
+			return MasteryCatalog.GetCharacterTotalExp(level);
 		}
 	}
 }
