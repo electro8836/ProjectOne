@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 
 namespace ProjectOne.UI
 {
@@ -73,14 +71,7 @@ namespace ProjectOne.UI
 		[Header("맥락별 표시 묶음")]
 		[SerializeField] private ContextGroup[] _contextGroups;
 
-		[Header("캐릭터 정보")]
-		[SerializeField] private TMP_Text _levelText;
-		[SerializeField] private Slider _expSlider;
-		[SerializeField] private TMP_Text _expText;
-
-		[Header("체력")]
-		[SerializeField] private Slider _hpSlider;
-		[SerializeField] private TMP_Text _hpText;
+		// 체력·레벨·전투력은 HeroInfo 가 전담한다 — 같은 캔버스에 두면 체력 변동이 HUD 전체 리빌드로 번진다.
 
 		// 내 히어로에게 걸린 버프를 깔 자리. 슬롯은 런타임에 찍어 넣는다.
 		[Header("버프")]
@@ -135,7 +126,6 @@ namespace ProjectOne.UI
 			_presenter.Tick(Time.deltaTime);
 		}
 
-		// 체력은 이벤트가 없어 값 비교로 갱신한다 — 판단은 Presenter 가 하고 View 는 위임만 한다.
 		private void OnDestroy()
 		{
 			_presenter.Dispose();
@@ -149,57 +139,6 @@ namespace ProjectOne.UI
 		}
 
 		// ── 표시 (Presenter 가 지시) ───────────────────────────────────
-
-		public void SetLevel(int level)
-		{
-			if (_levelText != null)
-			{
-				_levelText.text = level.ToString();
-			}
-		}
-
-		// requiredExp 가 0이면 최대 레벨이다.
-		public void SetExp(int exp, int requiredExp)
-		{
-			if (requiredExp <= 0)
-			{
-				if (_expText != null)
-				{
-					_expText.text = "MAX";
-				}
-
-				if (_expSlider != null)
-				{
-					_expSlider.value = 1f;
-				}
-
-				return;
-			}
-
-			if (_expText != null)
-			{
-				_expText.text = exp.ToString() + "/" + requiredExp.ToString();
-			}
-
-			if (_expSlider != null)
-			{
-				// 수동 레벨업이라 현재 경험치가 필요치를 넘을 수 있어 클램프한다.
-				_expSlider.value = Mathf.Clamp01((float)exp / requiredExp);
-			}
-		}
-
-		public void SetHp(float current, float max)
-		{
-			if (_hpSlider != null)
-			{
-				_hpSlider.value = (max > 0f) ? Mathf.Clamp01(current / max) : 0f;
-			}
-
-			if (_hpText != null)
-			{
-				_hpText.text = Mathf.CeilToInt(current).ToString() + "/" + Mathf.CeilToInt(max).ToString();
-			}
-		}
 
 		// 버프 목록을 다시 깐다. 슬롯은 파괴하지 않고 재사용한다 —
 		// 0.1초마다 들어오는 호출에서 매번 Instantiate 하면 GC 가 튄다.
