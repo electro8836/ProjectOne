@@ -163,32 +163,16 @@ namespace EDT {
         Modifier,
     }
 
-    public enum QuestCategory {
-        None,
-        Main,
-        Sub,
-    }
-
-    public enum QuestAcceptType {
-        None,
-        Auto,
-        Npc,
-        UI,
-    }
-
     public enum QuestCompleteType {
         None,
         Auto,
-        Npc,
         UI,
     }
 
     public enum QuestTargetType {
         None,
-        KillMonster,
-        EquipItemGrade,
-        EquipItemLevel,
-        Talk,
+        MonsterKill,
+        BossKill,
         DungeonClear,
         ReachLevel,
     }

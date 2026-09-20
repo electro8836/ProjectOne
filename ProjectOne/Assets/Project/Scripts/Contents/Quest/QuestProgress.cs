@@ -4,8 +4,9 @@ namespace ProjectOne.Quests
 {
 	// 진행 중인 퀘스트 1개의 상태.
 	//
-	// counter 는 KillMonster 만 쓴다. 나머지 목표는 전부 조건 충족형(0/1)이라 저장할 진행도가 없고
-	// 판정 시점에 다시 평가한다 (설계 3.3) — 그래야 이미 조건을 만족한 채로 수주해도 즉시 달성된다.
+	// counter 는 MonsterKill / BossKill 만 쓴다. DungeonClear / ReachLevel 은 조건 충족형(0/1)이라
+	// 저장할 진행도가 없고 판정 시점에 다시 평가한다 — 그래야 이미 조건을 만족한 채로
+	// 퀘스트가 열려도 즉시 달성된다.
 	public sealed class QuestProgress
 	{
 		public int questId;

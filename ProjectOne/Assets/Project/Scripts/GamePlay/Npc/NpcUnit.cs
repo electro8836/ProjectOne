@@ -1,7 +1,8 @@
+using Cysharp.Threading.Tasks;
 using EDT;
 using UnityEngine;
 using UnityEngine.Rendering;
-using ProjectOne.Quests;
+using ProjectOne.UI;
 
 namespace ProjectOne.Npcs
 {
@@ -11,8 +12,7 @@ namespace ProjectOne.Npcs
 	// UnitManager 의 시뮬레이션 루프(캐시 갱신·공간 해시·분리 계산)에 매 프레임 실려
 	// 아무것도 하지 않는 유닛을 계속 계산하게 된다.
 	//
-	// 상호작용 판정은 NpcInteraction 이, 화면 열기는 NpcInteractor 가 소유한다.
-	// 여기는 "누구인가"와 "눌렸다"만 안다.
+	// 클릭하면 NpcType 에 대응하는 기능 화면(상점·대장간)을 연다. 대응 화면이 없으면 아무 일도 없다.
 	//
 	// 클릭을 받으려면 Collider2D 가 필요하다 — 프리팹에 없으면 경고를 남기고 상호작용이 죽는다.
 	public class NpcUnit : MonoBehaviour
@@ -70,7 +70,25 @@ namespace ProjectOne.Npcs
 		// 클릭 상호작용. 2D 콜라이더가 있으면 유니티가 불러 준다.
 		private void OnMouseUpAsButton()
 		{
-			NpcInteractor.Interact(_npcId);
+			if (_row == null)
+			{
+				return;
+			}
+
+			// 화면은 UIManager.OpenAsync(UIScreenId) 하나로만 연다 — HUD 버튼이 여는 상점과
+			// NPC 가 여는 상점이 같은 코드여야 "굳이 찾아가지 않아도 같은 창"이 성립한다.
+			UIScreenId screen = UIScreenCatalog.FromNpcType(_row.NpcType);
+			if (screen == UIScreenId.None)
+			{
+				return;
+			}
+
+			openAsync(screen).Forget();
+		}
+
+		private async UniTaskVoid openAsync(UIScreenId screen)
+		{
+			await UIManager.Instance.OpenAsync(screen, this.GetCancellationTokenOnDestroy());
 		}
 
 		// 상호작용 대상으로 눌리려면 콜라이더가 있어야 한다.

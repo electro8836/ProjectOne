@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using EDT;
-using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.Map;
 using ProjectOne.UserData;
@@ -12,19 +10,13 @@ namespace ProjectOne.Quests
 	//
 	// MonsterKillReward 와 같은 골격의 이벤트 구독형 MonoSingleton 이다.
 	// 다른 점은 **영속**이라는 것 — 마을·필드·던전을 가로질러 살아 있어야 한다.
-	//
-	// Talk 목표만 이벤트가 아니라 NpcInteraction 이 직접 통지한다. 대화는 유저 조작이라
-	// 이벤트로 흘리면 "언제 말을 걸었는가"가 흐려진다.
 	public sealed class QuestTracker : MonoSingleton<QuestTracker>
 	{
 		protected override bool Persistent => true;
 
-		// 완료 판정 대상 임시 버퍼 — 순회 중 목록이 바뀌므로(완료하면 서브가 빠진다) 복사해서 돈다.
-		private readonly List<int> _checkBuffer = new List<int>(4);
-
 		// 완료 판정은 재진입한다 — 보상 경험치 지급이 CharacterChangeEvent 를 발행하고
-		// 그 핸들러가 다시 완료 판정을 부른다. 버퍼를 공유하므로 중첩되면 바깥 순회가 깨진다.
-		// 안쪽 요청은 플래그로 미뤘다가 바깥 순회가 끝난 뒤 한 번 더 돈다.
+		// 그 핸들러가 다시 완료 판정을 부른다. 안쪽 요청은 플래그로 미뤘다가
+		// 바깥 순회가 끝난 뒤 한 번 더 돈다.
 		private bool _checking;
 		private bool _recheckRequested;
 
@@ -34,7 +26,6 @@ namespace ProjectOne.Quests
 
 			EventManager.Instance.Subscribe<MonsterKillEvent>(onMonsterKill);
 			EventManager.Instance.Subscribe<CharacterChangeEvent>(onCharacterChanged);
-			EventManager.Instance.Subscribe<PresetChangeEvent>(onPresetChanged);
 			EventManager.Instance.Subscribe<DungeonStageClearedEvent>(onDungeonStageCleared);
 		}
 
@@ -42,7 +33,6 @@ namespace ProjectOne.Quests
 		{
 			EventManager.Instance.Unsubscribe<MonsterKillEvent>(onMonsterKill);
 			EventManager.Instance.Unsubscribe<CharacterChangeEvent>(onCharacterChanged);
-			EventManager.Instance.Unsubscribe<PresetChangeEvent>(onPresetChanged);
 			EventManager.Instance.Unsubscribe<DungeonStageClearedEvent>(onDungeonStageCleared);
 
 			base.OnDestroy();
@@ -53,26 +43,15 @@ namespace ProjectOne.Quests
 		{
 		}
 
-		// 로그인 직후 호출 — 저장된 진행도로 시작하고 자동 수락 퀘스트를 훑는다.
+		// 로그인 직후 호출 — 저장된 진행도로 시작하고 진행할 퀘스트를 연다.
 		public void OnDataLoaded()
 		{
-			Account.Instance.Quests.RefreshAutoAccept();
-			CheckCompletable();
-		}
-
-		// 대화로 Talk 목표를 달성시킨다. 목표 갱신 → 완료 판정 순서를 지킨다 (설계 4.5).
-		public void NotifyTalk(int npcId)
-		{
-			if (Account.Instance.Quests.NotifyTalk(npcId) == true)
-			{
-				publishActive();
-			}
-
+			Account.Instance.Quests.RefreshCurrent();
 			CheckCompletable();
 		}
 
 		// CompleteType=Auto 인 퀘스트를 목표 달성 즉시 완료 처리한다.
-		// Npc / UI 완료형은 플레이어가 눌러야 하므로 여기서 건드리지 않는다.
+		// UI 완료형은 플레이어가 눌러야 하므로 여기서 건드리지 않는다.
 		public void CheckCompletable()
 		{
 			if (_checking == true)
@@ -97,30 +76,13 @@ namespace ProjectOne.Quests
 		{
 			QuestBook book = Account.Instance.Quests;
 
-			_checkBuffer.Clear();
-			if (book.Main.IsActive == true)
+			QuestCatalog.BakedQuest baked = book.GetCurrentBaked();
+			if (baked == null || baked.row.CompleteType != QuestCompleteType.Auto)
 			{
-				_checkBuffer.Add(book.Main.questId);
+				return;
 			}
 
-			IReadOnlyList<QuestProgress> subs = book.Subs;
-			for (int i = 0; i < subs.Count; i++)
-			{
-				_checkBuffer.Add(subs[i].questId);
-			}
-
-			for (int i = 0; i < _checkBuffer.Count; i++)
-			{
-				QuestCatalog.BakedQuest baked = QuestCatalog.Get(_checkBuffer[i]);
-				if (baked == null || baked.row.CompleteType != QuestCompleteType.Auto)
-				{
-					continue;
-				}
-
-				book.TryComplete(_checkBuffer[i]);
-			}
-
-			_checkBuffer.Clear();
+			book.TryComplete(baked.row.ID);
 		}
 
 		// ── 이벤트 ────────────────────────────────────────────────────
@@ -128,14 +90,22 @@ namespace ProjectOne.Quests
 		private void onMonsterKill(MonsterKillEvent e)
 		{
 			// 지역 한정 목표는 "어디서 잡았는가"를 본다. 그리드맵이 10000 간격이라
-			// 사망 좌표만으로 지역이 확정된다 (설계 3.3).
+			// 사망 좌표만으로 지역이 확정된다.
 			int mapId = 0;
 			if (MapManager.HasInstance == true)
 			{
 				mapId = MapManager.Instance.GetMapIdAt(e.Position);
 			}
 
-			if (Account.Instance.Quests.AddKill(e.MonsterID, mapId) == true)
+			// 이벤트에는 등급이 실리지 않는다 — BossKill 판정은 테이블로 역조회한다.
+			bool isBoss = false;
+			Table_Monster.Row monster = Table_Monster.Get(e.MonsterID);
+			if (monster != null)
+			{
+				isBoss = monster.MonsterType == MonsterType.Boss;
+			}
+
+			if (Account.Instance.Quests.AddKill(mapId, isBoss) == true)
 			{
 				publishActive();
 			}
@@ -143,39 +113,29 @@ namespace ProjectOne.Quests
 			CheckCompletable();
 		}
 
-		// 레벨업 — ReachLevel 목표와 ReqLevel 로 막혀 있던 자동 수락이 함께 풀린다.
+		// 레벨업 — ReachLevel 목표가 풀린다. 전용 이벤트가 없어 이 알림으로 재평가한다.
 		private void onCharacterChanged(CharacterChangeEvent e)
 		{
-			Account.Instance.Quests.RefreshAutoAccept();
 			CheckCompletable();
-		}
-
-		// 장비 조건은 카운터가 없어 매번 재평가한다 — 벗었다 껴야 하는 일이 없다 (설계 3.3).
-		private void onPresetChanged(PresetChangeEvent e)
-		{
-			CheckCompletable();
+			publishActive();
 		}
 
 		private void onDungeonStageCleared(DungeonStageClearedEvent e)
 		{
 			CheckCompletable();
+			publishActive();
 		}
 
-		// 진행도가 바뀐 퀘스트를 알린다. HUD 는 이 이벤트로만 갱신한다 (설계 5.5).
+		// 진행도가 바뀐 퀘스트를 알린다. HUD 는 이 이벤트로만 갱신한다.
 		private void publishActive()
 		{
-			QuestBook book = Account.Instance.Quests;
-
-			if (book.Main.IsActive == true)
+			QuestProgress current = Account.Instance.Quests.Current;
+			if (current.IsActive == false)
 			{
-				EventManager.Instance.Publish(new QuestChangeEvent(book.Main.questId));
+				return;
 			}
 
-			IReadOnlyList<QuestProgress> subs = book.Subs;
-			for (int i = 0; i < subs.Count; i++)
-			{
-				EventManager.Instance.Publish(new QuestChangeEvent(subs[i].questId));
-			}
+			EventManager.Instance.Publish(new QuestChangeEvent(current.questId));
 		}
 	}
 }

@@ -48,7 +48,7 @@ namespace ProjectOne.Npcs
 
 			MapManager.Instance.CollectLoadedMapIds(_mapIds);
 
-			int cleared = Account.Instance.Quests.ClearedMainQuestId;
+			int cleared = Account.Instance.Quests.ClearedQuestId;
 
 			despawnInactive(cleared);
 
@@ -71,7 +71,7 @@ namespace ProjectOne.Npcs
 
 		// ── 내부 ──────────────────────────────────────────────────────
 
-		private void refreshMap(int mapId, int clearedMainQuestId, CancellationToken ct)
+		private void refreshMap(int mapId, int clearedQuestId, CancellationToken ct)
 		{
 			IReadOnlyList<Table_NpcSpawn.Row> spawns = QuestCatalog.GetSpawnsOfMap(mapId);
 			if (spawns.Count == 0)
@@ -84,7 +84,7 @@ namespace ProjectOne.Npcs
 			for (int i = 0; i < spawns.Count; i++)
 			{
 				Table_NpcSpawn.Row row = spawns[i];
-				if (QuestCatalog.IsSpawnActive(row, clearedMainQuestId) == false)
+				if (QuestCatalog.IsSpawnActive(row, clearedQuestId) == false)
 				{
 					continue;
 				}
@@ -146,7 +146,7 @@ namespace ProjectOne.Npcs
 		}
 
 		// 메인 퀘스트가 진행되면서 소멸 조건에 걸린 NPC 를 걷어낸다.
-		private void despawnInactive(int clearedMainQuestId)
+		private void despawnInactive(int clearedQuestId)
 		{
 			_removeBuffer.Clear();
 
@@ -154,7 +154,7 @@ namespace ProjectOne.Npcs
 			while (e.MoveNext() == true)
 			{
 				Table_NpcSpawn.Row row = Table_NpcSpawn.Get(e.Current.Key);
-				if (QuestCatalog.IsSpawnActive(row, clearedMainQuestId) == false)
+				if (QuestCatalog.IsSpawnActive(row, clearedQuestId) == false)
 				{
 					_removeBuffer.Add(e.Current.Key);
 				}
