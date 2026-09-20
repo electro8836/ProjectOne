@@ -27,7 +27,8 @@ namespace ProjectOne.UI
 		[SerializeField] private EquippedSlotView[] _equippedSlots;	// Slot_Weapon ~ Slot_Boots (8칸)
 
 		[Header("캐릭터")]
-		[SerializeField] private TMP_Text _levelText;	// LevelText
+		[SerializeField] private TMP_Text _levelText;			// Top/HeroInfo/LevelText
+		[SerializeField] private TMP_Text _battlePowerText;	// Top/HeroInfo/BattlePowerText
 
 		[Header("닫기")]
 		[SerializeField] private UIButton _homeButton;	// Top/HomeButton
@@ -87,6 +88,13 @@ namespace ProjectOne.UI
 			_sortButton.OnClickEvent += onSortClicked;
 
 			_presenter.Initialize(this);
+		}
+
+		// 전투력은 전용 이벤트가 없어 Presenter 가 스탯 버전을 폴링한다. 판단은 Presenter 가 하고
+		// View 는 위임만 한다 (MainHud 와 같은 구조).
+		private void Update()
+		{
+			_presenter.Tick();
 		}
 
 		private void OnDestroy()
@@ -174,10 +182,35 @@ namespace ProjectOne.UI
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
 		}
 
-		// 캐릭터 레벨을 상단에 표시한다. 캐릭터가 하나뿐이라 이름·등급·아이콘은 프리팹 기본값을 쓴다.
-		public void RenderCharacterLevel(int level)
+		// "레벨 12(5)" — 캐릭터 레벨과 장착 무기의 마스터리 레벨. 캐릭터가 하나뿐이라
+		// 이름·등급·아이콘은 프리팹 기본값을 쓴다.
+		// 무기를 착용하지 않았으면 마스터리가 없어 괄호를 생략한다 (HUD 의 HeroInfo 와 같은 정책).
+		public void RenderLevel(int level, int masteryLevel)
 		{
-			_levelText.text = "LV." + level;
+			if (_levelText == null)
+			{
+				return;
+			}
+
+			if (masteryLevel > 0)
+			{
+				_levelText.text = "레벨 " + level.ToString() + "(" + masteryLevel.ToString() + ")";
+			}
+			else
+			{
+				_levelText.text = "레벨 " + level.ToString();
+			}
+		}
+
+		// "전투력 12,345"
+		public void RenderBattlePower(int power)
+		{
+			if (_battlePowerText == null)
+			{
+				return;
+			}
+
+			_battlePowerText.text = "전투력 " + power.ToString("N0");
 		}
 
 		// 현재 정렬 기준을 버튼 라벨에 표시한다.

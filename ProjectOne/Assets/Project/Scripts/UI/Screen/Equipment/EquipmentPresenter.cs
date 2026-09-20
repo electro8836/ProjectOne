@@ -4,7 +4,10 @@ using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Items;
+using ProjectOne.Mastery;
 using ProjectOne.Network;
+using ProjectOne.Unit;
+using ProjectOne.Unit.Stats;
 using ProjectOne.UserData;
 using UnityEngine;
 
@@ -69,6 +72,14 @@ namespace ProjectOne.UI
 		// rebuild 는 인벤토리·장비 변경으로도 불리므로 프리셋 변경에서만 채운다.
 		private EquipSlotTypes _pendingPopSlot = EquipSlotTypes.None;
 
+		// 마지막으로 그린 전투력 — 전용 이벤트가 없어 히어로 스탯 버전으로 변화를 감지한다.
+		//
+		// 장비 변경 이벤트를 쓰지 않는 이유: Loadout.setSlotValue 는 PresetChangeEvent 를
+		// reapplyHero() **앞에서** 발행하므로, 그 핸들러에서 히어로 스탯을 읽으면 Aspect 재적용 전
+		// 값이 나온다. Version 은 재적용이 끝난 뒤 반드시 올라간다 (HUD 의 HeroInfo 와 같은 방식).
+		private int _lastStatVersion = -1;
+		private int _lastBattlePower = -1;
+
 		protected override void OnInitialize()
 		{
 			view.OnTabSelected += onTabSelected;
@@ -83,6 +94,7 @@ namespace ProjectOne.UI
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Subscribe<InventoryChangeEvent>(onInventoryChanged);
 			EventManager.Instance.Subscribe<PresetChangeEvent>(onPresetChanged);
+			EventManager.Instance.Subscribe<CharacterChangeEvent>(onCharacterChanged);
 
 			loadSortMode();
 		}
@@ -108,6 +120,7 @@ namespace ProjectOne.UI
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Unsubscribe<InventoryChangeEvent>(onInventoryChanged);
 			EventManager.Instance.Unsubscribe<PresetChangeEvent>(onPresetChanged);
+			EventManager.Instance.Unsubscribe<CharacterChangeEvent>(onCharacterChanged);
 		}
 
 		// 아이콘은 부트에서 아틀라스로 상주하므로 프리로드 대기 없이 곧바로 슬롯을 만든다.
@@ -117,7 +130,12 @@ namespace ProjectOne.UI
 			view.SelectTab(TAB_ALL);	// Select 는 OnTabChanged 를 발행하지 않으므로 직접 rebuild
 			view.SetSortLabel(getSortLabel(_sortMode));
 			view.SetSortVisible(_currentTab != TAB_CONSUMABLE);
-			view.RenderCharacterLevel(Account.Instance.Loadout.Level);
+			refreshLevel();
+
+			// 창을 다시 열면 반드시 한 번 그린다 — 버전이 그대로여도 이전 표시가 남아 있지 않게.
+			_lastStatVersion = -1;
+			_lastBattlePower = -1;
+
 			rebuild();
 			return UniTask.CompletedTask;
 		}
@@ -127,6 +145,33 @@ namespace ProjectOne.UI
 		{
 			NetworkManager.Instance.FlushLoadoutIfDirty();
 			return UniTask.CompletedTask;
+		}
+
+		// View 의 Update 가 매 프레임 넘긴다. 전투력만 여기서 본다 — 레벨은 이벤트로 들어온다.
+		public void Tick()
+		{
+			UnitBase hero = findAliveHero();
+			if (hero == null || hero.Stats == null)
+			{
+				return;
+			}
+
+			int version = hero.Stats.Version;
+			if (version == _lastStatVersion)
+			{
+				return;
+			}
+
+			_lastStatVersion = version;
+
+			int power = BattlePowerCalculator.Calculate(hero.Stats, hero.SkillContainer);
+			if (power == _lastBattlePower)
+			{
+				return;
+			}
+
+			_lastBattlePower = power;
+			view.RenderBattlePower(power);
 		}
 
 		// ── View 입력 핸들러 ──────────────────────────────────────────────
@@ -207,9 +252,51 @@ namespace ProjectOne.UI
 		{
 			_pendingPopSlot = e.Slot;
 			rebuild();
+
+			// 무기 교체가 마스터리 대상을 통째로 갈아치우는 유일한 경로다 (Loadout.setSlotValue).
+			// Loadout 의 슬롯 배열은 이 이벤트 발행 전에 이미 갱신되므로 여기서 읽어도 최신이다.
+			refreshLevel();
+		}
+
+		// 레벨업·경험치 적립 통지. 레벨업 팝업이 이 창 위에 열릴 수 있어 함께 본다.
+		private void onCharacterChanged(CharacterChangeEvent e)
+		{
+			refreshLevel();
 		}
 
 		// ── 렌더 ──────────────────────────────────────────────────────────
+
+		// 캐릭터 레벨과 장착 무기의 마스터리 레벨. 둘 다 Account 만 보므로 이벤트 발행 순서와 무관하다.
+		private void refreshLevel()
+		{
+			MasteryProgress progress = Account.Instance.Mastery.CurrentProgress;
+			int masteryLevel = (progress != null) ? progress.Level : 0;
+
+			view.RenderLevel(Account.Instance.Loadout.Level, masteryLevel);
+		}
+
+		// 살아있는 히어로. 장비창은 마을에서 주로 열리지만 MainHUD 의 화면 열기 버튼으로
+		// 던전에서도 열릴 수 있어, 씬을 가로질러 사는 UnitManager 를 본다
+		// (DungeonDirector.findFirstAliveHero 와 같은 방식).
+		private static UnitBase findAliveHero()
+		{
+			if (UnitManager.HasInstance == false)
+			{
+				return null;
+			}
+
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
+			{
+				UnitBase hero = heroes[i];
+				if (hero != null && hero.IsDead == false)
+				{
+					return hero;
+				}
+			}
+
+			return null;
+		}
 
 		// 현재 탭의 아이템 전체를 정렬해 슬롯 데이터로 만들고 View 에 렌더를 지시한다(이전 rebuild 는 취소).
 		private void rebuild()
