@@ -3,7 +3,6 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using UnityEngine;
-using ProjectOne.Town;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
 
@@ -50,21 +49,27 @@ namespace ProjectOne.UI
 
 		// ── 내부 ──────────────────────────────────────────────────────────
 
-		// 스탯 팝업은 마을(장비창)에서만 열린다 — 마을 히어로가 유일한 출처다.
+		// 스탯 팝업은 장비창 위에서만 열린다. 장비창은 마을뿐 아니라 필드에서도 열리므로
+		// (NavigationBar 의 표시 컨텍스트), 씬을 가로질러 사는 UnitManager 를 본다
+		// — 부모 화면인 EquipmentPresenter.findAliveHero 와 같은 방식이다.
 		private StatContainer findHeroStats()
 		{
-			if (TownDirector.HasInstance == false)
+			if (UnitManager.HasInstance == false)
 			{
 				return null;
 			}
 
-			Hero hero = TownDirector.Instance.Hero;
-			if (hero == null)
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
 			{
-				return null;
+				UnitBase hero = heroes[i];
+				if (hero != null && hero.IsDead == false)
+				{
+					return hero.Stats;
+				}
 			}
 
-			return hero.Stats;
+			return null;
 		}
 
 		private void build(StatContainer stats)
