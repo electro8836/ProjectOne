@@ -20,12 +20,16 @@ namespace ProjectOne.UI
 		[SerializeField] private RectTransform _fieldGrid;	// Frame/FieldScrollRect/Viewport/Content/Grid
 		[SerializeField] private FieldSlot _slotPrefab;		// UIPrefab_FieldSlot
 
+		[Header("마을")]
+		[SerializeField] private UIButton _townButton;		// Frame/Bottom/TownButton
+
 		[Header("닫기")]
 		[SerializeField] private UIButton _exitButton;		// Frame/ExitButton
 		[SerializeField] private UIButton _dimButton;		// Dim
 
 		public event Action<int> OnTabSelected;		// 탭 인덱스
 		public event Action<int> OnMoveRequested;	// 목적지 Field.ID
+		public event Action OnTownRequested;		// 마을 귀환
 
 		private readonly ActListPopupPresenter _presenter = new ActListPopupPresenter();
 		private readonly List<FieldSlot> _slots = new List<FieldSlot>();
@@ -38,6 +42,7 @@ namespace ProjectOne.UI
 			_tabGroup.OnTabChanged += onTabChanged;
 			_exitButton.OnClickEvent += onCloseClicked;
 			_dimButton.OnClickEvent += onCloseClicked;
+			_townButton.OnClickEvent += onTownClicked;
 
 			_presenter.Initialize(this);
 		}
@@ -52,6 +57,7 @@ namespace ProjectOne.UI
 			_tabGroup.OnTabChanged -= onTabChanged;
 			_exitButton.OnClickEvent -= onCloseClicked;
 			_dimButton.OnClickEvent -= onCloseClicked;
+			_townButton.OnClickEvent -= onTownClicked;
 
 			_presenter.Dispose();
 		}
@@ -87,6 +93,12 @@ namespace ProjectOne.UI
 			{
 				_actTabs[i].gameObject.SetActive(i < count);
 			}
+		}
+
+		// 마을 귀환 버튼은 필드에서만 의미가 있다 — 마을·던전에서는 끈다.
+		public void SetTownButtonVisible(bool visible)
+		{
+			_townButton.gameObject.SetActive(visible);
 		}
 
 		public void SelectTab(int index)
@@ -156,6 +168,14 @@ namespace ProjectOne.UI
 			if (OnMoveRequested != null)
 			{
 				OnMoveRequested.Invoke(fieldId);
+			}
+		}
+
+		private void onTownClicked()
+		{
+			if (OnTownRequested != null)
+			{
+				OnTownRequested.Invoke();
 			}
 		}
 

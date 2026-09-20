@@ -26,18 +26,23 @@ namespace ProjectOne.UI
 		{
 			view.OnTabSelected += onTabSelected;
 			view.OnMoveRequested += onMoveRequested;
+			view.OnTownRequested += onTownRequested;
 		}
 
 		protected override void OnDispose()
 		{
 			view.OnTabSelected -= onTabSelected;
 			view.OnMoveRequested -= onMoveRequested;
+			view.OnTownRequested -= onTownRequested;
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
 		{
 			buildActs();
 			view.SetTabCount(_acts.Count);
+
+			// 마을 귀환 버튼은 필드에 서 있을 때만 쓸모가 있다.
+			view.SetTownButtonVisible(FieldDirector.HasInstance);
 
 			_currentTab = indexOfAct(FieldProgress.GetCurrentActId());
 			view.SelectTab(_currentTab);
@@ -62,6 +67,13 @@ namespace ProjectOne.UI
 		private void onMoveRequested(int fieldId)
 		{
 			MapNavigator.MoveToMap(fieldId, view.GetDestroyToken());
+			view.CloseByMove();
+		}
+
+		// 마을 귀환도 이동이다 — 필드 슬롯 이동과 같이 월드 창까지 닫는다.
+		private void onTownRequested()
+		{
+			MapNavigator.MoveToTown();
 			view.CloseByMove();
 		}
 

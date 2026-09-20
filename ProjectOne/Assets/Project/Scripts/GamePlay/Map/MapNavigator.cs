@@ -30,7 +30,7 @@ namespace ProjectOne.Map
 
 			if (map.MapType == MapType.Town)
 			{
-				changeStateIfNeeded(new TownState(), typeof(TownState));
+				MoveToTown();
 				return;
 			}
 
@@ -69,6 +69,12 @@ namespace ProjectOne.Map
 			}
 
 			FieldDirector.Instance.ChangeActAsync(fieldId, ct).Forget();
+		}
+
+		// 마을 귀환. 마을은 Map.ID 없이 TownState 로 충분하다 — 마을 맵은 TownDirector 가 테이블에서 찾는다.
+		public static void MoveToTown()
+		{
+			changeStateIfNeeded(new TownState(), typeof(TownState));
 		}
 
 		// 던전 씬으로 넘어간다. 입장 횟수 판정은 호출부가 이미 끝냈다고 본다.
