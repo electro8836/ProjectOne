@@ -196,12 +196,69 @@ namespace ProjectOne.Unit.Stats
 
 			if (b.Dirty == true)
 			{
-				float raw = (b.Base + b.Add) * (1f + b.Ratio) * (1f + b.Amp);
-				b.Cached = StatCatalog.ApplyClamp(stat, raw);
+				b.Cached = StatCatalog.ApplyClamp(stat, compose(b.Base, b.Add, b.Ratio, b.Amp));
 				b.Dirty = false;
 			}
 
 			return b.Cached;
+		}
+
+		// 지정한 출처만 반영한 최종 스탯 — 전투력처럼 버프·디버프를 배제해야 하는 쪽이 쓴다.
+		//
+		// Base 는 출처 개념이 없으므로(SetBase 전용 = 캐릭터 기본값 + 레벨 성장) 항상 포함한다.
+		// includeSources 가 비어 있으면 Base 만 남는다 — 그 판단은 호출자가 하고 여기서는 계산만 한다.
+		//
+		// Bucket.Cached 는 전체 합의 캐시라 재사용할 수 없어 매 호출 순회한다.
+		// 호출자가 Version 변경 시에만 부르는 것을 전제로 한다.
+		public float GetStatFrom(Stat stat, List<string> includeSources)
+		{
+			Bucket b;
+			if (_buckets.TryGetValue(stat, out b) == false)
+			{
+				return StatCatalog.ApplyClamp(stat, 0f);
+			}
+
+			float add = 0f;
+			float ratio = 0f;
+			float amp = 0f;
+
+			if (includeSources != null)
+			{
+				for (int i = 0; i < includeSources.Count; i++)
+				{
+					List<StatModifier> list;
+					if (_bySource.TryGetValue(includeSources[i], out list) == false)
+					{
+						continue;
+					}
+
+					for (int j = 0; j < list.Count; j++)
+					{
+						StatModifier mod = list[j];
+						if (mod.Group != stat)
+						{
+							continue;
+						}
+
+						switch (mod.Kind)
+						{
+							case StatDetailTypes.Add:
+								add += mod.Value;
+								break;
+
+							case StatDetailTypes.Ratio:
+								ratio += mod.Value;
+								break;
+
+							case StatDetailTypes.Amp:
+								amp += mod.Value;
+								break;
+						}
+					}
+				}
+			}
+
+			return StatCatalog.ApplyClamp(stat, compose(b.Base, add, ratio, amp));
 		}
 
 		// 레이어 누적값 조회 (스탯 창의 구성 표시·디버그용). 최종값이 아니다.
@@ -223,6 +280,12 @@ namespace ProjectOne.Unit.Stats
 		}
 
 		// === 내부 ===
+
+		// 합성 공식의 단일 진실 — GetStat 과 GetStatFrom 이 공유한다.
+		static float compose(float baseValue, float add, float ratio, float amp)
+		{
+			return (baseValue + add) * (1f + ratio) * (1f + amp);
+		}
 
 		// Base 레이어 전용 해석 — 캐릭터/몬스터 기본 스탯만 이 경로를 쓴다.
 		static bool tryResolveBase(StatDetail detail, out StatPart part)

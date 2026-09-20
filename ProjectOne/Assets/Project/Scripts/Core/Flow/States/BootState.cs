@@ -58,6 +58,7 @@ namespace ProjectOne.Flow
 			StatCatalog.Build();
 			SkillParamCatalog.Build();
 			OptionCatalog.Build();
+			BattlePowerCalculator.Build();	// StatCatalog · OptionCatalog 이후여야 한다 — 둘을 모두 참조한다
 			EquipmentCatalog.Build();
 			MasteryCatalog.Build();
 			SkillModifierCatalog.Build();

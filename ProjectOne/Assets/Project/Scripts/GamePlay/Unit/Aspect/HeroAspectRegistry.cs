@@ -77,6 +77,35 @@ namespace ProjectOne.Unit
 			get { return _aspects.Count; }
 		}
 
+		// 영구 성장 출처 목록 — 전투력처럼 버프·디버프를 배제해야 하는 쪽이 쓴다.
+		// Aspect 가 붙인 modifier 만 육성 결과이고, 버프는 Aspect 가 아니므로 여기 안 들어온다.
+		// 버퍼는 호출자가 소유한다(매 호출 할당을 피한다).
+		public void CollectSourceKeys(List<string> buffer)
+		{
+			if (buffer == null)
+			{
+				return;
+			}
+
+			buffer.Clear();
+			for (int i = 0; i < _aspects.Count; i++)
+			{
+				string key = _aspects[i].SourceKey;
+				if (string.IsNullOrEmpty(key) == true)
+				{
+					continue;
+				}
+
+				// 같은 SourceKey 를 쓰는 Aspect 가 둘 이상일 수 있다 — 중복 합산을 막는다.
+				if (buffer.Contains(key) == true)
+				{
+					continue;
+				}
+
+				buffer.Add(key);
+			}
+		}
+
 		void EnsureSorted()
 		{
 			if (_dirty == false)

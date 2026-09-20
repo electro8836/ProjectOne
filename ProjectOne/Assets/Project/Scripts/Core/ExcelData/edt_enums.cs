@@ -627,6 +627,8 @@ namespace EDT {
 
     public enum TableType {
         None,
+        TableBattlePower_Stat,
+        TableBattlePower_Option,
         TableBuff,
         TableCharacterStat,
         TableCharacterLevelExp,

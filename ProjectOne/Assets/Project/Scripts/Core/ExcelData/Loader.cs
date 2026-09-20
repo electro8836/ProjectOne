@@ -18,6 +18,28 @@ namespace EDT {
         {
             BinaryReader reader = null;
 
+            #region Table - BattlePower_Stat
+            {
+                CurrentFile = Table_BattlePower_Stat.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_BattlePower_Stat._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - BattlePower_Option
+            {
+                CurrentFile = Table_BattlePower_Option.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_BattlePower_Option._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Buff
             {
                 CurrentFile = Table_Buff.Filename;
