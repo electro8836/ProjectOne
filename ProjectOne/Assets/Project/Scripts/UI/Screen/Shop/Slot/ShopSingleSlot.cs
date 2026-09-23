@@ -165,7 +165,7 @@ namespace ProjectOne.UI
 		// 진열된 것은 내 것이 아니므로 읽기 전용 팝업만 연다.
 		private void onSlotClicked(ItemSlot sender, long uid, int itemId)
 		{
-			ShopRewardPopup.Show(_item, sender, this.GetCancellationTokenOnDestroy());
+			ShopRewardPopup.Show(_item, sender.transform as RectTransform, this.GetCancellationTokenOnDestroy());
 		}
 	}
 }

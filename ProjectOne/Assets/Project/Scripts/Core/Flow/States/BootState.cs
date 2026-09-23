@@ -10,6 +10,7 @@ using ProjectOne.Settings;
 using ProjectOne.UI;
 using ProjectOne.Consumables;
 using ProjectOne.Costumes;
+using ProjectOne.DailyBonuses;
 using ProjectOne.Dungeon;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
@@ -66,6 +67,7 @@ namespace ProjectOne.Flow
 			CostumeCatalog.Build();
 			PetCatalog.Build();
 			RewardCatalog.Build();
+			DailyBonusCatalog.Build();	// RewardCatalog 이후여야 한다 — 출석 보상 그룹의 존재를 검증한다
 			ConsumableCatalog.Build();
 			QuestCatalog.Build();	// RewardCatalog 이후여야 한다 — 상자의 보상 그룹 존재를 검증한다
 			DungeonProgress.Build();

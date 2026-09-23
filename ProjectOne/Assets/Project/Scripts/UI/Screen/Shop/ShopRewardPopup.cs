@@ -15,7 +15,7 @@ namespace ProjectOne.UI
 		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
 		private const string CONSUMABLE_POPUP_ADDRESS = "UIPrefab_ConsumablePopup";
 
-		public static void Show(RewardPreviewItem item, ItemSlot anchor, CancellationToken ct)
+		public static void Show(RewardPreviewItem item, RectTransform anchor, CancellationToken ct)
 		{
 			// 장비는 보유하지 않은 표시용 인스턴스라 uid 가 아니라 인스턴스를 그대로 넘긴다.
 			if (item.equipment != null)
@@ -51,9 +51,9 @@ namespace ProjectOne.UI
 			UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, item.itemId, true, ct).Forget();
 		}
 
-		private static void showSimple(string name, string desc, ItemSlot anchor, CancellationToken ct)
+		private static void showSimple(string name, string desc, RectTransform anchor, CancellationToken ct)
 		{
-			UIManager.Instance.ShowSimplePopupAsync(name + "\n" + desc, anchor.transform as RectTransform, ct).Forget();
+			UIManager.Instance.ShowSimplePopupAsync(name + "\n" + desc, anchor, ct).Forget();
 		}
 	}
 }

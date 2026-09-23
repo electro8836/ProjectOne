@@ -160,6 +160,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2810219516886827665}
   - component: {fileID: 5032431936251497950}
+  - component: {fileID: 4742476328441703098}
   m_Layer: 0
   m_Name: UIPrefab_DailyBonusSlot
   m_TagString: Untagged
@@ -215,6 +216,25 @@ MonoBehaviour:
   _targetGraphic: {fileID: 0}
   _disabledTintTargets: []
   _disabledColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+--- !u!114 &4742476328441703098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1346433154619903048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd7667dfdc967554196fdfae489f1348, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.DailyBonusSlot
+  _button: {fileID: 5032431936251497950}
+  _icon: {fileID: 1891225744041570250}
+  _countText: {fileID: 4427424093465086466}
+  _nameText: {fileID: 5352436053112479042}
+  _dayText: {fileID: 2060235996661358356}
+  _check: {fileID: 6243649508447761556}
+  _focus: {fileID: 5498473913827850314}
 --- !u!1 &1550111336998392948
 GameObject:
   m_ObjectHideFlags: 0

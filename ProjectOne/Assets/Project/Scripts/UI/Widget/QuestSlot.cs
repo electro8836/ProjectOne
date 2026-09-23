@@ -160,7 +160,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			ShopRewardPopup.Show(_preview[0], sender, this.GetCancellationTokenOnDestroy());
+			ShopRewardPopup.Show(_preview[0], sender.transform as RectTransform, this.GetCancellationTokenOnDestroy());
 		}
 
 		private void hideItemSlot()

@@ -147,7 +147,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			ShopRewardPopup.Show(item, sender, this.GetCancellationTokenOnDestroy());
+			ShopRewardPopup.Show(item, sender.transform as RectTransform, this.GetCancellationTokenOnDestroy());
 		}
 	}
 }

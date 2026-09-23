@@ -419,6 +419,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2092788877174027901}
+  - component: {fileID: 366519192526946982}
   m_Layer: 0
   m_Name: UIPrefab_DailyBonusPopup
   m_TagString: Untagged
@@ -448,6 +449,27 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &366519192526946982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2092788877174027900}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3028dfe6794f4a408c39532be22b287, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.DailyBonusPopup
+  _frame: {fileID: 3147059995430406675}
+  _titleText: {fileID: 2092788877848204146}
+  _timeText: {fileID: 4330249679672382274}
+  _tabGroup: {fileID: 7570293781425263563}
+  _weekTab: {fileID: 4474501891920584772}
+  _weekGroup: {fileID: 6088327696407792419}
+  _monthGroup: {fileID: 3050205124244119563}
+  _monthGrid: {fileID: 2550062512825332264}
+  _dimButton: {fileID: 5900741311505760958}
 --- !u!1 &2092788877848204144
 GameObject:
   m_ObjectHideFlags: 0
@@ -3330,6 +3352,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_3
       objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -3410,6 +3436,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3435,6 +3465,10 @@ PrefabInstance:
     - target: {fileID: 1935686570085025347, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -3516,6 +3550,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8226747031162334426, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -3541,6 +3579,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_19
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 19
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -3621,6 +3663,10 @@ PrefabInstance:
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3754,6 +3800,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_14
       objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 14
+      objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -3834,6 +3884,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3859,6 +3913,10 @@ PrefabInstance:
     - target: {fileID: 1935686570085025347, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -3940,6 +3998,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8226747031162334426, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -3965,6 +4027,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_27
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 27
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -4046,6 +4112,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4067,6 +4137,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -4147,6 +4221,10 @@ PrefabInstance:
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -4258,6 +4336,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5498473913827850314, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4279,6 +4361,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_17
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 17
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -4360,6 +4446,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4381,6 +4471,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_13
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 13
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -4462,6 +4556,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4483,6 +4581,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_24
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 24
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -4564,6 +4666,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4585,6 +4691,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_8
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -4666,6 +4776,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4687,6 +4801,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_26
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -4767,6 +4885,10 @@ PrefabInstance:
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5016,6 +5138,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_23
       objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 23
+      objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -5096,6 +5222,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5121,6 +5251,10 @@ PrefabInstance:
     - target: {fileID: 1935686570085025347, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -5201,6 +5335,10 @@ PrefabInstance:
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8226747031162334426, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
@@ -5338,6 +5476,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_16
       objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 16
+      objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -5418,6 +5560,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5439,6 +5585,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -5520,6 +5670,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5541,6 +5695,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_7
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -5621,6 +5779,10 @@ PrefabInstance:
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5754,6 +5916,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_21
       objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 21
+      objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -5834,6 +6000,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5855,6 +6025,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_28
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 28
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -5936,6 +6110,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5961,6 +6139,10 @@ PrefabInstance:
     - target: {fileID: 1935686570085025347, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -6042,6 +6224,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8226747031162334426, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -6067,6 +6253,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_29
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 29
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -6148,6 +6338,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6169,6 +6363,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_18
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 18
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -6250,6 +6448,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6271,6 +6473,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_22
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 22
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -6351,6 +6557,10 @@ PrefabInstance:
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6454,6 +6664,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6475,6 +6689,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_11
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 11
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -6555,6 +6773,10 @@ PrefabInstance:
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6692,6 +6914,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 20
+      objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -6772,6 +6998,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8226747031162334426, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -6797,6 +7027,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_9
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -6878,6 +7112,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6903,6 +7141,10 @@ PrefabInstance:
     - target: {fileID: 1935686570085025347, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -6984,6 +7226,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8226747031162334426, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -7009,6 +7255,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_6
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -7090,6 +7340,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -7111,6 +7365,10 @@ PrefabInstance:
     - target: {fileID: 1346433154619903048, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Name
       value: UIPrefab_DailyBonusSlot_12
+      objectReference: {fileID: 0}
+    - target: {fileID: 2060235996661358356, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_text
+      value: 12
       objectReference: {fileID: 0}
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_Pivot.x
@@ -7191,6 +7449,10 @@ PrefabInstance:
     - target: {fileID: 2810219516886827665, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6703713591892102199, guid: c46bd6d8692ea1f40b8040779bc5c67b, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

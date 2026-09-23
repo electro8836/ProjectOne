@@ -22,7 +22,8 @@ namespace ProjectOne.Reward
 		MonsterKill,
 		QuestComplete,
 		DungeonClear,
-		ConsumableUse
+		ConsumableUse,
+		DailyBonus
 	}
 
 	// 실제로 지급된 것 하나. 결과창 표시와 서버 배치 업로드(STEP 14)가 같은 목록을 쓴다.

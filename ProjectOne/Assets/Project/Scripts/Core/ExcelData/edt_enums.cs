@@ -33,6 +33,13 @@ namespace EDT {
         Body,
     }
 
+    public enum DailyBonusType {
+        None,
+        Week,
+        Month,
+        Newbie,
+    }
+
     public enum EquipSlotTypes {
         None,
         Weapon,
@@ -623,6 +630,7 @@ namespace EDT {
         TableItemPromotion,
         TableItemTransfer,
         TableCurrency,
+        TableDailyBonus,
         TableEquipment,
         TableEquipOption,
         TableEquipQuality,

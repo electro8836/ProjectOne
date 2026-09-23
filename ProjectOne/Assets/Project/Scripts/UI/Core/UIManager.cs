@@ -76,6 +76,9 @@ namespace ProjectOne.UI
 		// 그것들이 _popupCts 를 취소하면 목록 팝업 자신이 닫혀 버린다.
 		private CancellationTokenSource _questListCts;
 
+		// 출석 팝업도 같다 — 보상 칸을 누르면 설명 툴팁이 뜬다.
+		private CancellationTokenSource _dailyBonusCts;
+
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
@@ -709,6 +712,7 @@ namespace ProjectOne.UI
 		private const string CURRENCY_LIST_POPUP_ADDRESS = "UIPrefab_CurrencyListPopup";
 		private const string MENU_POPUP_ADDRESS = "UIPrefab_MenuPopup";
 		private const string QUEST_LIST_POPUP_ADDRESS = "UIPrefab_QuestListPopup";
+		private const string DAILY_BONUS_POPUP_ADDRESS = "UIPrefab_DailyBonusPopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -1101,6 +1105,39 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(QUEST_LIST_POPUP_ADDRESS);
+			}
+		}
+
+		// 출석 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
+		public async UniTask ShowDailyBonusPopupAsync(CancellationToken ct)
+		{
+			_dailyBonusCts?.Cancel();
+			_dailyBonusCts?.Dispose();
+			_dailyBonusCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(DAILY_BONUS_POPUP_ADDRESS, _dailyBonusCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			DailyBonusPopup popup = go.GetComponent<DailyBonusPopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_DailyBonusPopup 루트에 DailyBonusPopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(DAILY_BONUS_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_dailyBonusCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(DAILY_BONUS_POPUP_ADDRESS);
 			}
 		}
 

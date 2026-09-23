@@ -150,6 +150,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - DailyBonus
+            {
+                CurrentFile = Table_DailyBonus.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_DailyBonus._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Equipment
             {
                 CurrentFile = Table_Equipment.Filename;

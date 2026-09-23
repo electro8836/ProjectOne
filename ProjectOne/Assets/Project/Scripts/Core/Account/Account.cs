@@ -1,4 +1,5 @@
-﻿using ProjectOne.Mastery;
+﻿using ProjectOne.DailyBonuses;
+using ProjectOne.Mastery;
 using ProjectOne.Pets;
 using ProjectOne.Quests;
 using ProjectOne.Shared;
@@ -18,6 +19,7 @@ namespace ProjectOne.UserData
 		public CostumeBook Costume { get; private set; }
 		public PetBook Pet { get; private set; }
 		public Wallet Wallet { get; private set; }
+		public DailyBonusBook DailyBonus { get; private set; }
 
 		private Account()
 		{
@@ -29,6 +31,7 @@ namespace ProjectOne.UserData
 			Costume = new CostumeBook(null);
 			Pet = new PetBook(null);
 			Wallet = new Wallet(null);
+			DailyBonus = new DailyBonusBook(null);
 		}
 
 		// 도메인별 개별 셋팅 — 공유 DTO 를 받아 도메인 모델로 변환 보유. 추후 도메인 추가 시 Set 메서드만 늘리면 됨
@@ -70,6 +73,11 @@ namespace ProjectOne.UserData
 		public void SetCurrency(CurrencyDto data)
 		{
 			Wallet = new Wallet(data);
+		}
+
+		public void SetDailyBonus(DailyBonusDto data)
+		{
+			DailyBonus = new DailyBonusBook(data);
 		}
 
 		// 경험치 적립 단일 진입점 (마스터리 설계 5.2).
