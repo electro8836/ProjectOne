@@ -22,6 +22,9 @@ namespace ProjectOne.UI
 		private Vector3 _originalScale = Vector3.one;
 		private Color[] _originalColors;
 
+		// 이 버튼이 건 스케일 트윈. 남의 트윈과 섞이지 않도록 따로 들고 있는다.
+		private Tween _scaleTween;
+
 		public override bool interactable
 		{
 			get { return base.interactable; }
@@ -48,8 +51,7 @@ namespace ProjectOne.UI
 		private void OnDestroy()
 		{
 			// 진행 중인 스케일 트윈이 파괴된 RectTransform에 접근하지 않도록 정리
-			Transform target = _targetGraphic != null ? _targetGraphic : transform;
-			target.DOKill();
+			killScaleTween();
 
 			OnPointerDownEvent -= playDownFeedback;
 			OnPointerUpEvent -= playUpFeedback;
@@ -62,8 +64,9 @@ namespace ProjectOne.UI
 
 			Transform target = _targetGraphic != null ? _targetGraphic : transform;
 			Vector3 pressed = new Vector3(_originalScale.x * _themeData.pressedScale.x, _originalScale.y * _themeData.pressedScale.y, _originalScale.z);
-			target.DOKill();
-			target.DOScale(pressed, _themeData.animationDuration).SetEase(Ease.OutQuad);
+
+			killScaleTween();
+			_scaleTween = target.DOScale(pressed, _themeData.animationDuration).SetEase(Ease.OutQuad);
 		}
 
 		private void playUpFeedback()
@@ -71,8 +74,9 @@ namespace ProjectOne.UI
 			if (_themeData == null) { return; }
 
 			Transform target = _targetGraphic != null ? _targetGraphic : transform;
-			target.DOKill();
-			target.DOScale(_originalScale, _themeData.animationDuration).SetEase(Ease.OutBack);
+
+			killScaleTween();
+			_scaleTween = target.DOScale(_originalScale, _themeData.animationDuration).SetEase(Ease.OutBack);
 		}
 
 		private void playClickFeedback()
@@ -88,6 +92,23 @@ namespace ProjectOne.UI
 			{
 				VFXManager.Instance.PlayOneShot(_themeData.vfxAddress, transform);
 			}
+		}
+
+		// 자기 스케일 트윈만 접는다. DOKill 로 트랜스폼을 통째로 비우면
+		// 같은 오브젝트를 움직이는 남의 연출(예: QuestInfo 의 접기 슬라이드)까지 끊긴다.
+		private void killScaleTween()
+		{
+			if (_scaleTween == null)
+			{
+				return;
+			}
+
+			if (_scaleTween.IsActive() == true)
+			{
+				_scaleTween.Kill();
+			}
+
+			_scaleTween = null;
 		}
 
 		private void cacheDisabledTint()

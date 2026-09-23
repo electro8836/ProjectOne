@@ -142,6 +142,12 @@ namespace ProjectOne.UI
 			}
 		}
 
+		// 슬롯 클릭을 막거나 푼다. 비활성 틴트는 UIButton 이 알아서 입힌다.
+		public void SetInteractable(bool value)
+		{
+			_button.interactable = value;
+		}
+
 		// 강화 레벨 표시를 끈다. 아이템 정보 팝업의 슬롯처럼 레벨을 따로 적는 화면에서 쓴다
 		// (BindEquipmentAsync 가 매번 켜므로 Bind 뒤에 호출해야 한다).
 		public void HideLevel()

@@ -704,6 +704,7 @@ namespace ProjectOne.UI
 		private const string PET_ENHANCE_POPUP_ADDRESS = "UIPrefab_PetEnhancePopup";
 		private const string CURRENCY_LIST_POPUP_ADDRESS = "UIPrefab_CurrencyListPopup";
 		private const string MENU_POPUP_ADDRESS = "UIPrefab_MenuPopup";
+		private const string QUEST_LIST_POPUP_ADDRESS = "UIPrefab_QuestListPopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -1064,6 +1065,38 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(address);
+			}
+		}
+
+		// 퀘스트 목록 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
+		public async UniTask ShowQuestListPopupAsync(CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(QUEST_LIST_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			QuestListPopup popup = go.GetComponent<QuestListPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(QUEST_LIST_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(QUEST_LIST_POPUP_ADDRESS);
 			}
 		}
 

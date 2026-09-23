@@ -7,6 +7,7 @@ using EDT;
 using ProjectOne.Event;
 using ProjectOne.Quests;
 using ProjectOne.UserData;
+using Cysharp.Threading.Tasks;
 
 namespace ProjectOne.UI
 {
@@ -23,7 +24,7 @@ namespace ProjectOne.UI
 		// 목표를 달성한 상태의 강조색.
 		private static readonly Color MetColor = new Color(0.0078431f, 1f, 0f, 1f);		// #02FF00
 		private static readonly Color BorderNormalColor = Color.black;
-		private static readonly Color IconNormalColor = Color.white;
+		private static readonly Color QuestInfoBorderNormalColor = new Color32(0x63, 0x63, 0x63, 0xFF);
 
 		[Header("Fold")]
 		[SerializeField] private RectTransform _frame;
@@ -38,6 +39,8 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _completeText;	// 목표 달성 시에만 표시
 		[SerializeField] private Slider _progress;
 		[SerializeField] private Image _border;				// Frame 의 테두리
+		[SerializeField] private UIButton _questInfoButton;	// Frame/QuestInfoButton — 퀘스트 목록 팝업 열기
+		[SerializeField] private Image _questInfoBorder;	// Frame/QuestInfoButton/Frame/Border
 
 		private Action<QuestChangeEvent> _onQuestChanged;
 		private Action<CharacterChangeEvent> _onCharacterChanged;
@@ -71,6 +74,11 @@ namespace ProjectOne.UI
 				_frameButton.OnClickEvent += onFrameClicked;
 			}
 
+			if (_questInfoButton != null)
+			{
+				_questInfoButton.OnClickEvent += onQuestInfoClicked;
+			}
+
 			_onQuestChanged = onQuestChanged;
 			_onCharacterChanged = onCharacterChanged;
 			EventManager.Instance.Subscribe<QuestChangeEvent>(_onQuestChanged);
@@ -96,6 +104,11 @@ namespace ProjectOne.UI
 			if (_frameButton != null)
 			{
 				_frameButton.OnClickEvent -= onFrameClicked;
+			}
+
+			if (_questInfoButton != null)
+			{
+				_questInfoButton.OnClickEvent -= onQuestInfoClicked;
 			}
 
 			EventManager.Instance.Unsubscribe<QuestChangeEvent>(_onQuestChanged);
@@ -204,9 +217,9 @@ namespace ProjectOne.UI
 				_border.color = met ? MetColor : BorderNormalColor;
 			}
 
-			if (_openIcon != null)
+			if (_questInfoBorder != null)
 			{
-				_openIcon.color = met ? MetColor : IconNormalColor;
+				_questInfoBorder.color = met ? MetColor : QuestInfoBorderNormalColor;
 			}
 		}
 
@@ -221,6 +234,12 @@ namespace ProjectOne.UI
 			}
 
 			book.TryComplete(baked.row.ID);
+		}
+
+		// 퀘스트 목록 팝업을 연다. Frame 은 수령 전용이라 열기는 이 버튼이 맡는다.
+		private void onQuestInfoClicked()
+		{
+			UIManager.Instance.ShowQuestListPopupAsync(this.GetCancellationTokenOnDestroy()).Forget();
 		}
 
 		// ── 접기 / 펼치기 ─────────────────────────────────────────────
