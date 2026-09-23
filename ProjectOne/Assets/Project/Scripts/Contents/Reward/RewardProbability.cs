@@ -200,7 +200,7 @@ namespace ProjectOne.Reward
 
 		private static EquipmentInstance makeInstance(int itemId, ItemGradeType grade)
 		{
-			return EquipmentFactory.CreateExact(itemId, grade, RewardPreview.DEFAULT_PURITY, RewardPreview.DEFAULT_QUALITY);
+			return EquipmentFactory.CreateExact(itemId, grade, RewardPreview.DEFAULT_QUALITY);
 		}
 
 		private static int getWeight(Table_EquipGradeWeight.Row row, ItemGradeType grade)

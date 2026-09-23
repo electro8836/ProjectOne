@@ -5,7 +5,7 @@ namespace ProjectOne.Items
 {
 	// 장비 인스턴스 하나가 공급하는 옵션 목록을 계산한다 (아이템 설계 5장).
 	//
-	//   기본 옵션 Opt1~4 : (Val + Step × Level) × EquipPurity.OptionMultiplier
+	//   기본 옵션 Opt1~4 : Val + Step × Level
 	//   해금 옵션        : MinVal + (MaxVal - MinVal) × (Quality / 100)
 	//
 	// 해금 옵션은 **현재 등급 이하의 모든 등급 행**이 누적된다. Normal 에는 해금 옵션이 없다.
@@ -44,16 +44,14 @@ namespace ProjectOne.Items
 				return;
 			}
 
-			float purityMult = getPurityMultiplier(instance.purity);
-
 			// 기본 옵션 — 현재 등급 행 하나만 본다.
 			Table_EquipOption.Row current = EquipmentCatalog.GetOption(equipment.EquipOptionGroupID, instance.grade);
 			if (current != null)
 			{
-				addBase(buffer, current.Opt1_ID, current.Opt1_Val, current.Opt1_Step, instance.level, purityMult);
-				addBase(buffer, current.Opt2_ID, current.Opt2_Val, current.Opt2_Step, instance.level, purityMult);
-				addBase(buffer, current.Opt3_ID, current.Opt3_Val, current.Opt3_Step, instance.level, purityMult);
-				addBase(buffer, current.Opt4_ID, current.Opt4_Val, current.Opt4_Step, instance.level, purityMult);
+				addBase(buffer, current.Opt1_ID, current.Opt1_Val, current.Opt1_Step, instance.level);
+				addBase(buffer, current.Opt2_ID, current.Opt2_Val, current.Opt2_Step, instance.level);
+				addBase(buffer, current.Opt3_ID, current.Opt3_Val, current.Opt3_Step, instance.level);
+				addBase(buffer, current.Opt4_ID, current.Opt4_Val, current.Opt4_Step, instance.level);
 			}
 
 			// 해금 옵션 — 현재 등급 이하 전부 누적.
@@ -72,7 +70,7 @@ namespace ProjectOne.Items
 
 		// ── 내부 ──────────────────────────────────────────────────────
 
-		private static void addBase(List<Resolved> buffer, Option option, float val, float step, int level, float purityMult)
+		private static void addBase(List<Resolved> buffer, Option option, float val, float step, int level)
 		{
 			if (option == Option.None)
 			{
@@ -81,7 +79,7 @@ namespace ProjectOne.Items
 
 			Resolved r;
 			r.option = option;
-			r.value = (val + step * level) * purityMult;
+			r.value = val + step * level;
 			r.isUnlock = false;
 			r.minValue = 0f;
 			r.maxValue = 0f;
@@ -99,18 +97,6 @@ namespace ProjectOne.Items
 			r.minValue = row.UnlockOpt_MinVal;
 			r.maxValue = row.UnlockOpt_MaxVal;
 			buffer.Add(r);
-		}
-
-		// 순도 배율. 데이터가 없으면 1.0 으로 두어 옵션이 통째로 0이 되는 사고를 막는다.
-		private static float getPurityMultiplier(EquipPurity purity)
-		{
-			Table_EquipPurity.Row row = Table_EquipPurity.Get(purity);
-			if (row == null || row.OptionMultiplier <= 0f)
-			{
-				return 1f;
-			}
-
-			return row.OptionMultiplier;
 		}
 	}
 }

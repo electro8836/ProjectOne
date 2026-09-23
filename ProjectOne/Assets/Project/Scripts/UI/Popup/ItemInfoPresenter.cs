@@ -169,14 +169,13 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			float purityMult = getPurityMultiplier(instance.purity);
-			addBasic(row.Opt1_ID, row.Opt1_Val, row.Opt1_Step, instance.level, purityMult);
-			addBasic(row.Opt2_ID, row.Opt2_Val, row.Opt2_Step, instance.level, purityMult);
-			addBasic(row.Opt3_ID, row.Opt3_Val, row.Opt3_Step, instance.level, purityMult);
-			addBasic(row.Opt4_ID, row.Opt4_Val, row.Opt4_Step, instance.level, purityMult);
+			addBasic(row.Opt1_ID, row.Opt1_Val, row.Opt1_Step, instance.level);
+			addBasic(row.Opt2_ID, row.Opt2_Val, row.Opt2_Step, instance.level);
+			addBasic(row.Opt3_ID, row.Opt3_Val, row.Opt3_Step, instance.level);
+			addBasic(row.Opt4_ID, row.Opt4_Val, row.Opt4_Step, instance.level);
 		}
 
-		private void addBasic(Option option, float val, float step, int level, float purityMult)
+		private void addBasic(Option option, float val, float step, int level)
 		{
 			if (option == Option.None)
 			{
@@ -190,7 +189,7 @@ namespace ProjectOne.UI
 			}
 
 			// Val 은 0레벨 기준값이다 (아이템 설계 5.1 — 캐릭터 스탯과 규칙이 반대).
-			float value = (val + step * level) * purityMult;
+			float value = val + step * level;
 
 			OptionLine line;
 			line.iconAddress = StatOptionText.GetStatIcon(detail);
@@ -236,18 +235,6 @@ namespace ProjectOne.UI
 
 				_gradeLines.Add(line);
 			}
-		}
-
-		// 순도 배율. 데이터가 없으면 1.0 으로 두어 옵션이 통째로 0이 되는 사고를 막는다.
-		private static float getPurityMultiplier(EquipPurity purity)
-		{
-			Table_EquipPurity.Row row = Table_EquipPurity.Get(purity);
-			if (row == null || row.OptionMultiplier <= 0f)
-			{
-				return 1f;
-			}
-
-			return row.OptionMultiplier;
 		}
 	}
 }

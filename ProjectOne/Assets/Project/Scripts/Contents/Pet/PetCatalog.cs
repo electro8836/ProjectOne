@@ -124,8 +124,6 @@ namespace ProjectOne.Pets
 		// 비용 구간은 **등급이 아니라 현재 레벨**이 정한다 — 등급을 올려도 레벨이 낮으면 싼 구간을 그대로 쓴다.
 		// PetEnhance 행을 누적 구간표(1~20 / 21~40 / ...)로 읽고, 증가량은 구간 안 상대 레벨에 곱한다.
 		// 그래서 구간이 바뀌는 순간 증가분이 0으로 돌아가고 기준값이 새 티어의 가격을 결정한다.
-		//
-		// 증가식은 EquipmentUpgrade.scale 과 같다 (그쪽이 private static 이라 공유하지 못한다).
 		public static bool TryGetEnhanceCost(int level, out EDT.Currency currency, out int amount)
 		{
 			currency = EDT.Currency.None;

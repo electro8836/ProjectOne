@@ -32,7 +32,6 @@ RectTransform:
   - {fileID: 3662076877829019879}
   - {fileID: 1760424819667234403}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -70,7 +69,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3662076877829019879}
-  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
@@ -143,20 +141,23 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
+  m_TextWrappingMode: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -205,7 +206,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1760424818728810546}
-  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
@@ -278,20 +278,23 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
   m_paragraphSpacing: 0
   m_charWidthMaxAdj: 0
-  m_enableWordWrapping: 1
+  m_TextWrappingMode: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
   m_linkedTextComponent: {fileID: 0}
   parentLinkedComponent: {fileID: 0}
   m_enableKerning: 1
+  m_ActiveFontFeatures: 6e72656b
   m_enableExtraPadding: 0
   checkPaddingRequired: 0
   m_isRichText: 1
+  m_EmojiFallbackSupport: 1
   m_parseCtrlCharacters: 1
   m_isOrthographic: 1
   m_isCullingEnabled: 0
@@ -340,7 +343,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1760424818728810546}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
@@ -445,7 +447,6 @@ RectTransform:
   - {fileID: 3426491061855886107}
   - {fileID: 7791099917119648392}
   m_Father: {fileID: 3662076877829019879}
-  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
@@ -481,6 +482,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 1299928512217532667, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
@@ -575,11 +577,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2441323443375743790, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
+      objectReference: {fileID: 0}
+    - target: {fileID: 4531549951131975943, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
+      objectReference: {fileID: 0}
     - target: {fileID: 8183069089281776538, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 1.1973877
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
 --- !u!224 &1760424818442853130 stripped
 RectTransform:
@@ -591,11 +604,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 26
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -604,6 +622,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -694,6 +716,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (17)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061552423577 stripped
 RectTransform:
@@ -705,11 +730,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -718,6 +748,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -808,6 +842,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (3)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061486046583 stripped
 RectTransform:
@@ -819,11 +856,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 5382379408533462276, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Sprite
@@ -832,6 +874,10 @@ PrefabInstance:
     - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 8390704268646098752, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Pivot.x
@@ -922,6 +968,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_Purple (1)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
 --- !u!224 &7791099915177102894 stripped
 RectTransform:
@@ -933,11 +982,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 5382379408533462276, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Sprite
@@ -946,6 +1000,10 @@ PrefabInstance:
     - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 8390704268646098752, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Pivot.x
@@ -1036,6 +1094,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_Purple (2)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
 --- !u!224 &7791099915187195714 stripped
 RectTransform:
@@ -1047,11 +1108,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 11
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -1060,6 +1126,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -1150,6 +1220,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (5)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061286717516 stripped
 RectTransform:
@@ -1161,11 +1234,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 5382379408533462276, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Sprite
@@ -1174,6 +1252,10 @@ PrefabInstance:
     - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 8390704268646098752, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Pivot.x
@@ -1264,6 +1346,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_Purple (3)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
 --- !u!224 &7791099916000243463 stripped
 RectTransform:
@@ -1275,11 +1360,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -1288,6 +1378,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -1377,7 +1471,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (4)
       objectReference: {fileID: 0}
+    - target: {fileID: 8186050776765659225, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: m_Color.b
+      value: 0.28627452
+      objectReference: {fileID: 0}
+    - target: {fileID: 8186050776765659225, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: m_Color.g
+      value: 0.1254902
+      objectReference: {fileID: 0}
+    - target: {fileID: 8186050776765659225, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: m_Color.r
+      value: 0.17254902
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491062187460680 stripped
 RectTransform:
@@ -1389,11 +1498,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 28
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -1402,6 +1516,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -1492,6 +1610,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (19)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061954828273 stripped
 RectTransform:
@@ -1503,11 +1624,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 19
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -1516,6 +1642,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -1606,6 +1736,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (12)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061877841488 stripped
 RectTransform:
@@ -1617,11 +1750,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -1630,6 +1768,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -1720,6 +1862,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (11)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061790332819 stripped
 RectTransform:
@@ -1731,11 +1876,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 29
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -1744,6 +1894,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -1834,6 +1988,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (20)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061855886107 stripped
 RectTransform:
@@ -1845,11 +2002,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 27
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -1858,6 +2020,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -1948,6 +2114,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (18)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061729561630 stripped
 RectTransform:
@@ -1959,11 +2128,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 24
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -1972,6 +2146,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -2062,6 +2240,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (16)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061776804542 stripped
 RectTransform:
@@ -2073,11 +2254,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -2086,6 +2272,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -2176,6 +2366,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (2)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060597569025 stripped
 RectTransform:
@@ -2187,11 +2380,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 21
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -2200,6 +2398,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -2290,6 +2492,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (15)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060515201914 stripped
 RectTransform:
@@ -2301,11 +2506,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -2314,6 +2524,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -2404,6 +2618,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (6)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060575832279 stripped
 RectTransform:
@@ -2415,6 +2632,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 1299928512217532667, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
@@ -2513,6 +2731,10 @@ PrefabInstance:
       propertyPath: m_text
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 2441323443375743790, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
+      objectReference: {fileID: 0}
     - target: {fileID: 2888413319748347771, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -2521,11 +2743,18 @@ PrefabInstance:
       propertyPath: m_text
       value: 5
       objectReference: {fileID: 0}
+    - target: {fileID: 4531549951131975943, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
+      objectReference: {fileID: 0}
     - target: {fileID: 8183069089281776538, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 1.1973877
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d21725378a5f649d5aaf3f0df860dee4, type: 3}
 --- !u!224 &1060656029982466217 stripped
 RectTransform:
@@ -2537,11 +2766,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -2550,6 +2784,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -2640,6 +2878,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (1)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060421785213 stripped
 RectTransform:
@@ -2651,11 +2892,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 17
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -2664,6 +2910,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -2754,6 +3004,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (10)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060198402576 stripped
 RectTransform:
@@ -2765,8 +3018,13 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 1760424818728810546}
     m_Modifications:
+    - target: {fileID: 517013619084362137, guid: 016608a36166647df9bf350d6702e371, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
+      objectReference: {fileID: 0}
     - target: {fileID: 3079343458181579934, guid: 016608a36166647df9bf350d6702e371, type: 3}
       propertyPath: m_Name
       value: Deco1
@@ -2860,6 +3118,15 @@ PrefabInstance:
       value: Popup_Box_CornerDeco_Ribbon
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 3079343458373727880, guid: 016608a36166647df9bf350d6702e371, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1760424819246884469}
+    - targetCorrespondingSourceObject: {fileID: 3079343458373727880, guid: 016608a36166647df9bf350d6702e371, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 615980772788506233}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 016608a36166647df9bf350d6702e371, type: 3}
 --- !u!224 &3662076877829019879 stripped
 RectTransform:
@@ -2871,11 +3138,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 16
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -2884,6 +3156,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -2974,6 +3250,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (9)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491061074372886 stripped
 RectTransform:
@@ -2985,11 +3264,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 5382379408533462276, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Sprite
@@ -2998,6 +3282,10 @@ PrefabInstance:
     - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 8390704268646098752, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Pivot.x
@@ -3088,6 +3376,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_Purple (5)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
 --- !u!224 &7791099917119648392 stripped
 RectTransform:
@@ -3099,11 +3390,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 23
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -3112,6 +3408,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -3202,6 +3502,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (14)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060953480116 stripped
 RectTransform:
@@ -3213,11 +3516,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 5382379408533462276, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Sprite
@@ -3226,6 +3534,10 @@ PrefabInstance:
     - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 8390704268646098752, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Pivot.x
@@ -3316,6 +3628,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_Purple (4)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
 --- !u!224 &7791099916768509718 stripped
 RectTransform:
@@ -3327,11 +3642,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -3340,6 +3660,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -3430,6 +3754,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (8)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060843352964 stripped
 RectTransform:
@@ -3441,11 +3768,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 13
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -3454,6 +3786,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -3544,6 +3880,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (7)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060779005976 stripped
 RectTransform:
@@ -3555,11 +3894,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 22
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -3568,6 +3912,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -3658,6 +4006,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple (13)
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &3426491060657792641 stripped
 RectTransform:
@@ -3669,11 +4020,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 59726302915176042, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 657761809014743615, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Sprite
@@ -3682,6 +4038,10 @@ PrefabInstance:
     - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2294072560642819139, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 4027096013434443899, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
       propertyPath: m_Pivot.x
@@ -3772,6 +4132,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_DarkPurple
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: adf359ee873ec4a64beee3b061e66dd4, type: 3}
 --- !u!224 &1564827459082176082 stripped
 RectTransform:
@@ -3783,11 +4146,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4847821184758602065, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 5382379408533462276, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Sprite
@@ -3796,6 +4164,10 @@ PrefabInstance:
     - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_text
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 6648709127695629176, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 8390704268646098752, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
       propertyPath: m_Pivot.x
@@ -3886,6 +4258,9 @@ PrefabInstance:
       value: RewardFrame_02_DecoDiamond_Nomal_Purple
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 084141c5adda54a4585c2be71aadc81e, type: 3}
 --- !u!224 &3028822095951032644 stripped
 RectTransform:
@@ -3897,11 +4272,16 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 615980772788506233}
     m_Modifications:
     - target: {fileID: 71540600124751862, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
       propertyPath: m_text
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 71540600124751862, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 1587749750089079178, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
       propertyPath: m_Sprite
@@ -3910,6 +4290,10 @@ PrefabInstance:
     - target: {fileID: 2304778529862295007, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
       propertyPath: m_text
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 2304778529862295007, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
+      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
+      value: 1801810542
       objectReference: {fileID: 0}
     - target: {fileID: 2939471089518306249, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
       propertyPath: m_Name
@@ -3999,7 +4383,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5476380224067641860, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7160625042914012147, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 3.4473877
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6725a6406c75c4116981c9cfa2b0ccd5, type: 3}
 --- !u!224 &6618638702305338455 stripped
 RectTransform:

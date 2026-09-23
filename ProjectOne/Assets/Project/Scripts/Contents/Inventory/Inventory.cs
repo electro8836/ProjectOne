@@ -10,7 +10,7 @@ namespace ProjectOne.UserData
 	// 인벤토리 모델(인메모리) — 두 종류를 함께 보유한다.
 	//
 	//   스택 아이템   재료·소모품·수집품. itemId → count 로 합쳐진다.
-	//   장비 인스턴스 UID 단위. 같은 아이템이라도 등급·강화·순도·품질이 달라 합칠 수 없다 (아이템 설계 4장).
+	//   장비 인스턴스 UID 단위. 같은 아이템이라도 등급·강화·품질이 달라 합칠 수 없다 (아이템 설계 4장).
 	//
 	// 공유 DTO(InventoryDto)를 받아 런타임 모델로 변환하고, 저장/전송 시 ToDto() 로 역변환한다.
 	// 영속은 서버(Backnd 함수)가 담당, 변경 시 알림만 발행. UID 채번은 서버 이관 전까지 클라가 한다(STEP 14).
@@ -208,7 +208,6 @@ namespace ProjectOne.UserData
 				entry.itemId = src.itemId;
 				entry.grade = (int)src.grade;
 				entry.level = src.level;
-				entry.purity = (int)src.purity;
 				entry.quality = src.quality;
 				entry.equippedSlot = (int)src.equippedSlot;
 				dto.equipments.Add(entry);
@@ -273,7 +272,6 @@ namespace ProjectOne.UserData
 				instance.itemId = src.itemId;
 				instance.grade = (ItemGradeType)src.grade;
 				instance.level = src.level > 0 ? src.level : 1;
-				instance.purity = (EquipPurity)src.purity;
 				instance.quality = src.quality;
 				instance.equippedSlot = (EquipSlotTypes)src.equippedSlot;
 

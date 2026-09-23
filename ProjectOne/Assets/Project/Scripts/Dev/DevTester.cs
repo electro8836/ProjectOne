@@ -26,7 +26,6 @@ namespace ProjectOne.Boot
 			public int itemId;
 			public ItemGradeType grade;
 			public int level;
-			public EquipPurity purity;
 			public int quality;
 		}
 
@@ -391,7 +390,6 @@ namespace ProjectOne.Boot
 				dto.itemId = src.itemId;
 				dto.grade = (int)(src.grade != ItemGradeType.None ? src.grade : ItemGradeType.Normal);
 				dto.level = src.level > 0 ? src.level : 1;
-				dto.purity = (int)(src.purity != EquipPurity.None ? src.purity : EquipPurity.Purity_3);
 				dto.quality = src.quality;
 				dto.equippedSlot = equipped ? (int)row.EquipSlotType : 0;
 				inventory.equipments.Add(dto);

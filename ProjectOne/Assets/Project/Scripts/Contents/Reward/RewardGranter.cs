@@ -237,7 +237,7 @@ namespace ProjectOne.Reward
 				EquipmentInstance instance;
 				if (row.FixedGrade != ItemGradeType.None)
 				{
-					instance = EquipmentFactory.CreateExact(itemId, row.FixedGrade, row.FixedPurity, row.FixedQuality);
+					instance = EquipmentFactory.CreateExact(itemId, row.FixedGrade, row.FixedQuality);
 				}
 				else
 				{

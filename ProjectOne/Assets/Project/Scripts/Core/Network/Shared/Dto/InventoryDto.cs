@@ -20,7 +20,6 @@ namespace ProjectOne.Shared
 		public int itemId;
 		public int grade;			// ItemGradeType
 		public int level = 1;
-		public int purity;			// EquipPurity
 		public int quality;
 		public int equippedSlot;	// EquipSlotTypes (0 = 미착용)
 	}

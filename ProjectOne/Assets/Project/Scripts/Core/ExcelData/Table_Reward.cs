@@ -16,7 +16,6 @@ namespace EDT {
             public int MaxCount { get; set; } = 0;
             public float Chance { get; set; } = 0f;
             public ItemGradeType FixedGrade { get; set; } = ItemGradeType.None;
-            public EquipPurity FixedPurity { get; set; } = EquipPurity.None;
             public int FixedQuality { get; set; } = 0;
         }
 
@@ -49,7 +48,6 @@ namespace EDT {
                 row.MaxCount = reader.ReadInt32();
                 row.Chance = reader.ReadSingle();
                 row.FixedGrade = (ItemGradeType)reader.ReadInt32();
-                row.FixedPurity = (EquipPurity)reader.ReadInt32();
                 row.FixedQuality = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

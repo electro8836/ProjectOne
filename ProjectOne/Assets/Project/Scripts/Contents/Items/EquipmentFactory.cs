@@ -9,9 +9,8 @@ namespace ProjectOne.Items
 	//
 	//   1) 대상 ItemID 는 호출자(드랍 테이블)가 정한다
 	//   2) 등급 추첨 — EquipGradeWeight, 유효 범위는 Item.Grade ~ Equipment.MaxGrade
-	//   3) 순도 추첨 — EquipPurity.AssignWeight
-	//   4) 품질 추첨 — EquipQuality 구간 → 구간 내 균등
-	//   5) Level = 1 로 생성
+	//   3) 품질 추첨 — EquipQuality 구간 → 구간 내 균등
+	//   4) Level = 1 로 생성
 	//
 	// 유효 등급의 가중치 합이 0이면 **드랍을 스킵한다**(null 반환). 최소 등급으로 강제하지 않는다 —
 	// 그렇게 하면 가중치로 걸어둔 구간 제한이 무력화된다 (설계 7.2).
@@ -20,7 +19,6 @@ namespace ProjectOne.Items
 		// 등급 6종 가중치 버퍼 — 추첨은 메인 스레드 단일 경로라 재사용해도 안전하다.
 		private static readonly List<int> _gradeWeights = new List<int>(6);
 		private static readonly List<int> _weightBuffer = new List<int>(8);
-		private static readonly List<EquipPurity> _purityKeys = new List<EquipPurity>(8);
 		private static readonly List<Table_EquipQuality.Row> _qualityRows = new List<Table_EquipQuality.Row>(8);
 
 		// 장비 인스턴스 생성. 등급을 뽑을 수 없으면 null(드랍 스킵).
@@ -45,7 +43,6 @@ namespace ProjectOne.Items
 			instance.itemId = itemId;
 			instance.grade = grade;
 			instance.level = 1;
-			instance.purity = RollPurity();
 			instance.quality = RollQuality();
 			instance.equippedSlot = EquipSlotTypes.None;
 			return instance;
@@ -64,15 +61,14 @@ namespace ProjectOne.Items
 			instance.itemId = itemId;
 			instance.grade = grade;
 			instance.level = 1;
-			instance.purity = RollPurity();
 			instance.quality = RollQuality();
 			instance.equippedSlot = EquipSlotTypes.None;
 			return instance;
 		}
 
-		// 등급·순도·품질을 전부 지정해 만든다 — 확정 지급 상품과 그 미리보기가 같은 값을 쓰게 하는 경로.
+		// 등급·품질을 전부 지정해 만든다 — 확정 지급 상품과 그 미리보기가 같은 값을 쓰게 하는 경로.
 		// 추첨이 끼지 않으므로 같은 인자로는 항상 같은 인스턴스가 나온다.
-		public static EquipmentInstance CreateExact(int itemId, ItemGradeType grade, EquipPurity purity, int quality)
+		public static EquipmentInstance CreateExact(int itemId, ItemGradeType grade, int quality)
 		{
 			if (Table_Equipment.Get(itemId) == null)
 			{
@@ -84,42 +80,12 @@ namespace ProjectOne.Items
 			instance.itemId = itemId;
 			instance.grade = grade;
 			instance.level = 1;
-			instance.purity = purity;
 			instance.quality = quality;
 			instance.equippedSlot = EquipSlotTypes.None;
 			return instance;
 		}
 
 		// ── 추첨 ──────────────────────────────────────────────────────
-
-		public static EquipPurity RollPurity()
-		{
-			_weightBuffer.Clear();
-			_purityKeys.Clear();
-
-			Dictionary<EquipPurity, Table_EquipPurity.Row> all = Table_EquipPurity.All();
-			Dictionary<EquipPurity, Table_EquipPurity.Row>.Enumerator e = all.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				Table_EquipPurity.Row row = e.Current.Value;
-				if (row.ID == EquipPurity.None)
-				{
-					continue;
-				}
-
-				_purityKeys.Add(row.ID);
-				_weightBuffer.Add(row.AssignWeight);
-			}
-
-			int index = WeightedRandom.PickIndex(_weightBuffer);
-			if (index < 0)
-			{
-				Debug.LogWarning("[EquipmentFactory] EquipPurity 가중치가 없어 Purity_1 로 대체합니다.");
-				return EquipPurity.Purity_1;
-			}
-
-			return _purityKeys[index];
-		}
 
 		// 구간을 먼저 뽑고, 구간 안에서 균등 분포로 정수를 뽑는다 (설계 3.9).
 		public static int RollQuality()

@@ -343,14 +343,7 @@ namespace EDT {
         BUFF_DualBlades_AtkSpeedUp,
     }
 
-    public enum Currency {
-        None,
-        Gold,
-        Dia,
-        Ruby,
-    }
-
-    public enum EquipEnhanceTier {
+    public enum ItemEnhanceTier {
         None,
         Tier_1,
         Tier_2,
@@ -360,13 +353,20 @@ namespace EDT {
         Tier_6,
     }
 
-    public enum EquipPurity {
+    public enum Currency {
         None,
-        Purity_1,
-        Purity_2,
-        Purity_3,
-        Purity_4,
-        Purity_5,
+        Gold,
+        Dia,
+        Ruby,
+        WeaponScroll,
+        ArmorScroll,
+        AccessoryScroll,
+        PromotionStone,
+        MagicCrystal,
+        TransferStone,
+        BronzeKey,
+        SilverKey,
+        GoldKey,
     }
 
     public enum Dungeon {
@@ -618,14 +618,14 @@ namespace EDT {
         TableCharacterLevelExp,
         TableConsumable,
         TableCostume,
+        TableItemEnhance,
+        TableItemEnhanceTier,
+        TableItemPromotion,
+        TableItemTransfer,
         TableCurrency,
         TableEquipment,
         TableEquipOption,
-        TableEquipEnhance,
-        TableEquipEnhanceTier,
-        TableEquipPromotion,
         TableEquipQuality,
-        TableEquipPurity,
         TableEquipGradeWeight,
         TableGachaInfo,
         TableGacha_Equipment,

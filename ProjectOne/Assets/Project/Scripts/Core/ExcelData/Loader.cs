@@ -95,6 +95,50 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - ItemEnhance
+            {
+                CurrentFile = Table_ItemEnhance.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ItemEnhance._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - ItemEnhanceTier
+            {
+                CurrentFile = Table_ItemEnhanceTier.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ItemEnhanceTier._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - ItemPromotion
+            {
+                CurrentFile = Table_ItemPromotion.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ItemPromotion._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - ItemTransfer
+            {
+                CurrentFile = Table_ItemTransfer.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ItemTransfer._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Currency
             {
                 CurrentFile = Table_Currency.Filename;
@@ -128,55 +172,11 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - EquipEnhance
-            {
-                CurrentFile = Table_EquipEnhance.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_EquipEnhance._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - EquipEnhanceTier
-            {
-                CurrentFile = Table_EquipEnhanceTier.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_EquipEnhanceTier._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - EquipPromotion
-            {
-                CurrentFile = Table_EquipPromotion.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_EquipPromotion._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
             #region Table - EquipQuality
             {
                 CurrentFile = Table_EquipQuality.Filename;
                 reader = open_file_functor( CurrentFile );
                 if( Load( reader, Table_EquipQuality._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - EquipPurity
-            {
-                CurrentFile = Table_EquipPurity.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_EquipPurity._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
