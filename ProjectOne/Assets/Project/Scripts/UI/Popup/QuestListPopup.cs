@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -9,8 +8,8 @@ namespace ProjectOne.UI
 {
 	// 퀘스트 목록 팝업의 View(MVP). UIManager.ShowQuestListPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
 	//
-	// 퀘스트 체인 전체를 ID 순으로 깔기만 한다 — 어떤 칸이 진행 중이고 어디까지 깼는지,
-	// 어느 칸을 수령할 수 있는지는 QuestListPopupPresenter 가 정한다.
+	// 퀘스트 체인 전체를 ID 순으로 깔기만 한다 — 어떤 칸이 진행 중이고 어디까지 깼는지는
+	// QuestListPopupPresenter 가 정한다. 수령은 이 팝업의 일이 아니다(QuestInfo 가 맡는다).
 	public class QuestListPopup : UIScreen, IView
 	{
 		[Header("목록")]
@@ -23,8 +22,6 @@ namespace ProjectOne.UI
 		[Header("닫기")]
 		[SerializeField] private UIButton _exitButton;				// Frame/ExitButton
 		[SerializeField] private UIButton _dimButton;				// Dim
-
-		public event Action<int> OnCompleteRequested;	// 수령을 요청한 퀘스트 ID
 
 		private readonly QuestListPopupPresenter _presenter = new QuestListPopupPresenter();
 		private readonly List<QuestSlot> _slots = new List<QuestSlot>();
@@ -53,11 +50,6 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
-			for (int i = 0; i < _slots.Count; i++)
-			{
-				_slots[i].OnCompleteClicked -= onSlotCompleteClicked;
-			}
-
 			_exitButton.OnClickEvent -= onCloseClicked;
 			_dimButton.OnClickEvent -= onCloseClicked;
 
@@ -170,7 +162,6 @@ namespace ProjectOne.UI
 			}
 
 			QuestSlot slot = Instantiate(_slotPrefab, _grid);
-			slot.OnCompleteClicked += onSlotCompleteClicked;	// 생성 시 1회만 구독
 			_slots.Add(slot);
 
 			return slot;
@@ -190,14 +181,6 @@ namespace ProjectOne.UI
 			_canvasGroup.alpha = visible ? 1f : 0f;
 			_canvasGroup.interactable = visible;
 			_canvasGroup.blocksRaycasts = visible;
-		}
-
-		private void onSlotCompleteClicked(QuestSlot sender, int questId)
-		{
-			if (OnCompleteRequested != null)
-			{
-				OnCompleteRequested.Invoke(questId);
-			}
 		}
 
 		private void onCloseClicked()

@@ -72,6 +72,10 @@ namespace ProjectOne.UI
 		// 툴팁이 _popupCts 를 취소하면 그것을 띄운 목록 팝업 자신이 닫혀 버린다.
 		private CancellationTokenSource _currencyListCts;
 
+		// 퀘스트 목록 팝업도 마찬가지다. 보상 칸을 누르면 장비·소모품 팝업이나 설명 툴팁이 뜨는데,
+		// 그것들이 _popupCts 를 취소하면 목록 팝업 자신이 닫혀 버린다.
+		private CancellationTokenSource _questListCts;
+
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
@@ -1072,11 +1076,11 @@ namespace ProjectOne.UI
 		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
 		public async UniTask ShowQuestListPopupAsync(CancellationToken ct)
 		{
-			_popupCts?.Cancel();
-			_popupCts?.Dispose();
-			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+			_questListCts?.Cancel();
+			_questListCts?.Dispose();
+			_questListCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(QUEST_LIST_POPUP_ADDRESS, _popupCts.Token);
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(QUEST_LIST_POPUP_ADDRESS, _questListCts.Token);
 			if (prefab == null)
 			{
 				return;
@@ -1091,7 +1095,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			await popup.ShowAsync(_popupCts.Token);
+			await popup.ShowAsync(_questListCts.Token);
 			Destroy(go);
 
 			if (ResourceManager.HasInstance)

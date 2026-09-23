@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -17,14 +16,13 @@ namespace ProjectOne.UI
 		public string desc;
 		public bool isCurrent;		// 지금 진행 중인 퀘스트인가 — 틀 강조
 		public bool isCleared;		// 이미 깨서 보상을 받았는가 — Clear / Check 표시
-		public bool canComplete;	// 지금 수령할 수 있는가 — 보상 칸 버튼 활성
 		public int rewardGroupId;
 	}
 
 	// 퀘스트 목록 팝업의 한 칸(UIPrefab_QuestSlot).
 	//
-	// 슬롯 자체는 클릭을 받지 않는다. 보상 칸이 곧 수령 버튼이다 —
-	// 누르면 무엇을 할지는 정하지 않고 questId 만 위로 올려보낸다(판단은 Presenter).
+	// 슬롯 자체는 클릭을 받지 않는다. 목록은 정보를 보는 곳이라 수령 경로가 없다 —
+	// 보상 칸을 누르면 그 보상이 무엇인지 보여주는 읽기 전용 팝업만 열린다(수령은 QuestInfo 의 몫).
 	// 보상 칸은 ItemPoolSlot 과 같은 방식으로 ItemSlotRoot 에 ItemSlot 하나를 꽂아 쓴다
 	// — 퀘스트 보상은 항상 한 칸이다.
 	public class QuestSlot : MonoBehaviour
@@ -35,6 +33,13 @@ namespace ProjectOne.UI
 		// 진행 중이 아닌 퀘스트의 틀 색.
 		private static readonly Color InactiveBorderColor = new Color32(0x89, 0x89, 0x89, 0xFF);
 
+		// 진행 중인 퀘스트의 칸 바탕색.
+		private static readonly Color CurrentFrameColor = new Color32(0x49, 0x5F, 0xB2, 0xFF);
+
+		// 진행 중이 아닌 퀘스트의 칸 바탕색 — 프리펩 기본값.
+		private static readonly Color InactiveFrameColor = new Color32(0x2F, 0x34, 0x48, 0xFF);
+
+		[SerializeField] private Image _frame;					// Frame
 		[SerializeField] private Image _innerBorder;			// Frame/InnerBorder
 		[SerializeField] private TMP_Text _numberText;			// NumberText
 		[SerializeField] private TMP_Text _nameText;			// NameText
@@ -43,16 +48,10 @@ namespace ProjectOne.UI
 		[SerializeField] private RectTransform _itemSlotRoot;	// Reward/ItemSlotRoot
 		[SerializeField] private GameObject _check;				// Reward/Check
 
-		// 수령 요청. 실제로 받을 수 있는지는 Presenter 가 QuestBook 에 다시 묻는다.
-		public event Action<QuestSlot, int> OnCompleteClicked;
-
 		// 보상 미리보기 버퍼 — 퀘스트마다 다시 담는다.
 		private readonly List<RewardPreviewItem> _preview = new List<RewardPreviewItem>(2);
 
 		private ItemSlot _itemSlot;
-
-		// 지금 그린 퀘스트 — 눌렸을 때 어느 퀘스트인지 실어 보내야 한다.
-		private int _questId;
 
 		private void OnDestroy()
 		{
@@ -64,7 +63,10 @@ namespace ProjectOne.UI
 
 		public UniTask BindAsync(in QuestSlotData data, ItemSlot slotPrefab, ItemGradeColorTable colors, CancellationToken ct)
 		{
-			_questId = data.questId;
+			if (_frame != null)
+			{
+				_frame.color = data.isCurrent ? CurrentFrameColor : InactiveFrameColor;
+			}
 
 			if (_innerBorder != null)
 			{
@@ -129,9 +131,6 @@ namespace ProjectOne.UI
 
 			_itemSlot.gameObject.SetActive(true);
 
-			// 수령할 수 있는 칸만 눌린다 — 나머지는 UIButton 이 비활성 틴트를 입힌다.
-			_itemSlot.SetInteractable(data.canComplete);
-
 			RewardPreviewItem reward = _preview[0];
 			if (reward.type == EDT.RewardType.Currency)
 			{
@@ -153,13 +152,15 @@ namespace ProjectOne.UI
 			return _itemSlot.BindItemAsync(row, reward.count, colors, ct);
 		}
 
-		// 보상 칸 클릭 = 수령 요청. 여기서는 판단하지 않고 어느 퀘스트인지만 올려보낸다.
+		// 보상 칸 클릭 = 이 보상이 무엇인지 보여주기. 지금 그린 보상 하나를 그대로 넘긴다.
 		private void onItemSlotClicked(ItemSlot sender, long uid, int itemId)
 		{
-			if (OnCompleteClicked != null)
+			if (_preview.Count == 0)
 			{
-				OnCompleteClicked.Invoke(this, _questId);
+				return;
 			}
+
+			ShopRewardPopup.Show(_preview[0], sender, this.GetCancellationTokenOnDestroy());
 		}
 
 		private void hideItemSlot()
