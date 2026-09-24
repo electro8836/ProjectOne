@@ -117,7 +117,7 @@ namespace ProjectOne.UI
 		// 탭 전환은 교체지 겹치기가 아니다 — 새 창만 남고 이전 창은 정리된다.
 		// 닫고 나서 여는 것이 아니라 SwitchWindowAsync 가 새 창을 세운 뒤에 이전 것을 치운다.
 		// 그래야 프리팹을 불러오는 동안 빈 화면이 비쳐 화면이 튀지 않는다.
-		private async UniTaskVoid switchScreenAsync(UIScreenId screen, int index)
+		private async UniTask<UIScreen> switchScreenAsync(UIScreenId screen, int index)
 		{
 			_isSwitching = true;
 
@@ -137,11 +137,46 @@ namespace ProjectOne.UI
 				}
 
 				_isSwitching = false;
-				return;
+				return null;
 			}
 
 			_openedIndex = index;
 			_isSwitching = false;
+			return opened;
+		}
+
+		// 탭을 누르지 않고 코드로 탭을 이동한다 (장비 정보 팝업의 강화 버튼 → 제작 탭 등).
+		// 탭 클릭과 같은 경로를 태워야 _openedIndex·선택 표시·재클릭 토글이 어긋나지 않는다.
+		// 전환 중이거나 그 화면이 탭에 없으면 null.
+		public UniTask<UIScreen> OpenTabAsync(UIScreenId screen)
+		{
+			if (_isSwitching == true)
+			{
+				return UniTask.FromResult<UIScreen>(null);
+			}
+
+			int index = -1;
+			if (_tabScreens != null)
+			{
+				for (int i = 0; i < _tabScreens.Length; i++)
+				{
+					if (_tabScreens[i] == screen)
+					{
+						index = i;
+						break;
+					}
+				}
+			}
+
+			if (index < 0)
+			{
+				Debug.Log($"[NavigationBar] {screen} 에 연결된 탭이 없습니다.");
+				return UniTask.FromResult<UIScreen>(null);
+			}
+
+			// Select 는 OnTabChanged 를 발행하지 않는다 — 전환은 아래에서 한 번만 한다.
+			_tabs.Select(index);
+			return switchScreenAsync(screen, index);
 		}
 
 		// 열려 있는 화면을 접는다 — 같은 탭 재클릭.

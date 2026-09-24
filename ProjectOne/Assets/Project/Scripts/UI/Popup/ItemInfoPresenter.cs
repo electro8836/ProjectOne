@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Items;
+using ProjectOne.Upgrade;
 using ProjectOne.UserData;
 
 namespace ProjectOne.UI
@@ -33,6 +34,10 @@ namespace ProjectOne.UI
 	{
 		private long _uid;
 		private EquipSlotTypes _slot = EquipSlotTypes.None;
+
+		// 강화 버튼이 열 제작 모드. _canCraft 가 false 면 강화·승급 모두 불가(최대치)다.
+		private CraftMode _craftMode = CraftMode.Enhance;
+		private bool _canCraft;
 
 		private readonly List<OptionLine> _basicLines = new List<OptionLine>(4);
 		private readonly List<GradeOptionLine> _gradeLines = new List<GradeOptionLine>(6);
@@ -88,6 +93,12 @@ namespace ProjectOne.UI
 			view.SetEquipInteractable(_slot != EquipSlotTypes.None);
 			view.SetEquipLabel(equipLabel());
 
+			// 읽기 전용이면 버튼 묶음이 통째로 숨겨지므로 판단할 필요가 없다.
+			if (readOnly == false)
+			{
+				refreshEnchantButton(instance);
+			}
+
 			buildBasicOptions(instance, equip);
 			view.RenderBasicOptions(_basicLines);
 
@@ -122,9 +133,57 @@ namespace ProjectOne.UI
 			view.CloseFromInput();
 		}
 
+		// 강화·승급 — 팝업을 닫고 제작 창을 해당 모드로 열어 이 장비를 등록해 둔다.
 		private void onEnchantClicked()
 		{
-			UnityEngine.Debug.Log("[ItemInfoPopup] 강화 버튼 — 미연결 uid=" + _uid);
+			if (_canCraft == false)
+			{
+				return;
+			}
+
+			view.CloseFromInput();
+			openCraftAsync(_craftMode, _uid).Forget();
+		}
+
+		// 팝업은 닫히며 파괴되므로 view 토큰을 쓰지 않는다 — 창 열기는 팝업 수명과 무관하게 끝까지 가야 한다.
+		// 네비게이션 바의 제작 탭으로 이동하는 것과 같다 — 장비 창은 교체되어 닫히고 탭 선택도 제작으로 옮겨간다.
+		private static async UniTaskVoid openCraftAsync(CraftMode mode, long uid)
+		{
+			UIScreen screen = await UIManager.Instance.OpenTabAsync(UIScreenId.Craft, CancellationToken.None);
+			CraftUI craft = screen as CraftUI;
+			if (craft == null)
+			{
+				return;
+			}
+
+			// OpenWindowAsync 는 OnOpenAsync(초기화)를 끝낸 뒤 돌아오므로 등록이 초기화에 덮이지 않는다.
+			craft.Preselect(mode, uid);
+		}
+
+		// 강화가 가능하면 "강화", 승급이 가능하면 "승급", 둘 다 아니면 "최대치"(비활성).
+		// 재화는 보지 않는다 — 부족분은 제작 창이 보여준다.
+		// 두 조건은 배타적이다: 승급은 최대 레벨을 요구하고 강화는 최대 레벨 미만을 요구한다.
+		private void refreshEnchantButton(EquipmentInstance instance)
+		{
+			if (EquipmentUpgrade.CanEnhance(instance) == true)
+			{
+				_craftMode = CraftMode.Enhance;
+				_canCraft = true;
+				view.SetEnchantLabel("강화");
+			}
+			else if (EquipmentUpgrade.CanPromote(instance) == true)
+			{
+				_craftMode = CraftMode.Promote;
+				_canCraft = true;
+				view.SetEnchantLabel("승급");
+			}
+			else
+			{
+				_canCraft = false;
+				view.SetEnchantLabel("최대치");
+			}
+
+			view.SetEnchantInteractable(_canCraft);
 		}
 
 		private void onExitClicked()

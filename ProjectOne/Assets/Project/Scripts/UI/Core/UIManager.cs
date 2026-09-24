@@ -607,6 +607,18 @@ namespace ProjectOne.UI
 			return screen;
 		}
 
+		// 코드에서 네비게이션 탭을 이동한다 — 탭을 누른 것과 같이 창을 교체하고 선택 표시도 옮긴다.
+		// 네비게이션 바가 없으면(아직 안 만들어졌거나 던전 등) 창 교체만 한다.
+		public UniTask<UIScreen> OpenTabAsync(UIScreenId id, CancellationToken ct)
+		{
+			if (_navigationBarView != null)
+			{
+				return _navigationBarView.OpenTabAsync(id);
+			}
+
+			return SwitchWindowAsync(id, ct);
+		}
+
 		// 탭 전환 전용 — 새 창을 다 세운 뒤에 이전 창을 치운다.
 		//
 		// 닫고 나서 여는 순서로 하면 Addressable 로드를 기다리는 동안 창이 하나도 없는 화면이 그대로 보인다.

@@ -39,6 +39,7 @@ namespace ProjectOne.UI
 		[SerializeField] private UIButton _equipButton;			// EquipButton
 		[SerializeField] private TMP_Text _equipButtonLabel;	// EquipButton 라벨
 		[SerializeField] private UIButton _enchantButton;		// EnchantButton
+		[SerializeField] private TMP_Text _enchantButtonLabel;	// EnchantButton 라벨 (강화/승급/최대치)
 
 		// 닫기는 ExitButton 과 Dimmed 두 경로다.
 		// 본문 영역은 ItemInfo/Bg 가 레이캐스트를 흡수하므로, Dimmed 까지 내려오는 클릭은
@@ -258,6 +259,16 @@ namespace ProjectOne.UI
 		public void SetEquipLabel(string label)
 		{
 			_equipButtonLabel.text = label;
+		}
+
+		public void SetEnchantInteractable(bool interactable)
+		{
+			_enchantButton.interactable = interactable;
+		}
+
+		public void SetEnchantLabel(string label)
+		{
+			_enchantButtonLabel.text = label;
 		}
 
 		// 닫힘 대기 — Presenter 의 ShowAsync 가 마지막에 await 한다.

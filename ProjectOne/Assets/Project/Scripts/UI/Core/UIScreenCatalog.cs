@@ -35,7 +35,7 @@ namespace ProjectOne.UI
 			{ UIScreenId.World,			"UIPrefab_World" },
 			{ UIScreenId.Mastery,		"UIPrefab_Mastery" },
 			{ UIScreenId.Quest,			"UIPrefab_Quest" },
-			{ UIScreenId.Craft,			"UIPrefab_Craft" },
+			{ UIScreenId.Craft,			"UIPrefab_CraftInfo" },
 			{ UIScreenId.Settings,		"UIPrefab_Settings" },
 			{ UIScreenId.Dialog,		"UIPrefab_Dialog" }
 		};

@@ -22,12 +22,21 @@ namespace ProjectOne.Upgrade
 		}
 	}
 
+	// 승급이 거부된 이유.
+	public enum PromoteBlock
+	{
+		None,
+		Invalid,		// 인스턴스가 null 이거나 테이블 행이 없는 장비
+		MaxGrade,		// 최대 등급 — 다음 등급이 없음
+		NotMaxLevel,	// 현재 등급의 강화 레벨 상한에 도달하지 않음
+	}
+
 	// 장비 강화 · 승급 (아이템 설계 6장).
 	//
 	//   강화 : 레벨 +1. 상한은 현재 '등급' 의 ItemEnhanceTier.MaxLevel.
 	//          비용 티어는 '올라갈 레벨(level + 1)' 이 속한 구간 — 등급이 아니다.
 	//          두 조회를 혼동하면 조용히 틀린다.
-	//   승급 : 등급 +1. 레벨·품질은 그대로 유지된다.
+	//   승급 : 등급 +1. 레벨·품질은 그대로 유지된다. 강화 레벨이 현재 등급 상한일 때만 가능하다.
 	//
 	// 지금은 로컬 권위다. 서버 이관은 STEP 14.
 	public static class EquipmentUpgrade
@@ -147,9 +156,31 @@ namespace ProjectOne.Upgrade
 			return row.ToGrade;
 		}
 
+		// 승급이 막힌 이유. UI 가 버튼 상태와 문구를 이걸로 결정한다 (TransferBlock 관례).
+		// 승급은 다음 등급이 있고, 현재 등급의 강화 레벨 상한까지 올린 뒤에만 가능하다.
+		public static PromoteBlock GetPromoteBlock(EquipmentInstance instance)
+		{
+			if (instance == null || instance.Equipment == null)
+			{
+				return PromoteBlock.Invalid;
+			}
+
+			if (GetNextGrade(instance) == ItemGradeType.None)
+			{
+				return PromoteBlock.MaxGrade;
+			}
+
+			if (instance.level < GetMaxLevel(instance))
+			{
+				return PromoteBlock.NotMaxLevel;
+			}
+
+			return PromoteBlock.None;
+		}
+
 		public static bool CanPromote(EquipmentInstance instance)
 		{
-			return GetNextGrade(instance) != ItemGradeType.None;
+			return GetPromoteBlock(instance) == PromoteBlock.None;
 		}
 
 		public static void GetPromoteCost(EquipmentInstance instance, List<UpgradeCost> buffer)
@@ -186,11 +217,12 @@ namespace ProjectOne.Upgrade
 		// 승급 실행 — 등급만 바꾼다. 레벨·품질은 유지된다 (설계 6.2).
 		public static bool TryPromote(EquipmentInstance instance)
 		{
-			ItemGradeType next = GetNextGrade(instance);
-			if (next == ItemGradeType.None)
+			if (CanPromote(instance) == false)
 			{
 				return false;
 			}
+
+			ItemGradeType next = GetNextGrade(instance);
 
 			List<UpgradeCost> costs = new List<UpgradeCost>(3);
 			GetPromoteCost(instance, costs);
