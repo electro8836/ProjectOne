@@ -173,6 +173,7 @@ namespace ProjectOne.Quests
 			switch (row.QuestTargetType)
 			{
 				case QuestTargetType.MonsterKill:
+				case QuestTargetType.EliteKill:
 					baked.mapId = parseInt(row.QuestParam_1, 0);
 					baked.killCount = parseInt(row.QuestParam_2, 0);
 					baked.isValid = baked.mapId > 0 && baked.killCount > 0;
@@ -310,6 +311,7 @@ namespace ProjectOne.Quests
 			switch (row.QuestTargetType)
 			{
 				case QuestTargetType.MonsterKill:
+				case QuestTargetType.EliteKill:
 				case QuestTargetType.BossKill:
 					if (Table_Map.Get(baked.mapId) == null)
 					{

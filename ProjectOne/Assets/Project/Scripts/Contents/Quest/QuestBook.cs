@@ -15,7 +15,7 @@ namespace ProjectOne.Quests
 	// - 진행 중 퀘스트는 항상 1개다. 메인/서브 구분이 없고 포기할 수 없다.
 	// - ID 오름차순이 곧 진행 순서다. 이전 퀘스트를 클리어해야 다음 퀘스트가 열린다.
 	//
-	// 목표 판정은 counter 를 쌓는 MonsterKill / BossKill 만 상태를 갖고,
+	// 목표 판정은 counter 를 쌓는 MonsterKill / EliteKill / BossKill 만 상태를 갖고,
 	// DungeonClear / ReachLevel 은 조건 충족형이라 매번 재평가한다 — 그래야 이미 조건을
 	// 만족한 채로 퀘스트가 열려도 즉시 달성된다.
 	public sealed class QuestBook
@@ -79,6 +79,7 @@ namespace ProjectOne.Quests
 			switch (baked.row.QuestTargetType)
 			{
 				case QuestTargetType.MonsterKill:
+				case QuestTargetType.EliteKill:
 				case QuestTargetType.BossKill:
 					return _current.counter >= GetRequiredCount(baked);
 
@@ -98,6 +99,7 @@ namespace ProjectOne.Quests
 			switch (baked.row.QuestTargetType)
 			{
 				case QuestTargetType.MonsterKill:
+				case QuestTargetType.EliteKill:
 					return baked.killCount;
 
 				case QuestTargetType.ReachLevel:
@@ -113,6 +115,7 @@ namespace ProjectOne.Quests
 			switch (baked.row.QuestTargetType)
 			{
 				case QuestTargetType.MonsterKill:
+				case QuestTargetType.EliteKill:
 				case QuestTargetType.BossKill:
 					return _current.counter;
 
@@ -128,9 +131,9 @@ namespace ProjectOne.Quests
 
 		// ── 진행도 갱신 ───────────────────────────────────────────────
 
-		// 몬스터 처치. mapId 는 사망 좌표로 역산한 맵, isBoss 는 그 몬스터의 등급이다.
+		// 몬스터 처치. mapId 는 사망 좌표로 역산한 맵, monsterType 은 그 몬스터의 등급이다.
 		// 진행도가 바뀌었으면 true — 호출자가 완료 판정을 이어서 한다.
-		public bool AddKill(int mapId, bool isBoss)
+		public bool AddKill(int mapId, MonsterType monsterType)
 		{
 			QuestCatalog.BakedQuest baked = GetCurrentBaked();
 			if (baked == null || baked.mapId != mapId)
@@ -149,9 +152,20 @@ namespace ProjectOne.Quests
 				return true;
 			}
 
+			if (baked.row.QuestTargetType == QuestTargetType.EliteKill)
+			{
+				if (monsterType != MonsterType.Elite || _current.counter >= baked.killCount)
+				{
+					return false;
+				}
+
+				_current.counter++;
+				return true;
+			}
+
 			if (baked.row.QuestTargetType == QuestTargetType.BossKill)
 			{
-				if (isBoss == false || _current.counter >= 1)
+				if (monsterType != MonsterType.Boss || _current.counter >= 1)
 				{
 					return false;
 				}

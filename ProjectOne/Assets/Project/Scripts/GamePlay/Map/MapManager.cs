@@ -499,6 +499,26 @@ namespace ProjectOne.Map
 			return new Vector3(center.x, center.y, 0f);
 		}
 
+		// 포털로 들어온 히어로의 도착 위치 — 이 맵에서 출발 필드로 돌아가는 포털의 ArrivalPoint.
+		// 역방향 포털이 없으면(액트 시작 필드 등) 시작 지점으로 폴백한다.
+		public Vector3 GetArrivalPosition(int mapId, int fromFieldId)
+		{
+			Entry entry;
+			if (fromFieldId > 0 && _byMapId.TryGetValue(mapId, out entry) == true && entry.grid != null)
+			{
+				IReadOnlyList<MapPortal> portals = entry.grid.Portals;
+				for (int i = 0; i < portals.Count; i++)
+				{
+					if (portals[i] != null && portals[i].TargetFieldId == fromFieldId)
+					{
+						return portals[i].ArrivalPosition;
+					}
+				}
+			}
+
+			return GetAnchorPosition(mapId);
+		}
+
 		// 스폰 위치를 통행 가능한 자리로 보정한다 — 벽 속 스폰을 막는다.
 		public Vector3 ResolveSpawnPosition(Vector3 desired, float unitRadius)
 		{

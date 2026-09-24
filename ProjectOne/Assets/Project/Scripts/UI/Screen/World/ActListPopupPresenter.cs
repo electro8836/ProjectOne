@@ -49,6 +49,13 @@ namespace ProjectOne.UI
 
 			render();
 
+			// 처음 열 때만 기준 필드 칸으로 스크롤한다 — 탭을 바꿀 때는 사용자가 고른 액트를 그대로 둔다.
+			int slotIndex = indexOfField(FieldProgress.GetFocusFieldId());
+			if (slotIndex >= 0)
+			{
+				view.ScrollToSlot(slotIndex);
+			}
+
 			return UniTask.CompletedTask;
 		}
 
@@ -66,6 +73,12 @@ namespace ProjectOne.UI
 		// 팝업의 일이 아니므로(팝업은 자기를 띄운 화면을 모른다) 이동했다는 사실만 결과로 넘긴다.
 		private void onMoveRequested(int fieldId)
 		{
+			// 잠긴 필드는 버튼이 숨겨지지만, 판정이 한곳이라 여기서도 막아 우회 경로를 없앤다.
+			if (FieldProgress.IsCleared(Table_Field.Get(fieldId)) == false)
+			{
+				return;
+			}
+
 			MapNavigator.MoveToMap(fieldId, view.GetDestroyToken());
 			view.CloseByMove();
 		}
@@ -141,6 +154,20 @@ namespace ProjectOne.UI
 			}
 
 			return 0;
+		}
+
+		// 지금 렌더된 필드 목록에서의 칸 인덱스. 다른 액트의 필드면 -1.
+		private int indexOfField(int fieldId)
+		{
+			for (int i = 0; i < _fields.Count; i++)
+			{
+				if (_fields[i].ID == fieldId)
+				{
+					return i;
+				}
+			}
+
+			return -1;
 		}
 
 		private int compareActId(Table_Act.Row a, Table_Act.Row b)

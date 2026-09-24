@@ -17,6 +17,11 @@ namespace ProjectOne.Map
 		private FlowField _flowField = new FlowField();
 		private Vector3Int _boundsMin;
 
+		// 마지막 플로우필드 베이크 목표(필드 로컬 셀). 장막 해제로 통행 배열을 다시 만든 뒤 같은 목표로 재베이크한다.
+		private int _lastBakeX;
+		private int _lastBakeY;
+		private bool _hasBaked;
+
 		// 충돌 핫 루프(ResolveWallCollision)용 캐시 — 네이티브 Grid/Tilemap 호출을 산술/배열 조회로 대체.
 		private bool[]  _walkable;       // 셀 통행 가능 여부(InitializeFlowField 에서 1회 구축)
 		private bool[]  _blocked;        // 셀 발사체 차단 여부(blockMap 타일 유무, 1회 구축)
@@ -45,6 +50,9 @@ namespace ProjectOne.Map
 
 		// 타일이 아니라 오브젝트로 놓인 장애물 — InitializeFlowField 가 사각형을 캐시한다.
 		private MapBlocker[] _blockers;
+
+		// 맵 이동 구역 — 도착 위치를 역방향 포털에서 찾는다.
+		private MapPortal[] _portals;
 
 		public IReadOnlyList<MonsterSpawnPoint> SpawnPoints
 		{
@@ -75,6 +83,15 @@ namespace ProjectOne.Map
 			}
 		}
 
+		public IReadOnlyList<MapPortal> Portals
+		{
+			get
+			{
+				ensureMarkers();
+				return _portals;
+			}
+		}
+
 		// 히어로 시작/부활 지점. 마커가 없으면 null — 호출자가 그리드 중심으로 폴백한다.
 		public MapAnchor Anchor
 		{
@@ -97,6 +114,7 @@ namespace ProjectOne.Map
 			_npcPoints = this.GetComponentsInChildren<NpcSpawnPoint>(true);
 			_anchor = this.GetComponentInChildren<MapAnchor>(true);
 			_blockers = this.GetComponentsInChildren<MapBlocker>(true);
+			_portals = this.GetComponentsInChildren<MapPortal>(true);
 
 			System.Array.Sort(_slots, compareSlotIndex);
 		}
@@ -132,15 +150,7 @@ namespace ProjectOne.Map
 			}
 
 			cacheBlockers();
-
-			// 경로탐색은 셀 격자라 사각형을 그대로 반영할 수 없다 — 셀 중심이 사각형 안일 때만 막는다.
-			// 충돌용 walkable 은 타일만 담은 채로 둔다(블로커는 사각형으로 따로 검사).
-			// FlowField.Initialize 가 배열을 복사하므로 임시 배열을 넘겨도 안전하다.
-			bool[] pathable = new bool[width * height];
-			System.Array.Copy(walkable, pathable, width * height);
-			applyBlockersToPathing(pathable, width, height);
-
-			_flowField.Initialize(width, height, pathable);
+			initializePathing(walkable, width, height);
 
 			// 충돌 핫 루프 캐시 — 타일 전용 배열과 셀 좌표 변환 상수를 보관
 			_walkable    = walkable;
@@ -156,6 +166,36 @@ namespace ProjectOne.Map
 			_worldMin = min;
 			_worldMax = max;
 			_boundsReady = true;
+		}
+
+		// 장막(MapPortal) 개폐 후 호출한다 — 활성 블로커를 다시 모으고 경로탐색 통행 배열을 새로 만든다.
+		// 타일 셀 캐시(_walkable)는 바뀌지 않으므로 그대로 둔다.
+		public void RefreshBlockers()
+		{
+			if (_walkable == null)
+			{
+				return;
+			}
+
+			cacheBlockers();
+			initializePathing(_walkable, _fieldWidth, _fieldHeight);
+
+			if (_hasBaked == true)
+			{
+				_flowField.Bake(_lastBakeX, _lastBakeY);
+			}
+		}
+
+		// 경로탐색은 셀 격자라 사각형을 그대로 반영할 수 없다 — 셀 중심이 사각형 안일 때만 막는다.
+		// 충돌용 walkable 은 타일만 담은 채로 둔다(블로커는 사각형으로 따로 검사).
+		// FlowField.Initialize 가 배열을 복사하므로 임시 배열을 넘겨도 안전하다.
+		private void initializePathing(bool[] walkable, int width, int height)
+		{
+			bool[] pathable = new bool[width * height];
+			System.Array.Copy(walkable, pathable, width * height);
+			applyBlockersToPathing(pathable, width, height);
+
+			_flowField.Initialize(width, height, pathable);
 		}
 
 		// 활성 MapBlocker 의 월드 사각형을 캐시한다. 셀에 굽지 않는 이유 —
@@ -284,6 +324,10 @@ namespace ProjectOne.Map
 			int fx = cell.x - _boundsMin.x;
 			int fy = cell.y - _boundsMin.y;
 			_flowField.Bake(fx, fy);
+
+			_lastBakeX = fx;
+			_lastBakeY = fy;
+			_hasBaked = true;
 		}
 
 		public Vector2 GetFlowDirection(Vector2 worldPos)

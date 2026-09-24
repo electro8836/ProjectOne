@@ -41,6 +41,9 @@ namespace ProjectOne.Field
 
 		private Hero _hero;
 
+		// 포털 이동(특히 액트 전환 로딩) 중 재진입 차단
+		private bool _movingByPortal;
+
 		// 스폰 포인트 수집 + 개체 단위 리젠. 필드 전용이다(던전에는 리젠이 없다).
 		private FieldMonsterSpawner _spawner;
 
@@ -129,6 +132,7 @@ namespace ProjectOne.Field
 
 			_hero = await UnitFactory.Instance.CreateHeroAsync(spawnPos, Faction.Player, true, ct);
 			_currentFieldId = fieldId;
+			FieldProgress.SetLastVisitedFieldId(fieldId);
 
 			// 월드 오브젝트 풀은 첫 처치 전에 준비돼 있어야 한다 — 없으면 보상 드랍이 유실된다.
 			await DropManager.Instance.PrepareAsync(ct);
@@ -158,11 +162,51 @@ namespace ProjectOne.Field
 				return;
 			}
 
-			enterField(fieldId);
+			enterField(fieldId, 0);
+		}
+
+		// 맵 이동 구역(MapPortal)으로 이동 — 도착 위치는 목적지 맵의 역방향 포털이다.
+		public void MoveByPortal(int targetFieldId)
+		{
+			if (_movingByPortal == true)
+			{
+				return;
+			}
+
+			Table_Field.Row field = Table_Field.Get(targetFieldId);
+			if (field == null)
+			{
+				Debug.LogError($"[FieldDirector] Table_Field.Get({targetFieldId}) == null");
+				return;
+			}
+
+			int fromFieldId = _currentFieldId;
+
+			if (field.ActID == _currentActId)
+			{
+				enterField(targetFieldId, fromFieldId);
+				return;
+			}
+
+			// 포털의 토큰을 쓰면 액트 교체로 포털이 파괴될 때 이동이 취소된다 — 디렉터 토큰을 쓴다.
+			moveByPortalAsync(targetFieldId, fromFieldId, this.GetCancellationTokenOnDestroy()).Forget();
+		}
+
+		private async UniTaskVoid moveByPortalAsync(int targetFieldId, int fromFieldId, CancellationToken ct)
+		{
+			_movingByPortal = true;
+			await changeActAsync(targetFieldId, fromFieldId, ct);
+			_movingByPortal = false;
 		}
 
 		// 액트 전환 — 씬은 그대로 두고 로딩창만 띄운 뒤 그리드맵을 통째로 교체한다.
-		public async UniTask ChangeActAsync(int fieldId, CancellationToken ct)
+		public UniTask ChangeActAsync(int fieldId, CancellationToken ct)
+		{
+			return changeActAsync(fieldId, 0, ct);
+		}
+
+		// fromFieldId 가 0 이면 시작 지점(MapAnchor)에 도착한다.
+		private async UniTask changeActAsync(int fieldId, int fromFieldId, CancellationToken ct)
 		{
 			Table_Field.Row field = Table_Field.Get(fieldId);
 			if (field == null)
@@ -190,7 +234,7 @@ namespace ProjectOne.Field
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneLoad, 1f);
 
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 0f);
-			enterField(fieldId);
+			enterField(fieldId, fromFieldId);
 			await UniTask.NextFrame(ct);
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 1f);
 
@@ -212,7 +256,8 @@ namespace ProjectOne.Field
 
 		// 필드 경계 — 떠나는 필드의 몬스터를 걷어내고 히어로를 옮긴 뒤 새 필드 것으로 갈아끼운다.
 		// 몬스터는 히어로가 있는 필드에만 존재한다. 나머지 필드는 리젠 시각만 흐른다.
-		private void enterField(int fieldId)
+		// fromFieldId 가 0 이면 시작 지점(MapAnchor), 아니면 그 필드로 돌아가는 포털 앞에 도착한다.
+		private void enterField(int fieldId, int fromFieldId)
 		{
 			if (_spawner != null)
 			{
@@ -224,7 +269,7 @@ namespace ProjectOne.Field
 				MonsterSpawnManager.Instance.ClearAlive();
 			}
 
-			moveHeroToField(fieldId);
+			moveHeroToField(fieldId, fromFieldId);
 
 			if (_spawner != null)
 			{
@@ -232,9 +277,10 @@ namespace ProjectOne.Field
 			}
 		}
 
-		private void moveHeroToField(int fieldId)
+		private void moveHeroToField(int fieldId, int fromFieldId)
 		{
 			_currentFieldId = fieldId;
+			FieldProgress.SetLastVisitedFieldId(fieldId);
 
 			if (_hero == null)
 			{
@@ -242,8 +288,8 @@ namespace ProjectOne.Field
 			}
 
 			// 그리드맵이 10000 간격으로 떨어져 있어 필드 이동은 곧 순간이동이다.
-			// 도착 지점은 Begin() 과 같은 규약 — 맵 프리팹의 MapAnchor(Entry) 위치.
-			_hero.transform.position = MapManager.Instance.GetAnchorPosition(fieldId);
+			// 포털 이동이 아니면 도착 지점은 Begin() 과 같은 규약 — 맵 프리팹의 MapAnchor(Entry) 위치.
+			_hero.transform.position = MapManager.Instance.GetArrivalPosition(fieldId, fromFieldId);
 			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 		}
 

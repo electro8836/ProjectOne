@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 
 namespace ProjectOne.UI
@@ -17,6 +18,7 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _actNameText;		// Frame/Top/ActName
 
 		[Header("필드 목록")]
+		[SerializeField] private ScrollRect _fieldScroll;		// Frame/FieldScrollRect
 		[SerializeField] private RectTransform _fieldGrid;	// Frame/FieldScrollRect/Viewport/Content/Grid
 		[SerializeField] private FieldSlot _slotPrefab;		// UIPrefab_FieldSlot
 
@@ -125,6 +127,35 @@ namespace ProjectOne.UI
 			{
 				_slots[i].gameObject.SetActive(false);
 			}
+		}
+
+		// index 칸이 뷰포트 맨 위에 오도록 스크롤한다. 끝 칸이라 더 내릴 수 없으면 바닥에서 멈춘다.
+		public void ScrollToSlot(int index)
+		{
+			if (_fieldScroll == null || index < 0 || index >= _slots.Count)
+			{
+				return;
+			}
+
+			// 방금 켠 슬롯은 레이아웃이 아직 안 잡혀 있다 — 위치를 읽기 전에 즉시 재배치한다.
+			RectTransform content = _fieldScroll.content;
+			LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+
+			RectTransform viewport = _fieldScroll.viewport != null ? _fieldScroll.viewport : (RectTransform)_fieldScroll.transform;
+			float scrollable = content.rect.height - viewport.rect.height;
+			if (scrollable <= 0f)
+			{
+				_fieldScroll.verticalNormalizedPosition = 1f;
+				return;
+			}
+
+			// 콘텐츠 윗변에서 슬롯 윗변까지의 거리 — 스케일이 걸려 있어도 콘텐츠 로컬 좌표로 잰다.
+			RectTransform slot = (RectTransform)_slots[index].transform;
+			Vector3 slotTop = content.InverseTransformPoint(slot.TransformPoint(new Vector3(0f, slot.rect.yMax, 0f)));
+			float fromTop = content.rect.yMax - slotTop.y;
+
+			_fieldScroll.StopMovement();
+			_fieldScroll.verticalNormalizedPosition = 1f - Mathf.Clamp01(fromTop / scrollable);
 		}
 
 		// 그냥 닫기 — 닫기 버튼·딤을 눌렀을 때.

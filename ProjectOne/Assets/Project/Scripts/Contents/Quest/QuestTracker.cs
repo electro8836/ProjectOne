@@ -97,15 +97,15 @@ namespace ProjectOne.Quests
 				mapId = MapManager.Instance.GetMapIdAt(e.Position);
 			}
 
-			// 이벤트에는 등급이 실리지 않는다 — BossKill 판정은 테이블로 역조회한다.
-			bool isBoss = false;
+			// 이벤트에는 등급이 실리지 않는다 — EliteKill / BossKill 판정은 테이블로 역조회한다.
+			MonsterType monsterType = MonsterType.None;
 			Table_Monster.Row monster = Table_Monster.Get(e.MonsterID);
 			if (monster != null)
 			{
-				isBoss = monster.MonsterType == MonsterType.Boss;
+				monsterType = monster.MonsterType;
 			}
 
-			if (Account.Instance.Quests.AddKill(mapId, isBoss) == true)
+			if (Account.Instance.Quests.AddKill(mapId, monsterType) == true)
 			{
 				publishActive();
 			}

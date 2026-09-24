@@ -182,6 +182,7 @@ namespace EDT {
         BossKill,
         DungeonClear,
         ReachLevel,
+        EliteKill,
     }
 
     public enum RewardType {
