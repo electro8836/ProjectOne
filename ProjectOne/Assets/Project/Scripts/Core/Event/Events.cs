@@ -323,6 +323,32 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 히어로가 있는 필드가 바뀜 (필드 진입 / 같은 액트 내 이동 / 액트 전환).
+		// 같은 상태 안에서의 이동이라 GameStateChangedEvent 로는 잡히지 않는다.
+		public readonly struct FieldChangedEvent
+		{
+				public readonly int FieldId;
+
+				public FieldChangedEvent(int fieldId)
+				{
+						this.FieldId = fieldId;
+				}
+		}
+
+		// 던전 단계 시작 (첫 입장 / 결과창에서 재도전·다음 단계).
+		// 재진입은 씬·상태를 유지한 채 단계만 바꾸므로 GameStateChangedEvent 로는 잡히지 않는다.
+		public readonly struct DungeonStageStartedEvent
+		{
+				public readonly EDT.Dungeon DungeonType;
+				public readonly int Stage;
+
+				public DungeonStageStartedEvent(EDT.Dungeon dungeonType, int stage)
+				{
+						this.DungeonType = dungeonType;
+						this.Stage = stage;
+				}
+		}
+
 		// 코스튬 착용 변경 알림 (무기/바디 코스튬 착용·해제).
 		// 무엇이 바뀌었는지 구분할 소비자가 없어 값을 싣지 않는다 — 받는 쪽은 외형을 다시 그리기만 한다.
 		public readonly struct CostumeChangeEvent

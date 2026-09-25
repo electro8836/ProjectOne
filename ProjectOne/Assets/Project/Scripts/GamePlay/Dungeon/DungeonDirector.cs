@@ -97,6 +97,9 @@ namespace ProjectOne.Dungeon
 		// 진행 중인 던전 종류. 아직 Begin 전이면 None 이다.
 		public EDT.Dungeon DungeonType => (_ctx != null) ? _ctx.DungeonType : EDT.Dungeon.None;
 
+		// 진행 중인 단계. 아직 Begin 전이면 0 이다.
+		public int Stage => (_ctx != null) ? _ctx.Stage : 0;
+
 		// 던전 씬은 비어 있으므로 코드가 직접 생성한다.
 		public static DungeonDirector EnsureInstance()
 		{
@@ -282,6 +285,8 @@ namespace ProjectOne.Dungeon
 			_remainTime = _hasTimeLimit ? _stage.TimeLimit : 0f;
 			_timedOut = false;
 			_timerPaused = false;
+
+			EventManager.Instance.Publish(new DungeonStageStartedEvent(_ctx.DungeonType, _ctx.Stage));
 
 			_currentMode = StageModeFactory.Create(_ctx.DungeonType);
 			if (_currentMode == null)

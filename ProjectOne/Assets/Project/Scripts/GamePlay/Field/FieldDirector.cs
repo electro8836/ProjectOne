@@ -133,6 +133,7 @@ namespace ProjectOne.Field
 			_hero = await UnitFactory.Instance.CreateHeroAsync(spawnPos, Faction.Player, true, ct);
 			_currentFieldId = fieldId;
 			FieldProgress.SetLastVisitedFieldId(fieldId);
+			EventManager.Instance.Publish(new FieldChangedEvent(fieldId));
 
 			// 월드 오브젝트 풀은 첫 처치 전에 준비돼 있어야 한다 — 없으면 보상 드랍이 유실된다.
 			await DropManager.Instance.PrepareAsync(ct);
@@ -281,6 +282,7 @@ namespace ProjectOne.Field
 		{
 			_currentFieldId = fieldId;
 			FieldProgress.SetLastVisitedFieldId(fieldId);
+			EventManager.Instance.Publish(new FieldChangedEvent(fieldId));
 
 			if (_hero == null)
 			{
