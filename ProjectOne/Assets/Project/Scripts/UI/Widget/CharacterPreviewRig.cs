@@ -2,6 +2,7 @@
 using UnityEngine;
 using ProjectOne.Avatar;
 using ProjectOne.Costumes;
+using ProjectOne.Items;
 using ProjectOne.Mastery;
 using ProjectOne.Unit;
 using ProjectOne.UserData;
@@ -27,6 +28,12 @@ namespace ProjectOne.UI
 		private int _previewWeaponId = -1;
 		private int _previewBodyId = -1;
 
+		// 내 Account 대신 그릴 외형(다른 플레이어). _useExternal 이 false 면 내 착용을 따른다.
+		private bool _useExternal;
+		private int _externalWeaponCostumeId;
+		private int _externalBodyCostumeId;
+		private EquipmentInstance _externalWeapon;
+
 		public Camera Camera
 		{
 			get { return _camera; }
@@ -46,6 +53,15 @@ namespace ProjectOne.UI
 		{
 			_previewWeaponId = weaponCostumeId;
 			_previewBodyId = bodyCostumeId;
+		}
+
+		// 내 Account 대신 넘겨받은 착용으로 그린다(다른 플레이어 정보). 반영은 Refresh 에서 한다.
+		public void SetExternal(int weaponCostumeId, int bodyCostumeId, EquipmentInstance weapon)
+		{
+			_useExternal = true;
+			_externalWeaponCostumeId = weaponCostumeId;
+			_externalBodyCostumeId = bodyCostumeId;
+			_externalWeapon = weapon;
 		}
 
 		// 착용 장비·코스튬을 외형에 반영한다. 창이 열릴 때와 장착이 바뀔 때마다 호출된다.
@@ -77,6 +93,11 @@ namespace ProjectOne.UI
 		{
 			if (_previewBodyId < 0)
 			{
+				if (_useExternal == true)
+				{
+					return HeroAvatarAspect.ResolveBodySet(_externalBodyCostumeId);
+				}
+
 				return HeroAvatarAspect.ResolveBodySet();
 			}
 
@@ -102,17 +123,28 @@ namespace ProjectOne.UI
 		{
 			if (_previewWeaponId < 0)
 			{
-				return HeroAvatarAspect.ResolveWeaponSet();
+				return resolveWornWeaponSet();
 			}
 
 			Table_Costume.Row row = CostumeCatalog.Get(_previewWeaponId);
 			if (row == null || row.CostumeType != CostumeType.Weapon)
 			{
 				// 벗어보기 — 장비 무기가 다시 보이도록 실제 착용 규칙으로 돌아간다.
-				return HeroAvatarAspect.ResolveWeaponSet();
+				return resolveWornWeaponSet();
 			}
 
 			return AvatarCatalog.GetWeaponSet(row.SetAddress);
+		}
+
+		// 실제 착용 규칙의 무기 — 외형 모드면 넘겨받은 착용, 아니면 내 Account.
+		private AvatarWeaponSet resolveWornWeaponSet()
+		{
+			if (_useExternal == true)
+			{
+				return HeroAvatarAspect.ResolveWeaponSet(_externalWeaponCostumeId, _externalWeapon);
+			}
+
+			return HeroAvatarAspect.ResolveWeaponSet();
 		}
 
 		// 무기별 오버라이드 컨트롤러. AC_Root 의 IDLE 클립도 AOC 가 갈아끼우는 대상이라,
@@ -124,8 +156,17 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			MasteryBook book = Account.Instance.Mastery;
-			Table_WeaponMastery.Row mastery = (book != null) ? book.CurrentMastery : null;
+			Table_WeaponMastery.Row mastery;
+			if (_useExternal == true)
+			{
+				mastery = MasteryCatalog.GetByWeaponType(HeroAvatarAspect.GetWeaponType(_externalWeapon));
+			}
+			else
+			{
+				MasteryBook book = Account.Instance.Mastery;
+				mastery = (book != null) ? book.CurrentMastery : null;
+			}
+
 			if (mastery == null)
 			{
 				// 무기 미착용 — 기본 컨트롤러로 되돌린다.

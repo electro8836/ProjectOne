@@ -6,6 +6,7 @@ using UnityEngine;
 using ProjectOne.Utils;
 using ProjectOne.Event;
 using ProjectOne.Items;
+using ProjectOne.Ranking;
 using ProjectOne.Resources;
 
 namespace ProjectOne.UI
@@ -78,6 +79,11 @@ namespace ProjectOne.UI
 
 		// 출석 팝업도 같다 — 보상 칸을 누르면 설명 툴팁이 뜬다.
 		private CancellationTokenSource _dailyBonusCts;
+
+		// 랭킹 팝업은 슬롯을 누르면 플레이어 정보 팝업이, 정보 팝업은 장비 칸을 누르면 장비 팝업이 위에 뜬다.
+		// 위에 뜨는 팝업이 아래 팝업의 CTS 를 취소하면 안 되므로 둘 다 전용 CTS 를 쓴다.
+		private CancellationTokenSource _rankingCts;
+		private CancellationTokenSource _playerInfoCts;
 
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
@@ -725,6 +731,8 @@ namespace ProjectOne.UI
 		private const string MENU_POPUP_ADDRESS = "UIPrefab_MenuPopup";
 		private const string QUEST_LIST_POPUP_ADDRESS = "UIPrefab_QuestListPopup";
 		private const string DAILY_BONUS_POPUP_ADDRESS = "UIPrefab_DailyBonusPopup";
+		private const string RANKING_POPUP_ADDRESS = "UIPrefab_RankingPopup";
+		private const string PLAYER_INFO_POPUP_ADDRESS = "UIPrefab_PlayerInfoPopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -1150,6 +1158,70 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(DAILY_BONUS_POPUP_ADDRESS);
+			}
+		}
+
+		// 전투력 랭킹 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		public async UniTask ShowRankingPopupAsync(CancellationToken ct)
+		{
+			_rankingCts?.Cancel();
+			_rankingCts?.Dispose();
+			_rankingCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(RANKING_POPUP_ADDRESS, _rankingCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			RankingPopup popup = go.GetComponent<RankingPopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_RankingPopup 루트에 RankingPopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(RANKING_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_rankingCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(RANKING_POPUP_ADDRESS);
+			}
+		}
+
+		// 플레이어 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다. 내 정보·남의 정보 공통.
+		public async UniTask ShowPlayerInfoPopupAsync(PlayerProfile profile, CancellationToken ct)
+		{
+			_playerInfoCts?.Cancel();
+			_playerInfoCts?.Dispose();
+			_playerInfoCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(PLAYER_INFO_POPUP_ADDRESS, _playerInfoCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			PlayerInfoPopup popup = go.GetComponent<PlayerInfoPopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_PlayerInfoPopup 루트에 PlayerInfoPopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(PLAYER_INFO_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(profile, _playerInfoCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(PLAYER_INFO_POPUP_ADDRESS);
 			}
 		}
 

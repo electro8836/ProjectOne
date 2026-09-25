@@ -53,6 +53,12 @@ namespace ProjectOne.Unit
 			CostumeBook book = Account.Instance.Costume;
 			int equippedId = (book != null) ? book.EquippedBodyId : 0;
 
+			return ResolveBodySet(equippedId);
+		}
+
+		// 위와 같되 착용 ID 를 직접 받는다 — 다른 플레이어처럼 내 Account 가 아닌 외형용.
+		public static AvatarBodySet ResolveBodySet(int equippedId)
+		{
 			Table_Costume.Row row = CostumeCatalog.Get(equippedId);
 			if (row == null || row.CostumeType != CostumeType.Body)
 			{
@@ -78,19 +84,22 @@ namespace ProjectOne.Unit
 				return null;
 			}
 
+			CostumeBook book = Account.Instance.Costume;
+			int costumeId = (book != null) ? book.EquippedWeaponId : 0;
+
+			return ResolveWeaponSet(costumeId, loadout.GetEquipped(EquipSlotTypes.Weapon));
+		}
+
+		// 위와 같되 코스튬 무기 ID 와 장비 무기를 직접 받는다 — 내 Account 가 아닌 외형용.
+		public static AvatarWeaponSet ResolveWeaponSet(int costumeId, EquipmentInstance weapon)
+		{
 			// 직업 제한은 표시 시점에 본다 — 안 맞는 무기를 든 동안만 장비 무기가 보이고,
 			// 맞는 무기로 갈아끼우면 코스튬이 다시 나타난다(착용 상태는 유지된다).
-			CostumeBook book = Account.Instance.Costume;
-			if (book != null)
+			if (CostumeCatalog.CanShowWeapon(costumeId, GetWeaponType(weapon)) == true)
 			{
-				int costumeId = book.EquippedWeaponId;
-				if (CostumeCatalog.CanShowWeapon(costumeId, loadout.EquippedWeaponType) == true)
-				{
-					return AvatarCatalog.GetWeaponSet(CostumeCatalog.Get(costumeId).SetAddress);
-				}
+				return AvatarCatalog.GetWeaponSet(CostumeCatalog.Get(costumeId).SetAddress);
 			}
 
-			EquipmentInstance weapon = loadout.GetEquipped(EquipSlotTypes.Weapon);
 			if (weapon == null)
 			{
 				return null;
@@ -103,6 +112,18 @@ namespace ProjectOne.Unit
 			}
 
 			return AvatarCatalog.GetWeaponSet(row.WeaponSetAddress);
+		}
+
+		// 장비 무기의 종류. 미착용이면 None (Loadout.EquippedWeaponType 과 같은 규칙).
+		public static WeaponType GetWeaponType(EquipmentInstance weapon)
+		{
+			if (weapon == null)
+			{
+				return WeaponType.None;
+			}
+
+			Table_Equipment.Row row = weapon.Equipment;
+			return row != null ? row.WeaponType : WeaponType.None;
 		}
 	}
 }

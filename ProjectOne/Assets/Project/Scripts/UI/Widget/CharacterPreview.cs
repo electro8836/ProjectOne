@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 using ProjectOne.Event;
+using ProjectOne.Items;
 using ProjectOne.Resources;
 
 namespace ProjectOne.UI
@@ -42,6 +43,12 @@ namespace ProjectOne.UI
 		// 리그는 비동기로 뒤늦게 세워지므로 여기서 들고 있다가 생성 직후 넘긴다.
 		private int _previewWeaponId = -1;
 		private int _previewBodyId = -1;
+
+		// 내 착용 대신 그릴 외형(다른 플레이어). 리그가 뒤늦게 서므로 들고 있다가 생성 직후 넘긴다.
+		private bool _useExternal;
+		private int _externalWeaponCostumeId;
+		private int _externalBodyCostumeId;
+		private EquipmentInstance _externalWeapon;
 
 		private void Start()
 		{
@@ -97,6 +104,23 @@ namespace ProjectOne.UI
 			_rig.Refresh();
 		}
 
+		// 내 Account 대신 넘겨받은 착용으로 그린다(플레이어 정보 팝업). 이후 내 장착 변경은 따라가지 않는다.
+		public void SetExternalAppearance(int weaponCostumeId, int bodyCostumeId, EquipmentInstance weapon)
+		{
+			_useExternal = true;
+			_externalWeaponCostumeId = weaponCostumeId;
+			_externalBodyCostumeId = bodyCostumeId;
+			_externalWeapon = weapon;
+
+			if (_rig == null)
+			{
+				return;
+			}
+
+			_rig.SetExternal(_externalWeaponCostumeId, _externalBodyCostumeId, _externalWeapon);
+			_rig.Refresh();
+		}
+
 		// 착용 상태가 바뀐 뒤 외부에서 다시 그리게 할 때 쓴다.
 		public void Refresh()
 		{
@@ -140,7 +164,18 @@ namespace ProjectOne.UI
 			_target.enabled = true;
 
 			_rig.SetPreviewCostume(_previewWeaponId, _previewBodyId);
+			if (_useExternal == true)
+			{
+				_rig.SetExternal(_externalWeaponCostumeId, _externalBodyCostumeId, _externalWeapon);
+			}
+
 			_rig.Refresh();
+
+			// 남의 외형은 내 장착 변경과 무관하다.
+			if (_useExternal == true)
+			{
+				return;
+			}
 
 			EventManager.Instance.Subscribe<CostumeChangeEvent>(onCostumeChanged);
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
