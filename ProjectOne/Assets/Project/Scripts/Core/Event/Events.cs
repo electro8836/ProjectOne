@@ -354,4 +354,28 @@ namespace ProjectOne.Event
 		public readonly struct CostumeChangeEvent
 		{
 		}
+
+		// 보상 1건이 인벤/지갑에 실제로 반영됨 (RewardGranter 로컬 지급 경로). 시스템 로그 HUD 가 구독한다.
+		// 장비만 Grade/Quality 를 싣는다 — 스택 아이템 등급은 Item 테이블에 있어 받는 쪽이 조회한다.
+		public readonly struct RewardAcquiredEvent
+		{
+				public readonly RewardType Type;
+				public readonly int ItemId;
+				public readonly EDT.Currency Currency;
+				public readonly int Count;
+				public readonly ItemGradeType Grade;
+				public readonly int Quality;
+				public readonly bool IsEquipment;
+
+				public RewardAcquiredEvent(RewardType type, int itemId, EDT.Currency currency, int count, ItemGradeType grade, int quality, bool isEquipment)
+				{
+						this.Type = type;
+						this.ItemId = itemId;
+						this.Currency = currency;
+						this.Count = count;
+						this.Grade = grade;
+						this.Quality = quality;
+						this.IsEquipment = isEquipment;
+				}
+		}
 }

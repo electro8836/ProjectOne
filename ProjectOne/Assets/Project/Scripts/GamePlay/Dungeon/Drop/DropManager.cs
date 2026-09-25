@@ -34,13 +34,6 @@ namespace ProjectOne.Dungeon
 		// 몬스터 처치 시 회복 오브가 등장할 확률
 		private const float HealOrbChance = 0.15f;
 
-		// [임시] 보상 테이블(Monster/MonsterSpawn 의 RewardGroupID)이 비어 있어 드랍 연출을 볼 수 없다.
-		// 처치마다 페이로드 없는 드랍을 떨궈 연출만 확인한다 — 주워도 인벤토리는 변하지 않는다.
-		// 정식 보상 데이터가 들어오면 이 상수와 onUnitDied 의 사용 블록을 함께 지운다.
-		private const bool TestDropOnKill = true;
-		private const int TestDropCountMin = 2;
-		private const int TestDropCountMax = 3;
-
 		// 버프룬 생성 간격 범위(초)
 		private const float RuneIntervalMin = 5f;
 		private const float RuneIntervalMax = 10f;
@@ -106,16 +99,6 @@ namespace ProjectOne.Dungeon
 			if (Random.value < HealOrbChance)
 			{
 				spawnDrop(DropObjectType.HealOrb, evt.Position);
-			}
-
-			// [임시] 연출 확인용 — SetPayload 를 부르지 않으므로 주워도 지급이 없다.
-			if (TestDropOnKill == true)
-			{
-				int count = Random.Range(TestDropCountMin, TestDropCountMax + 1);
-				for (int i = 0; i < count; i++)
-				{
-					spawnDrop(DropObjectType.Item, randomAround(evt.Position));
-				}
 			}
 		}
 

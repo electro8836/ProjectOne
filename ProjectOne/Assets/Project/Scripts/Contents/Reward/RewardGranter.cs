@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using EDT;
 using UnityEngine;
 using ProjectOne.Currency;
+using ProjectOne.Event;
 using ProjectOne.Items;
 using ProjectOne.Unit;
 using ProjectOne.UserData;
@@ -115,6 +116,7 @@ namespace ProjectOne.Reward
 			if (granted.type == RewardType.Currency)
 			{
 				CurrencyManager.Instance.Add(granted.currency, granted.count);
+				EventManager.Instance.Publish(new RewardAcquiredEvent(granted.type, 0, granted.currency, granted.count, ItemGradeType.None, 0, false));
 				return;
 			}
 
@@ -122,10 +124,12 @@ namespace ProjectOne.Reward
 			if (granted.equipment != null)
 			{
 				Account.Instance.Inventory.AddEquipment(granted.equipment);
+				EventManager.Instance.Publish(new RewardAcquiredEvent(granted.type, granted.itemId, EDT.Currency.None, 1, granted.equipment.grade, granted.equipment.quality, true));
 				return;
 			}
 
 			Account.Instance.Inventory.Add(granted.itemId, granted.count);
+			EventManager.Instance.Publish(new RewardAcquiredEvent(granted.type, granted.itemId, EDT.Currency.None, granted.count, ItemGradeType.None, 0, false));
 		}
 
 		private static void rollOne(RewardCatalog.RewardEntry entry, RewardContext context, List<GrantedReward> buffer)
