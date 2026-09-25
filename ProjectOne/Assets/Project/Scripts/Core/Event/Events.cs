@@ -278,6 +278,30 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 히어로 레벨업 알림. 한 번에 여러 레벨이 올라도 최종 레벨로 1회만 발행한다.
+		public readonly struct HeroLevelUpEvent
+		{
+			public readonly int Level;
+
+			public HeroLevelUpEvent(int level)
+			{
+				this.Level = level;
+			}
+		}
+
+		// 마스터리 레벨업 알림. 한 번에 여러 레벨이 올라도 최종 레벨로 1회만 발행한다.
+		public readonly struct MasteryLevelUpEvent
+		{
+			public readonly WeaponMastery Mastery;
+			public readonly int Level;
+
+			public MasteryLevelUpEvent(WeaponMastery mastery, int level)
+			{
+				this.Mastery = mastery;
+				this.Level = level;
+			}
+		}
+
 		// 열린 창이 모두 닫혔을 때 알림 (UIManager가 마지막 창을 닫은 직후 발행).
 		// 하단 탭 그룹 등에서 구독해 탭 선택을 해제한다.
 		public readonly struct WindowClosedEvent

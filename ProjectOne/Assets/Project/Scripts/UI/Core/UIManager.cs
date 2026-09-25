@@ -17,7 +17,7 @@ namespace ProjectOne.UI
 	//   Window (200)  전체창            — 장비 / 상점 / 던전선택
 	//   Navi   (300)  창 위 상시        — 네비게이션 바
 	//   Popup  (350)  네비게이션 위     — 아이템 정보 · 확인
-	//   System (400)  최상위            — 네트워크 딤 · 로딩
+	//   System (400)  최상위            — 네트워크 딤 · 로딩 · 알림 메시지
 	//
 	// 위로 갈수록 덮는다. HUD 를 가장 아래에 두어 창·팝업이 자연히 그 위에 뜬다.
 	// GameStateChangedEvent 를 구독해 열린 창을 자동 정리한다.
@@ -433,6 +433,122 @@ namespace ProjectOne.UI
 
 			// 네비게이션 바가 뒤늦게 서는 경우가 있다 — 이미 열려 있는 창의 요구를 바로 반영한다.
 			applyNavigationBarVisibility();
+		}
+
+		// ── 알림 메시지 ────────────────────────────────────────────────
+		//
+		// 경고 · 레벨업 · 시스템 · 제한 네 종류가 각자 독립적으로 뜬다(동시에 떠도 된다).
+		// 영속 UI 라 한 번 세우면 걷지 않는다. 위치는 각 프리펩의 앵커·좌표를 그대로 쓴다.
+		// 레벨업 메시지는 레벨업 이벤트를 스스로 구독하므로 여기서 띄우는 API 가 없다.
+
+		private const string AlertMessageAddress = "UIPrefab_AlertMessage";
+		private const string LevelUpMessageAddress = "UIPrefab_LevelUpMessage";
+		private const string SystemMessageAddress = "UIPrefab_SystemMessage";
+		private const string WarningMessageAddress = "UIPrefab_WarningMessage";
+
+		private NoticeMessage _alertMessage;
+		private LevelUpMessage _levelUpMessage;
+		private NoticeMessage _systemMessage;
+		private WarningMessage _warningMessage;
+
+		// 마을 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
+		public async UniTask EnsureNoticeMessagesAsync(CancellationToken ct)
+		{
+			if (_alertMessage == null)
+			{
+				_alertMessage = await instantiateNoticeAsync<NoticeMessage>(AlertMessageAddress, ct);
+			}
+
+			if (_levelUpMessage == null)
+			{
+				_levelUpMessage = await instantiateNoticeAsync<LevelUpMessage>(LevelUpMessageAddress, ct);
+			}
+
+			if (_systemMessage == null)
+			{
+				_systemMessage = await instantiateNoticeAsync<NoticeMessage>(SystemMessageAddress, ct);
+			}
+
+			if (_warningMessage == null)
+			{
+				_warningMessage = await instantiateNoticeAsync<WarningMessage>(WarningMessageAddress, ct);
+			}
+
+			// 네트워크 딤이 먼저 만들어져 있었다면 메시지들이 그 위에 붙었다 — 딤을 다시 최상단으로.
+			if (_networkBlocker != null)
+			{
+				_networkBlocker.transform.SetAsLastSibling();
+			}
+		}
+
+		// 경고 메시지 — 3초 유지 후 사라진다. 떠 있는 중에 오면 닫힌 뒤 이어서 뜬다.
+		public void ShowAlertMessage(string message)
+		{
+			if (_alertMessage == null)
+			{
+				Debug.LogWarning($"[UIManager] 경고 메시지가 아직 준비되지 않았습니다: {message}");
+				return;
+			}
+
+			_alertMessage.Show(message);
+		}
+
+		// 시스템 메시지(공지 등) — 5초 유지 후 사라진다. 여러 개면 차례로 뜬다.
+		public void ShowSystemMessage(string message)
+		{
+			if (_systemMessage == null)
+			{
+				Debug.LogWarning($"[UIManager] 시스템 메시지가 아직 준비되지 않았습니다: {message}");
+				return;
+			}
+
+			_systemMessage.Show(message);
+		}
+
+		// 제한 메시지 — HideWarningMessage 를 부를 때까지 떠 있다.
+		public void ShowWarningMessage(string message)
+		{
+			if (_warningMessage == null)
+			{
+				Debug.LogWarning($"[UIManager] 제한 메시지가 아직 준비되지 않았습니다: {message}");
+				return;
+			}
+
+			_warningMessage.Show(message);
+		}
+
+		public void HideWarningMessage()
+		{
+			if (_warningMessage == null)
+			{
+				return;
+			}
+
+			_warningMessage.Hide();
+		}
+
+		// 시스템 캔버스 아래에 세운다. Instantiate(prefab, parent) 는 로컬 기준이라 프리펩의 앵커·좌표가 유지된다.
+		private async UniTask<T> instantiateNoticeAsync<T>(string address, CancellationToken ct) where T : MonoBehaviour
+		{
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct);
+			if (prefab == null)
+			{
+				// 메시지가 없어도 게임 흐름 자체는 막지 않는다.
+				Debug.LogWarning($"[UIManager] 알림 메시지 프리팹을 찾지 못했습니다: {address}");
+				return null;
+			}
+
+			GameObject go = Instantiate(prefab, _systemCanvas.transform);
+			T view = go.GetComponent<T>();
+			if (view == null)
+			{
+				Debug.LogError($"[UIManager] {address} 루트에 {typeof(T).Name} 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return null;
+			}
+
+			return view;
 		}
 
 		// ── 월드 게이지 ────────────────────────────────────────────────

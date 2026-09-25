@@ -120,7 +120,15 @@ namespace ProjectOne.Mastery
 
 			int before = progress.Level;
 			progress.AddExp(amount);
-			return progress.Level != before;
+
+			int after = progress.Level;
+			if (after == before)
+			{
+				return false;
+			}
+
+			EventManager.Instance.Publish(new MasteryLevelUpEvent(progress.id, after));
+			return true;
 		}
 
 		// ── 스킬 트리 ─────────────────────────────────────────────────

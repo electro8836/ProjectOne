@@ -71,12 +71,19 @@ namespace ProjectOne.UserData
 			int before = Level;
 			_exp = newExp;
 
-			if (Level != before)
+			int after = Level;
+			if (after != before)
 			{
 				reapplyHeroLevel();
 			}
 
 			EventManager.Instance.Publish(new CharacterChangeEvent());
+
+			// 레벨업 연출은 오를 때만 — 권위값 반영으로 내려가는 경우는 알리지 않는다.
+			if (after > before)
+			{
+				EventManager.Instance.Publish(new HeroLevelUpEvent(after));
+			}
 		}
 
 		// ── 동기화 상태 ───────────────────────────────────────────────
