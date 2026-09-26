@@ -35,7 +35,7 @@ namespace ProjectOne.Flow
 			// 창(200)·팝업(300) 위에 상시 뜨는 하단 네비게이션 — 전용 Navigation(350) 캔버스에 붙는다.
 			await UIManager.Instance.EnsureNavigationBarAsync(ct);
 
-			// 최상위 System(400) 캔버스의 알림 메시지 4종 — 레벨업 메시지가 이벤트를 구독하므로 사냥 전에 세운다.
+			// 최상위 System(400) 캔버스의 알림 메시지 4종 + 획득 로그 —레벨업 메시지가 이벤트를 구독하므로 사냥 전에 세운다.
 			await UIManager.Instance.EnsureNoticeMessagesAsync(ct);
 
 			// 마을 맵 + NPC 배치. 씬은 비어 있고 코드가 띄운다 (맵 설계 8장).

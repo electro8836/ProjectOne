@@ -440,12 +440,15 @@ namespace ProjectOne.UI
 		// 경고 · 레벨업 · 시스템 · 제한 네 종류가 각자 독립적으로 뜬다(동시에 떠도 된다).
 		// 영속 UI 라 한 번 세우면 걷지 않는다. 위치는 각 프리펩의 앵커·좌표를 그대로 쓴다.
 		// 레벨업 메시지는 레벨업 이벤트를 스스로 구독하므로 여기서 띄우는 API 가 없다.
+		// 획득 로그(SystemLogInfo)도 같은 캔버스에 둔다. 보상 획득 이벤트를 스스로 구독하므로 역시 API 가 없다.
 
+		private const string SystemLogInfoAddress = "UIPrefab_SystemLogInfo";
 		private const string AlertMessageAddress = "UIPrefab_AlertMessage";
 		private const string LevelUpMessageAddress = "UIPrefab_LevelUpMessage";
 		private const string SystemMessageAddress = "UIPrefab_SystemMessage";
 		private const string WarningMessageAddress = "UIPrefab_WarningMessage";
 
+		private SystemLogInfo _systemLogInfo;
 		private NoticeMessage _alertMessage;
 		private LevelUpMessage _levelUpMessage;
 		private NoticeMessage _systemMessage;
@@ -454,6 +457,12 @@ namespace ProjectOne.UI
 		// 마을 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
 		public async UniTask EnsureNoticeMessagesAsync(CancellationToken ct)
 		{
+			// 로그를 먼저 세운다 — 같은 캔버스에서는 앞 형제가 아래에 그려지므로 알림 메시지가 로그를 덮는다.
+			if (_systemLogInfo == null)
+			{
+				_systemLogInfo = await instantiateNoticeAsync<SystemLogInfo>(SystemLogInfoAddress, ct);
+			}
+
 			if (_alertMessage == null)
 			{
 				_alertMessage = await instantiateNoticeAsync<NoticeMessage>(AlertMessageAddress, ct);
