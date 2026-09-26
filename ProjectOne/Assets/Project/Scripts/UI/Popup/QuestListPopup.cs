@@ -9,7 +9,7 @@ namespace ProjectOne.UI
 	// 퀘스트 목록 팝업의 View(MVP). UIManager.ShowQuestListPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
 	//
 	// 퀘스트 체인 전체를 ID 순으로 깔기만 한다 — 어떤 칸이 진행 중이고 어디까지 깼는지는
-	// QuestListPopupPresenter 가 정한다. 수령은 이 팝업의 일이 아니다(QuestInfo 가 맡는다).
+	// QuestListPopupPresenter 가 정한다. 수령 대기 칸의 보상 수령은 QuestSlot 이 맡는다.
 	public class QuestListPopup : UIScreen, IView
 	{
 		[Header("목록")]

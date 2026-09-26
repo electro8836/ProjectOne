@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using ProjectOne.Reward;
+using ProjectOne.UserData;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -15,14 +16,15 @@ namespace ProjectOne.UI
 		public string name;
 		public string desc;
 		public bool isCurrent;		// 지금 진행 중인 퀘스트인가 — 틀 강조
-		public bool isCleared;		// 이미 깨서 보상을 받았는가 — Clear / Check 표시
+		public bool isCleared;		// 이미 깨서 보상을 받았는가 — Clear / Check(Icon) 표시
+		public bool isClaimable;	// 목표는 달성했지만 UI 완료형이라 아직 안 받았는가 — Check(ClaimText) 표시
 		public int rewardGroupId;
 	}
 
 	// 퀘스트 목록 팝업의 한 칸(UIPrefab_QuestSlot).
 	//
-	// 슬롯 자체는 클릭을 받지 않는다. 목록은 정보를 보는 곳이라 수령 경로가 없다 —
-	// 보상 칸을 누르면 그 보상이 무엇인지 보여주는 읽기 전용 팝업만 열린다(수령은 QuestInfo 의 몫).
+	// 슬롯 자체는 클릭을 받지 않는다. 보상 칸을 누르면 수령 대기 상태일 때는 그 자리에서 퀘스트를
+	// 완료(보상 지급)하고, 그 밖에는 그 보상이 무엇인지 보여주는 읽기 전용 팝업이 열린다.
 	// 보상 칸은 ItemPoolSlot 과 같은 방식으로 ItemSlotRoot 에 ItemSlot 하나를 꽂아 쓴다
 	// — 퀘스트 보상은 항상 한 칸이다.
 	public class QuestSlot : MonoBehaviour
@@ -47,11 +49,17 @@ namespace ProjectOne.UI
 		[SerializeField] private GameObject _clear;				// Clear — 클리어한 칸을 덮는 오버레이
 		[SerializeField] private RectTransform _itemSlotRoot;	// Reward/ItemSlotRoot
 		[SerializeField] private GameObject _check;				// Reward/Check
+		[SerializeField] private GameObject _checkIcon;			// Reward/Check/Icon — 수령 완료
+		[SerializeField] private GameObject _claimText;			// Reward/Check/ClaimText — 수령 대기
 
 		// 보상 미리보기 버퍼 — 퀘스트마다 다시 담는다.
 		private readonly List<RewardPreviewItem> _preview = new List<RewardPreviewItem>(2);
 
 		private ItemSlot _itemSlot;
+
+		// 보상 칸 클릭 분기용 — 마지막으로 그린 값.
+		private int _questId;
+		private bool _isClaimable;
 
 		private void OnDestroy()
 		{
@@ -63,6 +71,9 @@ namespace ProjectOne.UI
 
 		public UniTask BindAsync(in QuestSlotData data, ItemSlot slotPrefab, ItemGradeColorTable colors, CancellationToken ct)
 		{
+			_questId = data.questId;
+			_isClaimable = data.isClaimable;
+
 			if (_frame != null)
 			{
 				_frame.color = data.isCurrent ? CurrentFrameColor : InactiveFrameColor;
@@ -95,7 +106,17 @@ namespace ProjectOne.UI
 
 			if (_check != null)
 			{
-				_check.SetActive(data.isCleared);
+				_check.SetActive(data.isCleared || data.isClaimable);
+			}
+
+			if (_checkIcon != null)
+			{
+				_checkIcon.SetActive(data.isClaimable == false);
+			}
+
+			if (_claimText != null)
+			{
+				_claimText.SetActive(data.isClaimable);
 			}
 
 			return bindRewardAsync(data, slotPrefab, colors, ct);
@@ -152,9 +173,17 @@ namespace ProjectOne.UI
 			return _itemSlot.BindItemAsync(row, reward.count, colors, ct);
 		}
 
-		// 보상 칸 클릭 = 이 보상이 무엇인지 보여주기. 지금 그린 보상 하나를 그대로 넘긴다.
+		// 보상 칸 클릭 — 수령 대기면 퀘스트 완료(QuestInfo.onFrameClicked 와 같은 경로).
+		// 완료되면 QuestChangeEvent 로 Presenter 가 다시 그려 이 칸은 수령 완료(Icon) 상태가 된다.
+		// 그 밖에는 이 보상이 무엇인지 보여주기. 지금 그린 보상 하나를 그대로 넘긴다.
 		private void onItemSlotClicked(ItemSlot sender, long uid, int itemId)
 		{
+			if (_isClaimable == true)
+			{
+				Account.Instance.Quests.TryComplete(_questId);
+				return;
+			}
+
 			if (_preview.Count == 0)
 			{
 				return;
