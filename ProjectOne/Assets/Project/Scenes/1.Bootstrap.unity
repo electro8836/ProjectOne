@@ -268,7 +268,12 @@ PrefabInstance:
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 9100000000000000005, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
+      propertyPath: m_BlockingMask.m_Bits
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 9100000000000000005, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
     m_RemovedGameObjects:
     - {fileID: 3188713630674938941, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
     m_AddedGameObjects: []
