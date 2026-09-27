@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Shop;
+using ProjectOne.UserData;
 using UnityEngine;
 
 namespace ProjectOne.UI
@@ -80,6 +81,13 @@ namespace ProjectOne.UI
 			Debug.Log($"[Shop] 구매 요청 goodsId={row.ID} name={row.Name} goodsType={row.GoodsType} priceType={row.PriceType} price={row.Price} priceParam={row.PriceParam} rewardGroupId={row.RewardGroupID}");
 
 			ShopPurchaseCounter.Increase(row.ID, row.UseDailyReset);
+
+			// 패스는 보상 그룹이 없다 — 구매 효과는 이번 시즌 패스 활성화다.
+			if (row.GoodsType == GoodsType.HeroPass)
+			{
+				Account.Instance.HeroPass.SetPurchased();
+			}
+
 			view.RefreshGoods(row.ID);
 		}
 

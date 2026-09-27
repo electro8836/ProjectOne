@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using UnityEngine;
+using ProjectOne.HeroPasses;
 using ProjectOne.Map;
 using ProjectOne.Npcs;
 using ProjectOne.Quests;
@@ -45,6 +46,9 @@ namespace ProjectOne.Town
 
 			// 퀘스트 추적기는 이벤트 구독형이라 진행이 일어나기 전에 살아 있어야 한다.
 			QuestTracker.Instance.Touch();
+
+			// 히어로패스 경험치 추적기도 같은 이유로 미리 깨운다.
+			HeroPassTracker.Instance.Touch();
 			return _instance;
 		}
 

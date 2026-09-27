@@ -12,6 +12,7 @@ using ProjectOne.Consumables;
 using ProjectOne.Costumes;
 using ProjectOne.DailyBonuses;
 using ProjectOne.Dungeon;
+using ProjectOne.HeroPasses;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
 using ProjectOne.Pets;
@@ -68,6 +69,7 @@ namespace ProjectOne.Flow
 			PetCatalog.Build();
 			RewardCatalog.Build();
 			DailyBonusCatalog.Build();	// RewardCatalog 이후여야 한다 — 출석 보상 그룹의 존재를 검증한다
+			HeroPassCatalog.Build();
 			ConsumableCatalog.Build();
 			QuestCatalog.Build();	// RewardCatalog 이후여야 한다 — 상자의 보상 그룹 존재를 검증한다
 			DungeonProgress.Build();

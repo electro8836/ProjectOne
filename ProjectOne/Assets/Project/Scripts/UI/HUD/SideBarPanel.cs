@@ -148,7 +148,7 @@ namespace ProjectOne.UI
 			openRankingAsync().Forget();
 		}
 
-		// 아래 2개는 정식 화면 연결 전까지의 임시 처리다. 화면이 준비되면 교체한다.
+		// 정식 화면 연결 전까지의 임시 처리다. 화면이 준비되면 교체한다.
 		private void onRewardClicked()
 		{
 			Debug.Log("[SideBar] 보상 기능 준비 중");
@@ -156,7 +156,7 @@ namespace ProjectOne.UI
 
 		private void onPassClicked()
 		{
-			Debug.Log("[SideBar] 패스 기능 준비 중");
+			openHeroPassAsync().Forget();
 		}
 
 		private void onLoginClicked()
@@ -168,6 +168,12 @@ namespace ProjectOne.UI
 		private async UniTaskVoid openDailyBonusAsync()
 		{
 			await UIManager.Instance.ShowDailyBonusPopupAsync(this.GetCancellationTokenOnDestroy()).SuppressCancellationThrow();
+		}
+
+		// 팝업이 닫힐 때까지 돌아오지 않는다 — 취소는 이 패널이 사라질 때다.
+		private async UniTaskVoid openHeroPassAsync()
+		{
+			await UIManager.Instance.ShowHeroPassPopupAsync(this.GetCancellationTokenOnDestroy()).SuppressCancellationThrow();
 		}
 
 		// 팝업이 닫힐 때까지 돌아오지 않는다 — 취소는 이 패널이 사라질 때다.

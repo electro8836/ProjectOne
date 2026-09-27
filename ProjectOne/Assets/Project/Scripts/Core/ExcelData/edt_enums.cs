@@ -170,6 +170,14 @@ namespace EDT {
         Modifier,
     }
 
+    public enum HeroPassExpType {
+        None,
+        MonsterKill_Normal,
+        MonsterKill_Elite,
+        MonsterKill_Boss,
+        DungeonClear,
+    }
+
     public enum QuestCompleteType {
         None,
         Auto,
@@ -658,6 +666,9 @@ namespace EDT {
         TableNpcSpawn,
         TableNpcDialog,
         TableOption,
+        TableHeroPass,
+        TableHeroPassLevelExp,
+        TableHeroPassExpInfo,
         TablePet,
         TablePetEnhance,
         TablePetPromotion,

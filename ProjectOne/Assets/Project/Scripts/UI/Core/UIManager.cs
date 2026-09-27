@@ -80,6 +80,9 @@ namespace ProjectOne.UI
 		// 출석 팝업도 같다 — 보상 칸을 누르면 설명 툴팁이 뜬다.
 		private CancellationTokenSource _dailyBonusCts;
 
+		// 히어로패스 팝업도 같다 — 보상 칸을 누르면 설명 툴팁이 뜬다.
+		private CancellationTokenSource _heroPassCts;
+
 		// 랭킹 팝업은 슬롯을 누르면 플레이어 정보 팝업이, 정보 팝업은 장비 칸을 누르면 장비 팝업이 위에 뜬다.
 		// 위에 뜨는 팝업이 아래 팝업의 CTS 를 취소하면 안 되므로 둘 다 전용 CTS 를 쓴다.
 		private CancellationTokenSource _rankingCts;
@@ -856,6 +859,7 @@ namespace ProjectOne.UI
 		private const string MENU_POPUP_ADDRESS = "UIPrefab_MenuPopup";
 		private const string QUEST_LIST_POPUP_ADDRESS = "UIPrefab_QuestListPopup";
 		private const string DAILY_BONUS_POPUP_ADDRESS = "UIPrefab_DailyBonusPopup";
+		private const string HERO_PASS_POPUP_ADDRESS = "UIPrefab_PassPopup";
 		private const string RANKING_POPUP_ADDRESS = "UIPrefab_RankingPopup";
 		private const string PLAYER_INFO_POPUP_ADDRESS = "UIPrefab_PlayerInfoPopup";
 
@@ -1283,6 +1287,39 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(DAILY_BONUS_POPUP_ADDRESS);
+			}
+		}
+
+		// 히어로패스 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
+		public async UniTask ShowHeroPassPopupAsync(CancellationToken ct)
+		{
+			_heroPassCts?.Cancel();
+			_heroPassCts?.Dispose();
+			_heroPassCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(HERO_PASS_POPUP_ADDRESS, _heroPassCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			HeroPassPopup popup = go.GetComponent<HeroPassPopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_PassPopup 루트에 HeroPassPopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(HERO_PASS_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_heroPassCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(HERO_PASS_POPUP_ADDRESS);
 			}
 		}
 

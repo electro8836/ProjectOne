@@ -447,6 +447,39 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - HeroPass
+            {
+                CurrentFile = Table_HeroPass.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_HeroPass._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - HeroPassLevelExp
+            {
+                CurrentFile = Table_HeroPassLevelExp.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_HeroPassLevelExp._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - HeroPassExpInfo
+            {
+                CurrentFile = Table_HeroPassExpInfo.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_HeroPassExpInfo._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Pet
             {
                 CurrentFile = Table_Pet.Filename;

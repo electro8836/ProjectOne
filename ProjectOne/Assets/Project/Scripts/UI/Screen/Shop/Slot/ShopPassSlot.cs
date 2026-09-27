@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace ProjectOne.UI
@@ -10,7 +11,7 @@ namespace ProjectOne.UI
 	public class ShopPassSlot : ShopProductSlotBase
 	{
 		[Header("패스")]
-		[SerializeField] private UIButton _infoButton;	// InfoButton — 패스 혜택 설명
+		[SerializeField] private UIButton _infoButton;	// InfoButton — 히어로패스 팝업
 
 		protected override void Awake()
 		{
@@ -32,15 +33,15 @@ namespace ProjectOne.UI
 			base.OnDestroy();
 		}
 
-		// TODO(팝업) — 패스 혜택 설명 팝업으로 교체한다.
 		private void onInfoClicked()
 		{
-			if (row == null)
-			{
-				return;
-			}
+			openHeroPassAsync().Forget();
+		}
 
-			Debug.Log($"[Shop] 패스 설명 요청 goodsId={row.ID} name={row.Name} desc={row.Desc}");
+		// 팝업이 닫힐 때까지 돌아오지 않는다 — 취소는 이 슬롯이 사라질 때다.
+		private async UniTaskVoid openHeroPassAsync()
+		{
+			await UIManager.Instance.ShowHeroPassPopupAsync(this.GetCancellationTokenOnDestroy()).SuppressCancellationThrow();
 		}
 	}
 }
