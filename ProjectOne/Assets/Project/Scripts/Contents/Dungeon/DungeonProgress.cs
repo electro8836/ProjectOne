@@ -19,90 +19,194 @@ namespace ProjectOne.Dungeon
 			public int highestStage;	// 클리어한 최고 단계. 0이면 아직 하나도 못 깼다
 		}
 
+		// 맵 하나로 지목되는 던전 단계 — 개발용 이동 버튼이 쓴다.
+		private struct MapTarget
+		{
+			public EDT.Dungeon type;
+			public int stage;
+		}
+
+		// 균열 체크포인트 간격 — 1, 6, 11 … 에서 시작한다.
+		private const int RiftCheckpointInterval = 5;
+
 		private static readonly Dictionary<EDT.Dungeon, Entry> _byDungeon = new Dictionary<EDT.Dungeon, Entry>();
 
-		// (DungeonType, Stage) → 행 조회 인덱스. 테이블이 평면이라 매번 순회하지 않도록 캐시한다.
-		private static readonly Dictionary<long, Table_DungeonStage.Row> _stageIndex = new Dictionary<long, Table_DungeonStage.Row>();
+		// Stage → 골드던전 행. 테이블이 ID 키라 매번 순회하지 않도록 캐시한다.
+		private static readonly Dictionary<int, Table_GoldDungeon.Row> _goldIndex = new Dictionary<int, Table_GoldDungeon.Row>();
+		private static int _goldLastStage;
 
-		// 던전별 마지막 단계 번호
-		private static readonly Dictionary<EDT.Dungeon, int> _lastStage = new Dictionary<EDT.Dungeon, int>();
+		// Wave → 균열던전 행. 마지막 행보다 높은 웨이브는 마지막 행을 반복한다.
+		private static readonly Dictionary<int, Table_RiftDungeon.Row> _riftIndex = new Dictionary<int, Table_RiftDungeon.Row>();
+		private static int _riftLastWave;
 
-		// MapID → 단계 행. 맵 하나로 던전 단계를 지목하는 경로(개발용 이동 버튼)가 쓴다.
-		private static readonly Dictionary<int, Table_DungeonStage.Row> _byMapId = new Dictionary<int, Table_DungeonStage.Row>();
+		// MapID → 단계. 맵 하나로 던전 단계를 지목하는 경로(개발용 이동 버튼)가 쓴다.
+		private static readonly Dictionary<int, MapTarget> _byMapId = new Dictionary<int, MapTarget>();
 
 		private static bool _built;
 
 		// 테이블 로드 이후 1회. StatCatalog / SkillParamCatalog 와 같은 패턴이다.
 		public static void Build()
 		{
-			_stageIndex.Clear();
-			_lastStage.Clear();
+			_goldIndex.Clear();
+			_riftIndex.Clear();
 			_byMapId.Clear();
+			_goldLastStage = 0;
+			_riftLastWave = 0;
 
-			Dictionary<int, Table_DungeonStage.Row> all = Table_DungeonStage.All();
-			Dictionary<int, Table_DungeonStage.Row>.Enumerator e = all.GetEnumerator();
+			buildGold();
+			buildRift();
+
+			_built = true;
+			Debug.Log($"[DungeonProgress] 구축 완료 — 골드 {_goldIndex.Count}단계 / 균열 {_riftIndex.Count}웨이브");
+		}
+
+		private static void buildGold()
+		{
+			Dictionary<int, Table_GoldDungeon.Row>.Enumerator e = Table_GoldDungeon.All().GetEnumerator();
 			while (e.MoveNext() == true)
 			{
-				Table_DungeonStage.Row row = e.Current.Value;
-				if (row.DungeonType == EDT.Dungeon.None || row.Stage <= 0)
+				Table_GoldDungeon.Row row = e.Current.Value;
+				if (row.Stage <= 0)
 				{
 					continue;
 				}
 
-				_stageIndex[stageKey(row.DungeonType, row.Stage)] = row;
-
-				int last;
-				if (_lastStage.TryGetValue(row.DungeonType, out last) == false || row.Stage > last)
+				_goldIndex[row.Stage] = row;
+				if (row.Stage > _goldLastStage)
 				{
-					_lastStage[row.DungeonType] = row.Stage;
+					_goldLastStage = row.Stage;
 				}
 
-				registerMapId(row);
+				registerMapId(row.MapID, EDT.Dungeon.Gold, row.Stage);
 			}
-
-			_built = true;
-			Debug.Log($"[DungeonProgress] 구축 완료 — 단계 {_stageIndex.Count}개 / 던전 {_lastStage.Count}종");
 		}
 
-		public static Table_DungeonStage.Row FindStageRow(EDT.Dungeon type, int stage)
+		// 균열 보상은 재화 1종이다 — 행마다 다르면 표시·정산이 첫 행 기준이라 조용히 어긋나므로 알린다.
+		private static void buildRift()
 		{
-			Table_DungeonStage.Row row;
-			_stageIndex.TryGetValue(stageKey(type, stage), out row);
+			EDT.Currency currency = EDT.Currency.None;
+
+			Dictionary<int, Table_RiftDungeon.Row>.Enumerator e = Table_RiftDungeon.All().GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				Table_RiftDungeon.Row row = e.Current.Value;
+				if (row.Wave <= 0)
+				{
+					continue;
+				}
+
+				_riftIndex[row.Wave] = row;
+				if (row.Wave > _riftLastWave)
+				{
+					_riftLastWave = row.Wave;
+				}
+
+				if (currency == EDT.Currency.None)
+				{
+					currency = row.RewardCurrency;
+				}
+				else if (row.RewardCurrency != currency)
+				{
+					Debug.LogError($"[DungeonProgress] RiftDungeon 보상 재화가 행마다 다릅니다 — Wave {row.Wave}: {row.RewardCurrency} (기준 {currency})");
+				}
+
+				registerMapId(row.MapID, EDT.Dungeon.Rift, row.Wave);
+			}
+		}
+
+		public static Table_GoldDungeon.Row FindGoldStage(int stage)
+		{
+			Table_GoldDungeon.Row row;
+			_goldIndex.TryGetValue(stage, out row);
 			return row;
 		}
 
+		// 마지막 행보다 높은 웨이브는 마지막 행을 반복한다 — 웨이브에는 끝이 없다.
+		public static Table_RiftDungeon.Row FindRiftWave(int wave)
+		{
+			if (wave > _riftLastWave)
+			{
+				wave = _riftLastWave;
+			}
+
+			Table_RiftDungeon.Row row;
+			_riftIndex.TryGetValue(wave, out row);
+			return row;
+		}
+
+		// 던전 한 판이 쓰는 맵. 균열은 시작 웨이브의 맵을 한 판 내내 쓴다. 없으면 0.
+		public static int GetMapId(EDT.Dungeon type, int stage)
+		{
+			switch (type)
+			{
+				case EDT.Dungeon.Gold:
+				{
+					Table_GoldDungeon.Row gold = FindGoldStage(stage);
+					return (gold != null) ? gold.MapID : 0;
+				}
+				case EDT.Dungeon.Rift:
+				{
+					Table_RiftDungeon.Row rift = FindRiftWave(stage);
+					return (rift != null) ? rift.MapID : 0;
+				}
+			}
+
+			return 0;
+		}
+
+		// 단계형 던전(골드)의 마지막 단계. 균열은 웨이브에 끝이 없어 0 이다.
 		public static int GetLastStage(EDT.Dungeon type)
 		{
-			int last;
-			_lastStage.TryGetValue(type, out last);
-			return last;
+			return (type == EDT.Dungeon.Gold) ? _goldLastStage : 0;
 		}
 
-		// 맵으로 단계를 되찾는다. 없으면 null.
-		public static Table_DungeonStage.Row FindStageRowByMapId(int mapId)
+		// 맵으로 단계를 되찾는다. 없으면 false.
+		public static bool TryFindStageByMapId(int mapId, out EDT.Dungeon type, out int stage)
 		{
-			Table_DungeonStage.Row row;
-			_byMapId.TryGetValue(mapId, out row);
-			return row;
+			MapTarget target;
+			if (_byMapId.TryGetValue(mapId, out target) == false)
+			{
+				type = EDT.Dungeon.None;
+				stage = 0;
+				return false;
+			}
+
+			type = target.type;
+			stage = target.stage;
+			return true;
 		}
 
-		// 두 단계가 같은 맵을 쓰면 MapID 만으로는 단계를 특정할 수 없다.
-		// 지금은 단계마다 맵이 다르지만, 맵을 재사용하는 순간 조용히 엉뚱한 단계로 들어가므로 여기서 알린다.
-		private static void registerMapId(Table_DungeonStage.Row row)
+		// 두 단계가 같은 맵을 쓰면 MapID 만으로는 단계를 특정할 수 없다 — 먼저 등록된 단계로 고정한다.
+		// 균열은 모든 웨이브가 한 맵을 공유하는 게 정상이라 경고하지 않는다.
+		private static void registerMapId(int mapId, EDT.Dungeon type, int stage)
 		{
-			if (row.MapID <= 0)
+			if (mapId <= 0)
 			{
 				return;
 			}
 
-			Table_DungeonStage.Row exist;
-			if (_byMapId.TryGetValue(row.MapID, out exist) == true)
+			MapTarget exist;
+			if (_byMapId.TryGetValue(mapId, out exist) == true)
 			{
-				Debug.LogWarning($"[DungeonProgress] Map {row.MapID} 를 여러 단계가 공유합니다 — {exist.DungeonType} {exist.Stage} 단계로 고정합니다 (무시: {row.DungeonType} {row.Stage}).");
+				if (exist.type != type || type != EDT.Dungeon.Rift)
+				{
+					Debug.LogWarning($"[DungeonProgress] Map {mapId} 를 여러 단계가 공유합니다 — {exist.type} {exist.stage} 단계로 고정합니다 (무시: {type} {stage}).");
+				}
+
+				// 균열은 가장 낮은 웨이브(= 1웨이브)로 지목한다.
+				if (exist.type == EDT.Dungeon.Rift && type == EDT.Dungeon.Rift && stage < exist.stage)
+				{
+					exist.stage = stage;
+					_byMapId[mapId] = exist;
+				}
+
 				return;
 			}
 
-			_byMapId[row.MapID] = row;
+			MapTarget target;
+			target.type = type;
+			target.stage = stage;
+			_byMapId[mapId] = target;
 		}
 
 		// ── 입장 횟수 ─────────────────────────────────────────────────
@@ -203,9 +307,58 @@ namespace ProjectOne.Dungeon
 		}
 
 		// 다음 단계가 존재하고 해금돼 있는가 — 결과창의 "다음 단계 도전" 버튼 판정.
+		// 균열은 단계형이 아니라 다음 단계가 없다.
 		public static bool HasNextStage(EDT.Dungeon type, int currentStage)
 		{
-			return FindStageRow(type, currentStage + 1) != null;
+			if (type != EDT.Dungeon.Gold)
+			{
+				return false;
+			}
+
+			return FindGoldStage(currentStage + 1) != null;
+		}
+
+		// ── 균열 ──────────────────────────────────────────────────────
+		//
+		// 균열은 highestStage 를 최고 기록 웨이브로 쓴다 — 종료 웨이브의 전 웨이브다.
+
+		// 다음 도전의 시작 웨이브. 기록 17 → 16, 기록 4 → 1.
+		public static int GetRiftCheckpoint()
+		{
+			int best = GetHighestStage(EDT.Dungeon.Rift);
+			return (best / RiftCheckpointInterval) * RiftCheckpointInterval + 1;
+		}
+
+		// 웨이브 1개를 넘겼을 때의 보상 수량
+		public static int GetRiftWaveReward(int wave)
+		{
+			Table_RiftDungeon.Row row = FindRiftWave(wave);
+			return (row != null) ? row.RewardCount : 0;
+		}
+
+		// [fromWave, toWave] 구간 웨이브 보상의 합. 구간이 비면 0.
+		public static int SumRiftWaveReward(int fromWave, int toWave)
+		{
+			int sum = 0;
+			for (int wave = fromWave; wave <= toWave; wave++)
+			{
+				sum += GetRiftWaveReward(wave);
+			}
+
+			return sum;
+		}
+
+		// 입장보상 — 1웨이브부터 체크포인트 웨이브까지(포함)의 보상 합이다. 소탕 보상도 이 값이다.
+		public static int GetRiftEntryReward()
+		{
+			return SumRiftWaveReward(1, GetRiftCheckpoint());
+		}
+
+		// 균열 보상 재화. 모든 행이 같은 재화다(Build 에서 검증).
+		public static EDT.Currency GetRiftRewardCurrency()
+		{
+			Table_RiftDungeon.Row row = FindRiftWave(1);
+			return (row != null) ? row.RewardCurrency : EDT.Currency.None;
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
@@ -226,11 +379,6 @@ namespace ProjectOne.Dungeon
 
 			_byDungeon[type] = entry;
 			return entry;
-		}
-
-		private static long stageKey(EDT.Dungeon type, int stage)
-		{
-			return ((long)type << 32) | (uint)stage;
 		}
 
 		public static bool IsBuilt

@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using EDT;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Dungeon
@@ -13,21 +12,22 @@ namespace ProjectOne.Dungeon
 		// RunAsync 가 클리어를 확정하면 Cleared 로 채운다. CheckResult 가 폴링.
 		protected DungeonResult _result = DungeonResult.InProgress;
 
-		public UniTask SetupAsync(Table_DungeonStage.Row stage, CancellationToken ct)
+		public UniTask SetupAsync(DungeonContext ctx, CancellationToken ct)
 		{
-			runGuardedAsync(stage, ct).Forget();
+			runGuardedAsync(ctx, ct).Forget();
 			return UniTask.CompletedTask;
 		}
 
 		// RunAsync 의 취소 예외를 흡수(미관측 예외 방지)하고, 종료 후 공통 정리를 보장한다.
-		private async UniTaskVoid runGuardedAsync(Table_DungeonStage.Row stage, CancellationToken ct)
+		private async UniTaskVoid runGuardedAsync(DungeonContext ctx, CancellationToken ct)
 		{
-			await RunAsync(stage, ct).SuppressCancellationThrow();
+			await RunAsync(ctx, ct).SuppressCancellationThrow();
 			OnFinished();
 		}
 
 		// 모드별 진행 루프 — 클리어 시 _result 를 Cleared 로 세팅하고 반환한다. ct 취소 시 자연 종료(throw).
-		protected abstract UniTask RunAsync(Table_DungeonStage.Row stage, CancellationToken ct);
+		// 단계 행은 던전마다 테이블이 달라 모드가 ctx 로 직접 찾는다.
+		protected abstract UniTask RunAsync(DungeonContext ctx, CancellationToken ct);
 
 		// 모드 종료(클리어/취소) 시 공통 정리 — 이벤트 구독 해제 등. 필요 시 오버라이드.
 		protected virtual void OnFinished()
@@ -56,20 +56,9 @@ namespace ProjectOne.Dungeon
 		}
 
 		// 단계가 쓸 스폰 그룹들. **배열 순서가 곧 웨이브 순서**다 (몬스터 설계 8장).
-		protected static int[] GetSpawnGroups(Table_DungeonStage.Row stage)
+		protected static int[] GetSpawnGroups(int[] groups)
 		{
-			if (stage == null || stage.MonsterSpawnGroupIDs == null)
-			{
-				return Array.Empty<int>();
-			}
-
-			return stage.MonsterSpawnGroupIDs;
-		}
-
-		// 몬스터 레벨 — DungeonStage.MonsterLevel 이 있으면 MonsterSpawn.Level 을 오버라이드한다 (몬스터 설계 8장).
-		protected static int GetLevelOverride(Table_DungeonStage.Row stage)
-		{
-			return (stage != null) ? stage.MonsterLevel : 0;
+			return (groups != null) ? groups : Array.Empty<int>();
 		}
 
 		private static bool AllHeroesDead()

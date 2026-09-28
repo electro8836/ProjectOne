@@ -347,6 +347,41 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 균열 던전 라이프 변경 — 도착지점에 닿은 몬스터만큼 깎인다. 시작 시 1회 발행한다.
+		public readonly struct RiftLifeChangedEvent
+		{
+				public readonly int Life;
+				public readonly int MaxLife;
+
+				public RiftLifeChangedEvent(int life, int maxLife)
+				{
+						this.Life = life;
+						this.MaxLife = maxLife;
+				}
+		}
+
+		// 균열 스킬 게이지 변경. 시작 시 1회 발행해 HUD 가 고른 스킬을 알게 한다.
+		public readonly struct RiftGaugeChangedEvent
+		{
+				public readonly int RiftSkillId;	// RiftSkill.ID
+				public readonly int Gauge;
+				public readonly int ReqGauge;
+				public readonly int MaxGauge;
+
+				public RiftGaugeChangedEvent(int riftSkillId, int gauge, int reqGauge, int maxGauge)
+				{
+						this.RiftSkillId = riftSkillId;
+						this.Gauge = gauge;
+						this.ReqGauge = reqGauge;
+						this.MaxGauge = maxGauge;
+				}
+		}
+
+		// HUD 의 균열 스킬 버튼 입력. 사용 가능 판정과 게이지 차감은 RiftDungeonMode 가 한다.
+		public readonly struct RiftSkillUseRequestedEvent
+		{
+		}
+
 		// 히어로가 있는 필드가 바뀜 (필드 진입 / 같은 액트 내 이동 / 액트 전환).
 		// 같은 상태 안에서의 이동이라 GameStateChangedEvent 로는 잡히지 않는다.
 		public readonly struct FieldChangedEvent

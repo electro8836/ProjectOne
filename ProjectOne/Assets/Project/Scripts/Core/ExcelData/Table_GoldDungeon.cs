@@ -4,22 +4,20 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_DungeonStage
+    public static class Table_GoldDungeon
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public Dungeon DungeonType { get; set; } = Dungeon.None;
             public int Stage { get; set; } = 0;
             public int MapID { get; set; } = 0;
             public int[] MonsterSpawnGroupIDs { get; set; } = Array.Empty<int>();
             public int MonsterLevel { get; set; } = 0;
-            public int TimeLimit { get; set; } = 0;
             public int RewardExp { get; set; } = 0;
             public int RewardGroupID { get; set; } = 0;
         }
 
-        public const string Filename = "edt_dungeonstage.bytes";
-        public const TableType Type = TableType.TableDungeonStage;
+        public const string Filename = "edt_golddungeon.bytes";
+        public const TableType Type = TableType.TableGoldDungeon;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -39,12 +37,10 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.DungeonType = (Dungeon)reader.ReadInt32();
                 row.Stage = reader.ReadInt32();
                 row.MapID = reader.ReadInt32();
                 { int _n = reader.ReadInt32(); row.MonsterSpawnGroupIDs = new int[_n]; for(int _i=0;_i<_n;_i++) row.MonsterSpawnGroupIDs[_i] = reader.ReadInt32(); }
                 row.MonsterLevel = reader.ReadInt32();
-                row.TimeLimit = reader.ReadInt32();
                 row.RewardExp = reader.ReadInt32();
                 row.RewardGroupID = reader.ReadInt32();
                 _all.Add( row.ID, row );

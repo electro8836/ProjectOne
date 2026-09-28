@@ -18,6 +18,7 @@ namespace EDT {
             public int RevivalCost { get; set; } = 0;
             public float RevivalCostRatioStep { get; set; } = 0f;
             public int MaxRevivalCount { get; set; } = 0;
+            public int TimeLimit { get; set; } = 0;
         }
 
         public const string Filename = "edt_dungeon.bytes";
@@ -51,6 +52,7 @@ namespace EDT {
                 row.RevivalCost = reader.ReadInt32();
                 row.RevivalCostRatioStep = reader.ReadSingle();
                 row.MaxRevivalCount = reader.ReadInt32();
+                row.TimeLimit = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

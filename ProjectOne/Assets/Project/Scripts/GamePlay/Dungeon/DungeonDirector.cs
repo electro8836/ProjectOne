@@ -39,8 +39,13 @@ namespace ProjectOne.Dungeon
 		private const float ClearBannerSeconds = 2.5f;
 
 		private Table_Dungeon.Row _dungeon;
-		private Table_DungeonStage.Row _stage;
 		private DungeonContext _ctx;
+
+		// 이번 판의 맵. 단계 테이블이 던전마다 달라 행 대신 맵 ID 만 들고 있는다.
+		private int _mapId;
+
+		// 균열 정산 시 확정한 최고 통과 웨이브. 결과창 표시용이다.
+		private int _riftClearedWave;
 
 		// 전투 수명 토큰 — 종료(클리어/패배/강제퇴장) 시 취소해 진행 루프를 결정적으로 중단한다.
 		private CancellationTokenSource _cts;
@@ -132,15 +137,15 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			Table_DungeonStage.Row stage = ctx.FindStageRow();
-			if (stage == null)
+			int mapId = DungeonProgress.GetMapId(ctx.DungeonType, ctx.Stage);
+			if (mapId <= 0)
 			{
-				Debug.LogError($"[DungeonDirector] DungeonStage 없음 — {ctx.DungeonType} Stage {ctx.Stage}");
+				Debug.LogError($"[DungeonDirector] 던전 단계 없음 — {ctx.DungeonType} Stage {ctx.Stage}");
 				return;
 			}
 
 			_dungeon = dungeon;
-			_stage = stage;
+			_mapId = mapId;
 			_ctx = ctx;
 			_cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
@@ -253,6 +258,12 @@ namespace ProjectOne.Dungeon
 					return true;
 				}
 
+				// 균열은 제한시간 초과도 한 판의 정상 종료다 — 거기까지 통과한 웨이브로 정산한다.
+				if (_timedOut == true && _ctx.DungeonType == EDT.Dungeon.Rift)
+				{
+					return true;
+				}
+
 				// 제한시간 초과는 부활로 되돌릴 수 있는 상태가 아니다 — 왜 끝났는지만 알리고 마을로 보낸다.
 				if (result == DungeonResult.Failed || _timedOut == true)
 				{
@@ -281,8 +292,8 @@ namespace ProjectOne.Dungeon
 			// 레벨업이 붙어 경험치를 되돌리게 되면 이 뺄셈을 다시 봐야 한다.
 			_expAtStageStart = currentExp();
 
-			_hasTimeLimit = _stage.TimeLimit > 0;
-			_remainTime = _hasTimeLimit ? _stage.TimeLimit : 0f;
+			_hasTimeLimit = _dungeon.TimeLimit > 0;
+			_remainTime = _hasTimeLimit ? _dungeon.TimeLimit : 0f;
 			_timedOut = false;
 			_timerPaused = false;
 
@@ -294,13 +305,13 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			_currentMode.SetupAsync(_stage, _cts.Token).Forget();
+			_currentMode.SetupAsync(_ctx, _cts.Token).Forget();
 		}
 
 		private async UniTask loadMapAsync(CancellationToken ct)
 		{
 			// 던전은 단계마다 그리드맵 하나만 쓴다. 다음 단계로 넘어가면 여기서 교체된다.
-			await MapManager.Instance.LoadMapAsync(_stage.MapID, ct);
+			await MapManager.Instance.LoadMapAsync(_mapId, ct);
 			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 		}
 
@@ -411,7 +422,17 @@ namespace ProjectOne.Dungeon
 			_ending = true;
 			Debug.Log($"[DungeonDirector] 던전 종료 victory={victory} — {_ctx.DungeonType} Stage {_ctx.Stage}");
 
-			if (victory == true && _forcedLobbyReturn == false)
+			if (victory == true && _forcedLobbyReturn == false && _ctx.DungeonType == EDT.Dungeon.Rift)
+			{
+				// 균열 — 서버 요청 없이 로컬로 기록·지급한다. 배너를 걸어 두고 결과창을 연다.
+				_grantedEquipments.Clear();
+
+				DungeonClearResponse riftResp = settleRift();
+
+				await UniTask.Delay(System.TimeSpan.FromSeconds(ClearBannerSeconds), cancellationToken: _cts.Token);
+				await showDungeonResultAsync(riftResp, _cts.Token);
+			}
+			else if (victory == true && _forcedLobbyReturn == false)
 			{
 				// 이전 판(다음 단계 재진입)의 지급 장비가 결과창에 섞이지 않게 비운다.
 				_grantedEquipments.Clear();
@@ -462,6 +483,10 @@ namespace ProjectOne.Dungeon
 			// 입장 횟수는 결과창이 직접 읽는다 — 여기서는 다음 단계가 존재하는지만 알려준다.
 			bool hasNext = DungeonProgress.HasNextStage(_ctx.DungeonType, _ctx.Stage);
 
+			// 균열은 통과한 웨이브를 단계 자리에 보여준다.
+			bool isRift = _ctx.DungeonType == EDT.Dungeon.Rift;
+			int shownStage = isRift ? _riftClearedWave : _ctx.Stage;
+
 			int gainedExp = currentExp() - _expAtStageStart;
 			if (gainedExp < 0)
 			{
@@ -469,7 +494,7 @@ namespace ProjectOne.Dungeon
 			}
 
 			DungeonResultAction action = await ui.WaitAsync(rewards, _grantedEquipments,
-				_ctx.DungeonType, _ctx.Stage, gainedExp, hasNext, ct);
+				_ctx.DungeonType, shownStage, gainedExp, hasNext, ct);
 
 			// 마을 복귀는 던전 로딩을 띄우지 않는다 — 마을행에 던전 로딩을 거는 건 어색하다.
 			// 다만 창은 반드시 닫는다. cleanupAll 은 윈도우를 걷지 않아서 그대로 두면 마을까지 따라간다.
@@ -490,6 +515,12 @@ namespace ProjectOne.Dungeon
 
 			int stage = (action == DungeonResultAction.NextStage) ? _ctx.Stage + 1 : _ctx.Stage;
 
+			// 균열 재도전은 방금 갱신된 기록의 체크포인트에서 시작한다.
+			if (isRift == true)
+			{
+				stage = DungeonProgress.GetRiftCheckpoint();
+			}
+
 			// 씬은 그대로 두고 맵/모드만 교체한다.
 			await enterStageAsync(stage, ct);
 		}
@@ -505,8 +536,10 @@ namespace ProjectOne.Dungeon
 		private async UniTask enterStageAsync(int stage, CancellationToken ct)
 		{
 			DungeonContext next = new DungeonContext(_ctx.DungeonType, stage);
-			Table_DungeonStage.Row nextStage = next.FindStageRow();
-			if (nextStage == null)
+			next.RiftSkillId = _ctx.RiftSkillId;
+
+			int nextMapId = DungeonProgress.GetMapId(next.DungeonType, next.Stage);
+			if (nextMapId <= 0)
 			{
 				Debug.LogError($"[DungeonDirector] 재진입할 단계가 없습니다 — {_ctx.DungeonType} Stage {stage}");
 				return;
@@ -519,7 +552,7 @@ namespace ProjectOne.Dungeon
 			}
 
 			_ctx = next;
-			_stage = nextStage;
+			_mapId = nextMapId;
 			_ending = false;
 			_clearRequestSent = false;
 			_forcedLobbyReturn = false;
@@ -563,9 +596,9 @@ namespace ProjectOne.Dungeon
 				return actual;
 			}
 
-			// 경험치는 resp 가 아니라 DungeonStage.RewardExp 를 읽어 표시된다.
+			// 경험치는 resp 가 아니라 GoldDungeon.RewardExp 를 읽어 표시된다.
 			// 테이블이 비어 있어 "+0" 으로 뜨므로 메모리 값만 덮어쓴다(바이트 파일은 그대로).
-			Table_DungeonStage.Row stageRow = _stage;
+			Table_GoldDungeon.Row stageRow = DungeonProgress.FindGoldStage(_ctx.Stage);
 			if (stageRow != null && stageRow.RewardExp <= 0)
 			{
 				stageRow.RewardExp = TempDummyExp;
@@ -634,6 +667,66 @@ namespace ProjectOne.Dungeon
 
 			Debug.Log($"[DungeonDirector] TODO(임시) 더미 보상 — 골드 {gold.count}, 장비 {_grantedEquipments.Count}개, 스택 {list.Count - 1}종");
 			return dummy;
+		}
+
+		// ── 균열 정산 ─────────────────────────────────────────────────
+		//
+		// 최고 기록 = 종료 웨이브의 전 웨이브(모드의 ClearedWave).
+		// 보상 = 입장보상(1웨이브 ~ 시작 웨이브 합) + 시작 웨이브 다음부터 통과한 웨이브 보상 합. 재화 1종이다.
+		// 시작 웨이브는 입장보상에 들어 있으므로 웨이브 보상에서 뺀다 — 시작 웨이브에서 끝나도 입장보상은 받는다.
+		// TODO(STEP 14) — 지금은 로컬 지급이다. 서버 권위로 옮길 때 여기 한 곳만 바꾼다.
+		private DungeonClearResponse settleRift()
+		{
+			RiftDungeonMode mode = _currentMode as RiftDungeonMode;
+			if (mode != null)
+			{
+				// 제한시간 종료면 모드는 아직 돌고 있다 — 결과창 뒤에서 스폰이 이어지지 않게 멈춘다.
+				mode.Stop();
+			}
+
+			int startWave = _ctx.Stage;
+			int clearedWave = (mode != null) ? mode.ClearedWave : startWave - 1;
+			_riftClearedWave = clearedWave;
+
+			// 입장보상은 이번 판의 시작 웨이브 기준이다 — 기록 갱신 전에 계산해야 체크포인트가 밀리지 않는다.
+			int entryReward = DungeonProgress.SumRiftWaveReward(1, startWave);
+			int waveReward = DungeonProgress.SumRiftWaveReward(startWave + 1, clearedWave);
+			int total = entryReward + waveReward;
+
+			if (clearedWave > 0)
+			{
+				DungeonProgress.MarkStageCleared(EDT.Dungeon.Rift, clearedWave);
+			}
+
+			EventManager.Instance.Publish(new DungeonStageClearedEvent(EDT.Dungeon.Rift, clearedWave));
+
+			EDT.Currency currency = DungeonProgress.GetRiftRewardCurrency();
+			DungeonClearResponse resp = new DungeonClearResponse();
+
+			if (total > 0 && currency != EDT.Currency.None)
+			{
+				// 공용 지급 경로를 탄다 — 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
+				List<ProjectOne.Reward.GrantedReward> applied = new List<ProjectOne.Reward.GrantedReward>(1);
+				ProjectOne.Reward.GrantedReward reward = default(ProjectOne.Reward.GrantedReward);
+				reward.type = RewardType.Currency;
+				reward.currency = currency;
+				reward.count = total;
+				applied.Add(reward);
+				ProjectOne.Reward.RewardGranter.ApplyAll(applied);
+
+				GrantedRewardDto granted = new GrantedRewardDto();
+				granted.rewardType = (int)RewardType.Currency;
+				granted.itemId = (int)currency;
+				granted.count = total;
+				resp.rewards = new GrantedRewardDto[] { granted };
+			}
+			else
+			{
+				resp.rewards = new GrantedRewardDto[0];
+			}
+
+			Debug.Log($"[DungeonDirector] 균열 정산 — 시작 {startWave}, 통과 {clearedWave}, 입장보상 {entryReward} + 웨이브보상 {waveReward} ({currency})");
+			return resp;
 		}
 
 		// ── 서버 클리어 요청 ──────────────────────────────────────────

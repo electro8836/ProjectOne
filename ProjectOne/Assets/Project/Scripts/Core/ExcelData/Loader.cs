@@ -282,11 +282,33 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - DungeonStage
+            #region Table - GoldDungeon
             {
-                CurrentFile = Table_DungeonStage.Filename;
+                CurrentFile = Table_GoldDungeon.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_DungeonStage._parser ) == false ) {
+                if( Load( reader, Table_GoldDungeon._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - RiftDungeon
+            {
+                CurrentFile = Table_RiftDungeon.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_RiftDungeon._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - RiftSkill
+            {
+                CurrentFile = Table_RiftSkill.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_RiftSkill._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

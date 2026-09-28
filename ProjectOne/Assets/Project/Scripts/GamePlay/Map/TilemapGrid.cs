@@ -54,6 +54,18 @@ namespace ProjectOne.Map
 		// 맵 이동 구역 — 도착 위치를 역방향 포털에서 찾는다.
 		private MapPortal[] _portals;
 
+		// 균열 던전 몬스터 이동 경로 — Index 오름차순.
+		private DungeonWaypoint[] _waypoints;
+
+		public IReadOnlyList<DungeonWaypoint> Waypoints
+		{
+			get
+			{
+				ensureMarkers();
+				return _waypoints;
+			}
+		}
+
 		public IReadOnlyList<MonsterSpawnPoint> SpawnPoints
 		{
 			get
@@ -115,13 +127,20 @@ namespace ProjectOne.Map
 			_anchor = this.GetComponentInChildren<MapAnchor>(true);
 			_blockers = this.GetComponentsInChildren<MapBlocker>(true);
 			_portals = this.GetComponentsInChildren<MapPortal>(true);
+			_waypoints = this.GetComponentsInChildren<DungeonWaypoint>(true);
 
 			System.Array.Sort(_slots, compareSlotIndex);
+			System.Array.Sort(_waypoints, compareWaypointIndex);
 		}
 
 		private static int compareSlotIndex(DungeonSpawnSlot a, DungeonSpawnSlot b)
 		{
 			return a.SlotIndex.CompareTo(b.SlotIndex);
+		}
+
+		private static int compareWaypointIndex(DungeonWaypoint a, DungeonWaypoint b)
+		{
+			return a.Index.CompareTo(b.Index);
 		}
 
 		public void InitializeFlowField()

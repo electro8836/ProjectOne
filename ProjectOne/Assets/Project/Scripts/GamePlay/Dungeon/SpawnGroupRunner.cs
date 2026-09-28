@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Map;
@@ -23,7 +24,7 @@ namespace ProjectOne.Dungeon
 		// 벽 밀어내기용 유닛 반지름 근사
 		private const float SpawnClearance = 0.5f;
 
-		// SpawnFromGroup 호출 간에 유지되는 순환 커서.
+		// SpawnOneFromGroupAsync 호출 간에 유지되는 순환 커서.
 		// 나눠서 소환해도 그룹의 Count 비율과 슬롯 분배가 한쪽으로 치우치지 않게 한다.
 		private static int _flatCursor;
 
@@ -72,49 +73,50 @@ namespace ProjectOne.Dungeon
 			}
 		}
 
-		// 그룹을 Count 만큼 펼친 가상 배열을 커서가 순환하며 count 마리만 소환한다.
-		// 균열 던전처럼 화면 유지 인원을 조금씩 채우는 모드용 — 그룹 전체를 한 번에 쏟지 않는다.
-		public static void SpawnFromGroup(int groupId, int levelOverride, int count)
+		// 그룹을 Count 만큼 펼친 가상 배열을 커서가 순환하며 1마리를 소환하고 생성된 개체를 돌려준다.
+		// 균열 던전처럼 스폰 직후 개체에 손을 대야 하는 모드용 — 실패하면 null.
+		public static async UniTask<Monster> SpawnOneFromGroupAsync(int groupId, int levelOverride)
 		{
-			if (groupId <= 0 || count <= 0)
+			if (groupId <= 0)
 			{
-				return;
+				return null;
 			}
 
 			IReadOnlyList<Table_MonsterSpawn.Row> rows = MonsterCatalog.GetSpawnGroup(groupId);
-			if (rows.Count == 0)
-			{
-				Debug.LogWarning($"[SpawnGroupRunner] GroupID {groupId} 에 해당하는 MonsterSpawn 행이 없습니다.");
-				return;
-			}
-
 			int total = countFlattened(rows);
 			if (total <= 0)
 			{
-				return;
+				Debug.LogWarning($"[SpawnGroupRunner] GroupID {groupId} 에 소환할 MonsterSpawn 행이 없습니다.");
+				return null;
 			}
 
-			IReadOnlyList<DungeonSpawnSlot> slots = getSlots();
+			Table_MonsterSpawn.Row row = rowAtFlatIndex(rows, _flatCursor % total);
+			Vector3 pos = resolvePosition(getSlots(), _flatCursor);
+			_flatCursor++;
 
-			for (int n = 0; n < count; n++)
+			if (row == null)
 			{
-				Table_MonsterSpawn.Row row = rowAtFlatIndex(rows, _flatCursor % total);
-				Vector3 pos = resolvePosition(slots, _flatCursor);
-				_flatCursor++;
-
-				if (row == null)
-				{
-					continue;
-				}
-
-				int level = (levelOverride > 0) ? levelOverride : row.Level;
-				if (level <= 0)
-				{
-					level = 1;
-				}
-
-				MonsterSpawnManager.Instance.SpawnOneShot(row.MonsterID, level, pos, row.RewardGroupID);
+				return null;
 			}
+
+			int level = (levelOverride > 0) ? levelOverride : row.Level;
+			if (level <= 0)
+			{
+				level = 1;
+			}
+
+			return await MonsterSpawnManager.Instance.SpawnOneShotAsync(row.MonsterID, level, pos, row.RewardGroupID);
+		}
+
+		// 그룹을 펼쳤을 때의 총 마리 수 — 웨이브 마리 수의 분모다.
+		public static int CountGroup(int groupId)
+		{
+			if (groupId <= 0)
+			{
+				return 0;
+			}
+
+			return countFlattened(MonsterCatalog.GetSpawnGroup(groupId));
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────

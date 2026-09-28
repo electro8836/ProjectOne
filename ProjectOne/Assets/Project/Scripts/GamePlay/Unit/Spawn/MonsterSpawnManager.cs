@@ -71,6 +71,19 @@ namespace ProjectOne.Unit
 			_alive = 0;
 		}
 
+		// 한 마리를 처치가 아닌 풀 반환으로 걷는다 — 균열 던전에서 도착지점에 닿은 몬스터.
+		// ClearAlive 와 같은 규칙이다: 사망 연출·킬카운트·경험치가 발생하지 않는다.
+		public void RemoveArrived(Monster monster)
+		{
+			if (monster == null || _active.Remove(monster.GetID()) == false)
+			{
+				return;
+			}
+
+			_alive--;
+			UnitFactory.Instance.ReleaseMonster(monster);
+		}
+
 		// 한 마리 스폰. 위치는 호출자가 정한다 — 필드는 스폰 포인트, 던전은 슬롯.
 		// rewardGroupId 는 MonsterSpawn.RewardGroupID(지역 드랍)다. 0 이면 지역 드랍이 없다.
 		public void SpawnOneShot(int monsterId, int level, Vector3 pos, int rewardGroupId = 0)

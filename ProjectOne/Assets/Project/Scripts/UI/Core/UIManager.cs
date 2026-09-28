@@ -88,6 +88,13 @@ namespace ProjectOne.UI
 		private CancellationTokenSource _rankingCts;
 		private CancellationTokenSource _playerInfoCts;
 
+		// 공용 보상 팝업은 다른 팝업(균열 소탕 등) 위에 뜬다 — 아래 팝업의 CTS 를 취소하면 안 되므로 전용이다.
+		private CancellationTokenSource _rewardPopupCts;
+
+		// 균열 팝업도 전용이다 — 소탕 보상 팝업의 칸을 누르면 정보 팝업이 _popupCts 를 취소하는데,
+		// 같이 쓰면 그 아래의 균열 팝업까지 닫혀 버린다.
+		private CancellationTokenSource _riftPopupCts;
+
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
@@ -1222,6 +1229,75 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(address);
+			}
+		}
+
+		// 균열던전 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_riftPopupCts 참고).
+		public async UniTask ShowRiftDungeonPopupAsync(string address, CancellationToken ct)
+		{
+			_riftPopupCts?.Cancel();
+			_riftPopupCts?.Dispose();
+			_riftPopupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _riftPopupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			RiftDungeonPopup popup = go.GetComponent<RiftDungeonPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return;
+			}
+
+			await popup.ShowAsync(_riftPopupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(address);
+			}
+		}
+
+		private const string REWARD_POPUP_ADDRESS = "UIPrefab_RewardPopup";
+
+		// 공용 보상 팝업 — 이미 지급된 보상 목록을 _popupCanvas 에 띄우고 닫힘을 기다린다.
+		public async UniTask ShowRewardPopupAsync(IReadOnlyList<ProjectOne.Reward.GrantedReward> rewards, CancellationToken ct)
+		{
+			if (rewards == null || rewards.Count == 0)
+			{
+				return;
+			}
+
+			_rewardPopupCts?.Cancel();
+			_rewardPopupCts?.Dispose();
+			_rewardPopupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(REWARD_POPUP_ADDRESS, _rewardPopupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			RewardPopup popup = go.GetComponent<RewardPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(REWARD_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(rewards, _rewardPopupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(REWARD_POPUP_ADDRESS);
 			}
 		}
 

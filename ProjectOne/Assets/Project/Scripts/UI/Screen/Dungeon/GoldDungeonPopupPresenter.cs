@@ -18,7 +18,7 @@ namespace ProjectOne.UI
 		private const EDT.Dungeon DUNGEON_TYPE = EDT.Dungeon.Gold;
 
 		// 단계 정렬 버퍼 — Dictionary 는 순서를 보장하지 않아 칸 순서가 흔들린다.
-		private readonly List<Table_DungeonStage.Row> _stages = new List<Table_DungeonStage.Row>();
+		private readonly List<Table_GoldDungeon.Row> _stages = new List<Table_GoldDungeon.Row>();
 		private readonly List<DungeonStageSlotData> _slotData = new List<DungeonStageSlotData>();
 
 		private CancellationTokenSource _renderCts;	// 아이콘 로드 경합 방지
@@ -112,7 +112,7 @@ namespace ProjectOne.UI
 			}
 
 			_lastRefreshSecond = remaining;
-			view.SetRefreshTime(formatDuration(remaining));
+			view.SetRefreshTime(DailyReset.FormatDuration(remaining));
 		}
 
 		// ── 렌더 ──────────────────────────────────────────────────────────
@@ -126,26 +126,6 @@ namespace ProjectOne.UI
 			string enterCount = DungeonProgress.GetUsedToday(DUNGEON_TYPE) + "/" + DungeonProgress.GetMaxCount(DUNGEON_TYPE);
 
 			view.RenderStatus(maxStage, enterCount);
-		}
-
-		// "7시간 4분 30초" — 앞자리가 0이면 생략한다.
-		private static string formatDuration(int totalSeconds)
-		{
-			int hour = totalSeconds / 3600;
-			int minute = (totalSeconds % 3600) / 60;
-			int second = totalSeconds % 60;
-
-			if (hour > 0)
-			{
-				return $"{hour}시간 {minute}분 {second}초";
-			}
-
-			if (minute > 0)
-			{
-				return $"{minute}분 {second}초";
-			}
-
-			return $"{second}초";
 		}
 
 		private void renderInfo()
@@ -176,14 +156,11 @@ namespace ProjectOne.UI
 		{
 			_stages.Clear();
 
-			Dictionary<int, Table_DungeonStage.Row> all = Table_DungeonStage.All();
-			Dictionary<int, Table_DungeonStage.Row>.Enumerator e = all.GetEnumerator();
+			Dictionary<int, Table_GoldDungeon.Row> all = Table_GoldDungeon.All();
+			Dictionary<int, Table_GoldDungeon.Row>.Enumerator e = all.GetEnumerator();
 			while (e.MoveNext() == true)
 			{
-				if (e.Current.Value.DungeonType == DUNGEON_TYPE)
-				{
-					_stages.Add(e.Current.Value);
-				}
+				_stages.Add(e.Current.Value);
 			}
 
 			_stages.Sort(compareStage);
@@ -215,7 +192,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private int compareStage(Table_DungeonStage.Row a, Table_DungeonStage.Row b)
+		private int compareStage(Table_GoldDungeon.Row a, Table_GoldDungeon.Row b)
 		{
 			return a.Stage.CompareTo(b.Stage);
 		}

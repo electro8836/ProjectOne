@@ -26,6 +26,26 @@ namespace ProjectOne.Utils
 			return next - nowKst;
 		}
 
+		// 갱신 남은시간 표기 — "7시간 4분 30초". 앞자리가 0이면 생략한다. 던전 팝업들이 함께 쓴다.
+		public static string FormatDuration(int totalSeconds)
+		{
+			int hour = totalSeconds / 3600;
+			int minute = (totalSeconds % 3600) / 60;
+			int second = totalSeconds % 60;
+
+			if (hour > 0)
+			{
+				return $"{hour}시간 {minute}분 {second}초";
+			}
+
+			if (minute > 0)
+			{
+				return $"{minute}분 {second}초";
+			}
+
+			return $"{second}초";
+		}
+
 		// 오늘이 몇 번째 갱신일인지 — 경계로 자른 날짜의 일련번호.
 		// 값이 달라졌다는 것이 곧 "하루가 넘어갔다" 는 뜻이다. 절대 날짜가 아니므로 비교에만 쓴다.
 		public static int GetResetDay()

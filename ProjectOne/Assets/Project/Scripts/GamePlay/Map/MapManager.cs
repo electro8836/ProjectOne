@@ -395,6 +395,7 @@ namespace ProjectOne.Map
 
 		private static readonly List<MonsterSpawnPoint> _emptySpawnPoints = new List<MonsterSpawnPoint>();
 		private static readonly List<DungeonSpawnSlot> _emptySlots = new List<DungeonSpawnSlot>();
+		private static readonly List<DungeonWaypoint> _emptyWaypoints = new List<DungeonWaypoint>();
 		private static readonly List<NpcSpawnPoint> _emptyNpcPoints = new List<NpcSpawnPoint>();
 
 		// 필드 스폰 포인트. 맵이 없으면 빈 목록(널 아님).
@@ -478,6 +479,17 @@ namespace ProjectOne.Map
 			}
 
 			return _ordered[0].grid.Slots;
+		}
+
+		// 현재 로드된 첫 맵의 웨이포인트 — 균열 던전 몬스터 이동 경로. Index 오름차순.
+		public IReadOnlyList<DungeonWaypoint> GetWaypointsOfCurrentMap()
+		{
+			if (_ordered.Count == 0 || _ordered[0].grid == null)
+			{
+				return _emptyWaypoints;
+			}
+
+			return _ordered[0].grid.Waypoints;
 		}
 
 		// 히어로 시작/부활 지점. 마커가 없으면 그리드 중심으로 폴백한다.

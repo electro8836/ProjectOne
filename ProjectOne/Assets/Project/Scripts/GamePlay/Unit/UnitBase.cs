@@ -347,6 +347,12 @@ namespace ProjectOne.Unit
 			_brain = brain;
 		}
 
+		// 자동전투 두뇌. 미주입이면 null 이다.
+		public AiBrain Brain
+		{
+			get { return _brain; }
+		}
+
 		// UnitSimulator 가 프레임당 1회 호출 — 개별 MonoBehaviour.LateUpdate 콜백 오버헤드 제거.
 		// (애니메이션/CC/Buff/Skill/AI/브레이크게이지 갱신)
 		public virtual void ManualTick(float dt)

@@ -21,20 +21,28 @@ namespace ProjectOne.Dungeon
 		// UI 배너의 유지·페이드 시간과 **무관한 고정값**이다. 연출 시간을 바꿔도 스폰 시점은 움직이지 않는다.
 		private const float WaveStartDelay = 3f;
 
-		protected override async UniTask RunAsync(Table_DungeonStage.Row stage, CancellationToken ct)
+		protected override async UniTask RunAsync(DungeonContext ctx, CancellationToken ct)
 		{
-			int[] groups = GetSpawnGroups(stage);
+			Table_GoldDungeon.Row stage = DungeonProgress.FindGoldStage(ctx.Stage);
+			if (stage == null)
+			{
+				Debug.LogError($"[GoldDungeonMode] GoldDungeon 행이 없습니다 — Stage {ctx.Stage}");
+				return;
+			}
+
+			int[] groups = GetSpawnGroups(stage.MonsterSpawnGroupIDs);
 			int totalWaves = groups.Length;
 
 			// 웨이브가 없으면 전멸 판정이 즉시 참이 되어 그냥 클리어된다.
 			// 데이터 누락이 조용히 넘어가지 않도록 알리고, 클리어로 처리하지 않는다.
 			if (totalWaves <= 0)
 			{
-				Debug.LogError($"[GoldDungeonMode] MonsterSpawnGroupIDs 가 비어 있습니다 — DungeonStage:{stage.ID}");
+				Debug.LogError($"[GoldDungeonMode] MonsterSpawnGroupIDs 가 비어 있습니다 — GoldDungeon:{stage.ID}");
 				return;
 			}
 
-			int levelOverride = GetLevelOverride(stage);
+			// MonsterLevel 이 있으면 MonsterSpawn.Level 을 오버라이드한다 (몬스터 설계 8장).
+			int levelOverride = stage.MonsterLevel;
 
 			for (int wave = 0; wave < totalWaves; wave++)
 			{

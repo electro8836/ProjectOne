@@ -1275,6 +1275,9 @@ MonoBehaviour:
   - contexts: 6
     objects:
     - {fileID: 2969195150408703535}
+  - contexts: 3
+    objects:
+    - {fileID: 5245312362386295124}
   _screenButtons: []
   _warpButtons: []
   _menuButton: {fileID: 2549980846560132286}
@@ -2985,6 +2988,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UIPrefab_HeroInfo
       objectReference: {fileID: 0}
+    - target: {fileID: 7425371108919906718, guid: 4a755eb0bd931e746a780354d2ad95dc, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 8357044303369914721, guid: 4a755eb0bd931e746a780354d2ad95dc, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -3089,7 +3096,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5940881461519225615, guid: e253566609b9ab54d900c0c2b012a561, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -170
+      value: -150
       objectReference: {fileID: 0}
     - target: {fileID: 5940881461519225615, guid: e253566609b9ab54d900c0c2b012a561, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -3106,6 +3113,10 @@ PrefabInstance:
     - target: {fileID: 7080077452321679010, guid: e253566609b9ab54d900c0c2b012a561, type: 3}
       propertyPath: m_Name
       value: UIPrefab_MapInfo
+      objectReference: {fileID: 0}
+    - target: {fileID: 7080077452321679010, guid: e253566609b9ab54d900c0c2b012a561, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3216,7 +3227,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5527854413885318976, guid: 02f1b958193389446b3373ab7db82945, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 173.77
       objectReference: {fileID: 0}
     - target: {fileID: 6703577124943514954, guid: 02f1b958193389446b3373ab7db82945, type: 3}
       propertyPath: m_Name
@@ -3224,23 +3235,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6703577124943514954, guid: 02f1b958193389446b3373ab7db82945, type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7686414279289507524, guid: 02f1b958193389446b3373ab7db82945, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.444
+      objectReference: {fileID: 0}
+    - target: {fileID: 7686414279289507524, guid: 02f1b958193389446b3373ab7db82945, type: 3}
+      propertyPath: m_AnchorMax.y
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 7686414279289507524, guid: 02f1b958193389446b3373ab7db82945, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7686414279289507524, guid: 02f1b958193389446b3373ab7db82945, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 8064464414238268389, guid: 02f1b958193389446b3373ab7db82945, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0
+      value: 0.716
       objectReference: {fileID: 0}
     - target: {fileID: 8064464414238268389, guid: 02f1b958193389446b3373ab7db82945, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3462,6 +3473,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UIPrefab_QuestInfo
       objectReference: {fileID: 0}
+    - target: {fileID: 8620953619489031746, guid: 594c027d2cb92294ea1df265409a4559, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -3563,6 +3578,10 @@ PrefabInstance:
     - target: {fileID: 5852143416632943720, guid: 931b8e3d7808fd040855d15a1ac2ac80, type: 3}
       propertyPath: m_Name
       value: UIPrefab_BuffInfo
+      objectReference: {fileID: 0}
+    - target: {fileID: 5852143416632943720, guid: 931b8e3d7808fd040855d15a1ac2ac80, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

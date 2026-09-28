@@ -42,16 +42,17 @@ namespace ProjectOne.Map
 
 			if (map.MapType == MapType.Dungeon)
 			{
-				// 던전은 목적지가 (DungeonType, Stage) 지만 그 둘을 DungeonStage 테이블이 MapID 와 함께 들고 있다.
+				// 던전은 목적지가 (DungeonType, Stage) 지만 그 둘을 던전 단계 테이블이 MapID 와 함께 들고 있다.
 				// 버튼에 던전 전용 필드를 새로 다는 대신 맵으로 되찾는다 — 목적지 표현이 두 벌이 되지 않는다.
-				Table_DungeonStage.Row stage = ProjectOne.Dungeon.DungeonProgress.FindStageRowByMapId(mapId);
-				if (stage == null)
+				EDT.Dungeon dungeonType;
+				int stage;
+				if (ProjectOne.Dungeon.DungeonProgress.TryFindStageByMapId(mapId, out dungeonType, out stage) == false)
 				{
-					Debug.LogWarning($"[MapNavigator] Map {mapId} 를 쓰는 DungeonStage 가 없습니다.");
+					Debug.LogWarning($"[MapNavigator] Map {mapId} 를 쓰는 던전 단계가 없습니다.");
 					return;
 				}
 
-				StartDungeon(stage.DungeonType, stage.Stage);
+				StartDungeon(dungeonType, stage);
 				return;
 			}
 
@@ -81,6 +82,14 @@ namespace ProjectOne.Map
 		public static void StartDungeon(EDT.Dungeon type, int stage)
 		{
 			ProjectOne.Dungeon.DungeonContext ctx = new ProjectOne.Dungeon.DungeonContext(type, stage);
+			GameFlow.Instance.ChangeStateAsync(new DungeonState(ctx)).Forget();
+		}
+
+		// 균열 던전 진입 — 시작 웨이브(체크포인트)와 고른 균열 스킬을 싣는다.
+		public static void StartRiftDungeon(int startWave, int riftSkillId)
+		{
+			ProjectOne.Dungeon.DungeonContext ctx = new ProjectOne.Dungeon.DungeonContext(EDT.Dungeon.Rift, startWave);
+			ctx.RiftSkillId = riftSkillId;
 			GameFlow.Instance.ChangeStateAsync(new DungeonState(ctx)).Forget();
 		}
 

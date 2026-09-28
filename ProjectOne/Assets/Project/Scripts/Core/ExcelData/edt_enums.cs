@@ -496,6 +496,11 @@ namespace EDT {
         Skill_Monster_Boss_Doom_01,
         Skill_SummonSpark_Attack,
         Skill_DualBlades_Passive_02,
+        Skill_Rift_Burst,
+        Skill_Rift_Bind,
+        Skill_Rift_Storm,
+        Skill_Rift_Spirit,
+        Skill_Rift_Collapse,
     }
 
     public enum SkillEffect {
@@ -524,6 +529,12 @@ namespace EDT {
         SE_DualBlades_Passive_02_Summon,
         SE_DualBlades_AtkSpeedUp_StatChange,
         SE_DualBlades_Active_01_AtkSpeedBuff,
+        SE_Rift_Burst_Damage,
+        SE_Rift_Bind_Stun,
+        SE_Rift_Bind_Damage,
+        SE_Rift_Storm_Damage,
+        SE_Rift_Spirit_Summon,
+        SE_Rift_Collapse_Damage,
     }
 
     public enum SkillModifier {
@@ -651,7 +662,9 @@ namespace EDT {
         TableAct,
         TableField,
         TableDungeon,
-        TableDungeonStage,
+        TableGoldDungeon,
+        TableRiftDungeon,
+        TableRiftSkill,
         TableWeaponMastery,
         TableSkillTreeNode,
         TableSkillPoint,

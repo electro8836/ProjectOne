@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace ProjectOne.Unit.AI
 {
@@ -9,6 +9,9 @@ namespace ProjectOne.Unit.AI
 		private readonly UnitBase _owner;
 		private readonly IAiBehavior _behavior;
 		private readonly Blackboard _bb;
+
+		// 콘텐츠가 이번 생에만 덮어쓰는 전략(균열 던전의 경로 이동 등). null 이면 원래 전략을 쓴다.
+		private IAiBehavior _override;
 
 		// 스폰마다 앵커·타겟을 초기화해야 하므로 외부에서 접근한다(풀 재사용 대비).
 		public Blackboard Blackboard
@@ -26,8 +29,10 @@ namespace ProjectOne.Unit.AI
 		// 스폰 리셋 — 블랙보드와 behavior 자체 상태를 함께 되돌린다.
 		// 풀 재사용이라 behavior 인스턴스가 그대로 이어지므로, 이전 생의 상태가 남으면
 		// 리스폰한 보스가 페이즈 3부터 시작하는 식의 버그가 된다.
+		// 덮어쓴 전략도 여기서 걷는다 — 풀에서 다른 콘텐츠로 나가면 원래 AI 로 돌아와야 한다.
 		public void ResetForSpawn(Vector2 spawnOrigin)
 		{
+			_override = null;
 			_bb.ResetForSpawn(spawnOrigin);
 
 			IAiSpawnReset resettable = _behavior as IAiSpawnReset;
@@ -35,6 +40,12 @@ namespace ProjectOne.Unit.AI
 			{
 				resettable.OnSpawnReset(_owner);
 			}
+		}
+
+		// 이번 생의 전략을 덮어쓴다. 다음 ResetForSpawn 에서 해제된다.
+		public void SetBehaviorOverride(IAiBehavior behavior)
+		{
+			_override = behavior;
 		}
 
 		// 피격 알림 — 비선공(Neutral) 몬스터를 각성시킨다 (몬스터 설계 2장).
@@ -53,6 +64,12 @@ namespace ProjectOne.Unit.AI
 		{
 			if (_owner.IsDead == true)
 			{
+				return;
+			}
+
+			if (_override != null)
+			{
+				_override.Tick(_owner, _bb, dt);
 				return;
 			}
 
