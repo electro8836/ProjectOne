@@ -34,6 +34,7 @@ namespace ProjectOne.UI
 		[Header("던전")]
 		[SerializeField] private UIButton _goldButton;		// Dungeon/Dungeon_Gold
 		[SerializeField] private UIButton _riftButton;		// Dungeon/Dungeon_Rift
+		[SerializeField] private UIButton _labyrinthButton;	// Dungeon/Dungeon_Labyrinth
 
 		[Header("닫기")]
 		[SerializeField] private UIButton _homeButton;		// HomeButton
@@ -41,6 +42,7 @@ namespace ProjectOne.UI
 		public event Action OnActClicked;
 		public event Action OnGoldDungeonClicked;
 		public event Action OnRiftDungeonClicked;
+		public event Action OnLabyrinthDungeonClicked;
 		public event Action OnHomeClicked;
 
 		private readonly WorldPresenter _presenter = new WorldPresenter();
@@ -53,6 +55,7 @@ namespace ProjectOne.UI
 			_actButton.OnClickEvent += onActClicked;
 			_goldButton.OnClickEvent += onGoldClicked;
 			_riftButton.OnClickEvent += onRiftClicked;
+			_labyrinthButton.OnClickEvent += onLabyrinthClicked;
 			_homeButton.OnClickEvent += onHomeClicked;
 
 			_presenter.Initialize(this);
@@ -65,6 +68,7 @@ namespace ProjectOne.UI
 			_actButton.OnClickEvent -= onActClicked;
 			_goldButton.OnClickEvent -= onGoldClicked;
 			_riftButton.OnClickEvent -= onRiftClicked;
+			_labyrinthButton.OnClickEvent -= onLabyrinthClicked;
 			_homeButton.OnClickEvent -= onHomeClicked;
 
 			_presenter.Dispose();
@@ -178,6 +182,14 @@ namespace ProjectOne.UI
 			if (OnRiftDungeonClicked != null)
 			{
 				OnRiftDungeonClicked.Invoke();
+			}
+		}
+
+		private void onLabyrinthClicked()
+		{
+			if (OnLabyrinthDungeonClicked != null)
+			{
+				OnLabyrinthDungeonClicked.Invoke();
 			}
 		}
 

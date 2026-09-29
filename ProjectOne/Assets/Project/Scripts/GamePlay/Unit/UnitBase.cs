@@ -580,6 +580,12 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 즉사 기믹(미궁 불 등) — 피해 계산을 거치지 않고 곧바로 사망 처리한다.
+		public void ForceDie()
+		{
+			Die();
+		}
+
 		public virtual void OnSpawnReset(Vector3 pos)
 		{
 			this.transform.position = pos;

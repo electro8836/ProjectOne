@@ -665,6 +665,7 @@ namespace EDT {
         TableGoldDungeon,
         TableRiftDungeon,
         TableRiftSkill,
+        TableLabyrinthDungeon,
         TableWeaponMastery,
         TableSkillTreeNode,
         TableSkillPoint,

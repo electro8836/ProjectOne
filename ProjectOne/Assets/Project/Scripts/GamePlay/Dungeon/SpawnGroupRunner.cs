@@ -37,6 +37,18 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
+			SpawnGroupAt(groupId, levelOverride, getSlots());
+		}
+
+		// 그룹의 모든 행을 지정한 슬롯들에만 즉시 소환한다 — 미궁 트리거처럼 구역별로 슬롯이 나뉜 모드용.
+		// slots 가 비어 있으면 히어로 주변에 배치한다.
+		public static void SpawnGroupAt(int groupId, int levelOverride, IReadOnlyList<DungeonSpawnSlot> slots)
+		{
+			if (groupId <= 0)
+			{
+				return;
+			}
+
 			IReadOnlyList<Table_MonsterSpawn.Row> rows = MonsterCatalog.GetSpawnGroup(groupId);
 			if (rows.Count == 0)
 			{
@@ -44,7 +56,6 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			IReadOnlyList<DungeonSpawnSlot> slots = getSlots();
 			int slotCursor = 0;
 
 			for (int i = 0; i < rows.Count; i++)

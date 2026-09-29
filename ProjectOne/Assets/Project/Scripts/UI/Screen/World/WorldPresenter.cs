@@ -8,13 +8,14 @@ namespace ProjectOne.UI
 {
 	// 월드 화면 Presenter — 지금 어디에 있는지 조회와 팝업 열기를 담당한다.
 	//
-	// 던전 4종 중 골드·균열만 연결한다. 나머지 둘은 콘텐츠가 아직 없어 버튼을 눌러도 아무 일도 없다 —
+	// 던전 4종 중 골드·균열·미궁만 연결한다. 유적은 콘텐츠가 아직 없어 버튼을 눌러도 아무 일도 없다 —
 	// 빈 팝업을 띄우는 대신 반응을 주지 않는 쪽을 택했다.
 	public sealed class WorldPresenter : Presenter<WorldUI>
 	{
 		private const string ACT_LIST_POPUP_ADDRESS = "UIPrefab_ActListPopup";
 		private const string GOLD_DUNGEON_POPUP_ADDRESS = "UIPrefab_GoldDungeonPopup";
 		private const string RIFT_DUNGEON_POPUP_ADDRESS = "UIPrefab_RiftDungeonPopup";
+		private const string LABYRINTH_DUNGEON_POPUP_ADDRESS = "UIPrefab_LabyrinthDungeonPopup";
 
 		// 마을의 Map.ID. 필드 밖에 있을 때 위치 이름을 여기서 가져온다.
 		private const int TOWN_MAP_ID = 1;
@@ -26,6 +27,7 @@ namespace ProjectOne.UI
 			view.OnActClicked += onActClicked;
 			view.OnGoldDungeonClicked += onGoldDungeonClicked;
 			view.OnRiftDungeonClicked += onRiftDungeonClicked;
+			view.OnLabyrinthDungeonClicked += onLabyrinthDungeonClicked;
 			view.OnHomeClicked += onHomeClicked;
 
 			// 필드를 옮기면 위치와 진행도가 함께 바뀐다.
@@ -44,6 +46,7 @@ namespace ProjectOne.UI
 			view.OnActClicked -= onActClicked;
 			view.OnGoldDungeonClicked -= onGoldDungeonClicked;
 			view.OnRiftDungeonClicked -= onRiftDungeonClicked;
+			view.OnLabyrinthDungeonClicked -= onLabyrinthDungeonClicked;
 			view.OnHomeClicked -= onHomeClicked;
 
 			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
@@ -95,6 +98,13 @@ namespace ProjectOne.UI
 		{
 			UIManager.Instance
 				.ShowRiftDungeonPopupAsync(RIFT_DUNGEON_POPUP_ADDRESS, view.GetDestroyToken())
+				.Forget();
+		}
+
+		private void onLabyrinthDungeonClicked()
+		{
+			UIManager.Instance
+				.ShowLabyrinthDungeonPopupAsync(LABYRINTH_DUNGEON_POPUP_ADDRESS, view.GetDestroyToken())
 				.Forget();
 		}
 

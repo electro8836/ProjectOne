@@ -315,6 +315,17 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - LabyrinthDungeon
+            {
+                CurrentFile = Table_LabyrinthDungeon.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_LabyrinthDungeon._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - WeaponMastery
             {
                 CurrentFile = Table_WeaponMastery.Filename;

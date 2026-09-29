@@ -105,6 +105,9 @@ namespace ProjectOne.Dungeon
 		// 진행 중인 단계. 아직 Begin 전이면 0 이다.
 		public int Stage => (_ctx != null) ? _ctx.Stage : 0;
 
+		// 진행 중인 모드. 모드별 HUD 가 진행 상태를 읽는다. 없으면 null.
+		public IStageMode CurrentMode => _currentMode;
+
 		// 던전 씬은 비어 있으므로 코드가 직접 생성한다.
 		public static DungeonDirector EnsureInstance()
 		{
@@ -267,7 +270,7 @@ namespace ProjectOne.Dungeon
 				// 제한시간 초과는 부활로 되돌릴 수 있는 상태가 아니다 — 왜 끝났는지만 알리고 마을로 보낸다.
 				if (result == DungeonResult.Failed || _timedOut == true)
 				{
-					await showContinueAsync(ContinuePopupData.ForTimeout(), ct);
+					await showContinueAsync(buildFailedPopupData(), ct);
 					return false;
 				}
 
@@ -283,6 +286,18 @@ namespace ProjectOne.Dungeon
 
 				await UniTask.Yield(PlayerLoopTiming.Update, ct);
 			}
+		}
+
+		// 되돌릴 수 없는 실패의 안내 문구 — 미궁 불이면 전용 문구, 그 외에는 시간 초과다.
+		private ContinuePopupData buildFailedPopupData()
+		{
+			LabyrinthDungeonMode labyrinth = _currentMode as LabyrinthDungeonMode;
+			if (labyrinth != null && labyrinth.IsFireDeath == true)
+			{
+				return ContinuePopupData.ForLabyrinthFire();
+			}
+
+			return ContinuePopupData.ForTimeout();
 		}
 
 		private void startStage()
@@ -422,6 +437,9 @@ namespace ProjectOne.Dungeon
 			_ending = true;
 			Debug.Log($"[DungeonDirector] 던전 종료 victory={victory} — {_ctx.DungeonType} Stage {_ctx.Stage}");
 
+			// 결과창에서 재도전·다음 단계를 고르면 다시 들어갈 컨텍스트. 없으면 마을로 간다.
+			DungeonContext restart = null;
+
 			if (victory == true && _forcedLobbyReturn == false && _ctx.DungeonType == EDT.Dungeon.Rift)
 			{
 				// 균열 — 서버 요청 없이 로컬로 기록·지급한다. 배너를 걸어 두고 결과창을 연다.
@@ -430,7 +448,15 @@ namespace ProjectOne.Dungeon
 				DungeonClearResponse riftResp = settleRift();
 
 				await UniTask.Delay(System.TimeSpan.FromSeconds(ClearBannerSeconds), cancellationToken: _cts.Token);
-				await showDungeonResultAsync(riftResp, _cts.Token);
+				restart = await showDungeonResultAsync(riftResp, _cts.Token);
+			}
+			else if (victory == true && _forcedLobbyReturn == false && _ctx.DungeonType == EDT.Dungeon.Labyrinth)
+			{
+				// 미궁 — 균열과 같이 서버 요청 없이 로컬로 기록·지급한다. 클리어 배너가 없어 결과창을 바로 연다.
+				_grantedEquipments.Clear();
+
+				DungeonClearResponse labyrinthResp = settleLabyrinth();
+				restart = await showDungeonResultAsync(labyrinthResp, _cts.Token);
 			}
 			else if (victory == true && _forcedLobbyReturn == false)
 			{
@@ -458,7 +484,7 @@ namespace ProjectOne.Dungeon
 				// TODO(임시) — 결과창 확인용 더미 보상. 지울 때 아래 "임시 테스트" 영역과 이 줄을 함께 지운다.
 				resp = TEMP_BuildDummyReward(resp);
 
-				await showDungeonResultAsync(resp, _cts.Token);
+				restart = await showDungeonResultAsync(resp, _cts.Token);
 			}
 			else
 			{
@@ -466,16 +492,26 @@ namespace ProjectOne.Dungeon
 			}
 
 			cleanupAll();
+
+			// 재도전·다음 단계는 처음 입장과 같은 경로다 — 씬을 다시 로드하고 히어로·펫·맵·HUD 를 전부 새로 세운다.
+			// 판 안에서 잔존물을 골라 치우면 빠뜨리는 것이 생긴다.
+			if (restart != null)
+			{
+				await GameFlow.Instance.ChangeStateAsync(new DungeonState(restart));
+				return;
+			}
+
 			await GameFlow.Instance.ChangeStateAsync(new TownState());
 		}
 
 		// 결과창 — 서버 확정 보상을 보여주고, 다음 단계가 있으면 도전 여부를 묻는다.
-		private async UniTask showDungeonResultAsync(DungeonClearResponse resp, CancellationToken ct)
+		// 재도전·다음 단계를 고르면 다시 들어갈 컨텍스트를, 마을로 나가야 하면 null 을 돌려준다.
+		private async UniTask<DungeonContext> showDungeonResultAsync(DungeonClearResponse resp, CancellationToken ct)
 		{
 			DungeonResultUI ui = await UIManager.Instance.OpenWindowAsync<DungeonResultUI>(DungeonResultAddress, ct);
 			if (ui == null)
 			{
-				return;
+				return null;
 			}
 
 			IReadOnlyList<GrantedRewardDto> rewards = (resp != null) ? resp.rewards : null;
@@ -501,7 +537,7 @@ namespace ProjectOne.Dungeon
 			if (action == DungeonResultAction.ReturnTown)
 			{
 				await UIManager.Instance.CloseWindowAsync(false);
-				return;
+				return null;
 			}
 
 			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToDungeon, ct);
@@ -510,7 +546,7 @@ namespace ProjectOne.Dungeon
 			// 재도전도 다음 단계도 새 입장이다 — 횟수를 못 쓰면 그대로 마을로 나간다.
 			if (DungeonProgress.TryConsumeEnter(_ctx.DungeonType) == false)
 			{
-				return;
+				return null;
 			}
 
 			int stage = (action == DungeonResultAction.NextStage) ? _ctx.Stage + 1 : _ctx.Stage;
@@ -521,8 +557,15 @@ namespace ProjectOne.Dungeon
 				stage = DungeonProgress.GetRiftCheckpoint();
 			}
 
-			// 씬은 그대로 두고 맵/모드만 교체한다.
-			await enterStageAsync(stage, ct);
+			if (DungeonProgress.GetMapId(_ctx.DungeonType, stage) <= 0)
+			{
+				Debug.LogError($"[DungeonDirector] 다시 들어갈 단계가 없습니다 — {_ctx.DungeonType} Stage {stage}");
+				return null;
+			}
+
+			DungeonContext next = new DungeonContext(_ctx.DungeonType, stage);
+			next.RiftSkillId = _ctx.RiftSkillId;
+			return next;
 		}
 
 		// 계정 누적 경험치. Account 는 순수 C# 싱글톤이고 Loadout 은 생성자에서 채워지므로 가드가 없다.
@@ -531,40 +574,6 @@ namespace ProjectOne.Dungeon
 			return Account.Instance.Loadout.Exp;
 		}
 
-		// 지정한 단계로 재진입 — 씬 전환 없이 맵/모드만 새로 세운다.
-		// 재도전(같은 단계)과 다음 단계가 같은 경로를 탄다.
-		private async UniTask enterStageAsync(int stage, CancellationToken ct)
-		{
-			DungeonContext next = new DungeonContext(_ctx.DungeonType, stage);
-			next.RiftSkillId = _ctx.RiftSkillId;
-
-			int nextMapId = DungeonProgress.GetMapId(next.DungeonType, next.Stage);
-			if (nextMapId <= 0)
-			{
-				Debug.LogError($"[DungeonDirector] 재진입할 단계가 없습니다 — {_ctx.DungeonType} Stage {stage}");
-				return;
-			}
-
-			// 이전 단계의 잔존물 정리 (히어로는 유지)
-			if (MonsterSpawnManager.HasInstance == true)
-			{
-				MonsterSpawnManager.Instance.ClearAlive();
-			}
-
-			_ctx = next;
-			_mapId = nextMapId;
-			_ending = false;
-			_clearRequestSent = false;
-			_forcedLobbyReturn = false;
-			DungeonRunState.Instance.Reset();
-
-			await loadMapAsync(ct);
-			healAllHeroes();
-			startStage();
-
-			await LoadingManager.Instance.HideAsync();
-			runGuardedAsync(ct).Forget();
-		}
 
 		// ── 임시 테스트 ───────────────────────────────────────────────
 		//
@@ -726,6 +735,56 @@ namespace ProjectOne.Dungeon
 			}
 
 			Debug.Log($"[DungeonDirector] 균열 정산 — 시작 {startWave}, 통과 {clearedWave}, 입장보상 {entryReward} + 웨이브보상 {waveReward} ({currency})");
+			return resp;
+		}
+
+		// ── 미궁 정산 ─────────────────────────────────────────────────
+		//
+		// 상자 보상은 열 때 이미 지급됐다(실패해도 유지). 여기서는 기록 갱신과 클리어 보상만 지급하고,
+		// 결과창에는 상자 보상과 클리어 보상을 함께 보여준다.
+		// TODO(STEP 14) — 지금은 로컬 지급이다. 서버 권위로 옮길 때 여기와 LabyrinthDungeonMode.openChest 를 함께 바꾼다.
+		private DungeonClearResponse settleLabyrinth()
+		{
+			DungeonProgress.MarkStageCleared(EDT.Dungeon.Labyrinth, _ctx.Stage);
+			EventManager.Instance.Publish(new DungeonStageClearedEvent(EDT.Dungeon.Labyrinth, _ctx.Stage));
+
+			List<ProjectOne.Reward.GrantedReward> shown = new List<ProjectOne.Reward.GrantedReward>();
+
+			LabyrinthDungeonMode mode = _currentMode as LabyrinthDungeonMode;
+			if (mode != null)
+			{
+				shown.AddRange(mode.GrantedRewards);
+			}
+
+			// 공용 지급 경로 — 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
+			Table_LabyrinthDungeon.Row row = DungeonProgress.FindLabyrinthStage(_ctx.Stage);
+			if (row != null)
+			{
+				ProjectOne.Reward.RewardGranter.Grant(row.ClearRewardGroupID, ProjectOne.Reward.RewardContext.DungeonClear, shown);
+			}
+
+			// 장비는 인스턴스로, 나머지는 dto 로 결과창에 싣는다 — 결과창이 두 경로를 따로 그린다.
+			List<GrantedRewardDto> dtos = new List<GrantedRewardDto>();
+			for (int i = 0; i < shown.Count; i++)
+			{
+				ProjectOne.Reward.GrantedReward reward = shown[i];
+				if (reward.equipment != null)
+				{
+					_grantedEquipments.Add(reward.equipment);
+					continue;
+				}
+
+				GrantedRewardDto dto = new GrantedRewardDto();
+				dto.rewardType = (int)reward.type;
+				dto.itemId = (reward.type == RewardType.Currency) ? (int)reward.currency : reward.itemId;
+				dto.count = reward.count;
+				dtos.Add(dto);
+			}
+
+			DungeonClearResponse resp = new DungeonClearResponse();
+			resp.rewards = dtos.ToArray();
+
+			Debug.Log($"[DungeonDirector] 미궁 정산 — Stage {_ctx.Stage}, 보상 {shown.Count}건");
 			return resp;
 		}
 

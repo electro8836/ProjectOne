@@ -39,6 +39,10 @@ namespace ProjectOne.Dungeon
 		private static readonly Dictionary<int, Table_RiftDungeon.Row> _riftIndex = new Dictionary<int, Table_RiftDungeon.Row>();
 		private static int _riftLastWave;
 
+		// Stage → 미궁던전 행.
+		private static readonly Dictionary<int, Table_LabyrinthDungeon.Row> _labyrinthIndex = new Dictionary<int, Table_LabyrinthDungeon.Row>();
+		private static int _labyrinthLastStage;
+
 		// MapID → 단계. 맵 하나로 던전 단계를 지목하는 경로(개발용 이동 버튼)가 쓴다.
 		private static readonly Dictionary<int, MapTarget> _byMapId = new Dictionary<int, MapTarget>();
 
@@ -49,15 +53,18 @@ namespace ProjectOne.Dungeon
 		{
 			_goldIndex.Clear();
 			_riftIndex.Clear();
+			_labyrinthIndex.Clear();
 			_byMapId.Clear();
 			_goldLastStage = 0;
 			_riftLastWave = 0;
+			_labyrinthLastStage = 0;
 
 			buildGold();
 			buildRift();
+			buildLabyrinth();
 
 			_built = true;
-			Debug.Log($"[DungeonProgress] 구축 완료 — 골드 {_goldIndex.Count}단계 / 균열 {_riftIndex.Count}웨이브");
+			Debug.Log($"[DungeonProgress] 구축 완료 — 골드 {_goldIndex.Count}단계 / 균열 {_riftIndex.Count}웨이브 / 미궁 {_labyrinthIndex.Count}단계");
 		}
 
 		private static void buildGold()
@@ -114,6 +121,34 @@ namespace ProjectOne.Dungeon
 			}
 		}
 
+		private static void buildLabyrinth()
+		{
+			Dictionary<int, Table_LabyrinthDungeon.Row>.Enumerator e = Table_LabyrinthDungeon.All().GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				Table_LabyrinthDungeon.Row row = e.Current.Value;
+				if (row.Stage <= 0)
+				{
+					continue;
+				}
+
+				_labyrinthIndex[row.Stage] = row;
+				if (row.Stage > _labyrinthLastStage)
+				{
+					_labyrinthLastStage = row.Stage;
+				}
+
+				registerMapId(row.MapID, EDT.Dungeon.Labyrinth, row.Stage);
+			}
+		}
+
+		public static Table_LabyrinthDungeon.Row FindLabyrinthStage(int stage)
+		{
+			Table_LabyrinthDungeon.Row row;
+			_labyrinthIndex.TryGetValue(stage, out row);
+			return row;
+		}
+
 		public static Table_GoldDungeon.Row FindGoldStage(int stage)
 		{
 			Table_GoldDungeon.Row row;
@@ -149,15 +184,28 @@ namespace ProjectOne.Dungeon
 					Table_RiftDungeon.Row rift = FindRiftWave(stage);
 					return (rift != null) ? rift.MapID : 0;
 				}
+				case EDT.Dungeon.Labyrinth:
+				{
+					Table_LabyrinthDungeon.Row labyrinth = FindLabyrinthStage(stage);
+					return (labyrinth != null) ? labyrinth.MapID : 0;
+				}
 			}
 
 			return 0;
 		}
 
-		// 단계형 던전(골드)의 마지막 단계. 균열은 웨이브에 끝이 없어 0 이다.
+		// 단계형 던전(골드·미궁)의 마지막 단계. 균열은 웨이브에 끝이 없어 0 이다.
 		public static int GetLastStage(EDT.Dungeon type)
 		{
-			return (type == EDT.Dungeon.Gold) ? _goldLastStage : 0;
+			switch (type)
+			{
+				case EDT.Dungeon.Gold:
+					return _goldLastStage;
+				case EDT.Dungeon.Labyrinth:
+					return _labyrinthLastStage;
+			}
+
+			return 0;
 		}
 
 		// 맵으로 단계를 되찾는다. 없으면 false.
@@ -310,12 +358,15 @@ namespace ProjectOne.Dungeon
 		// 균열은 단계형이 아니라 다음 단계가 없다.
 		public static bool HasNextStage(EDT.Dungeon type, int currentStage)
 		{
-			if (type != EDT.Dungeon.Gold)
+			switch (type)
 			{
-				return false;
+				case EDT.Dungeon.Gold:
+					return FindGoldStage(currentStage + 1) != null;
+				case EDT.Dungeon.Labyrinth:
+					return FindLabyrinthStage(currentStage + 1) != null;
 			}
 
-			return FindGoldStage(currentStage + 1) != null;
+			return false;
 		}
 
 		// ── 균열 ──────────────────────────────────────────────────────

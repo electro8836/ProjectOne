@@ -71,6 +71,16 @@ namespace ProjectOne.UI
 			return data;
 		}
 
+		// 미궁 불에 닿음 — 부활 없이 즉시 실패다. 나가기만 남긴다.
+		public static ContinuePopupData ForLabyrinthFire()
+		{
+			ContinuePopupData data = new ContinuePopupData();
+			data.title = "당신은 사망했습니다.";
+			data.desc = "무너지는 미궁에 휩쓸렸습니다.\n정비를 위해 마을로 돌아갑니다.";
+			data.showExit = true;
+			return data;
+		}
+
 		// 제한시간 초과 — 되돌릴 수 없다. 나가기만 남긴다.
 		public static ContinuePopupData ForTimeout()
 		{
