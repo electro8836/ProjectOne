@@ -13,14 +13,78 @@ namespace ProjectOne.Field
 	//
 	// 기록이 없다 = 즉시 스폰 가능. 한 번도 죽인 적 없는 슬롯, 살아있는 채로 회수된 슬롯이 여기 해당한다.
 	//
-	// 리젠 시각은 로컬 전용이다. 서버에 올리지 않고 저장도 하지 않는다 —
-	// 앱을 껐다 켜면 모든 몬스터가 살아있는 상태로 시작한다. 의도된 동작이다.
+	// 리젠 시각은 로컬 전용이다. 서버에 올리지 않는다.
+	// 초 단위 리젠(RespawnType.Time)은 저장하지 않는다 — 앱을 껐다 켜면 살아있는 상태로 시작한다. 의도된 동작이다.
+	// 일일 리젠(RespawnType.DailyReset, 필드보스)만 처치한 초기화일을 PlayerPrefs 에 남긴다 —
+	// 재시작으로 하루에 여러 번 잡는 것을 막기 위해서다. 초기화 경계는 DailyReset(06시)을 따른다.
 	public sealed class MonsterRespawnClock : Singleton<MonsterRespawnClock>
 	{
+		// 기록 없음 표시 — PlayerPrefs 를 한 번 조회한 뒤 캐시해 다시 읽지 않는다.
+		private const int NoRecord = -1;
+
 		// 슬롯 → 리젠 가능해지는 시각
 		private readonly Dictionary<SlotKey, float> _readyAt = new Dictionary<SlotKey, float>();
 
+		// 슬롯 → 처치한 초기화일(DailyReset.GetResetDay). 오늘과 같으면 아직 리젠 전이다.
+		private readonly Dictionary<SlotKey, int> _killedDay = new Dictionary<SlotKey, int>();
+
 		protected MonsterRespawnClock() { }
+
+		// 일일 리젠 — 오늘 처치했다고 기록한다. 다음 06시에 리젠된다.
+		public void SetDailyRespawn(in SlotKey key)
+		{
+			int today = DailyReset.GetResetDay();
+			_killedDay[key] = today;
+			PlayerPrefs.SetInt(getPrefsKey(key), today);
+			PlayerPrefs.Save();
+		}
+
+		// 리젠까지 남은 초. 기록이 없거나 이미 지났으면 0.
+		public float GetRemainingSeconds(in SlotKey key)
+		{
+			if (isKilledToday(key) == true)
+			{
+				return (float)DailyReset.GetRemaining().TotalSeconds;
+			}
+
+			float ready;
+			if (_readyAt.TryGetValue(key, out ready) == false)
+			{
+				return 0f;
+			}
+
+			return Mathf.Max(0f, ready - Time.time);
+		}
+
+		// 오늘 처치한 일일 리젠 슬롯인지. 날이 넘어간 기록은 여기서 지운다.
+		private bool isKilledToday(in SlotKey key)
+		{
+			int day;
+			if (_killedDay.TryGetValue(key, out day) == false)
+			{
+				day = PlayerPrefs.GetInt(getPrefsKey(key), NoRecord);
+				_killedDay[key] = day;
+			}
+
+			if (day == NoRecord)
+			{
+				return false;
+			}
+
+			if (day == DailyReset.GetResetDay())
+			{
+				return true;
+			}
+
+			_killedDay[key] = NoRecord;
+			PlayerPrefs.DeleteKey(getPrefsKey(key));
+			return false;
+		}
+
+		private static string getPrefsKey(in SlotKey key)
+		{
+			return $"FieldDailyKill_{key.MapId}_{key.PointIndex}_{key.RowIndex}_{key.UnitIndex}";
+		}
 
 		public void SetRespawn(in SlotKey key, float respawnTime)
 		{
@@ -36,6 +100,11 @@ namespace ProjectOne.Field
 		// 기록이 없으면 즉시 스폰 가능하다.
 		public bool IsReady(in SlotKey key)
 		{
+			if (isKilledToday(key) == true)
+			{
+				return false;
+			}
+
 			float ready;
 			if (_readyAt.TryGetValue(key, out ready) == false)
 			{

@@ -14,6 +14,7 @@ namespace EDT {
             public int Count { get; set; } = 0;
             public float RespawnTime { get; set; } = 0f;
             public int RewardGroupID { get; set; } = 0;
+            public RespawnType RespawnType { get; set; } = RespawnType.None;
         }
 
         public const string Filename = "edt_monsterspawn.bytes";
@@ -43,6 +44,7 @@ namespace EDT {
                 row.Count = reader.ReadInt32();
                 row.RespawnTime = reader.ReadSingle();
                 row.RewardGroupID = reader.ReadInt32();
+                row.RespawnType = (RespawnType)reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

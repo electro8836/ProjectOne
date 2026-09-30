@@ -26,6 +26,9 @@ namespace ProjectOne.Field
 		// 그 아래로는 내려가지 않게 막는다. 스폰 실패 시 재시도 간격으로도 쓴다.
 		private const float MinRespawnTime = 1.5f;
 
+		// 리젠 대기 라벨의 몬스터 이름 색
+		private const string LabelNameColor = "#FFA000";
+
 		// 스폰 개체 1마리의 추적 정보. 죽으면 origin 자리에 다시 띄운다.
 		private sealed class Slot
 		{
@@ -34,9 +37,13 @@ namespace ProjectOne.Field
 			public int level;
 			public int rewardGroupId;	// MonsterSpawn.RewardGroupID (지역 드랍)
 			public float respawnTime;	// MonsterSpawn.RespawnTime (하한 적용 후)
+			public RespawnType respawnType;	// MonsterSpawn.RespawnType — DailyReset 이면 06시 리젠 + 남은 시간 라벨
 			public Vector3 origin;
 
 			public int instanceId;		// 살아있는 개체. 0이면 비어 있음
+
+			public RespawnTimerLabel label;	// 리젠 대기 중 스폰 위치에 띄운 남은 시간. 없으면 null
+			public string labelTitle;		// 라벨 윗줄 — 색을 입힌 몬스터 이름. 라벨을 쓰는 슬롯만 만든다
 		}
 
 		private readonly List<Slot> _slots = new List<Slot>();
@@ -78,6 +85,11 @@ namespace ProjectOne.Field
 
 		public void Clear()
 		{
+			for (int i = 0; i < _slots.Count; i++)
+			{
+				hideLabel(_slots[i]);
+			}
+
 			_slots.Clear();
 			_byInstance.Clear();
 		}
@@ -117,6 +129,7 @@ namespace ProjectOne.Field
 				int count = (row.Count > 0) ? row.Count : 1;
 				int level = (row.Level > 0) ? row.Level : 1;
 				float respawnTime = (row.RespawnTime > MinRespawnTime) ? row.RespawnTime : MinRespawnTime;
+				string labelTitle = (row.RespawnType == RespawnType.DailyReset) ? buildLabelTitle(row.MonsterID) : null;
 
 				for (int n = 0; n < count; n++)
 				{
@@ -126,10 +139,24 @@ namespace ProjectOne.Field
 					slot.level = level;
 					slot.rewardGroupId = row.RewardGroupID;
 					slot.respawnTime = respawnTime;
+					slot.respawnType = row.RespawnType;
+					slot.labelTitle = labelTitle;
 					slot.origin = resolveOrigin(point);
 					_slots.Add(slot);
 				}
 			}
+		}
+
+		// 리젠 대기 라벨의 윗줄 — 스폰 수집 시 1회만 만든다.
+		private static string buildLabelTitle(int monsterId)
+		{
+			Table_Monster.Row monster = Table_Monster.Get(monsterId);
+			if (monster == null)
+			{
+				return null;
+			}
+
+			return $"<color={LabelNameColor}>{monster.Name}</color>";
 		}
 
 		// 반경 안의 임의 위치를 잡되 벽 속에 박히지 않도록 보정한다.
@@ -151,8 +178,19 @@ namespace ProjectOne.Field
 			for (int i = 0; i < _slots.Count; i++)
 			{
 				Slot slot = _slots[i];
-				if (slot.instanceId != 0 || clock.IsReady(slot.key) == false)
+				if (slot.instanceId != 0)
 				{
+					continue;
+				}
+
+				if (clock.IsReady(slot.key) == false)
+				{
+					// 일일 리젠 슬롯만 남은 시간을 띄운다 — 필드 재입장 시에도 이 경로로 다시 뜬다.
+					if (slot.respawnType == RespawnType.DailyReset && slot.label == null && RespawnTimerLabelManager.HasInstance == true)
+					{
+						slot.label = RespawnTimerLabelManager.Instance.Show(slot.origin, clock.GetRemainingSeconds(slot.key), slot.labelTitle);
+					}
+
 					continue;
 				}
 
@@ -162,6 +200,7 @@ namespace ProjectOne.Field
 
 		private void spawn(Slot slot)
 		{
+			hideLabel(slot);
 			MonsterRespawnClock.Instance.Clear(slot.key);
 
 			// 스폰 중 표시 — 완료 전에 Update 가 같은 슬롯을 또 스폰하는 것을 막는다.
@@ -198,9 +237,32 @@ namespace ProjectOne.Field
 			_byInstance.Remove(e.InstanceID);
 			slot.instanceId = 0;
 
+			// 일일 리젠은 다음 초기화 시각(06시)에 돌아온다.
+			if (slot.respawnType == RespawnType.DailyReset)
+			{
+				MonsterRespawnClock.Instance.SetDailyRespawn(slot.key);
+				return;
+			}
+
 			// 사망 시각 기준으로 그 자리에 다시 뜬다 (설계 8장).
 			// 시각은 원장에 남으므로 다른 필드를 도는 동안에도 흐른다.
 			MonsterRespawnClock.Instance.SetRespawn(slot.key, slot.respawnTime);
+		}
+
+		// 종료 중에는 매니저가 먼저 파괴될 수 있다 — HasInstance 로 거른다.
+		private void hideLabel(Slot slot)
+		{
+			if (slot.label == null)
+			{
+				return;
+			}
+
+			if (RespawnTimerLabelManager.HasInstance == true)
+			{
+				RespawnTimerLabelManager.Instance.Hide(slot.label);
+			}
+
+			slot.label = null;
 		}
 
 		private void Update()

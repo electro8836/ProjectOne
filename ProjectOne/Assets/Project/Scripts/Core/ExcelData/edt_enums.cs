@@ -161,6 +161,12 @@ namespace EDT {
         Neutral,
     }
 
+    public enum RespawnType {
+        None,
+        Time,
+        DailyReset,
+    }
+
     public enum NpcType {
         None,
         Shop,
