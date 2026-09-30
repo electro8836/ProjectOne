@@ -66,6 +66,27 @@ namespace ProjectOne.Unit
 		[SerializeField]
 		private float _yOffset = 0f;
 
+		// 히트 플래시 — 강도는 SpriteRenderer.color 의 RGB 로 셰이더에 전달한다 (SpriteHitFlashLit).
+		// 피격마다 짧은 펄스 1회를 내고, 펄스 사이에 어두운 틈을 둬서 연타가 깜빡임으로 읽히게 한다.
+		// 펄스 시작 강도 — 누적하지 않으므로 백화 방지 상한을 겸한다
+		[SerializeField]
+		private float _flashPeak = 0.8f;
+
+		// 최대 강도에서 0까지 꺼지는 시간(초)
+		[SerializeField]
+		private float _flashDuration = 0.08f;
+
+		// 펄스 시작 사이 최소 간격(초) — _flashDuration 보다 커야 어두운 틈이 생긴다
+		[SerializeField]
+		private float _flashInterval = 0.12f;
+
+		private float _flashIntensity;
+
+		private float _flashIntervalTimer;
+
+		// 간격 안에 들어온 피격 — 간격이 끝나면 다음 펄스로 낸다
+		private bool _flashPending;
+
 		// 컨트롤러에 존재하는 파라미터 해시. Awake 에서 수집하고 SetController 에서 다시 만든다.
 		private readonly HashSet<int> _parameterHashes = new HashSet<int>();
 
@@ -387,6 +408,75 @@ namespace ProjectOne.Unit
 			// 스로틀 캐시도 버린다 — 같은 값이 다시 들어올 때 걸러지지 않게 한다.
 			_lastAttackSpeedMul = float.NaN;
 			_lastMoveSpeedMul = float.NaN;
+
+			// 이전 생의 플래시가 남아 반짝인 채로 스폰되지 않게 한다.
+			// 켜져 있던 경우만 쓴다 — 플래시를 안 쓰는 유닛(히어로 등)의 렌더러 색을 덮지 않는다.
+			_flashIntervalTimer = 0f;
+			_flashPending = false;
+			if (_flashIntensity > 0f)
+			{
+				_flashIntensity = 0f;
+				applyFlash();
+			}
+		}
+
+		// 피격 플래시 발동 — 간격 안이면 버리지 않고 다음 펄스로 예약한다.
+		public void TriggerHitFlash()
+		{
+			if (_flashIntervalTimer > 0f)
+			{
+				_flashPending = true;
+				return;
+			}
+
+			startPulse();
+		}
+
+		// 가산하지 않고 최대 강도에서 다시 시작한다.
+		private void startPulse()
+		{
+			_flashIntensity = _flashPeak;
+			_flashIntervalTimer = _flashInterval;
+			_flashPending = false;
+			applyFlash();
+		}
+
+		// 유닛 ManualTick 에서 호출 — 플래시가 꺼져 있으면 비용이 없다.
+		public void TickHitFlash(float dt)
+		{
+			if (_flashIntervalTimer > 0f)
+			{
+				_flashIntervalTimer -= dt;
+				if (_flashIntervalTimer <= 0f && _flashPending == true)
+				{
+					startPulse();
+					return;
+				}
+			}
+
+			if (_flashIntensity <= 0f)
+			{
+				return;
+			}
+
+			_flashIntensity = Mathf.Max(0f, _flashIntensity - _flashPeak / _flashDuration * dt);
+			applyFlash();
+		}
+
+		// 알파는 보존하고 RGB 에만 (1 - 강도)를 쓴다.
+		private void applyFlash()
+		{
+			if (_spriteRenderer == null)
+			{
+				return;
+			}
+
+			Color c = _spriteRenderer.color;
+			float v = 1f - _flashIntensity;
+			c.r = v;
+			c.g = v;
+			c.b = v;
+			_spriteRenderer.color = c;
 		}
 
 		private void OnValidate()

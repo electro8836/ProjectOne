@@ -65,6 +65,11 @@ namespace ProjectOne.Unit
 
 		public void TakeDamage(in DamageInfo info)
 		{
+			if (IsDead == false && _animator != null)
+			{
+				_animator.TriggerHitFlash();
+			}
+
 			HandleHit(in info);
 			if (_vitals != null)
 			{
@@ -102,6 +107,12 @@ namespace ProjectOne.Unit
 		public override void ManualTick(float dt)
 		{
 			base.ManualTick(dt);
+
+			// 사망과 무관하게 돌린다 — 처치 타격의 플래시도 감쇠해 꺼져야 한다.
+			if (_animator != null)
+			{
+				_animator.TickHitFlash(dt);
+			}
 
 			// 죽으면 게이지 회복도 멈춘다 — base 가 버프/스킬/AI 를 IsDead 로 거르는 것과 같은 규칙.
 			if (IsDead == false && _break != null)
