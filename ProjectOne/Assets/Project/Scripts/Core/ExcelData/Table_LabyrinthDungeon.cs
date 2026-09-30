@@ -15,8 +15,10 @@ namespace EDT {
             public float FireDelay { get; set; } = 0f;
             public float FireSpeed { get; set; } = 0f;
             public int ChestCount { get; set; } = 0;
-            public int ChestRewardGroupID { get; set; } = 0;
+            public int NormalChestRewardGroupID { get; set; } = 0;
             public int ClearRewardGroupID { get; set; } = 0;
+            public int AdvancedChestRewardGroupID { get; set; } = 0;
+            public int PremiumChestRewardGroupID { get; set; } = 0;
         }
 
         public const string Filename = "edt_labyrinthdungeon.bytes";
@@ -47,8 +49,10 @@ namespace EDT {
                 row.FireDelay = reader.ReadSingle();
                 row.FireSpeed = reader.ReadSingle();
                 row.ChestCount = reader.ReadInt32();
-                row.ChestRewardGroupID = reader.ReadInt32();
+                row.NormalChestRewardGroupID = reader.ReadInt32();
                 row.ClearRewardGroupID = reader.ReadInt32();
+                row.AdvancedChestRewardGroupID = reader.ReadInt32();
+                row.PremiumChestRewardGroupID = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

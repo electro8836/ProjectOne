@@ -112,6 +112,21 @@ namespace EDT {
         Dungeon,
     }
 
+    public enum RuinsHazardType {
+        None,
+        HorizontalLine,
+        PointCircle,
+        PointDonut,
+        TargetCircle,
+    }
+
+    public enum DungeonChestGrade {
+        None,
+        Normal,
+        Advanced,
+        Premium,
+    }
+
     public enum WeaponRangeType {
         None,
         Melee,
@@ -501,6 +516,7 @@ namespace EDT {
         Skill_Rift_Storm,
         Skill_Rift_Spirit,
         Skill_Rift_Collapse,
+        Skill_Monster_Boss_MeleeAttack_01,
     }
 
     public enum SkillEffect {
@@ -535,6 +551,7 @@ namespace EDT {
         SE_Rift_Storm_Damage,
         SE_Rift_Spirit_Summon,
         SE_Rift_Collapse_Damage,
+        SE_Ruins_Hazard_Damage,
     }
 
     public enum SkillModifier {
@@ -666,6 +683,9 @@ namespace EDT {
         TableRiftDungeon,
         TableRiftSkill,
         TableLabyrinthDungeon,
+        TableRuinsDungeon,
+        TableRuinsCorePhase,
+        TableRuinsHazard,
         TableWeaponMastery,
         TableSkillTreeNode,
         TableSkillPoint,

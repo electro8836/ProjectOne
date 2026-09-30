@@ -17,7 +17,7 @@ namespace ProjectOne.Dungeon
 	// 아래에서 불(LabyrinthFireWall)이 일정 속도로 올라오고, 닿으면 부활 없이 즉시 실패다.
 	// 트리거는 순서대로 하나씩 발동한다 — 발동하면 스폰 그룹이 나오고 장막이 앞길을 막는다.
 	// 그 구간 몬스터를 모두 처치해야 장막이 걷히고 다음 트리거가 발동할 수 있다.
-	// 상자 반경 안에 머물면 게이지가 차고, 다 차면 열려 ChestRewardGroupID 를 굴려 바로 지급한다.
+	// 상자 반경 안에 머물면 게이지가 차고, 다 차면 열려 그 상자 등급의 보상 그룹(Normal/Advanced/Premium)을 굴려 바로 지급한다.
 	//
 	// 몬스터에게 죽는 것은 StageModeBase 의 공통 Defeat 판정 → 디렉터의 부활 팝업 경로를 그대로 탄다.
 	// 제한시간은 디렉터가 판정한다.
@@ -41,7 +41,7 @@ namespace ProjectOne.Dungeon
 		private float _fireWait;
 		private bool _fireDeath;
 
-		private LabyrinthChest _chestTarget;
+		private DungeonChest _chestTarget;
 		private float _chestProgress;
 		private int _openedChests;
 		private int _totalChests;
@@ -246,7 +246,7 @@ namespace ProjectOne.Dungeon
 
 		private void updateChest(UnitBase hero, float dt)
 		{
-			LabyrinthChest nearest = findNearestChest(hero.CachedPos);
+			DungeonChest nearest = findNearestChest(hero.CachedPos);
 			if (nearest == null)
 			{
 				cancelChest();
@@ -284,15 +284,32 @@ namespace ProjectOne.Dungeon
 		}
 
 		// TODO(STEP 14) — 지금은 로컬 지급이다. 서버 권위로 옮길 때 여기와 디렉터의 클리어 정산을 함께 바꾼다.
-		private void openChest(LabyrinthChest chest)
+		private void openChest(DungeonChest chest)
 		{
 			chest.Open();
 
 			// 공용 지급 경로 — 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
-			RewardGranter.Grant(_row.ChestRewardGroupID, RewardContext.DungeonClear, _granted);
+			RewardGranter.Grant(getRewardGroup(chest), RewardContext.DungeonClear, _granted);
 
 			_openedChests++;
 			EventManager.Instance.Publish(new LabyrinthChestChangedEvent(_openedChests, _totalChests));
+		}
+
+		// 상자 외형 등급 → 이 단계의 등급별 보상 그룹. 등급이 없는 상자(베이스 프리팹)는 일반으로 본다.
+		private int getRewardGroup(DungeonChest chest)
+		{
+			switch (chest.Grade)
+			{
+				case DungeonChestGrade.Advanced:
+					return _row.AdvancedChestRewardGroupID;
+				case DungeonChestGrade.Premium:
+					return _row.PremiumChestRewardGroupID;
+				case DungeonChestGrade.Normal:
+					return _row.NormalChestRewardGroupID;
+				default:
+					Debug.LogError($"[LabyrinthDungeonMode] {chest.name} 의 등급이 없습니다 — 일반 보상으로 지급합니다. 등급 변형 프리팹(Prefab_DungeonChest_*)을 배치하세요.");
+					return _row.NormalChestRewardGroupID;
+			}
 		}
 
 		private void cancelChest()
@@ -312,15 +329,15 @@ namespace ProjectOne.Dungeon
 			}
 		}
 
-		private LabyrinthChest findNearestChest(Vector2 pos)
+		private DungeonChest findNearestChest(Vector2 pos)
 		{
-			LabyrinthChest best = null;
+			DungeonChest best = null;
 			float bestSqr = float.MaxValue;
 
-			IReadOnlyList<LabyrinthChest> chests = _map.Chests;
+			IReadOnlyList<DungeonChest> chests = _map.Chests;
 			for (int i = 0; i < chests.Count; i++)
 			{
-				LabyrinthChest chest = chests[i];
+				DungeonChest chest = chests[i];
 				if (chest == null || chest.IsOpened == true)
 				{
 					continue;

@@ -15,7 +15,7 @@ namespace ProjectOne.Dungeon
 		[SerializeField] private LabyrinthFireWall _fireWall;
 
 		private LabyrinthSpawnTrigger[] _triggers;
-		private LabyrinthChest[] _chests;
+		private DungeonChest[] _chests;
 		private MapAnchor _entry;
 
 		public LabyrinthFireWall FireWall
@@ -33,7 +33,7 @@ namespace ProjectOne.Dungeon
 			}
 		}
 
-		public IReadOnlyList<LabyrinthChest> Chests
+		public IReadOnlyList<DungeonChest> Chests
 		{
 			get
 			{
@@ -81,7 +81,7 @@ namespace ProjectOne.Dungeon
 			}
 
 			_triggers = this.GetComponentsInChildren<LabyrinthSpawnTrigger>(true);
-			_chests = this.GetComponentsInChildren<LabyrinthChest>(true);
+			_chests = this.GetComponentsInChildren<DungeonChest>(true);
 			_entry = this.GetComponentInChildren<MapAnchor>(true);
 
 			System.Array.Sort(_triggers, compareOrder);
