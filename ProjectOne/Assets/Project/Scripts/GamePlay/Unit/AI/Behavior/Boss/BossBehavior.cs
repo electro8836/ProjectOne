@@ -10,7 +10,7 @@ namespace ProjectOne.Unit.AI
 	//
 	// 역할 분담
 	//   BossPhaseRunner — 페이즈 판정, 전환 시퀀스(무적·전멸기·기믹), 현재 스킬세트 제공
-	//   여기            — 이동/조준과 "지금 무엇을 쓸까"(SkillSelector.SelectFrom)
+	//   여기            — 이동/조준과 차례 행동 시전(SkillSelector.TryCastExact, 순서는 러너가 보관)
 	//
 	// 스킬 ID 를 코드에 박지 않는다 — 세트도 관문도 전부 테이블이다 (설계 3장).
 	public sealed class BossBehavior : IAiBehavior, IAiSpawnReset
@@ -63,8 +63,9 @@ namespace ProjectOne.Unit.AI
 			}
 
 			// 사거리 밖이면 접근 — 겹침은 분리 벡터로 푼다.
+			// 순서 행동 중이면 지금 차례 스킬의 사거리까지 붙는다(평타 차례면 평타 사거리).
 			Vector2 toTarget = target.CachedPos - self.CachedPos;
-			float stopDist = Mathf.Max(getRange(self), self.Radius + target.Radius);
+			float stopDist = Mathf.Max(getActionRange(self), self.Radius + target.Radius);
 			if (toTarget.sqrMagnitude > stopDist * stopDist)
 			{
 				self.Mover.SetFacing(toTarget);
@@ -72,13 +73,13 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			// 사거리 안 — 응시하고 현재 페이즈 세트에서 고른다.
+			// 사거리 안 — 응시하고 현재 페이즈 순서의 차례 행동을 쓴다.
 			self.Mover.Stop();
 			self.Mover.SetFacing(toTarget);
 
 			if (_runner.HasPhases == true)
 			{
-				SkillSelector.SelectFrom(self, _runner.CurrentSkillSet);
+				tickSequence(self);
 				return;
 			}
 
@@ -90,6 +91,45 @@ namespace ProjectOne.Unit.AI
 		public void OnSpawnReset(UnitBase self)
 		{
 			_runner.ResetForSpawn(self);
+		}
+
+		// 차례 행동을 시도한다. 시전했으면 다음 차례로 넘기고, 쿨다운이면 기다린다.
+		// 영영 쓸 수 없는 스킬은 경고 후 건너뛴다 — 순서가 거기서 멈추면 보스가 아무것도 못 한다.
+		private void tickSequence(UnitBase self)
+		{
+			EDT.Skill action = _runner.CurrentAction;
+			if (action == EDT.Skill.None)
+			{
+				return;
+			}
+
+			bool invalid;
+			if (SkillSelector.TryCastExact(self, action, out invalid) == true)
+			{
+				_runner.AdvanceAction();
+				return;
+			}
+
+			if (invalid == true)
+			{
+				Debug.LogWarning($"[BossBehavior] 순서 행동 {action} 을(를) 시전할 수 없어 건너뜁니다 — 몬스터 {self.GetTableID()} 의 보유 세트·CastingType 을 확인하세요.");
+				_runner.AdvanceAction();
+			}
+		}
+
+		// 순서 행동 중이면 차례 스킬의 사거리, 아니면 보유 스킬의 최소 사거리.
+		private float getActionRange(UnitBase self)
+		{
+			if (_runner.HasPhases == true)
+			{
+				float range = SkillSelector.GetRange(self, _runner.CurrentAction);
+				if (range > 0f)
+				{
+					return range;
+				}
+			}
+
+			return getRange(self);
 		}
 
 		// 정지 거리는 보유 스킬의 최소 사거리다. 불변이라 최초 1회만 조회한다.

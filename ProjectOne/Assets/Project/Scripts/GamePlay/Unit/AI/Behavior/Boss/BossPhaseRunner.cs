@@ -9,7 +9,8 @@ namespace ProjectOne.Unit.AI
 	// 보스의 페이즈 상태와 전환 시퀀스를 소유한다 (BossBehavior 가 컴포지션으로 들고 있다).
 	//
 	// 흐름
-	//   평상시  — 현재 페이즈의 스킬세트를 BossBehavior 가 우선순위대로 쓴다.
+	//   평상시  — 현재 페이즈의 스킬세트를 BossBehavior 가 순서대로(Priority = 행동 순서) 하나씩 쓴다.
+	//             페이즈가 바뀌면 다음 행동부터 새 페이즈 순서의 처음을 쓴다.
 	//   전환    — HP 비율이 다음 페이즈의 HpThreshold 이하로 내려가면 보스를 무적으로 만들고
 	//             전멸기를 긴 캐스팅으로 시전하며 기믹 코어를 GimmickCount 개 뿌린다.
 	//   파훼    — 그중 GimmickRequired 개를 채우면 캐스팅을 끊고 보스를 기절시킨다.
@@ -48,8 +49,25 @@ namespace ProjectOne.Unit.AI
 		// 파훼 보상 적용용 1인 버퍼 — 프레임당 할당을 피한다.
 		private readonly List<UnitBase> _selfBuffer = new List<UnitBase>(1);
 
-		// 현재 페이즈의 스킬세트. 데이터가 없으면 빈 목록.
+		// 현재 페이즈 행동 순서에서 다음에 쓸 위치. 페이즈가 바뀌면 0으로 돌아간다.
+		private int _actionIndex;
+
+		// 현재 페이즈의 스킬세트(= 행동 순서). 데이터가 없으면 빈 목록.
 		public IReadOnlyList<EDT.Skill> CurrentSkillSet { get; private set; }
+
+		// 지금 차례인 행동. 세트가 비었으면 None.
+		public EDT.Skill CurrentAction
+		{
+			get
+			{
+				if (CurrentSkillSet == null || CurrentSkillSet.Count == 0)
+				{
+					return EDT.Skill.None;
+				}
+
+				return CurrentSkillSet[_actionIndex % CurrentSkillSet.Count];
+			}
+		}
 
 		public bool HasPhases
 		{
@@ -102,7 +120,19 @@ namespace ProjectOne.Unit.AI
 			_needed = 0;
 			_pendingIndex = -1;
 			_phaseIndex = HasPhases ? 0 : -1;
-			CurrentSkillSet = currentSet();
+			applyCurrentSet();
+		}
+
+		// 차례 행동을 마쳤다 — 다음 행동으로 넘긴다. 끝에 닿으면 처음으로 돌아간다.
+		public void AdvanceAction()
+		{
+			if (CurrentSkillSet == null || CurrentSkillSet.Count == 0)
+			{
+				_actionIndex = 0;
+				return;
+			}
+
+			_actionIndex = (_actionIndex + 1) % CurrentSkillSet.Count;
 		}
 
 		// ── 기믹 통지 ─────────────────────────────────────────────────
@@ -142,7 +172,14 @@ namespace ProjectOne.Unit.AI
 			_owner = self;
 			_phases = MonsterCatalog.GetBossPhases(self.GetTableID());
 			_phaseIndex = HasPhases ? 0 : -1;
+			applyCurrentSet();
+		}
+
+		// 페이즈가 정해질 때마다 부른다 — 새 페이즈 순서의 처음부터 행동한다.
+		private void applyCurrentSet()
+		{
 			CurrentSkillSet = currentSet();
+			_actionIndex = 0;
 		}
 
 		private IReadOnlyList<EDT.Skill> currentSet()
@@ -174,7 +211,7 @@ namespace ProjectOne.Unit.AI
 			if (phase.PhaseSkillID == EDT.Skill.None)
 			{
 				_phaseIndex = next;
-				CurrentSkillSet = currentSet();
+				applyCurrentSet();
 				return;
 			}
 
@@ -237,7 +274,7 @@ namespace ProjectOne.Unit.AI
 			if (_pendingIndex >= 0)
 			{
 				_phaseIndex = _pendingIndex;
-				CurrentSkillSet = currentSet();
+				applyCurrentSet();
 			}
 
 			_inTransition = false;
