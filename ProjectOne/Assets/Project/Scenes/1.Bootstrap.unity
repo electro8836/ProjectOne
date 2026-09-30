@@ -518,7 +518,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Boot.DevDataInjector
   _disabled: 0
   _characterLevel: 3
-  _equipSlots: []
+  _equipSlots:
+  - slot: 1
+    itemId: 1010101001
+    grade: 1
+    level: 1
+    quality: 100
   _ownedEquipments:
   - slot: 1
     itemId: 1010101001
