@@ -481,7 +481,8 @@ namespace ProjectOne.Monsters
 				Table_Monster.Row row = e.Current.Value;
 				IReadOnlyList<Table_BossMonsterPhase.Row> phases = GetBossPhases(row.ID);
 
-				if (row.MonsterType == MonsterType.Boss && phases.Count == 0)
+				// 페이즈는 보스 AI 가 구동한다 — 다른 AI 의 보스 등급(유적 코어 등)은 페이즈가 없어도 된다.
+				if (row.MonsterType == MonsterType.Boss && row.AIType == MonsterAIType.Boss && phases.Count == 0)
 				{
 					Debug.LogWarning($"[MonsterCatalog] 보스 {row.ID}({row.Name}) 에 BossMonsterPhase 행이 없습니다 — 일반 몬스터처럼 동작합니다.");
 					issues++;

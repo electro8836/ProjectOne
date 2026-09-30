@@ -19,6 +19,8 @@ namespace ProjectOne.Dungeon
 					return new RiftDungeonMode();
 				case EDT.Dungeon.Labyrinth:
 					return new LabyrinthDungeonMode();
+				case EDT.Dungeon.Ruins:
+					return new RuinsDungeonMode();
 				default:
 					Debug.LogError($"[StageModeFactory] 대응하는 모드가 없는 던전 종류: {dungeonType}");
 					return null;

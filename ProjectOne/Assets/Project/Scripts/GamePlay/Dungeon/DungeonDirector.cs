@@ -87,6 +87,10 @@ namespace ProjectOne.Dungeon
 		// 사망 애니메이션과 카메라 줌이 돈다. 그 구간에도 타이머는 멈춰 있어야 한다.
 		private bool _timerPaused;
 
+		// 모드가 이 판의 제한시간을 끝낸 상태(유적 코어 파괴 등). 사망/부활이 켜고 끄는 _timerPaused 와 따로 둔다 —
+		// 부활하면서 _timerPaused 가 풀려도 다시 흐르면 안 된다.
+		private bool _timerStopped;
+
 		// 플로우필드 재베이크 임계값 — 기준 히어로가 다른 셀로 이동했을 때만 재계산
 		private Vector3Int _lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
@@ -98,6 +102,12 @@ namespace ProjectOne.Dungeon
 
 		// 남은 제한시간(초). 무제한 단계면 0 이다.
 		public float RemainTime => _remainTime;
+
+		// 이 판의 남은 시간을 지금 값에 고정한다. 다음 단계·재도전(startStage)에서 풀린다.
+		public void StopTimer()
+		{
+			_timerStopped = true;
+		}
 
 		// 진행 중인 던전 종류. 아직 Begin 전이면 None 이다.
 		public EDT.Dungeon DungeonType => (_ctx != null) ? _ctx.DungeonType : EDT.Dungeon.None;
@@ -200,7 +210,7 @@ namespace ProjectOne.Dungeon
 		// 제한시간 카운트다운. 0 에 닿으면 진행 루프가 다음 프레임에 실패로 종료한다.
 		private void updateRemainTime()
 		{
-			if (_hasTimeLimit == false || _timedOut == true || _ending == true || _timerPaused == true)
+			if (_hasTimeLimit == false || _timedOut == true || _ending == true || _timerPaused == true || _timerStopped == true)
 			{
 				return;
 			}
@@ -311,6 +321,7 @@ namespace ProjectOne.Dungeon
 			_remainTime = _hasTimeLimit ? _dungeon.TimeLimit : 0f;
 			_timedOut = false;
 			_timerPaused = false;
+			_timerStopped = false;
 
 			EventManager.Instance.Publish(new DungeonStageStartedEvent(_ctx.DungeonType, _ctx.Stage));
 
@@ -457,6 +468,14 @@ namespace ProjectOne.Dungeon
 
 				DungeonClearResponse labyrinthResp = settleLabyrinth();
 				restart = await showDungeonResultAsync(labyrinthResp, _cts.Token);
+			}
+			else if (victory == true && _forcedLobbyReturn == false && _ctx.DungeonType == EDT.Dungeon.Ruins)
+			{
+				// 유적 — 미궁과 같이 로컬로 기록·지급한다. 포탈 진입이 곧 끝이라 결과창을 바로 연다.
+				_grantedEquipments.Clear();
+
+				DungeonClearResponse ruinsResp = settleRuins();
+				restart = await showDungeonResultAsync(ruinsResp, _cts.Token);
 			}
 			else if (victory == true && _forcedLobbyReturn == false)
 			{
@@ -763,7 +782,39 @@ namespace ProjectOne.Dungeon
 				ProjectOne.Reward.RewardGranter.Grant(row.ClearRewardGroupID, ProjectOne.Reward.RewardContext.DungeonClear, shown);
 			}
 
-			// 장비는 인스턴스로, 나머지는 dto 로 결과창에 싣는다 — 결과창이 두 경로를 따로 그린다.
+			DungeonClearResponse resp = buildLocalResponse(shown);
+
+			Debug.Log($"[DungeonDirector] 미궁 정산 — Stage {_ctx.Stage}, 보상 {shown.Count}건");
+			return resp;
+		}
+
+		// ── 유적 정산 ─────────────────────────────────────────────────
+		//
+		// 상자 보상은 열 때 이미 지급됐다. 클리어 보상은 없고 기록 갱신과 결과창 표시만 한다.
+		// TODO(STEP 14) — 지금은 로컬 지급이다. 서버 권위로 옮길 때 여기와 RuinsDungeonMode.openChest 를 함께 바꾼다.
+		private DungeonClearResponse settleRuins()
+		{
+			DungeonProgress.MarkStageCleared(EDT.Dungeon.Ruins, _ctx.Stage);
+			EventManager.Instance.Publish(new DungeonStageClearedEvent(EDT.Dungeon.Ruins, _ctx.Stage));
+
+			List<ProjectOne.Reward.GrantedReward> shown = new List<ProjectOne.Reward.GrantedReward>();
+
+			RuinsDungeonMode mode = _currentMode as RuinsDungeonMode;
+			if (mode != null)
+			{
+				shown.AddRange(mode.GrantedRewards);
+			}
+
+			DungeonClearResponse resp = buildLocalResponse(shown);
+
+			Debug.Log($"[DungeonDirector] 유적 정산 — Stage {_ctx.Stage}, 보상 {shown.Count}건");
+			return resp;
+		}
+
+		// 로컬 지급분을 결과창 응답으로 옮긴다.
+		// 장비는 인스턴스로, 나머지는 dto 로 결과창에 싣는다 — 결과창이 두 경로를 따로 그린다.
+		private DungeonClearResponse buildLocalResponse(List<ProjectOne.Reward.GrantedReward> shown)
+		{
 			List<GrantedRewardDto> dtos = new List<GrantedRewardDto>();
 			for (int i = 0; i < shown.Count; i++)
 			{
@@ -783,8 +834,6 @@ namespace ProjectOne.Dungeon
 
 			DungeonClearResponse resp = new DungeonClearResponse();
 			resp.rewards = dtos.ToArray();
-
-			Debug.Log($"[DungeonDirector] 미궁 정산 — Stage {_ctx.Stage}, 보상 {shown.Count}건");
 			return resp;
 		}
 

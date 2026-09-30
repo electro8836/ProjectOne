@@ -421,6 +421,21 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 유적 던전 상자 개봉 수 / 남은 열쇠 변경. 시작 시 1회(0/총수, 보유 열쇠) 발행한다.
+		public readonly struct RuinsChestChangedEvent
+		{
+				public readonly int Opened;
+				public readonly int Total;
+				public readonly int KeyRemaining;
+
+				public RuinsChestChangedEvent(int opened, int total, int keyRemaining)
+				{
+						this.Opened = opened;
+						this.Total = total;
+						this.KeyRemaining = keyRemaining;
+				}
+		}
+
 		// 코스튬 착용 변경 알림 (무기/바디 코스튬 착용·해제).
 		// 무엇이 바뀌었는지 구분할 소비자가 없어 값을 싣지 않는다 — 받는 쪽은 외형을 다시 그리기만 한다.
 		public readonly struct CostumeChangeEvent

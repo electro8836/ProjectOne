@@ -326,6 +326,39 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - RuinsDungeon
+            {
+                CurrentFile = Table_RuinsDungeon.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_RuinsDungeon._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - RuinsCorePhase
+            {
+                CurrentFile = Table_RuinsCorePhase.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_RuinsCorePhase._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - RuinsHazard
+            {
+                CurrentFile = Table_RuinsHazard.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_RuinsHazard._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - WeaponMastery
             {
                 CurrentFile = Table_WeaponMastery.Filename;

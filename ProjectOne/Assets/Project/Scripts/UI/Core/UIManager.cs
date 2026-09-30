@@ -355,6 +355,8 @@ namespace ProjectOne.UI
 					return "UIPrefab_RiftDungeon";
 				case EDT.Dungeon.Labyrinth:
 					return "UIPrefab_LabyrinthDungeon";
+				case EDT.Dungeon.Ruins:
+					return "UIPrefab_RuinsDungeon";
 			}
 
 			return string.Empty;
@@ -1249,6 +1251,37 @@ namespace ProjectOne.UI
 
 			GameObject go = Instantiate(prefab, _popupCanvas.transform);
 			LabyrinthDungeonPopup popup = go.GetComponent<LabyrinthDungeonPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(address);
+				return;
+			}
+
+			await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(address);
+			}
+		}
+
+		// 유적던전 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		public async UniTask ShowRuinsDungeonPopupAsync(string address, CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			RuinsDungeonPopup popup = go.GetComponent<RuinsDungeonPopup>();
 			if (popup == null)
 			{
 				Destroy(go);
