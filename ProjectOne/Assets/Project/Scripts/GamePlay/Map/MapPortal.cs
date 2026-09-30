@@ -3,6 +3,7 @@ using EDT;
 using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.Field;
+using ProjectOne.UI;
 using ProjectOne.Unit;
 
 namespace ProjectOne.Map
@@ -14,6 +15,7 @@ namespace ProjectOne.Map
 	//
 	// 목적지 필드의 ReqQuestID 를 아직 클리어하지 못했으면 잠긴다. 잠긴 동안은 장막(MapBlocker)이
 	// 길을 막고 구역 진입도 무시한다. 퀘스트 상태가 바뀔 때마다 다시 평가한다.
+	// 잠긴 동안 안내 영역(_warningArea)에 들어오면 해금 조건(선행 퀘스트명)을 제한 메시지로 띄운다.
 	//
 	// Physics2D 트리거를 쓰지 않는다 — NpcProximityTrigger 와 같은 이유로 히어로 좌표만 비교한다.
 	public class MapPortal : MonoBehaviour
@@ -30,7 +32,13 @@ namespace ProjectOne.Map
 		[Tooltip("잠긴 동안 켜지는 장막 (검정 스프라이트 + MapBlocker)")]
 		[SerializeField] private GameObject _curtain;
 
+		[Tooltip("잠긴 동안 히어로가 들어오면 해금 조건을 띄우는 영역. 장막 앞까지 덮도록 장막보다 넓게 둔다.")]
+		[SerializeField] private BoxCollider2D _warningArea;
+
 		private bool _isLocked;
+
+		// 해금 조건 안내를 띄운 상태. 바뀔 때만 Show/Hide 한다 — 제한 메시지는 Hide 전까지 떠 있다.
+		private bool _warningShown;
 
 		// 구역 안에 있는 동안 켜져 있는 빗장. 벗어났다 다시 들어와야 재발동한다.
 		private bool _inside;
@@ -60,6 +68,7 @@ namespace ProjectOne.Map
 		private void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<QuestChangeEvent>(onQuestChanged);
+			setWarning(false);
 		}
 
 		private void Update()
@@ -67,6 +76,9 @@ namespace ProjectOne.Map
 			if (_isLocked == true)
 			{
 				_inside = false;
+
+				UnitBase lockedHero = findAliveHero();
+				setWarning(lockedHero != null && BoxArea.Contains(_warningArea, lockedHero.CachedPos) == true);
 				return;
 			}
 
@@ -115,6 +127,54 @@ namespace ProjectOne.Map
 			{
 				_curtain.SetActive(locked);
 			}
+
+			if (locked == false)
+			{
+				setWarning(false);
+			}
+		}
+
+		// 해금 조건 안내 — 목적지 필드의 ReqQuestID 퀘스트명을 띄운다.
+		private void setWarning(bool show)
+		{
+			if (_warningShown == show || UIManager.HasInstance == false)
+			{
+				return;
+			}
+
+			_warningShown = show;
+
+			if (show == false)
+			{
+				UIManager.Instance.HideWarningMessage();
+				return;
+			}
+
+			string message = buildWarningMessage();
+			if (message == null)
+			{
+				return;
+			}
+
+			UIManager.Instance.ShowWarningMessage(message);
+		}
+
+		private string buildWarningMessage()
+		{
+			Table_Field.Row field = Table_Field.Get(_targetFieldId);
+			if (field == null)
+			{
+				return null;
+			}
+
+			Table_Quest.Row quest = Table_Quest.Get(field.ReqQuestID);
+			if (quest == null)
+			{
+				Debug.LogError($"[MapPortal] Table_Quest.Get({field.ReqQuestID}) == null — {this.name}");
+				return null;
+			}
+
+			return $"\"{quest.Name}\" 퀘스트 완료 후 개방";
 		}
 
 		// 장막이 실제로 바뀐 경우에만 차단 캐시를 다시 굽는다 — 진행도 갱신마다 이벤트가 온다.
@@ -190,6 +250,10 @@ namespace ProjectOne.Map
 				Gizmos.color = Color.green;
 				Gizmos.DrawWireSphere(_arrivalPoint.position, 0.3f);
 			}
+
+#if UNITY_EDITOR
+			BoxArea.DrawGizmo(_warningArea, Color.yellow);
+#endif
 		}
 	}
 }
