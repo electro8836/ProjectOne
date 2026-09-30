@@ -6,6 +6,7 @@ using ProjectOne.Currency;
 using ProjectOne.Event;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
+using ProjectOne.Quests;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
 
@@ -118,6 +119,11 @@ namespace ProjectOne.Boot
 		[SerializeField] private int _equippedBodyCostume;
 		[SerializeField] private int _equippedWeaponCostume;
 
+		// 이 퀘스트를 진행 중으로 시작한다. 이전 퀘스트는 전부 클리어한 것으로 본다 (0 = 저장 데이터 그대로).
+		[Header("퀘스트 진행 (진행 중 퀘스트 ID + 처치 카운터, 0 = 지정 안 함)")]
+		[SerializeField] private int _questId;
+		[SerializeField] private int _questCounter;
+
 		[Header("임시 — 체크 시 이동 중에도 공격")]
 		[SerializeField] private bool _attackWhileMoving;
 
@@ -198,10 +204,36 @@ namespace ProjectOne.Boot
 			Account.Instance.SetCostume(buildCostume());
 			Account.Instance.SetPet(buildPet());
 			Account.Instance.SetCurrency(buildCurrency());
+			applyQuest();
 			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel
 				+ ", 장착:" + _equipSlots.Count + "칸, 보유장비:" + _ownedEquipments.Count + "개"
 				+ ", 보유아이템:" + _ownedItems.Count + "종, 코스튬:" + _ownedCostumes.Count + "종"
 				+ ", 재화:" + _currencies.Count + "종, 펫:" + _pets.Count + "종");
+		}
+
+		// 퀘스트 개발 데이터 — _questId 를 진행 중으로 두고 그 이전은 전부 클리어한 것으로 만든다.
+		//
+		// 해금·NPC 등장 조건은 모두 "clearedQuestId >= 기준" 비교라 questId - 1 이면 이전 체인 전부가 충족된다.
+		// 이어서 DataLoadState 가 QuestTracker.OnDataLoaded 를 부르므로 목표가 이미 충족됐으면 거기서 완료 판정된다.
+		private void applyQuest()
+		{
+			if (_questId <= 0)
+			{
+				return;
+			}
+
+			QuestCatalog.BakedQuest baked = QuestCatalog.Get(_questId);
+			if (baked == null || baked.isValid == false)
+			{
+				Debug.LogWarning("[DevTester] 체인에 없는 퀘스트 — 퀘스트 지정을 건너뜁니다: " + _questId);
+				return;
+			}
+
+			QuestDto dto = new QuestDto();
+			dto.clearedQuestId = _questId - 1;
+			dto.current.questId = _questId;
+			dto.current.counter = (_questCounter > 0) ? _questCounter : 0;
+			Account.Instance.SetQuests(dto);
 		}
 
 		// 코스튬 개발 데이터 — 보유 목록과 착용 ID.
