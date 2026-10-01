@@ -81,6 +81,34 @@ namespace BackendFunction
 
 				response.clearedDungeons = JsonConvert.DeserializeObject<ClearedDungeonsDto>(dungeonJson);
 
+				if (ensureDomainRow("USER_MASTERY", JsonConvert.SerializeObject(new MasteryDto()), out string masteryJson, out string masteryErr) == false)
+				{
+					return FuncResult.Error(masteryErr);
+				}
+
+				response.mastery = JsonConvert.DeserializeObject<MasteryDto>(masteryJson);
+
+				if (ensureDomainRow("USER_QUEST", JsonConvert.SerializeObject(new QuestDto()), out string questJson, out string questErr) == false)
+				{
+					return FuncResult.Error(questErr);
+				}
+
+				response.quest = JsonConvert.DeserializeObject<QuestDto>(questJson);
+
+				if (ensureDomainRow("USER_PET", JsonConvert.SerializeObject(new PetDto()), out string petJson, out string petErr) == false)
+				{
+					return FuncResult.Error(petErr);
+				}
+
+				response.pet = JsonConvert.DeserializeObject<PetDto>(petJson);
+
+				if (ensureDomainRow("USER_DAILYBONUS", JsonConvert.SerializeObject(new DailyBonusDto()), out string dailyBonusJson, out string dailyBonusErr) == false)
+				{
+					return FuncResult.Error(dailyBonusErr);
+				}
+
+				response.dailyBonus = JsonConvert.DeserializeObject<DailyBonusDto>(dailyBonusJson);
+
 				return FuncResult.Json(response);
 			}
 			catch (Exception ex)

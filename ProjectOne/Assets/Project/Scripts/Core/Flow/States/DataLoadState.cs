@@ -87,6 +87,26 @@ namespace ProjectOne.Flow
 				{
 					Account.Instance.SetCostume(data.costume);
 				}
+
+				if (data.mastery != null)
+				{
+					Account.Instance.SetMastery(data.mastery);
+				}
+
+				if (data.quest != null)
+				{
+					Account.Instance.SetQuests(data.quest);
+				}
+
+				if (data.pet != null)
+				{
+					Account.Instance.SetPet(data.pet);
+				}
+
+				if (data.dailyBonus != null)
+				{
+					Account.Instance.SetDailyBonus(data.dailyBonus);
+				}
 			}
 			else
 			{

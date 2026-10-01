@@ -8,9 +8,9 @@ namespace ProjectOne.Shared
 	{
 	}
 
-	// 계정 데이터 응답 — 로그인 스냅샷 번들. 서버가 CURRENCY/INVENTORY/CHARACTER 를 읽어 한 응답으로 조립한다.
+	// 계정 데이터 응답 — 로그인 스냅샷 번들. 서버가 USER_* 도메인 테이블을 읽어 한 응답으로 조립한다.
 	// 신규 계정이면 서버가 기본값(스타터)을 생성해 채워 반환한다.
-	// 향후 스킬/프로필도 같은 응답에 필드만 추가한다(테이블 분리 ≠ 패킷 분리).
+	// 도메인이 늘면 같은 응답에 필드만 추가한다(테이블 분리 ≠ 패킷 분리).
 	[System.Serializable]
 	public class GetUserDataResponse : ServerResponse
 	{
@@ -19,5 +19,9 @@ namespace ProjectOne.Shared
 		public LoadoutDto loadout;
 		public ClearedDungeonsDto clearedDungeons;
 		public CostumeDto costume;
+		public MasteryDto mastery;
+		public QuestDto quest;
+		public PetDto pet;
+		public DailyBonusDto dailyBonus;
 	}
 }
