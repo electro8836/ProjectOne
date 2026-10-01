@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using BackEnd;
-using LitJson;
 using Newtonsoft.Json;
 using ProjectOne.Shared;
 
@@ -31,7 +30,7 @@ namespace BackendFunction
 
 				// 1. 인벤토리 로드 → 장착하려는 UID 보유·중복 검증(클라 값 불신).
 				//    0번 자리는 EquipSlotTypes.None 이라 비어 있어야 한다.
-				if (loadMyRow("USER_INVENTORY", out InventoryDto inventory, out string invErr) == false)
+				if (MyData.Load("USER_INVENTORY", out InventoryDto inventory, out string invErr) == false)
 				{
 					return FuncResult.Error(invErr);
 				}
@@ -62,7 +61,7 @@ namespace BackendFunction
 				}
 
 				// 2. 로드아웃 로드 → 슬롯만 교체(레벨·경험치 보존).
-				if (loadMyRow("USER_LOADOUT", out LoadoutDto loadout, out string loadoutErr) == false)
+				if (MyData.Load("USER_LOADOUT", out LoadoutDto loadout, out string loadoutErr) == false)
 				{
 					return FuncResult.Error(loadoutErr);
 				}
@@ -121,34 +120,6 @@ namespace BackendFunction
 			}
 
 			return null;
-		}
-
-		// 내 도메인 행(유저당 1행)의 Data JSON 을 읽는다. 행이 없으면 실패 — GetUserData 가 먼저 ensure 한다.
-		private static bool loadMyRow<T>(string tableName, out T data, out string err) where T : class, new()
-		{
-			data = null;
-			var getResult = Backend.GameData.GetMyData(tableName, new Where());
-			if (!getResult.IsSuccess())
-			{
-				err = tableName + " Get Failed: " + getResult.GetErrorCode();
-				return false;
-			}
-
-			JsonData rows = getResult.FlattenRows();
-			if (rows.Count == 0)
-			{
-				err = tableName + " row not found";
-				return false;
-			}
-
-			data = JsonConvert.DeserializeObject<T>(rows[0]["Data"].ToString());
-			if (data == null)
-			{
-				data = new T();
-			}
-
-			err = null;
-			return true;
 		}
 	}
 }

@@ -38,9 +38,17 @@
   <ItemGroup>
     <Compile Include="..\..\..\ProjectOne\Assets\Project\Scripts\Core\Network\Shared\**\*.cs"
              Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
-    <!-- 엑셀 자동생성 enum — 차트 문자열(enum 이름)을 클라와 같은 정수로 해석하려고 단일 소스로 링크한다 -->
-    <Compile Include="..\..\..\ProjectOne\Assets\Project\Scripts\Core\ExcelData\edt_enums.cs"
-             Link="Shared\edt_enums.cs" />
+    <!-- 엑셀 자동생성 테이블 코드(Loader·Table_*·edt_enums) — 클라와 같은 파서로 같은 bytes 를 읽는다 -->
+    <Compile Include="..\..\..\ProjectOne\Assets\Project\Scripts\Core\ExcelData\*.cs"
+             Link="ExcelData\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!-- 테이블 데이터 — 펑션 패키지(publish.zip)의 Tables\ 에 동봉한다. 테이블을 바꾸면 재배포해야 서버에 반영된다 -->
+  <ItemGroup>
+    <Content Include="..\..\..\ProjectOne\Assets\Project\Data\Tables\*.bytes"
+             Link="Tables\%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest"
+             CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
     

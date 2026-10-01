@@ -22,6 +22,7 @@
 		public int dungeonType;		// EDT.Dungeon 정수
 		public int stage;
 		public bool cleared;
+		public int masteryId;		// 클리어 시점 장착 무기의 마스터리(WeaponMastery, 0 = 미착용) — 경험치 적립 대상
 	}
 
 	// exp = 보상 가산 후 캐릭터의 누적 경험치(권위값). rewards = 서버가 확정한 실제 획득 목록.
@@ -29,6 +30,7 @@
 	public class DungeonClearResponse : ServerResponse
 	{
 		public int exp;
-		public GrantedRewardDto[] rewards;
+		public GrantedRewardDto[] rewards;			// 스택 아이템·재화
+		public EquipmentInstanceDto[] equipments;	// 장비 — 서버가 UID·등급·품질을 확정한 인스턴스
 	}
 }

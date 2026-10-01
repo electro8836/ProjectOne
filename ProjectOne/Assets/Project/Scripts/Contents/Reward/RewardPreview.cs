@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EDT;
 using ProjectOne.Items;
+using ProjectOne.Shared;
 
 namespace ProjectOne.Reward
 {
@@ -35,10 +36,10 @@ namespace ProjectOne.Reward
 				return;
 			}
 
-			IReadOnlyList<RewardCatalog.RewardEntry> entries = RewardCatalog.GetGroup(groupId);
+			IReadOnlyList<RewardTable.RewardEntry> entries = RewardCatalog.GetGroup(groupId);
 			for (int i = 0; i < entries.Count; i++)
 			{
-				RewardCatalog.RewardEntry entry = entries[i];
+				RewardTable.RewardEntry entry = entries[i];
 				if (entry.isValid == false)
 				{
 					continue;

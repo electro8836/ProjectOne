@@ -6,6 +6,7 @@ using EDT;
 using ProjectOne.Dungeon;
 using ProjectOne.Event;
 using ProjectOne.Loading;
+using ProjectOne.Network;
 using ProjectOne.Map;
 using ProjectOne.Monsters;
 using ProjectOne.Npcs;
@@ -223,6 +224,9 @@ namespace ProjectOne.Field
 			}
 
 			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToField, ct);
+
+			// 액트 교체도 맵 이동이다 — 필드 세션을 교체한다(남은 처치 정산 + 새 시드).
+			await FieldSessionRotation.RotateAsync(ct);
 
 			// 이전 액트의 잔존 몬스터를 먼저 걷어낸다 — 맵이 사라지면 갈 곳 없는 유닛이 남는다.
 			if (MonsterSpawnManager.HasInstance == true)

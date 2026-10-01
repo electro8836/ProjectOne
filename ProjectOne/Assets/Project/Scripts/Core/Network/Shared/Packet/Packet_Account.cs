@@ -23,5 +23,6 @@ namespace ProjectOne.Shared
 		public QuestDto quest;
 		public PetDto pet;
 		public DailyBonusDto dailyBonus;
+		public FieldSessionDto field;
 	}
 }

@@ -11,5 +11,9 @@ namespace ProjectOne.Shared
 		public const string GetUserData = "GetUserData";
 		public const string DungeonClear = "DungeonClear";
 		public const string SaveLoadout = "SaveLoadout";
+		public const string FieldSettle = "FieldSettle";
+		public const string FieldSessionRotate = "FieldSessionRotate";
+		public const string SaveMasteryTree = "SaveMasteryTree";
+		public const string UseSkillPointItem = "UseSkillPointItem";
 	}
 }

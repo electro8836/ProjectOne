@@ -1,7 +1,6 @@
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using EDT;
+using ProjectOne.Shared;
 using UnityEngine;
 
 namespace ProjectOne.Reward
@@ -18,32 +17,6 @@ namespace ProjectOne.Reward
 	// MonsterCatalog 와 동일 패턴 — BootState 가 테이블 로드 직후 Build() 를 호출한다.
 	public static class RewardCatalog
 	{
-		// 조건 행 하나와 그 조건에 매칭되는 아이템 후보. Build 시점에 확정된다.
-		public sealed class PoolEntry
-		{
-			public Table_RewardItemPool.Row row;
-			public readonly List<int> candidates = new List<int>();
-		}
-
-		// Reward.TargetID 는 string 이라 RewardType 별로 해석이 다르다. 그 결과를 미리 굽는다.
-		public sealed class RewardEntry
-		{
-			public Table_Reward.Row row;
-
-			public int itemId;				// RewardType.Item
-			public int poolId;				// RewardType.ItemPool
-			public EDT.Currency currency;	// RewardType.Currency
-
-			// 해석에 실패한 행은 지급 대상에서 제외한다. 경고는 Build 가 이미 냈다.
-			public bool isValid;
-		}
-
-		private static readonly Dictionary<int, List<RewardEntry>> _byGroup = new Dictionary<int, List<RewardEntry>>();
-		private static readonly Dictionary<int, List<PoolEntry>> _byPool = new Dictionary<int, List<PoolEntry>>();
-
-		private static readonly List<RewardEntry> _emptyRewards = new List<RewardEntry>();
-		private static readonly List<PoolEntry> _emptyPools = new List<PoolEntry>();
-
 		private static bool _built;
 
 		public static bool IsBuilt
@@ -51,16 +24,13 @@ namespace ProjectOne.Reward
 			get { return _built; }
 		}
 
+		// 인덱싱은 공유 코어(RewardTable)가 하고, 여기서는 그 위에 정합성 검증 로그만 얹는다.
 		public static void Build()
 		{
-			_byGroup.Clear();
-			_byPool.Clear();
-
-			buildPools();
-			buildRewards();
+			RewardTable.Build();
 
 			_built = true;
-			Debug.Log($"[RewardCatalog] 구축 완료 — 그룹:{_byGroup.Count} 풀:{_byPool.Count} 조건:{Table_RewardItemPool.All().Count} 보상행:{Table_Reward.All().Count}");
+			Debug.Log($"[RewardCatalog] 구축 완료 — 그룹:{RewardTable.GroupCount} 풀:{RewardTable.PoolCount} 조건:{Table_RewardItemPool.All().Count} 보상행:{Table_Reward.All().Count}");
 
 			validate();
 		}
@@ -68,160 +38,14 @@ namespace ProjectOne.Reward
 		// ── 조회 ──────────────────────────────────────────────────────
 
 		// 보상 그룹 하나. 소비처가 이 목록을 통째로 굴린다.
-		public static IReadOnlyList<RewardEntry> GetGroup(int groupId)
+		public static IReadOnlyList<RewardTable.RewardEntry> GetGroup(int groupId)
 		{
-			List<RewardEntry> list;
-			if (_byGroup.TryGetValue(groupId, out list) == true)
-			{
-				return list;
-			}
-
-			return _emptyRewards;
+			return RewardTable.GetGroup(groupId);
 		}
 
-		public static IReadOnlyList<PoolEntry> GetPool(int poolId)
+		public static IReadOnlyList<RewardTable.PoolEntry> GetPool(int poolId)
 		{
-			List<PoolEntry> list;
-			if (_byPool.TryGetValue(poolId, out list) == true)
-			{
-				return list;
-			}
-
-			return _emptyPools;
-		}
-
-		// ── 내부: 인덱싱 ──────────────────────────────────────────────
-
-		// 조건 행마다 후보를 미리 확정한다.
-		//
-		// SubCategory 가 None 이면 "해당 MainCategory 전체" 와일드카드다. 캐시 키를
-		// (DropTier, Main, Sub) 로 두면 이 와일드카드를 조회 시점에 매번 풀어야 하므로,
-		// 조건 행 단위로 구워 두면 해석이 Build 에서 한 번만 일어난다.
-		private static void buildPools()
-		{
-			Dictionary<int, Table_RewardItemPool.Row> all = Table_RewardItemPool.All();
-			Dictionary<int, Table_RewardItemPool.Row>.Enumerator e = all.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				Table_RewardItemPool.Row row = e.Current.Value;
-				if (row.PoolID <= 0)
-				{
-					continue;
-				}
-
-				PoolEntry entry = new PoolEntry();
-				entry.row = row;
-				collectCandidates(row, entry.candidates);
-
-				List<PoolEntry> list;
-				if (_byPool.TryGetValue(row.PoolID, out list) == false)
-				{
-					list = new List<PoolEntry>();
-					_byPool.Add(row.PoolID, list);
-				}
-
-				list.Add(entry);
-			}
-		}
-
-		// DropTier 는 **정확히 일치**다 — 이하 포함이 아니다 (설계 4.2).
-		// 이하 포함으로 두면 후반 풀이 초반 아이템으로 희석된다.
-		private static void collectCandidates(Table_RewardItemPool.Row cond, List<int> buffer)
-		{
-			Dictionary<int, Table_Item.Row> all = Table_Item.All();
-			Dictionary<int, Table_Item.Row>.Enumerator e = all.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				Table_Item.Row item = e.Current.Value;
-				if (item.DropTier != cond.DropTier)
-				{
-					continue;
-				}
-
-				if (cond.MainCategory != ItemMainCategory.None && item.MainCategory != cond.MainCategory)
-				{
-					continue;
-				}
-
-				if (cond.SubCategory != ItemSubCategory.None && item.SubCategory != cond.SubCategory)
-				{
-					continue;
-				}
-
-				buffer.Add(item.ID);
-			}
-		}
-
-		private static void buildRewards()
-		{
-			Dictionary<int, Table_Reward.Row> all = Table_Reward.All();
-			Dictionary<int, Table_Reward.Row>.Enumerator e = all.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				Table_Reward.Row row = e.Current.Value;
-				if (row.GroupID <= 0)
-				{
-					continue;
-				}
-
-				RewardEntry entry = new RewardEntry();
-				entry.row = row;
-				entry.isValid = resolveTarget(row, entry);
-
-				List<RewardEntry> list;
-				if (_byGroup.TryGetValue(row.GroupID, out list) == false)
-				{
-					list = new List<RewardEntry>();
-					_byGroup.Add(row.GroupID, list);
-				}
-
-				list.Add(entry);
-			}
-		}
-
-		// TargetID 는 string 이라 RewardType 이 파싱 방법을 결정한다 (설계 3장).
-		private static bool resolveTarget(Table_Reward.Row row, RewardEntry entry)
-		{
-			switch (row.RewardType)
-			{
-				case RewardType.Item:
-				{
-					int id;
-					if (int.TryParse(row.TargetID, NumberStyles.Integer, CultureInfo.InvariantCulture, out id) == false)
-					{
-						return false;
-					}
-
-					entry.itemId = id;
-					return Table_Item.Get(id) != null;
-				}
-
-				case RewardType.ItemPool:
-				{
-					int id;
-					if (int.TryParse(row.TargetID, NumberStyles.Integer, CultureInfo.InvariantCulture, out id) == false)
-					{
-						return false;
-					}
-
-					entry.poolId = id;
-					return _byPool.ContainsKey(id);
-				}
-
-				case RewardType.Currency:
-				{
-					EDT.Currency currency;
-					if (Enum.TryParse<EDT.Currency>(row.TargetID, false, out currency) == false)
-					{
-						return false;
-					}
-
-					entry.currency = currency;
-					return currency != EDT.Currency.None;
-				}
-			}
-
-			return false;
+			return RewardTable.GetPool(poolId);
 		}
 
 		// ── 내부: 정합성 검증 (설계 8장) ──────────────────────────────
@@ -244,16 +68,16 @@ namespace ProjectOne.Reward
 		{
 			int issues = 0;
 
-			Dictionary<int, List<PoolEntry>>.Enumerator pe = _byPool.GetEnumerator();
+			Dictionary<int, List<RewardTable.PoolEntry>>.Enumerator pe = RewardTable.GetPoolEnumerator();
 			while (pe.MoveNext() == true)
 			{
 				int poolId = pe.Current.Key;
-				List<PoolEntry> entries = pe.Current.Value;
+				List<RewardTable.PoolEntry> entries = pe.Current.Value;
 
 				int weightSum = 0;
 				for (int i = 0; i < entries.Count; i++)
 				{
-					PoolEntry entry = entries[i];
+					RewardTable.PoolEntry entry = entries[i];
 					weightSum += entry.row.Weight;
 
 					// 비워두면 드랍 금지 아이템(DropTier=None)이 통째로 풀에 들어온다.
@@ -286,13 +110,13 @@ namespace ProjectOne.Reward
 			int issues = 0;
 			int sealedCount = 0;
 
-			Dictionary<int, List<RewardEntry>>.Enumerator ge = _byGroup.GetEnumerator();
+			Dictionary<int, List<RewardTable.RewardEntry>>.Enumerator ge = RewardTable.GetGroupEnumerator();
 			while (ge.MoveNext() == true)
 			{
-				List<RewardEntry> entries = ge.Current.Value;
+				List<RewardTable.RewardEntry> entries = ge.Current.Value;
 				for (int i = 0; i < entries.Count; i++)
 				{
-					RewardEntry entry = entries[i];
+					RewardTable.RewardEntry entry = entries[i];
 					Table_Reward.Row row = entry.row;
 
 					if (entry.isValid == false)
@@ -329,7 +153,7 @@ namespace ProjectOne.Reward
 		// 지급 대상에 장비가 포함될 수 있으면 EquipGradeWeightID 가 필수다 (설계 6.1).
 		// "비었으면 Item.Grade 로 고정" 같은 자동 폴백을 두지 않는다 —
 		// 의도적 고정인지 안 채운 실수인지 구분할 수 없어진다.
-		private static int validateGradeWeight(RewardEntry entry)
+		private static int validateGradeWeight(RewardTable.RewardEntry entry)
 		{
 			Table_Reward.Row row = entry.row;
 
@@ -378,7 +202,7 @@ namespace ProjectOne.Reward
 			return 0;
 		}
 
-		private static bool canYieldEquipment(RewardEntry entry)
+		private static bool canYieldEquipment(RewardTable.RewardEntry entry)
 		{
 			if (entry.isValid == false)
 			{
@@ -395,7 +219,7 @@ namespace ProjectOne.Reward
 				return false;
 			}
 
-			IReadOnlyList<PoolEntry> pool = GetPool(entry.poolId);
+			IReadOnlyList<RewardTable.PoolEntry> pool = GetPool(entry.poolId);
 			for (int i = 0; i < pool.Count; i++)
 			{
 				List<int> candidates = pool[i].candidates;

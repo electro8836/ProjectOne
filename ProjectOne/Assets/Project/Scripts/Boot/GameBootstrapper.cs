@@ -27,6 +27,9 @@ namespace ProjectOne.Boot
 			// 앱 일시정지/종료 시 미저장 장착 변경을 flush 할 전역 컴포넌트 생성(1회).
 			LoadoutSyncFlusher.Ensure();
 
+			// 필드 처치 배치 정산을 주기·일시정지·종료 시점에 보내는 전역 컴포넌트 생성(1회).
+			FieldSettleTicker.Ensure();
+
 			UnitFactory.Instance.SetHeroPrefabAddress(_heroPrefabAddress);
 			TitleState.SkipLogin = _skipLogin;
 

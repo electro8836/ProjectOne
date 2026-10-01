@@ -42,6 +42,14 @@ namespace BackendFunction
 					return new Dungeon().DungeonClear();
 				case FunctionName.SaveLoadout:
 					return new Loadout().SaveLoadout();
+				case FunctionName.FieldSettle:
+					return new FieldSettlement().FieldSettle();
+				case FunctionName.FieldSessionRotate:
+					return new FieldSettlement().FieldSessionRotate();
+				case FunctionName.SaveMasteryTree:
+					return new MasteryFunctions().SaveMasteryTree();
+				case FunctionName.UseSkillPointItem:
+					return new MasteryFunctions().UseSkillPointItem();
 				default:
 					return FuncResult.Error("unknown action: " + action);
 			}

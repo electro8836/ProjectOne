@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using BackEnd;
 using LitJson;
@@ -9,15 +10,23 @@ namespace BackendFunction
 {
 	public class Auth
 	{
-		// GetUserData — 로그인 스냅샷 번들. 서버가 USER_INFO/CURRENCY/INVENTORY 를 읽어 한 응답으로 조립한다.
-		// 신규 계정이면 USER_INFO 를 생성하고, 신규/기존 무관하게 도메인 행을 ensure(없으면 생성)해
-		// 개발 중 추가된 테이블을 기존 유저에게 자동 마이그레이션한다.
+		// 최초 지급 보상 그룹 — Reward 테이블에서 목록(기본 장비·시작 재화)을 관리한다.
+		private const int StarterRewardGroupId = 100;
+
+		// GetUserData — 로그인 스냅샷 번들. 서버가 USER_* 도메인 테이블을 읽어 한 응답으로 조립한다.
+		// 신규/기존 무관하게 도메인 행을 ensure(없으면 생성)해 개발 중 추가된 테이블을 기존 유저에게 자동 마이그레이션한다.
+		// 신규 계정이면 최초 지급 후 USER_INFO 를 생성한다(아래 4번).
 		public Stream GetUserData()
 		{
 			string tableName = "USER_INFO";
 
 			try
 			{
+				if (GameData.EnsureLoaded(out string loadErr) == false)
+				{
+					return FuncResult.Error(loadErr);
+				}
+
 				// 1. 현재 로그인한 유저의 행이 이미 존재하는지 조회
 				var getResult = Backend.GameData.GetMyData(tableName, new Where());
 
@@ -30,23 +39,13 @@ namespace BackendFunction
 				GetUserDataResponse response = new GetUserDataResponse();
 				response.success = true;
 
-				// 2. USER_INFO — 유저 존재 앵커. 신규면 생성(계정 exp 는 더 이상 사용하지 않으므로 응답에 싣지 않는다).
-				if (rows.Count == 0)
-				{
-					Param defaultParam = new Param();
-					defaultParam.Add("Exp", 0);
-
-					var insertResult = Backend.GameData.Insert(tableName, defaultParam);
-					if (!insertResult.IsSuccess())
-					{
-						return FuncResult.Error("Data Insert Failed: " + insertResult.GetErrorCode());
-					}
-				}
+				// 2. USER_INFO — 유저 존재 앵커. 생성은 최초 지급과 같은 트랜잭션에서 한다(4번).
+				bool isNewAccount = rows.Count == 0;
 
 				// 3. 도메인 행 ensure(없으면 생성) + 그 데이터를 응답 번들에 실어 보낸다.
 				//    새 도메인 테이블이 추가되면 여기 ensure + 응답 세팅 한 쌍만 더하면 된다.
 				//    (콘솔에 실제 존재하는 테이블만 대상 — 없는 테이블은 GetMyData 가 실패한다.)
-				if (ensureDomainRow("USER_CURRENCY", buildStarterCurrencyJson(), out string currencyJson, out string currencyErr) == false)
+				if (ensureDomainRow("USER_CURRENCY", JsonConvert.SerializeObject(new CurrencyDto()), out string currencyJson, out string currencyErr) == false)
 				{
 					return FuncResult.Error(currencyErr);
 				}
@@ -109,6 +108,30 @@ namespace BackendFunction
 
 				response.dailyBonus = JsonConvert.DeserializeObject<DailyBonusDto>(dailyBonusJson);
 
+				// 필드 처치 배치 정산 세션 — 로그인마다 새 시드를 발급하고 epoch 를 올린다(필드 드랍 장비 UID 대역).
+				if (ensureDomainRow("USER_FIELD", JsonConvert.SerializeObject(new FieldSessionDto()), out string fieldJson, out string fieldErr) == false)
+				{
+					return FuncResult.Error(fieldErr);
+				}
+
+				FieldSessionDto field = JsonConvert.DeserializeObject<FieldSessionDto>(fieldJson);
+				if (startFieldSession(field, out string sessionErr) == false)
+				{
+					return FuncResult.Error(sessionErr);
+				}
+
+				response.field = field;
+
+				// 4. 신규 계정 — 최초 지급(Reward 그룹) + USER_INFO 생성을 하나의 트랜잭션으로 묶는다.
+				//    USER_INFO 가 지급과 함께 생기므로, 실패하면 다음 로그인에 다시 시도되고 성공하면 다시 지급되지 않는다.
+				if (isNewAccount == true)
+				{
+					if (grantStarter(tableName, response, out string starterErr) == false)
+					{
+						return FuncResult.Error(starterErr);
+					}
+				}
+
 				return FuncResult.Json(response);
 			}
 			catch (Exception ex)
@@ -152,19 +175,55 @@ namespace BackendFunction
 			return true;
 		}
 
-		// 가챠 테스트용 스타터 재화 JSON — currencyId 는 클라와 같은 EDT.Currency 정수.
-		private static string buildStarterCurrencyJson()
+		// 새 필드 세션 — 이전 세션의 미정산 처치는 버린다(클라 원장도 로그인 때 비운다).
+		// 시드는 예측할 수 없어야 하므로 암호학적 난수로 만든다.
+		private static bool startFieldSession(FieldSessionDto field, out string err)
 		{
-			CurrencyDto starter = new CurrencyDto();
-			CurrencyAmountDto gold = new CurrencyAmountDto();
-			gold.currencyId = (int)EDT.Currency.Gold;
-			gold.amount = 100000;
-			starter.amounts.Add(gold);
-			CurrencyAmountDto dia = new CurrencyAmountDto();
-			dia.currencyId = (int)EDT.Currency.Dia;
-			dia.amount = 10000;
-			starter.amounts.Add(dia);
-			return JsonConvert.SerializeObject(starter);
+			FieldSessions.Renew(field);
+
+			Param param = new Param();
+			param.Add("Data", JsonConvert.SerializeObject(field));
+			var updateResult = Backend.GameData.Update("USER_FIELD", new Where(), param);
+			if (!updateResult.IsSuccess())
+			{
+				err = "USER_FIELD Update Failed: " + updateResult.GetErrorCode();
+				return false;
+			}
+
+			err = null;
+			return true;
+		}
+
+		// 최초 지급 — 응답 DTO 에 직접 반영한 뒤 그대로 저장한다(응답과 저장값이 같다).
+		private static bool grantStarter(string infoTableName, GetUserDataResponse response, out string err)
+		{
+			List<RolledReward> rolled = new List<RolledReward>();
+			RewardRoller.Roll(StarterRewardGroupId, 0, new ServerRandomSource(), rolled, null);
+
+			RewardApplier applier = new RewardApplier(response.inventory, response.currency);
+			applier.ApplyAll(rolled);
+
+			Param infoParam = new Param();
+			infoParam.Add("Exp", 0);
+			Param inventoryParam = new Param();
+			inventoryParam.Add("Data", JsonConvert.SerializeObject(response.inventory));
+			Param currencyParam = new Param();
+			currencyParam.Add("Data", JsonConvert.SerializeObject(response.currency));
+
+			List<TransactionValue> tx = new List<TransactionValue>();
+			tx.Add(TransactionValue.SetInsert(infoTableName, infoParam));
+			tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), inventoryParam));
+			tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), currencyParam));
+
+			var txResult = Backend.GameData.TransactionWriteV2(tx);
+			if (!txResult.IsSuccess())
+			{
+				err = "Starter grant failed: " + txResult.GetErrorCode();
+				return false;
+			}
+
+			err = null;
+			return true;
 		}
 
 		// 빈 인벤토리 JSON

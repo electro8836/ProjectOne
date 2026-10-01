@@ -2,6 +2,8 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using BackEnd;
 using EDT;
+using ProjectOne.Field;
+using ProjectOne.Mastery;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
 using ProjectOne.Utils;
@@ -18,6 +20,9 @@ namespace ProjectOne.Network
 
 		// 장착 저장 전송 진행 중 가드 — 중복 flush(닫기+pause 동시 등) 방지.
 		private bool _loadoutFlushing;
+
+		// 스킬트리 저장 전송 중인 트리 — 실패하면 다시 dirty 로 되돌린다. null 이면 전송 중이 아니다.
+		private MasteryProgressDto[] _masteryInFlight;
 
 		// 현재 로그인 성공 상태 — 실패해도 게임은 로컬 데이터로 진행 가능.
 		public bool IsLoggedIn { get; private set; }
@@ -124,6 +129,8 @@ namespace ProjectOne.Network
 				return;
 			}
 
+			// 필드 처치 배치를 먼저 큐에 넣는다 — SendQueue 가 순서대로 처리하므로 서버는 배치를 먼저 반영한 뒤 클리어를 계산한다.
+			FlushFieldBatch();
 			_caller.Invoke<DungeonClearRequest, DungeonClearResponse>(FunctionName.DungeonClear, request, callback);
 		}
 
@@ -134,6 +141,9 @@ namespace ProjectOne.Network
 			{
 				return;
 			}
+
+			// 필드에서 주운 장비를 장착했을 수 있다 — 배치를 먼저 보내 서버 인벤토리에 넣어 둔다.
+			FlushFieldBatch();
 
 			// 장착 저장은 화면 닫기·일시정지 시점의 백그라운드 flush — 딤으로 입력을 막지 않는다.
 			_caller.Invoke<SaveLoadoutRequest, SaveLoadoutResponse>(FunctionName.SaveLoadout, request, callback, false);
@@ -183,6 +193,132 @@ namespace ProjectOne.Network
 			{
 				Debug.LogWarning($"[NetworkManager] 장착 저장 실패 — dirty 유지: {error}");
 			}
+		}
+
+		// ── 마스터리 ──────────────────────────────────────────────────────
+
+		// 바뀐 스킬트리의 최종 상태를 저장한다(마스터리 화면 닫기·앱 일시정지/종료 트리거).
+		// 서버는 서버 경험치 기준으로 가용 포인트를 검증한다 — 아직 올라가지 않은 필드 경험치로 찍었을 수 있어 배치를 먼저 보낸다.
+		public void FlushMasteryIfDirty()
+		{
+			if (IsLoggedIn == false || _masteryInFlight != null)
+			{
+				return;
+			}
+
+			MasteryBook book = Account.Instance.Mastery;
+			if (book.IsTreeDirty == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+
+			SaveMasteryTreeRequest request = new SaveMasteryTreeRequest();
+			request.trees = book.TakeDirtyTrees();
+			_masteryInFlight = request.trees;
+			_caller.Invoke<SaveMasteryTreeRequest, SaveMasteryTreeResponse>(FunctionName.SaveMasteryTree, request, onMasteryFlushed, false);
+		}
+
+		// 실패하면(포인트 부족 등) 다시 dirty 로 표시해 다음 트리거에 재전송한다 — 필드 경험치가 정산되면 통과한다.
+		private void onMasteryFlushed(bool success, SaveMasteryTreeResponse data, string error)
+		{
+			if (success == false)
+			{
+				Debug.LogWarning($"[NetworkManager] 스킬트리 저장 실패 — 다음에 재전송: {error}");
+				Account.Instance.Mastery.RestoreDirtyTrees(_masteryInFlight);
+			}
+
+			_masteryInFlight = null;
+		}
+
+		// 지식의 서 사용 — 로컬에서 이미 차감·적용했다. 서버가 같은 차감·포인트 증가를 저장한다.
+		public void RequestUseSkillPointItem(int itemId, WeaponMastery target)
+		{
+			if (IsLoggedIn == false)
+			{
+				return;
+			}
+
+			// 필드에서 주운 책일 수 있다 — 배치를 먼저 보내 서버 인벤토리에 넣어 둔다.
+			FlushFieldBatch();
+
+			UseSkillPointItemRequest request = new UseSkillPointItemRequest();
+			request.itemId = itemId;
+			request.masteryId = (int)target;
+			_caller.Invoke<UseSkillPointItemRequest, UseSkillPointItemResponse>(FunctionName.UseSkillPointItem, request, onSkillPointItemUsed, false);
+		}
+
+		private void onSkillPointItemUsed(bool success, UseSkillPointItemResponse data, string error)
+		{
+			if (success == false)
+			{
+				Debug.LogWarning($"[NetworkManager] 지식의 서 서버 반영 실패 — 다음 로그인에 서버값으로 정리된다: {error}");
+			}
+		}
+
+		// ── 필드 처치 배치 정산 ───────────────────────────────────────────
+
+		// 정리가 끝난 처치를 앞에서부터 묶어 보낸다(주기·일시정지·종료·다른 펑션 직전 트리거).
+		// 원장이 전송 중 표시를 들고 있으므로 응답 전 재호출은 빈 배치가 되어 아무것도 보내지 않는다.
+		public void FlushFieldBatch()
+		{
+			if (IsLoggedIn == false)
+			{
+				return;
+			}
+
+			FieldKillLedger ledger = FieldKillLedger.Instance;
+			FieldKillDto[] kills = ledger.BuildBatch();
+			if (kills == null)
+			{
+				return;
+			}
+
+			FieldSettleRequest request = new FieldSettleRequest();
+			request.sessionSeed = ledger.Seed;
+			request.kills = kills;
+			_caller.Invoke<FieldSettleRequest, FieldSettleResponse>(FunctionName.FieldSettle, request, onFieldSettled, false);
+		}
+
+		// 로딩 시점 세션 교체 — 남은 처치 정산 + 새 시드. 주기 배치(FieldSettle)와 action 이 달라 중복 차단에 걸리지 않는다.
+		public void RequestFieldRotate(long sessionSeed, FieldKillDto[] kills, ResponseCallback<FieldRotateResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FieldRotateRequest request = new FieldRotateRequest();
+			request.sessionSeed = sessionSeed;
+			request.kills = kills;
+			_caller.Invoke<FieldRotateRequest, FieldRotateResponse>(FunctionName.FieldSessionRotate, request, callback, false);
+		}
+
+		// 성공이면 반영분을 지운다. 거절(검증 실패·인덱스 불일치)도 nextKillIndex 를 실어 오므로 그 기준으로 정리한다.
+		// 통신 자체가 실패했으면(응답 없음) 원장을 그대로 두고 다음 트리거에 다시 보낸다.
+		private void onFieldSettled(bool success, FieldSettleResponse data, string error)
+		{
+			if (data == null)
+			{
+				Debug.LogWarning($"[NetworkManager] 필드 정산 통신 실패 — 다음에 재전송: {error}");
+				FieldKillLedger.Instance.OnSendFailed();
+				return;
+			}
+
+			if (success == false)
+			{
+				Debug.LogError($"[NetworkManager] 필드 정산 거절 — 서버 기준으로 정리(nextKillIndex {data.nextKillIndex}): {error}");
+			}
+
+			// 서버가 nextKillIndex 를 모르는 실패(파싱 오류 등)는 0 으로 온다 — 이때는 지우지 않고 재전송한다.
+			if (data.nextKillIndex <= 0)
+			{
+				FieldKillLedger.Instance.OnSendFailed();
+				return;
+			}
+
+			FieldKillLedger.Instance.OnSettled(data.nextKillIndex);
 		}
 
 		// 미로그인 상태면 즉시 실패 콜백 — 오프라인/Dev 경로(DevTester 는 Account 직접 설정이라 무관).

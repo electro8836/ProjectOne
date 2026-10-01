@@ -102,7 +102,8 @@ namespace ProjectOne.Dungeon
 		{
 		}
 
-		public void OnDeactivate()
+		// 풀 반환 시점 — 줍지 않고 사라진 것을 알아야 하는 파생(RewardDrop)이 덮는다.
+		public virtual void OnDeactivate()
 		{
 		}
 

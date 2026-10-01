@@ -19,6 +19,10 @@ namespace ProjectOne.Mastery
 		// 전역 업적 포인트 — 전 마스터리가 각자 전액을 쓴다 (설계 7.1).
 		private int _achievementPoint;
 
+		// 서버에 아직 저장하지 않은 트리 변경(투자·회수·초기화)이 있는 마스터리.
+		// 클릭은 로컬에 즉시 반영하고, 화면 닫기·일시정지·종료 때 묶어서 보낸다(SaveMasteryTree).
+		private readonly HashSet<WeaponMastery> _dirtyTrees = new HashSet<WeaponMastery>();
+
 		public MasteryBook(MasteryDto dto)
 		{
 			buildFromDto(dto);
@@ -142,6 +146,7 @@ namespace ProjectOne.Mastery
 				return false;
 			}
 
+			_dirtyTrees.Add(id);
 			notifyChanged(id);
 			return true;
 		}
@@ -167,6 +172,7 @@ namespace ProjectOne.Mastery
 				return false;
 			}
 
+			_dirtyTrees.Add(id);
 			notifyChanged(id);
 			return true;
 		}
@@ -194,6 +200,7 @@ namespace ProjectOne.Mastery
 			}
 
 			progress.ResetTree();
+			_dirtyTrees.Add(id);
 			notifyChanged(id);
 		}
 
@@ -224,6 +231,45 @@ namespace ProjectOne.Mastery
 			}
 
 			_achievementPoint = value < 0 ? 0 : value;
+		}
+
+		// ── 서버 저장 ─────────────────────────────────────────────────
+
+		public bool IsTreeDirty
+		{
+			get { return _dirtyTrees.Count > 0; }
+		}
+
+		// 바뀐 트리의 현재 상태를 꺼내고 표시를 지운다. 전송 중에 또 바뀌면 다시 표시되어 다음 저장에 실린다.
+		public MasteryProgressDto[] TakeDirtyTrees()
+		{
+			List<MasteryProgressDto> trees = new List<MasteryProgressDto>(_dirtyTrees.Count);
+			HashSet<WeaponMastery>.Enumerator e = _dirtyTrees.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				MasteryProgress progress = Find(e.Current);
+				if (progress != null)
+				{
+					trees.Add(progress.ToDto());
+				}
+			}
+
+			_dirtyTrees.Clear();
+			return trees.ToArray();
+		}
+
+		// 저장 실패 — 꺼냈던 마스터리를 다시 표시해 다음 트리거에 재전송한다.
+		public void RestoreDirtyTrees(MasteryProgressDto[] trees)
+		{
+			if (trees == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < trees.Length; i++)
+			{
+				_dirtyTrees.Add((WeaponMastery)trees[i].masteryId);
+			}
 		}
 
 		// ── 직렬화 ────────────────────────────────────────────────────

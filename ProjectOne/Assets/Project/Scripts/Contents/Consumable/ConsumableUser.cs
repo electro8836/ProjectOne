@@ -3,6 +3,7 @@ using EDT;
 using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.Mastery;
+using ProjectOne.Network;
 using ProjectOne.Reward;
 using ProjectOne.Skill;
 using ProjectOne.Unit;
@@ -59,6 +60,13 @@ namespace ProjectOne.Consumables
 
 			Account.Instance.Inventory.TrySpend(itemId, 1);
 			ConsumableCooldown.Begin(itemId, baked.cooldownGroup, baked.cooldown);
+
+			// 지식의 서는 영속 상태(아이템 수·포인트)를 바꾼다 — 서버가 같은 차감·증가를 저장한다.
+			if (baked.effect == ConsumeEffect.SkillPoint)
+			{
+				NetworkManager.Instance.RequestUseSkillPointItem(itemId, resolvePointTarget(pointTarget));
+			}
+
 			return finish(itemId, ConsumableUseResult.Success);
 		}
 
@@ -120,17 +128,11 @@ namespace ProjectOne.Consumables
 				return ConsumableUseResult.Failed;
 			}
 
-			WeaponMastery target = pointTarget;
+			WeaponMastery target = resolvePointTarget(pointTarget);
 			if (target == WeaponMastery.None)
 			{
-				Table_WeaponMastery.Row current = book.CurrentMastery;
-				if (current == null)
-				{
-					// 무기를 안 들었으면 포인트를 줄 트리가 없다.
-					return ConsumableUseResult.NoTarget;
-				}
-
-				target = current.ID;
+				// 무기를 안 들었으면 포인트를 줄 트리가 없다.
+				return ConsumableUseResult.NoTarget;
 			}
 
 			if (book.TryUseItemPoint(target, baked.pointAmount) == false)
@@ -142,6 +144,18 @@ namespace ProjectOne.Consumables
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
+
+		// 지식의 서 대상 — 지정이 없으면 현재 장착 무기의 마스터리. 무기 미착용이면 None.
+		private static WeaponMastery resolvePointTarget(WeaponMastery pointTarget)
+		{
+			if (pointTarget != WeaponMastery.None)
+			{
+				return pointTarget;
+			}
+
+			Table_WeaponMastery.Row current = Account.Instance.Mastery.CurrentMastery;
+			return (current != null) ? current.ID : WeaponMastery.None;
+		}
 
 		private static UnitBase findHero()
 		{

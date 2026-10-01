@@ -4,6 +4,7 @@ using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.Loading;
 using ProjectOne.Network;
+using ProjectOne.Field;
 using ProjectOne.Quests;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
@@ -107,6 +108,9 @@ namespace ProjectOne.Flow
 				{
 					Account.Instance.SetDailyBonus(data.dailyBonus);
 				}
+
+				// 필드 처치 배치 정산 세션 — 서버가 로그인마다 새 시드를 발급한다. 없으면 원장이 비활성(로컬 지급).
+				FieldKillLedger.Instance.Begin(data.field);
 			}
 			else
 			{

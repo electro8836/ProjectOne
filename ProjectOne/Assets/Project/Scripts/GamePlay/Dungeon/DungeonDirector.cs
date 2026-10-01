@@ -15,6 +15,7 @@ using ProjectOne.Audio;
 using ProjectOne.Utils;
 using ProjectOne.UserData;
 using ProjectOne.Network;
+using ProjectOne.Field;
 using ProjectOne.Shared;
 using ProjectOne.Summons;
 
@@ -500,9 +501,6 @@ namespace ProjectOne.Dungeon
 
 				applyClearResponse(resp);
 
-				// TODO(임시) — 결과창 확인용 더미 보상. 지울 때 아래 "임시 테스트" 영역과 이 줄을 함께 지운다.
-				resp = TEMP_BuildDummyReward(resp);
-
 				restart = await showDungeonResultAsync(resp, _cts.Token);
 			}
 			else
@@ -591,110 +589,6 @@ namespace ProjectOne.Dungeon
 		private static int currentExp()
 		{
 			return Account.Instance.Loadout.Exp;
-		}
-
-
-		// ── 임시 테스트 ───────────────────────────────────────────────
-		//
-		// TODO(임시) — 서버 미연동이라 결과창이 텅 비어 보인다. 눈으로 확인하려고 채우는 더미다.
-		// **패킷 작업 시 이 영역 전체와 endDungeonAsync 의 호출 한 줄을 통째로 지운다.**
-		//
-		// applyClearResponse 뒤에서 부르므로 계정에는 아무것도 지급되지 않는다 — 화면에만 채운다.
-
-		// 더미 골드 범위
-		private const int TempDummyGoldMin = 1200;
-		private const int TempDummyGoldMax = 8500;
-
-		// 더미 장비 개수 범위 — 등급 색상이 섞여 보이도록 여러 개 만든다.
-		private const int TempDummyEquipMin = 3;
-		private const int TempDummyEquipMax = 6;
-
-		// 더미 스택 아이템(소모품) 종류 수 범위
-		private const int TempDummyItemMin = 1;
-		private const int TempDummyItemMax = 3;
-
-		// 더미 획득 경험치
-		private const int TempDummyExp = 350;
-
-		private DungeonClearResponse TEMP_BuildDummyReward(DungeonClearResponse actual)
-		{
-			// 서버가 실제로 응답했다면 그대로 쓴다.
-			if (actual != null && actual.rewards != null && actual.rewards.Length > 0)
-			{
-				return actual;
-			}
-
-			// 경험치는 resp 가 아니라 GoldDungeon.RewardExp 를 읽어 표시된다.
-			// 테이블이 비어 있어 "+0" 으로 뜨므로 메모리 값만 덮어쓴다(바이트 파일은 그대로).
-			Table_GoldDungeon.Row stageRow = DungeonProgress.FindGoldStage(_ctx.Stage);
-			if (stageRow != null && stageRow.RewardExp <= 0)
-			{
-				stageRow.RewardExp = TempDummyExp;
-			}
-
-			List<GrantedRewardDto> list = new List<GrantedRewardDto>();
-
-			GrantedRewardDto gold = new GrantedRewardDto();
-			gold.rewardType = (int)RewardType.Currency;
-			gold.itemId = (int)EDT.Currency.Gold;
-			gold.count = Random.Range(TempDummyGoldMin, TempDummyGoldMax);
-			list.Add(gold);
-
-			// 장비와 스택 아이템을 갈라 담는다 — 표시 경로가 다르다.
-			List<int> equipIds = new List<int>();
-			List<int> stackIds = new List<int>();
-			Dictionary<int, Table_Item.Row>.Enumerator e = Table_Item.All().GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				int id = e.Current.Key;
-				if (Table_Equipment.Get(id) != null)
-				{
-					equipIds.Add(id);
-				}
-				else
-				{
-					stackIds.Add(id);
-				}
-			}
-
-			// 장비 — 등급을 섞어 인스턴스로 만든다. 품질·순도는 팩토리가 굴린다.
-			// dto 로 싣지 않는 이유: GrantedRewardDto 에 등급·품질이 없어 결과창이 채울 수 없다.
-			int equipCount = Random.Range(TempDummyEquipMin, TempDummyEquipMax + 1);
-			for (int i = 0; i < equipCount && equipIds.Count > 0; i++)
-			{
-				int index = Random.Range(0, equipIds.Count);
-				int itemId = equipIds[index];
-				equipIds.RemoveAt(index);
-
-				ItemGradeType grade = (ItemGradeType)Random.Range((int)ItemGradeType.Normal, (int)ItemGradeType.Mythic + 1);
-				EquipmentInstance instance = EquipmentFactory.CreateFixed(itemId, grade);
-				if (instance != null)
-				{
-					_grantedEquipments.Add(instance);
-				}
-			}
-
-			// 스택 아이템 — 중복을 빼야 합산으로 한 칸이 되지 않고 칸 수가 눈에 보인다.
-			int stackCount = Random.Range(TempDummyItemMin, TempDummyItemMax + 1);
-			for (int i = 0; i < stackCount && stackIds.Count > 0; i++)
-			{
-				int index = Random.Range(0, stackIds.Count);
-
-				GrantedRewardDto item = new GrantedRewardDto();
-				item.rewardType = (int)RewardType.Item;
-				item.itemId = stackIds[index];
-				item.count = Random.Range(1, 4);
-				list.Add(item);
-
-				stackIds.RemoveAt(index);
-			}
-
-			DungeonClearResponse dummy = new DungeonClearResponse();
-			dummy.exp = (actual != null) ? actual.exp : 0;
-			dummy.rewards = list.ToArray();
-
-			Debug.Log($"[DungeonDirector] TODO(임시) 더미 보상 — 골드 {gold.count}, 장비 {_grantedEquipments.Count}개, 스택 {list.Count - 1}종");
-			return dummy;
 		}
 
 		// ── 균열 정산 ─────────────────────────────────────────────────
@@ -886,6 +780,10 @@ namespace ProjectOne.Dungeon
 			req.dungeonType = (int)_ctx.DungeonType;
 			req.stage = _ctx.Stage;
 			req.cleared = cleared;
+
+			// 서버가 클리어 경험치를 같은 마스터리에 적립한다(마스터리 설계 5.2). 미착용이면 0.
+			Table_WeaponMastery.Row mastery = Account.Instance.Mastery.CurrentMastery;
+			req.masteryId = (mastery != null) ? (int)mastery.ID : 0;
 			return req;
 		}
 
@@ -898,7 +796,17 @@ namespace ProjectOne.Dungeon
 			}
 
 			// 캐릭터는 서버 권위값, 마스터리는 증가분만 적립된다 (마스터리 설계 5.2).
-			Account.Instance.SetExpAuthoritative(resp.exp);
+			// 아직 서버에 올라가지 않은 필드 처치 경험치를 더한다 — 빼면 그만큼 경험치가 줄어든다.
+			Account.Instance.SetExpAuthoritative(resp.exp + FieldKillLedger.Instance.UnsettledExp);
+
+			// 장비는 서버가 UID·등급·품질까지 확정해 인스턴스로 내려준다 — 그대로 넣는다.
+			if (resp.equipments != null)
+			{
+				for (int i = 0; i < resp.equipments.Length; i++)
+				{
+					grantEquipmentFromServer(resp.equipments[i]);
+				}
+			}
 
 			if (resp.rewards == null)
 			{
@@ -907,6 +815,7 @@ namespace ProjectOne.Dungeon
 
 			DungeonRunState.Instance.AddRewards(resp.rewards);
 
+			// rewards 에는 스택 아이템과 재화만 온다.
 			for (int i = 0; i < resp.rewards.Length; i++)
 			{
 				GrantedRewardDto g = resp.rewards[i];
@@ -914,7 +823,11 @@ namespace ProjectOne.Dungeon
 				{
 				case RewardType.Item:
 				case RewardType.ItemPool:
-					grantItemFromServer(g.itemId, g.count);
+					if (g.itemId > 0 && g.count > 0)
+					{
+						Account.Instance.Inventory.Add(g.itemId, g.count);
+					}
+
 					break;
 				case RewardType.Currency:
 				{
@@ -927,39 +840,24 @@ namespace ProjectOne.Dungeon
 			}
 		}
 
-		// 서버가 준 아이템을 인벤토리에 넣는다.
-		//
-		// 장비는 스택이 아니라 인스턴스 단위이므로 Inventory.Add 로 넣으면 안 된다 (아이템 설계 4장).
-		// STEP 6 에서 장비가 UID 단위가 되면서 생긴 불일치를 여기서 바로잡는다.
-		//
-		// **한계 — 서버가 등급을 내려주지 못한다.** GrantedRewardDto 에 등급·순도·품질·uid 가 없어
-		// 클라가 Item.Grade 기준으로 인스턴스를 만든다. 이건 설계가 금지한 "등급 자동 폴백"이 아니라
-		// **DTO 스키마의 한계**다. DTO 확장은 STEP 14 에서 하며, 그때 이 분기를 제거한다.
-		private void grantItemFromServer(int itemId, int count)
+		// 서버가 만든 장비 인스턴스를 같은 UID 로 인벤토리에 넣는다 — 서버 USER_INVENTORY 와 UID 가 일치해야
+		// 이후 장착 저장(SaveLoadout)의 보유 검증을 통과한다.
+		private void grantEquipmentFromServer(EquipmentInstanceDto src)
 		{
-			if (itemId <= 0 || count <= 0)
+			if (src == null || src.uid <= 0)
 			{
 				return;
 			}
 
-			if (Table_Equipment.Get(itemId) == null)
+			EquipmentInstance instance = EquipmentFactory.CreateExact(src.itemId, (ItemGradeType)src.grade, src.quality);
+			if (instance == null)
 			{
-				Account.Instance.Inventory.Add(itemId, count);
 				return;
 			}
 
-			Table_Item.Row item = Table_Item.Get(itemId);
-			ItemGradeType grade = (item != null && item.Grade != ItemGradeType.None) ? item.Grade : ItemGradeType.Normal;
-
-			for (int i = 0; i < count; i++)
-			{
-				EquipmentInstance instance = EquipmentFactory.CreateFixed(itemId, grade);
-				if (instance != null)
-				{
-					Account.Instance.Inventory.AddEquipment(instance);
-					_grantedEquipments.Add(instance);
-				}
-			}
+			instance.uid = src.uid;
+			Account.Instance.Inventory.AddEquipment(instance);
+			_grantedEquipments.Add(instance);
 		}
 
 		// ── 정리 ──────────────────────────────────────────────────────

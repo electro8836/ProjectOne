@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EDT;
 using ProjectOne.Items;
+using ProjectOne.Shared;
 
 namespace ProjectOne.Reward
 {
@@ -35,10 +36,10 @@ namespace ProjectOne.Reward
 
 			_work.Clear();
 
-			IReadOnlyList<RewardCatalog.RewardEntry> entries = RewardCatalog.GetGroup(groupId);
+			IReadOnlyList<RewardTable.RewardEntry> entries = RewardCatalog.GetGroup(groupId);
 			for (int i = 0; i < entries.Count; i++)
 			{
-				RewardCatalog.RewardEntry entry = entries[i];
+				RewardTable.RewardEntry entry = entries[i];
 				if (entry.isValid == false)
 				{
 					continue;
@@ -78,7 +79,7 @@ namespace ProjectOne.Reward
 
 		private static void addPool(Table_Reward.Row row, int poolId, float chance)
 		{
-			IReadOnlyList<RewardCatalog.PoolEntry> pool = RewardCatalog.GetPool(poolId);
+			IReadOnlyList<RewardTable.PoolEntry> pool = RewardCatalog.GetPool(poolId);
 
 			// 후보가 없는 조건은 추첨에서 빠지므로 가중치 합에서도 빼야 한다.
 			int weightSum = 0;
@@ -97,7 +98,7 @@ namespace ProjectOne.Reward
 
 			for (int i = 0; i < pool.Count; i++)
 			{
-				RewardCatalog.PoolEntry cond = pool[i];
+				RewardTable.PoolEntry cond = pool[i];
 				if (cond.candidates.Count <= 0 || cond.row.Weight <= 0)
 				{
 					continue;

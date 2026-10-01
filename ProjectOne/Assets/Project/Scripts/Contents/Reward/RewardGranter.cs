@@ -4,6 +4,7 @@ using UnityEngine;
 using ProjectOne.Currency;
 using ProjectOne.Event;
 using ProjectOne.Items;
+using ProjectOne.Shared;
 using ProjectOne.Unit;
 using ProjectOne.UserData;
 using ProjectOne.Utils;
@@ -46,13 +47,12 @@ namespace ProjectOne.Reward
 	// "인벤에 들어가는 시점"이 다른 경로가 있기 때문이다 — 몬스터 처치는 즉시 굴리되
 	// 실제 지급은 히어로가 획득 범위에 들어왔을 때 일어난다.
 	//
-	// **순수 로직에 가깝게 유지한다.** 입력은 테이블 + 맥락, 출력은 지급 목록이고
-	// 부수효과는 인벤/지갑 반영뿐이다. 나중에 이 규칙을 서버(뒤끝 함수)로 포팅할 때
-	// 기준이 되며, 권위를 넘길 때 호출부만 바꾸면 된다.
+	// **추첨 규칙은 공유 코어(ProjectOne.Shared.RewardRoller)가 소유한다.** 서버(뒤끝 함수)도 같은 코드로 굴리므로
+	// 여기는 맥락 → 배율 결정, 결과 → 장비 인스턴스 변환, 인벤/지갑 반영만 맡는다.
 	public static class RewardGranter
 	{
-		// 가중치 추첨용 재사용 버퍼 — 지급은 메인 스레드 단일 경로다.
-		private static readonly List<int> _weightBuffer = new List<int>(8);
+		// 공유 코어 추첨 결과 재사용 버퍼 — 지급은 메인 스레드 단일 경로다.
+		private static readonly List<RolledReward> _rolled = new List<RolledReward>(8);
 
 		// 그룹 하나를 굴려 즉시 지급하고 결과를 buffer 에 채운다(호출자가 버퍼를 소유).
 		// buffer 를 비우지 않고 **누적**한다 — 고유 드랍 + 지역 드랍처럼 두 그룹을 이어 굴릴 수 있다.
@@ -70,18 +70,47 @@ namespace ProjectOne.Reward
 		}
 
 		// 굴리기만 한다 — 인벤/지갑에 손대지 않는다. 지급은 ApplyAll 이 맡는다.
-		// 장비 인스턴스 생성(등급·순도·품질 결정)까지는 여기서 끝난다.
+		// 추첨 규칙은 서버와 공유하는 RewardRoller 가 소유한다. 여기서는 결과를 장비 인스턴스로 옮기기만 한다.
 		public static void Roll(int groupId, RewardContext context, List<GrantedReward> buffer)
+		{
+			// 골드 보너스는 **적 처치분에만** 곱한다 — 퀘스트·던전 클리어 보상은 고정값이다 (기반테이블 8.1).
+			int currencyBonusPermille = (context == RewardContext.MonsterKill) ? GetGoldBonusPermille() : 0;
+			RollWith(groupId, currencyBonusPermille, UnityRandomSource.Instance, buffer);
+		}
+
+		// 난수원과 재화 보너스를 직접 지정해 굴린다 — 필드 처치 배치 정산은 서버가 재현할 수 있는 시드 난수를 넘긴다.
+		// buffer 에 추가되는 순서가 곧 추첨 결과 순서(서버 재현 기준 인덱스)다.
+		public static void RollWith(int groupId, int currencyBonusPermille, IRandomSource rng, List<GrantedReward> buffer)
 		{
 			if (groupId <= 0 || buffer == null)
 			{
 				return;
 			}
 
-			IReadOnlyList<RewardCatalog.RewardEntry> entries = RewardCatalog.GetGroup(groupId);
-			for (int i = 0; i < entries.Count; i++)
+			_rolled.Clear();
+			RewardRoller.Roll(groupId, currencyBonusPermille, rng, _rolled, logRoll);
+
+			for (int i = 0; i < _rolled.Count; i++)
 			{
-				rollOne(entries[i], context, buffer);
+				RolledReward rolled = _rolled[i];
+
+				GrantedReward granted = default(GrantedReward);
+				granted.type = rolled.type;
+				granted.itemId = rolled.itemId;
+				granted.currency = rolled.currency;
+				granted.count = rolled.count;
+
+				// 등급·품질은 공유 코어가 이미 정했다 — 같은 값으로 인스턴스만 만든다.
+				if (rolled.isEquipment == true)
+				{
+					granted.equipment = EquipmentFactory.CreateExact(rolled.itemId, rolled.grade, rolled.quality);
+					if (granted.equipment == null)
+					{
+						continue;
+					}
+				}
+
+				buffer.Add(granted);
 			}
 		}
 
@@ -133,160 +162,23 @@ namespace ProjectOne.Reward
 			EventManager.Instance.Publish(new RewardAcquiredEvent(granted.type, granted.itemId, EDT.Currency.None, granted.count, ItemGradeType.None, 0, false));
 		}
 
-		private static void rollOne(RewardCatalog.RewardEntry entry, RewardContext context, List<GrantedReward> buffer)
+		private static void logRoll(bool isError, string message)
 		{
-			if (entry.isValid == false)
+			if (isError == true)
 			{
-				return;		// 해석 실패 — 경고는 RewardCatalog.Build 가 이미 냈다
+				Debug.LogError(message);
 			}
-
-			Table_Reward.Row row = entry.row;
-
-			// [1] 확률 판정. 0 은 봉인이다 — 확정 지급은 1 을 적는다 (설계 3장).
-			if (row.Chance <= 0f)
+			else
 			{
-				return;
-			}
-
-			if (row.Chance < 1f && Random.value >= row.Chance)
-			{
-				return;
-			}
-
-			// [2] 수량. MaxCount 가 0 이면 MinCount 고정.
-			int count = rollCount(row);
-			if (count <= 0)
-			{
-				return;
-			}
-
-			// [3] 타입 분기
-			switch (row.RewardType)
-			{
-				case RewardType.Currency:
-					rollCurrency(entry, context, count, buffer);
-					break;
-
-				case RewardType.Item:
-					rollItem(entry.itemId, row, count, buffer);
-					break;
-
-				case RewardType.ItemPool:
-					// 각각 독립 추첨한다 — 2개면 서로 다른 아이템, 서로 다른 등급이 나올 수 있다 (설계 6.3).
-					for (int n = 0; n < count; n++)
-					{
-						int itemId = pickFromPool(entry.poolId);
-						if (itemId > 0)
-						{
-							rollItem(itemId, row, 1, buffer);
-						}
-					}
-
-					break;
+				Debug.LogWarning(message);
 			}
 		}
 
-		private static int rollCount(Table_Reward.Row row)
+		// 살아있는 히어로의 골드 획득량 보너스(퍼밀). 없으면 0.
+		// 서버 재현과 같은 값을 쓰도록 실수 스탯을 여기서 한 번만 정수로 바꾼다.
+		public static int GetGoldBonusPermille()
 		{
-			if (row.MaxCount <= 0 || row.MaxCount <= row.MinCount)
-			{
-				return row.MinCount;
-			}
-
-			return Random.Range(row.MinCount, row.MaxCount + 1);
-		}
-
-		// 골드 보너스는 **적 처치분에만** 곱한다 — 퀘스트·던전 클리어 보상은 고정값이다 (기반테이블 8.1).
-		private static void rollCurrency(RewardCatalog.RewardEntry entry, RewardContext context, int count, List<GrantedReward> buffer)
-		{
-			if (context == RewardContext.MonsterKill)
-			{
-				count = Mathf.RoundToInt(count * (1f + getGoldDropBonus()));
-			}
-
-			if (count <= 0)
-			{
-				return;
-			}
-
-			GrantedReward granted = default(GrantedReward);
-			granted.type = RewardType.Currency;
-			granted.currency = entry.currency;
-			granted.count = count;
-			buffer.Add(granted);
-		}
-
-		// 장비냐 아니냐는 RewardType 이 아니라 **최종 지급 대상**이 기준이다 (설계 6.1).
-		private static void rollItem(int itemId, Table_Reward.Row row, int count, List<GrantedReward> buffer)
-		{
-			if (itemId <= 0 || count <= 0)
-			{
-				return;
-			}
-
-			if (Table_Equipment.Get(itemId) == null)
-			{
-				GrantedReward stacked = default(GrantedReward);
-				stacked.type = RewardType.Item;
-				stacked.itemId = itemId;
-				stacked.count = count;
-				buffer.Add(stacked);
-				return;
-			}
-
-			// 장비는 인스턴스 단위라 개수만큼 각각 굴린다.
-			// EquipmentFactory 가 유효 등급 범위(Item.Grade ~ Equipment.MaxGrade)를 적용하고,
-			// 가중치 합이 0이면 null 을 돌려준다 = 드랍 스킵 (설계 6.1).
-			for (int i = 0; i < count; i++)
-			{
-				// FixedGrade 가 적혀 있으면 확정 상품이다 — 미리보기와 같은 값을 그대로 지급한다.
-				EquipmentInstance instance;
-				if (row.FixedGrade != ItemGradeType.None)
-				{
-					instance = EquipmentFactory.CreateExact(itemId, row.FixedGrade, row.FixedQuality);
-				}
-				else
-				{
-					instance = EquipmentFactory.Create(itemId, row.EquipGradeWeightID);
-				}
-				if (instance == null)
-				{
-					continue;
-				}
-
-				GrantedReward granted = default(GrantedReward);
-				granted.type = RewardType.Item;
-				granted.itemId = itemId;
-				granted.count = 1;
-				granted.equipment = instance;
-				buffer.Add(granted);
-			}
-		}
-
-		// 풀 안에서 Weight 로 조건 행 1개 → 그 조건의 후보 중 균등 1개 (설계 6장).
-		private static int pickFromPool(int poolId)
-		{
-			IReadOnlyList<RewardCatalog.PoolEntry> pool = RewardCatalog.GetPool(poolId);
-			if (pool.Count == 0)
-			{
-				return 0;
-			}
-
-			_weightBuffer.Clear();
-			for (int i = 0; i < pool.Count; i++)
-			{
-				// 후보가 없는 조건은 뽑히면 안 된다 — 뽑히면 그 회차가 통째로 날아간다.
-				_weightBuffer.Add(pool[i].candidates.Count > 0 ? pool[i].row.Weight : 0);
-			}
-
-			int index = WeightedRandom.PickIndex(_weightBuffer);
-			if (index < 0)
-			{
-				return 0;
-			}
-
-			List<int> candidates = pool[index].candidates;
-			return candidates[Random.Range(0, candidates.Count)];
+			return Mathf.RoundToInt(getGoldDropBonus() * 1000f);
 		}
 
 		// 살아있는 히어로의 골드 획득량 보너스. 없으면 0.

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
+using ProjectOne.Shared;
 using UnityEngine;
 using ProjectOne.Resources;
 
@@ -42,7 +43,6 @@ namespace ProjectOne.Mastery
 
 		// 레벨 오름차순 누적 경험치 — 이분 탐색용
 		private static readonly List<Table_MasteryLevelExp.Row> _masteryExp = new List<Table_MasteryLevelExp.Row>();
-		private static readonly List<Table_CharacterLevelExp.Row> _characterExp = new List<Table_CharacterLevelExp.Row>();
 
 		private static bool _built;
 
@@ -64,7 +64,6 @@ namespace ProjectOne.Mastery
 			_nodeById.Clear();
 			_nextNodes.Clear();
 			_masteryExp.Clear();
-			_characterExp.Clear();
 
 			buildMasteries();
 			buildNodes();
@@ -190,14 +189,15 @@ namespace ProjectOne.Mastery
 		// ── 경험치 곡선 ───────────────────────────────────────────────
 
 		// 누적 경험치로 도달 레벨을 구한다 (설계 3.3 — 누적값이라 이분 탐색 1회면 된다).
+		// 서버가 같은 규칙으로 트리를 검증하므로 공유 규칙(MasteryRules)에 위임한다.
 		public static int GetMasteryLevel(int totalExp)
 		{
-			return findLevel(_masteryExp, totalExp);
+			return MasteryRules.LevelFromExp(totalExp);
 		}
 
 		public static int GetCharacterLevel(int totalExp)
 		{
-			return findLevelCharacter(_characterExp, totalExp);
+			return MasteryRules.CharacterLevelFromExp(totalExp);
 		}
 
 		// 해당 레벨에 도달하기 위한 누적 경험치. 테이블에 없으면 0.
@@ -322,75 +322,11 @@ namespace ProjectOne.Mastery
 		{
 			_masteryExp.AddRange(Table_MasteryLevelExp.All().Values);
 			_masteryExp.Sort(compareMasteryLevel);
-
-			_characterExp.AddRange(Table_CharacterLevelExp.All().Values);
-			_characterExp.Sort(compareCharacterLevel);
 		}
 
 		private static int compareMasteryLevel(Table_MasteryLevelExp.Row a, Table_MasteryLevelExp.Row b)
 		{
 			return a.ID.CompareTo(b.ID);
-		}
-
-		private static int compareCharacterLevel(Table_CharacterLevelExp.Row a, Table_CharacterLevelExp.Row b)
-		{
-			return a.ID.CompareTo(b.ID);
-		}
-
-		// 누적 경험치 이상인 마지막 행의 레벨. 테이블이 비면 1.
-		private static int findLevel(List<Table_MasteryLevelExp.Row> curve, int totalExp)
-		{
-			if (curve.Count == 0)
-			{
-				return 1;
-			}
-
-			int lo = 0;
-			int hi = curve.Count - 1;
-			int result = curve[0].ID;
-			while (lo <= hi)
-			{
-				int mid = (lo + hi) / 2;
-				if (curve[mid].TotalExperience <= totalExp)
-				{
-					result = curve[mid].ID;
-					lo = mid + 1;
-				}
-				else
-				{
-					hi = mid - 1;
-				}
-			}
-
-			return result;
-		}
-
-		// 제네릭으로 묶으면 인터페이스 제약이 필요해 자동생성 테이블에 손을 대야 한다. 두 벌로 둔다.
-		private static int findLevelCharacter(List<Table_CharacterLevelExp.Row> curve, int totalExp)
-		{
-			if (curve.Count == 0)
-			{
-				return 1;
-			}
-
-			int lo = 0;
-			int hi = curve.Count - 1;
-			int result = curve[0].ID;
-			while (lo <= hi)
-			{
-				int mid = (lo + hi) / 2;
-				if (curve[mid].TotalExperience <= totalExp)
-				{
-					result = curve[mid].ID;
-					lo = mid + 1;
-				}
-				else
-				{
-					hi = mid - 1;
-				}
-			}
-
-			return result;
 		}
 	}
 }

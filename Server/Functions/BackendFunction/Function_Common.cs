@@ -97,4 +97,36 @@ namespace BackendFunction
 			return false;
 		}
 	}
+
+	// 내 도메인 행(유저당 1행) 조회 공용 헬퍼 — Data 컬럼의 DTO JSON 을 읽는다.
+	public static class MyData
+	{
+		// 행이 없으면 실패 — GetUserData 가 로그인 시 먼저 ensure 한다.
+		public static bool Load<T>(string tableName, out T data, out string err) where T : class, new()
+		{
+			data = null;
+			var getResult = Backend.GameData.GetMyData(tableName, new Where());
+			if (!getResult.IsSuccess())
+			{
+				err = tableName + " Get Failed: " + getResult.GetErrorCode();
+				return false;
+			}
+
+			JsonData rows = getResult.FlattenRows();
+			if (rows.Count == 0)
+			{
+				err = tableName + " row not found";
+				return false;
+			}
+
+			data = JsonConvert.DeserializeObject<T>(rows[0]["Data"].ToString());
+			if (data == null)
+			{
+				data = new T();
+			}
+
+			err = null;
+			return true;
+		}
+	}
 }

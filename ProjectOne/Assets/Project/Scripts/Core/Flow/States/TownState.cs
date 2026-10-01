@@ -2,6 +2,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 using ProjectOne.Loading;
+using ProjectOne.Network;
 using ProjectOne.Town;
 using ProjectOne.UI;
 
@@ -22,6 +23,10 @@ namespace ProjectOne.Flow
 			{
 				await LoadingManager.Instance.ShowAsync(LoadingFlow.ReturnTown, ct);
 			}
+
+
+			// 맵을 바꾸기 전에 필드 세션을 교체한다(남은 처치 정산 + 새 시드).
+			await FieldSessionRotation.RotateAsync(ct);
 
 			await SceneManager.LoadSceneAsync(SceneName).ToUniTask(Progress.Create<float>(onSceneLoadProgress), cancellationToken: ct);
 

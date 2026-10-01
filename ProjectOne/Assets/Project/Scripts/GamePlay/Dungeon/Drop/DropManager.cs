@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Event;
+using ProjectOne.Field;
 using ProjectOne.Resources;
 using ProjectOne.Reward;
 using ProjectOne.Unit;
@@ -66,6 +67,9 @@ namespace ProjectOne.Dungeon
 		protected override void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<UnitDiedEvent>(onUnitDied);
+
+			// 씬 언로드로 드랍이 통째로 사라지는 경로 — Clear 를 거치지 않아도 원장을 정리한다.
+			FieldKillLedger.Instance.ResolveAll();
 			base.OnDestroy();
 		}
 
@@ -86,6 +90,9 @@ namespace ProjectOne.Dungeon
 		public void Clear()
 		{
 			clearPools();
+
+			// 풀째 파괴된 드랍은 반환 콜백을 거치지 않는다 — 남은 처치 보상을 미획득으로 확정한다.
+			FieldKillLedger.Instance.ResolveAll();
 		}
 
 		private void onUnitDied(UnitDiedEvent evt)
@@ -143,7 +150,8 @@ namespace ProjectOne.Dungeon
 
 		// 굴려 둔 처치 보상을 사망 위치 주변에 흩뿌린다. 보상 1건당 오브젝트 1개다.
 		// 지급은 히어로가 획득 범위에 들어왔을 때 DropObject 가 한다.
-		public void SpawnRewardDrops(Vector2 center, List<GrantedReward> rewards)
+		// killIndex 가 0 이상이면 필드 배치 정산 대상이다 — 드랍마다 (killIndex, 보상 인덱스) 를 실어 원장에 결과를 남긴다.
+		public void SpawnRewardDrops(Vector2 center, List<GrantedReward> rewards, int killIndex)
 		{
 			if (rewards == null || rewards.Count == 0)
 			{
@@ -169,6 +177,7 @@ namespace ProjectOne.Dungeon
 				_single.Clear();
 				_single.Add(rewards[i]);
 				drop.SetPayload(_single);
+				drop.SetLedgerTag(killIndex, i);
 			}
 
 			_single.Clear();

@@ -122,19 +122,6 @@ namespace ProjectOne.Monsters
 			return EDT.Skill.None;
 		}
 
-		// 처치 경험치 (설계 3장) — Stat_ExpBonus 는 지급 시점에 호출자가 곱한다.
-		public static int GetKillExp(int monsterId, int level)
-		{
-			Table_Monster.Row row = Table_Monster.Get(monsterId);
-			if (row == null)
-			{
-				return 0;
-			}
-
-			int lv = level > 0 ? level : 1;
-			return row.BaseExp + row.PerLevelExp * (lv - 1);
-		}
-
 		public static MonsterType GetMonsterType(int monsterId)
 		{
 			Table_Monster.Row row = Table_Monster.Get(monsterId);

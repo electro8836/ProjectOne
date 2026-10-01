@@ -121,8 +121,9 @@ namespace ProjectOne.UserData
 				instance.uid = _nextUid;
 				_nextUid++;
 			}
-			else if (instance.uid >= _nextUid)
+			else if (instance.uid >= _nextUid && EquipmentUid.IsFieldDrop(instance.uid) == false)
 			{
+				// 필드 드랍 UID(2^32 이상)는 처치 좌표로 정해진 별도 대역이다 — 채번 카운터를 끌어올리지 않는다.
 				_nextUid = instance.uid + 1;
 			}
 
@@ -278,7 +279,7 @@ namespace ProjectOne.UserData
 				_equipments.Add(instance);
 				_equipIndex[instance.uid] = instance;
 
-				if (instance.uid >= _nextUid)
+				if (instance.uid >= _nextUid && EquipmentUid.IsFieldDrop(instance.uid) == false)
 				{
 					_nextUid = instance.uid + 1;
 				}

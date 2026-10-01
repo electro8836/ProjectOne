@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectOne.Field;
 using ProjectOne.Unit;
 using ProjectOne.Reward;
 
@@ -32,6 +33,9 @@ namespace ProjectOne.Dungeon
 		private bool _isClaimed;
 		// 펫이 끌고 가는 중 — 히어로 자석이 같은 드랍을 다시 당기는 것을 막는다
 		private bool _isPetOwned;
+		// 필드 배치 정산 좌표 — 이 드랍이 몇 번째 처치의 몇 번째 보상인가. -1 이면 정산 대상 아님(오프라인)
+		private int _killIndex = -1;
+		private int _rewardIndex;
 
 		// 펫이 이미 누군가 가져간 드랍을 타겟으로 잡지 않도록 공개한다.
 		public bool IsClaimed { get { return _isClaimed; } }
@@ -50,7 +54,25 @@ namespace ProjectOne.Dungeon
 			_homingSpeed = _homingStartSpeed;
 			_isClaimed = false;
 			_isPetOwned = false;
+			_killIndex = -1;
+			_rewardIndex = 0;
 			_payload.Clear();
+		}
+
+		// 원장 좌표를 단다. SetPayload 직후 DropManager 가 호출한다.
+		public void SetLedgerTag(int killIndex, int rewardIndex)
+		{
+			_killIndex = killIndex;
+			_rewardIndex = rewardIndex;
+		}
+
+		// 풀 반환 — 줍지 않고 사라지면(수명 만료) 원장에 미획득으로 남긴다.
+		public override void OnDeactivate()
+		{
+			if (_isClaimed == false && _killIndex >= 0)
+			{
+				FieldKillLedger.Instance.TryResolve(_killIndex, _rewardIndex, false);
+			}
 		}
 
 		// 이 드랍이 운반할 보상을 설정한다. Initialize 직후 DropManager 가 호출한다.
@@ -148,6 +170,13 @@ namespace ProjectOne.Dungeon
 			_isClaimed = true;
 			if (_payload.Count == 0)
 			{
+				return;
+			}
+
+			// 원장이 이미 이 보상을 미획득으로 확정했다면(정산 완료·강제 확정) 로컬만 받으면 서버와 어긋난다 — 지급하지 않는다.
+			if (_killIndex >= 0 && FieldKillLedger.Instance.TryResolve(_killIndex, _rewardIndex, true) == false)
+			{
+				_payload.Clear();
 				return;
 			}
 

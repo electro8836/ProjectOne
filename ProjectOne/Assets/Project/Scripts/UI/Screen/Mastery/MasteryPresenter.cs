@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Mastery;
+using ProjectOne.Network;
 using ProjectOne.UserData;
 using UnityEngine;
 
@@ -113,6 +114,13 @@ namespace ProjectOne.UI
 		public override UniTask OnOpenAsync(CancellationToken ct)
 		{
 			applyInitialTab();
+			return UniTask.CompletedTask;
+		}
+
+		// 창을 닫을 때 바뀐 스킬트리를 서버에 저장한다 — 클릭마다 보내지 않고 여기서 한 번에 묶는다.
+		public override UniTask OnCloseAsync()
+		{
+			NetworkManager.Instance.FlushMasteryIfDirty();
 			return UniTask.CompletedTask;
 		}
 
