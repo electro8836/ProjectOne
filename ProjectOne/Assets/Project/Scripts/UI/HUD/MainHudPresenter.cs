@@ -101,6 +101,39 @@ namespace ProjectOne.UI
 			{
 				await UIManager.Instance.ShowMailBoxPopupAsync(ct);
 			}
+			else if (result == MenuPopupResult.Quit)
+			{
+				await confirmQuitAsync(ct);
+			}
+		}
+
+		// 잘못 눌러 꺼지지 않도록 한 번 더 확인받는다.
+		private async UniTask confirmQuitAsync(CancellationToken ct)
+		{
+			CommonPopupData data;
+			data.title = "게임 종료";
+			data.desc = "게임을 종료하시겠습니까?";
+			data.button1Text = "아니오";
+			data.button2Text = "예";
+
+			// 아니오·닫기·Dim 은 팝업만 닫는다.
+			(bool cancelled, CommonPopupResult result) = await UIManager.Instance.ShowCommonPopupAsync(data, ct).SuppressCancellationThrow();
+			if (cancelled == true || result != CommonPopupResult.Button2)
+			{
+				return;
+			}
+
+			quitGame();
+		}
+
+		// 에디터에서는 플레이 모드를 유지한 채 로그만 남기고, 빌드에서는 앱을 종료한다.
+		private void quitGame()
+		{
+#if UNITY_EDITOR
+			Debug.Log("[MainHudPresenter] 게임 종료 요청 (에디터에서는 종료하지 않음)");
+#else
+			Application.Quit();
+#endif
 		}
 
 		// ── 이동 ──────────────────────────────────────────────────────
