@@ -1,6 +1,8 @@
-﻿using Cysharp.Threading.Tasks;
+﻿using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Event;
+using ProjectOne.Mail;
 using ProjectOne.Map;
 
 namespace ProjectOne.UI
@@ -12,6 +14,7 @@ namespace ProjectOne.UI
 		protected override void OnInitialize()
 		{
 			EventManager.Instance.Subscribe<GameStateChangedEvent>(onGameStateChanged);
+			EventManager.Instance.Subscribe<MailChangedEvent>(onMailChanged);
 
 			view.OnScreenRequested += onScreenRequested;
 			view.OnWarpRequested += onWarpRequested;
@@ -19,11 +22,14 @@ namespace ProjectOne.UI
 
 			// 부트 직후에는 어느 콘텐츠도 아니다 — 전부 숨긴 상태에서 시작한다.
 			view.ApplyContext(HudContext.None);
+
+			refreshMenuBadgeAsync().Forget();
 		}
 
 		protected override void OnDispose()
 		{
 			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
+			EventManager.Instance.Unsubscribe<MailChangedEvent>(onMailChanged);
 
 			if (view != null)
 			{
@@ -39,6 +45,24 @@ namespace ProjectOne.UI
 		private void onGameStateChanged(GameStateChangedEvent e)
 		{
 			view.ApplyContext(HudContexts.FromState(e.StateType));
+		}
+
+		// 메뉴 배지는 지금은 미확인 메일 여부와 같다. 다른 알림이 생기면 여기서 OR 로 합친다.
+		private void onMailChanged(MailChangedEvent e)
+		{
+			view.SetMenuBadge(e.HasUnread);
+		}
+
+		// HUD 가 처음 설 때 한 번 — 그 뒤로는 메일함이 내는 MailChangedEvent 로 갱신된다.
+		private async UniTaskVoid refreshMenuBadgeAsync()
+		{
+			bool hasUnread = await MailSystem.HasUnreadAsync(view.GetCancellationTokenOnDestroy());
+			if (view == null)
+			{
+				return;
+			}
+
+			view.SetMenuBadge(hasUnread);
 		}
 
 		// ── 화면 열기 ─────────────────────────────────────────────────
@@ -67,9 +91,16 @@ namespace ProjectOne.UI
 			openMenuAsync().Forget();
 		}
 
+		// 메뉴가 닫힌 뒤 고른 항목의 팝업을 띄운다.
 		private async UniTaskVoid openMenuAsync()
 		{
-			await UIManager.Instance.ShowMenuPopupAsync(view.GetCancellationTokenOnDestroy());
+			CancellationToken ct = view.GetCancellationTokenOnDestroy();
+			MenuPopupResult result = await UIManager.Instance.ShowMenuPopupAsync(ct);
+
+			if (result == MenuPopupResult.Mail)
+			{
+				await UIManager.Instance.ShowMailBoxPopupAsync(ct);
+			}
 		}
 
 		// ── 이동 ──────────────────────────────────────────────────────

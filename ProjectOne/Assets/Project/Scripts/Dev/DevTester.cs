@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
 using ProjectOne.Utils;
 using ProjectOne.Currency;
 using ProjectOne.Event;
 using ProjectOne.Items;
+using ProjectOne.Mail;
 using ProjectOne.Mastery;
 using ProjectOne.Quests;
 using ProjectOne.Shared;
@@ -127,6 +129,9 @@ namespace ProjectOne.Boot
 		[Header("임시 — 체크 시 이동 중에도 공격")]
 		[SerializeField] private bool _attackWhileMoving;
 
+		[Header("메일 — 체크 시 시작할 때 열람 기록 초기화")]
+		[SerializeField] private bool _resetMailRead;
+
 		[Header("펫 보유 (펫 + 강화 레벨 + 등급)")]
 		[SerializeField] private List<DevPet> _pets = new List<DevPet>();
 
@@ -193,6 +198,12 @@ namespace ProjectOne.Boot
 		// 켜져 있으면 인스펙터 구성 데이터로 Account 를 덮어쓴다(메모리만 — save 미호출, Backnd 비오염).
 		private void onDataLoaded(DataLoadedEvent evt)
 		{
+			// 개발 데이터 사용 여부와 무관하다 — 메일 Dim·배지를 처음 상태로 다시 보려는 용도.
+			if (_resetMailRead == true)
+			{
+				resetMailReadAsync().Forget();
+			}
+
 			if (_disabled == true)
 			{
 				return;
@@ -209,6 +220,25 @@ namespace ProjectOne.Boot
 				+ ", 장착:" + _equipSlots.Count + "칸, 보유장비:" + _ownedEquipments.Count + "개"
 				+ ", 보유아이템:" + _ownedItems.Count + "종, 코스튬:" + _ownedCostumes.Count + "종"
 				+ ", 재화:" + _currencies.Count + "종, 펫:" + _pets.Count + "종");
+		}
+
+		// 현재 메일 목록의 열람 기록을 지운다. 가짜 공급자는 재시작하면 삭제한 메일도 되살아나 이 목록이 곧 전체다.
+		// MainHUD 는 이보다 뒤(마을 진입)에 서므로 배지 초기값이 초기화된 기록으로 잡힌다.
+		private async UniTaskVoid resetMailReadAsync()
+		{
+			(bool cancelled, IReadOnlyList<MailData> mails) = await MailSystem.Provider.GetMailsAsync(this.GetCancellationTokenOnDestroy()).SuppressCancellationThrow();
+			if (cancelled == true || mails == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < mails.Count; i++)
+			{
+				MailReadLog.Clear(mails[i].id);
+			}
+
+			PlayerPrefs.Save();
+			Debug.Log("[DevTester] 메일 열람 기록 초기화 — " + mails.Count + "통");
 		}
 
 		// 퀘스트 개발 데이터 — _questId 를 진행 중으로 두고 그 이전은 전부 클리어한 것으로 만든다.

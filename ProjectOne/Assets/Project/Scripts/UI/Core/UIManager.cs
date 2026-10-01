@@ -6,6 +6,7 @@ using UnityEngine;
 using ProjectOne.Utils;
 using ProjectOne.Event;
 using ProjectOne.Items;
+using ProjectOne.Mail;
 using ProjectOne.Ranking;
 using ProjectOne.Resources;
 
@@ -94,6 +95,11 @@ namespace ProjectOne.UI
 		// 균열 팝업도 전용이다 — 소탕 보상 팝업의 칸을 누르면 정보 팝업이 _popupCts 를 취소하는데,
 		// 같이 쓰면 그 아래의 균열 팝업까지 닫혀 버린다.
 		private CancellationTokenSource _riftPopupCts;
+
+		// 메일함 팝업은 슬롯을 누르면 메일 팝업이, 메일 팝업은 수령하면 보상 팝업이 위에 뜬다.
+		// 위에 뜨는 팝업이 아래 팝업의 CTS 를 취소하면 안 되므로 둘 다 전용 CTS 를 쓴다.
+		private CancellationTokenSource _mailBoxCts;
+		private CancellationTokenSource _mailSlotCts;
 
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
@@ -873,6 +879,8 @@ namespace ProjectOne.UI
 		private const string HERO_PASS_POPUP_ADDRESS = "UIPrefab_PassPopup";
 		private const string RANKING_POPUP_ADDRESS = "UIPrefab_RankingPopup";
 		private const string PLAYER_INFO_POPUP_ADDRESS = "UIPrefab_PlayerInfoPopup";
+		private const string MAIL_BOX_POPUP_ADDRESS = "UIPrefab_MailBoxPopup";
+		private const string MAIL_SLOT_POPUP_ADDRESS = "UIPrefab_MailSlotPopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -939,7 +947,8 @@ namespace ProjectOne.UI
 		}
 
 		// 메인 HUD 의 메뉴 팝업을 _popupCanvas 에 열고 닫힘을 기다린다.
-		public async UniTask ShowMenuPopupAsync(CancellationToken ct)
+		// 메뉴는 닫히면서 다른 팝업으로 넘어간다 — 무엇으로 닫혔는지 돌려주고, 다음 팝업은 호출부가 띄운다.
+		public async UniTask<MenuPopupResult> ShowMenuPopupAsync(CancellationToken ct)
 		{
 			_popupCts?.Cancel();
 			_popupCts?.Dispose();
@@ -948,7 +957,7 @@ namespace ProjectOne.UI
 			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(MENU_POPUP_ADDRESS, _popupCts.Token);
 			if (prefab == null)
 			{
-				return;
+				return MenuPopupResult.None;
 			}
 
 			GameObject go = Instantiate(prefab, _popupCanvas.transform);
@@ -957,15 +966,81 @@ namespace ProjectOne.UI
 			{
 				Destroy(go);
 				ResourceManager.Instance.Release(MENU_POPUP_ADDRESS);
-				return;
+				return MenuPopupResult.None;
 			}
 
-			await popup.ShowAsync(_popupCts.Token);
+			MenuPopupResult result = await popup.ShowAsync(_popupCts.Token);
 			Destroy(go);
 
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(MENU_POPUP_ADDRESS);
+			}
+
+			return result;
+		}
+
+		// 메일함 팝업을 _popupCanvas 에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_mailBoxCts 참고).
+		public async UniTask ShowMailBoxPopupAsync(CancellationToken ct)
+		{
+			_mailBoxCts?.Cancel();
+			_mailBoxCts?.Dispose();
+			_mailBoxCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(MAIL_BOX_POPUP_ADDRESS, _mailBoxCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			MailBoxPopup popup = go.GetComponent<MailBoxPopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_MailBoxPopup 루트에 MailBoxPopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(MAIL_BOX_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_mailBoxCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(MAIL_BOX_POPUP_ADDRESS);
+			}
+		}
+
+		// 메일 한 통을 여는 팝업을 메일함 위에 열고 닫힘을 기다린다. 수령·삭제는 넘겨받은 공급자로 처리한다.
+		public async UniTask ShowMailSlotPopupAsync(MailData mail, IMailProvider provider, CancellationToken ct)
+		{
+			_mailSlotCts?.Cancel();
+			_mailSlotCts?.Dispose();
+			_mailSlotCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(MAIL_SLOT_POPUP_ADDRESS, _mailSlotCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			MailSlotPopup popup = go.GetComponent<MailSlotPopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_MailSlotPopup 루트에 MailSlotPopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(MAIL_SLOT_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(mail, provider, _mailSlotCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(MAIL_SLOT_POPUP_ADDRESS);
 			}
 		}
 

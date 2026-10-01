@@ -82,6 +82,7 @@ namespace ProjectOne.UI
 		// 메뉴 팝업을 여는 버튼. 창(Window)이 아니라 팝업이라 ScreenOpenButton 경로를 타지 않는다.
 		[Header("메뉴")]
 		[SerializeField] private UIButton _menuButton;
+		[SerializeField] private GameObject _menuBadge;	// MenuButton/Badge — 지금은 미확인 메일과 같이 켜진다
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────
 		public event Action<UIScreenId> OnScreenRequested;
@@ -123,6 +124,14 @@ namespace ProjectOne.UI
 		}
 
 		// ── 표시 (Presenter 가 지시) ───────────────────────────────────
+
+		public void SetMenuBadge(bool visible)
+		{
+			if (_menuBadge != null)
+			{
+				_menuBadge.SetActive(visible);
+			}
+		}
 
 		// 맥락에 맞지 않는 묶음을 숨긴다. 레이드에서 가이드 버튼을 감추는 장치가 이것이다.
 		public void ApplyContext(HudContext context)

@@ -465,4 +465,15 @@ namespace ProjectOne.Event
 						this.IsEquipment = isEquipment;
 				}
 		}
+
+		// 메일 목록·열람 상태가 바뀜 (메일함이 목록을 다시 그릴 때 발행). 메인 HUD 메뉴 배지가 구독한다.
+		public readonly struct MailChangedEvent
+		{
+				public readonly bool HasUnread;
+
+				public MailChangedEvent(bool hasUnread)
+				{
+						this.HasUnread = hasUnread;
+				}
+		}
 }
