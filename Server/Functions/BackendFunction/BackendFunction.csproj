@@ -38,6 +38,9 @@
   <ItemGroup>
     <Compile Include="..\..\..\ProjectOne\Assets\Project\Scripts\Core\Network\Shared\**\*.cs"
              Link="Shared\%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- 엑셀 자동생성 enum — 차트 문자열(enum 이름)을 클라와 같은 정수로 해석하려고 단일 소스로 링크한다 -->
+    <Compile Include="..\..\..\ProjectOne\Assets\Project\Scripts\Core\ExcelData\edt_enums.cs"
+             Link="Shared\edt_enums.cs" />
   </ItemGroup>
 
     

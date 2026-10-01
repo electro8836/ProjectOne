@@ -60,12 +60,6 @@ namespace EDT {
         DualPistols,
     }
 
-    public enum GachaTypes {
-        None,
-        Equipment,
-        Skill,
-    }
-
     public enum ItemMainCategory {
         None,
         Equipment,
@@ -678,8 +672,6 @@ namespace EDT {
         TableEquipOption,
         TableEquipQuality,
         TableEquipGradeWeight,
-        TableGachaInfo,
-        TableGacha_Equipment,
         TableItem,
         TableMap,
         TableAct,

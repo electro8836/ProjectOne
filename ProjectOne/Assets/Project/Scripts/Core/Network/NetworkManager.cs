@@ -127,29 +127,6 @@ namespace ProjectOne.Network
 			_caller.Invoke<DungeonClearRequest, DungeonClearResponse>(FunctionName.DungeonClear, request, callback);
 		}
 
-		// 장비 가챠 — 서버가 비용 차감 + 장비 지급을 트랜잭션으로 처리 후 결과 반환.
-		// 가챠는 종류별로 호출 경로를 분리한다(장비/스킬을 한 함수에 섞지 않음).
-		public void RequestEquipmentGacha(GachaDrawRequest request, ResponseCallback<GachaDrawResponse> callback)
-		{
-			if (ensureLoggedIn(callback) == false)
-			{
-				return;
-			}
-
-			_caller.Invoke<GachaDrawRequest, GachaDrawResponse>(FunctionName.EquipmentGachaDraw, request, callback);
-		}
-
-		// 스킬 가챠 — 장비와 분리된 호출 경로. (서버는 현재 stub — 스킬 데이터 준비 후 구현)
-		public void RequestSkillGacha(GachaDrawRequest request, ResponseCallback<GachaDrawResponse> callback)
-		{
-			if (ensureLoggedIn(callback) == false)
-			{
-				return;
-			}
-
-			_caller.Invoke<GachaDrawRequest, GachaDrawResponse>(FunctionName.SkillGachaDraw, request, callback);
-		}
-
 		// 장착 저장 — 8슬롯 전체를 서버가 보유 검증 후 갱신.
 		public void RequestSaveLoadout(SaveLoadoutRequest request, ResponseCallback<SaveLoadoutResponse> callback)
 		{

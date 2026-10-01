@@ -10,9 +10,6 @@ namespace ProjectOne.Shared
 		// 진입점 내부 분기용 action 식별자. 클라가 body 의 "action" 에 담아 보내면 서버가 분기한다.
 		public const string GetUserData = "GetUserData";
 		public const string DungeonClear = "DungeonClear";
-		public const string EquipmentGachaDraw = "EquipmentGachaDraw";
-		public const string SkillGachaDraw = "SkillGachaDraw";
 		public const string SaveLoadout = "SaveLoadout";
-		public const string LevelupCharacter = "LevelupCharacter";
 	}
 }

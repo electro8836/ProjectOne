@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using BackEnd;
 using LitJson;
@@ -9,7 +10,8 @@ namespace BackendFunction
 {
 	public class Loadout
 	{
-		// SaveLoadout — 선택 캐릭터의 장착 프리셋 저장. 보유 검증 후 USER_CHARACTER 의 해당 캐릭터 preset 만 갱신(서버 권위).
+		// SaveLoadout — 8슬롯 장착 저장. 슬롯 값은 장비 인스턴스 UID 다(0 = 미장착).
+		// 보유 검증 후 USER_LOADOUT 슬롯과 USER_INVENTORY 장비의 equippedSlot 을 함께 갱신한다(서버 권위).
 		// 클라는 클릭마다 보내지 않고 화면 닫기·앱 종료 시 1회만 호출한다(패킷 절약).
 		public Stream SaveLoadout()
 		{
@@ -22,53 +24,79 @@ namespace BackendFunction
 
 				string reqJson = Backend.Content["req"].ToString();
 				SaveLoadoutRequest req = JsonConvert.DeserializeObject<SaveLoadoutRequest>(reqJson);
-				if (req == null)
+				if (req == null || req.slots == null || req.slots.Length != LoadoutDto.SlotCount)
 				{
 					return FuncResult.Error("req parse failed");
 				}
 
-				// 1. 인벤토리 로드 → 장착하려는 아이템 보유 검증(0 = 미장착이라 검증 제외 — 클라 값 불신).
-				if (loadInventory(out InventoryDto inventory, out string invErr) == false)
+				// 1. 인벤토리 로드 → 장착하려는 UID 보유·중복 검증(클라 값 불신).
+				//    0번 자리는 EquipSlotTypes.None 이라 비어 있어야 한다.
+				if (loadMyRow("USER_INVENTORY", out InventoryDto inventory, out string invErr) == false)
 				{
 					return FuncResult.Error(invErr);
 				}
 
-				if (isOwned(inventory, req.weaponItemId) == false
-					|| isOwned(inventory, req.armorItemId) == false
-					|| isOwned(inventory, req.accessoryItemId) == false)
+				if (req.slots[0] != 0)
 				{
-					return FuncResult.Error("not owned item in request");
+					return FuncResult.Error("slot 0 must be empty");
 				}
 
-				// 2. 캐릭터 로드 → 대상 캐릭터의 preset 만 갱신(나머지 캐릭터/필드 보존).
-				if (loadCharacter(out CharacterDto character, out string charErr) == false)
+				HashSet<long> requested = new HashSet<long>();
+				for (int i = 1; i < req.slots.Length; i++)
 				{
-					return FuncResult.Error(charErr);
+					long uid = req.slots[i];
+					if (uid == 0)
+					{
+						continue;
+					}
+
+					if (findEquipment(inventory, uid) == null)
+					{
+						return FuncResult.Error("not owned equipment: " + uid);
+					}
+
+					if (requested.Add(uid) == false)
+					{
+						return FuncResult.Error("duplicate equipment: " + uid);
+					}
 				}
 
-				OwnedCharacterDto target = findCharacter(character, req.characterId);
-				if (target == null)
+				// 2. 로드아웃 로드 → 슬롯만 교체(레벨·경험치 보존).
+				if (loadMyRow("USER_LOADOUT", out LoadoutDto loadout, out string loadoutErr) == false)
 				{
-					return FuncResult.Error("character not owned: " + req.characterId);
+					return FuncResult.Error(loadoutErr);
 				}
 
-				target.preset.weaponItemId = req.weaponItemId;
-				target.preset.armorItemId = req.armorItemId;
-				target.preset.accessoryItemId = req.accessoryItemId;
+				loadout.slots = req.slots;
 
-				// 보유한 캐릭터일 때만 메인 선택 갱신 (서버 권위 검증)
-				if (req.selectedCharacterId > 0 && findCharacter(character, req.selectedCharacterId) != null)
+				// 3. 장비 인스턴스의 equippedSlot 을 슬롯과 일치시킨다 — 둘 중 하나만 바뀌면 다음 로드에서 어긋난다.
+				for (int i = 0; i < inventory.equipments.Count; i++)
 				{
-					character.selectedCharacterId = req.selectedCharacterId;
+					inventory.equipments[i].equippedSlot = (int)EDT.EquipSlotTypes.None;
 				}
 
-				// 3. USER_CHARACTER Data 덮어쓰기. 펑션 컨텍스트는 owner 인자가 비어 UndefinedParameterException 나므로 new Where() 사용(Dungeon 과 동일).
-				Param param = new Param();
-				param.Add("Data", JsonConvert.SerializeObject(character));
-				var updateResult = Backend.GameData.Update("USER_CHARACTER", new Where(), param);
-				if (!updateResult.IsSuccess())
+				for (int i = 1; i < req.slots.Length; i++)
 				{
-					return FuncResult.Error("Failed to update USER_CHARACTER: " + updateResult.GetErrorCode());
+					if (req.slots[i] != 0)
+					{
+						findEquipment(inventory, req.slots[i]).equippedSlot = i;
+					}
+				}
+
+				// 4. 트랜잭션 원자 쓰기. 펑션 컨텍스트는 owner 인자가 비어 UndefinedParameterException 나므로 new Where() 사용.
+				Param loadoutParam = new Param();
+				loadoutParam.Add("Data", JsonConvert.SerializeObject(loadout));
+				Param inventoryParam = new Param();
+				inventoryParam.Add("Data", JsonConvert.SerializeObject(inventory));
+
+				List<TransactionValue> tx = new List<TransactionValue>();
+				tx.Add(TransactionValue.SetUpdate("USER_LOADOUT", new Where(), loadoutParam));
+				tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), inventoryParam));
+
+				var txResult = Backend.GameData.TransactionWriteV2(tx);
+				if (!txResult.IsSuccess())
+				{
+					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 				}
 
 				SaveLoadoutResponse response = new SaveLoadoutResponse();
@@ -81,93 +109,46 @@ namespace BackendFunction
 			}
 		}
 
-		// 0 은 미장착(검증 통과). 그 외엔 보유(count>=1) 여야 한다.
-		private static bool isOwned(InventoryDto inventory, int itemId)
+		private static EquipmentInstanceDto findEquipment(InventoryDto inventory, long uid)
 		{
-			if (itemId == 0)
+			for (int i = 0; i < inventory.equipments.Count; i++)
 			{
-				return true;
-			}
-
-			for (int i = 0; i < inventory.items.Count; i++)
-			{
-				OwnedItemDto item = inventory.items[i];
-				if (item != null && item.itemId == itemId && item.count >= 1)
+				EquipmentInstanceDto equipment = inventory.equipments[i];
+				if (equipment != null && equipment.uid == uid)
 				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		private static bool loadInventory(out InventoryDto inventory, out string err)
-		{
-			inventory = null;
-			var getResult = Backend.GameData.GetMyData("USER_INVENTORY", new Where());
-			if (!getResult.IsSuccess())
-			{
-				err = "USER_INVENTORY Get Failed: " + getResult.GetErrorCode();
-				return false;
-			}
-
-			JsonData rows = getResult.FlattenRows();
-			if (rows.Count == 0)
-			{
-				err = "USER_INVENTORY row not found";
-				return false;
-			}
-
-			inventory = JsonConvert.DeserializeObject<InventoryDto>(rows[0]["Data"].ToString());
-			if (inventory == null)
-			{
-				inventory = new InventoryDto();
-			}
-
-			err = null;
-			return true;
-		}
-
-		private static bool loadCharacter(out CharacterDto character, out string err)
-		{
-			character = null;
-			var getResult = Backend.GameData.GetMyData("USER_CHARACTER", new Where());
-			if (!getResult.IsSuccess())
-			{
-				err = "USER_CHARACTER Get Failed: " + getResult.GetErrorCode();
-				return false;
-			}
-
-			JsonData rows = getResult.FlattenRows();
-			if (rows.Count == 0)
-			{
-				err = "USER_CHARACTER row not found";
-				return false;
-			}
-
-			character = JsonConvert.DeserializeObject<CharacterDto>(rows[0]["Data"].ToString());
-			if (character == null)
-			{
-				err = "USER_CHARACTER parse failed";
-				return false;
-			}
-
-			err = null;
-			return true;
-		}
-
-		private static OwnedCharacterDto findCharacter(CharacterDto character, int characterId)
-		{
-			for (int i = 0; i < character.characters.Count; i++)
-			{
-				OwnedCharacterDto oc = character.characters[i];
-				if (oc != null && oc.characterId == characterId)
-				{
-					return oc;
+					return equipment;
 				}
 			}
 
 			return null;
+		}
+
+		// 내 도메인 행(유저당 1행)의 Data JSON 을 읽는다. 행이 없으면 실패 — GetUserData 가 먼저 ensure 한다.
+		private static bool loadMyRow<T>(string tableName, out T data, out string err) where T : class, new()
+		{
+			data = null;
+			var getResult = Backend.GameData.GetMyData(tableName, new Where());
+			if (!getResult.IsSuccess())
+			{
+				err = tableName + " Get Failed: " + getResult.GetErrorCode();
+				return false;
+			}
+
+			JsonData rows = getResult.FlattenRows();
+			if (rows.Count == 0)
+			{
+				err = tableName + " row not found";
+				return false;
+			}
+
+			data = JsonConvert.DeserializeObject<T>(rows[0]["Data"].ToString());
+			if (data == null)
+			{
+				data = new T();
+			}
+
+			err = null;
+			return true;
 		}
 	}
 }

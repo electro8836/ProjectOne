@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using BackEnd;
 using LitJson;
@@ -61,12 +60,19 @@ namespace BackendFunction
 
 				response.inventory = JsonConvert.DeserializeObject<InventoryDto>(inventoryJson);
 
-				if (ensureDomainRow("USER_CARDSKILL", buildEmptyCardSkillJson(), out string cardSkillJson, out string cardSkillErr) == false)
+				if (ensureDomainRow("USER_LOADOUT", JsonConvert.SerializeObject(new LoadoutDto()), out string loadoutJson, out string loadoutErr) == false)
 				{
-					return FuncResult.Error(cardSkillErr);
+					return FuncResult.Error(loadoutErr);
 				}
 
-				response.cardSkill = JsonConvert.DeserializeObject<CardSkillBookDto>(cardSkillJson);
+				response.loadout = JsonConvert.DeserializeObject<LoadoutDto>(loadoutJson);
+
+				if (ensureDomainRow("USER_COSTUME", JsonConvert.SerializeObject(new CostumeDto()), out string costumeJson, out string costumeErr) == false)
+				{
+					return FuncResult.Error(costumeErr);
+				}
+
+				response.costume = JsonConvert.DeserializeObject<CostumeDto>(costumeJson);
 
 				if (ensureDomainRow("USER_DUNGEON", buildEmptyClearedDungeonsJson(), out string dungeonJson, out string dungeonErr) == false)
 				{
@@ -74,14 +80,6 @@ namespace BackendFunction
 				}
 
 				response.clearedDungeons = JsonConvert.DeserializeObject<ClearedDungeonsDto>(dungeonJson);
-
-				// 4. USER_CHARACTER — 없으면 무료 캐릭터(차트 UnlockState=Free)로 생성, 있으면 기존 보유 유지.
-				if (ensureCharacterRow(out string characterJson, out string characterErr) == false)
-				{
-					return FuncResult.Error(characterErr);
-				}
-
-				response.character = JsonConvert.DeserializeObject<CharacterDto>(characterJson);
 
 				return FuncResult.Json(response);
 			}
@@ -126,124 +124,16 @@ namespace BackendFunction
 			return true;
 		}
 
-		// USER_CHARACTER 행 ensure — 없으면 무료 캐릭터 목록으로 생성(있으면 기존 보유 그대로 둔다).
-		// 기존 유저는 차트 조인 비용을 피하려 행이 있으면 곧장 반환한다(신규 계정일 때만 차트 조회).
-		private bool ensureCharacterRow(out string dataJson, out string err)
-		{
-			var getResult = Backend.GameData.GetMyData("USER_CHARACTER", new Where());
-			if (!getResult.IsSuccess())
-			{
-				dataJson = null;
-				err = "USER_CHARACTER Get Failed: " + getResult.GetErrorCode();
-				return false;
-			}
-
-			JsonData rows = getResult.FlattenRows();
-			if (rows.Count > 0)
-			{
-				// 이미 존재 — 기존 데이터 보존(덮지 않음)
-				dataJson = rows[0]["Data"].ToString();
-				err = null;
-				return true;
-			}
-
-			// 신규 — 무료 캐릭터 목록을 차트에서 만들어 생성
-			if (buildStarterCharacterJson(out string starterJson, out string buildErr) == false)
-			{
-				dataJson = null;
-				err = buildErr;
-				return false;
-			}
-
-			Param param = new Param();
-			param.Add("Data", starterJson);
-			var insertResult = Backend.GameData.Insert("USER_CHARACTER", param);
-			if (!insertResult.IsSuccess())
-			{
-				dataJson = null;
-				err = "USER_CHARACTER Insert Failed: " + insertResult.GetErrorCode();
-				return false;
-			}
-
-			dataJson = starterJson;
-			err = null;
-			return true;
-		}
-
-		// 무료 캐릭터 스타터 목록 JSON 생성 — UnlockCondition / Character 두 차트를 조인한다(서버 권위).
-		// UnlockCondition 차트에서 UnlockState=Free 인 UnlockConditionID 를 모으고,
-		// Character 차트에서 그 조건을 참조하는 CharacterID 를 무료 캐릭터로 지급한다.
-		// 차트 컬럼명: 뒤끝 차트는 'ID' 가 예약어라 키 컬럼을 'CharacterID' / 'UnlockConditionID' 로 둔다.
-		private bool buildStarterCharacterJson(out string dataJson, out string err)
-		{
-			// 1. UnlockCondition 차트 — Free 조건 ID 수집
-			if (ChartUtil.GetChartRows("UnlockCondition", out JsonData unlockRows, out err) == false)
-			{
-				dataJson = null;
-				return false;
-			}
-
-			HashSet<int> freeConditionIds = new HashSet<int>();
-			for (int i = 0; i < unlockRows.Count; i++)
-			{
-				// 차트는 정수(1) 또는 문자열("Free")로 올라올 수 있어 둘 다 Free 로 인식한다(CharacterUnlockState.Free = 1).
-				string unlockState = unlockRows[i]["UnlockState"].ToString();
-				if (unlockState == "Free" || unlockState == "1")
-				{
-					freeConditionIds.Add(int.Parse(unlockRows[i]["UnlockConditionID"].ToString()));
-				}
-			}
-
-			// 2. Character 차트 — Free 조건을 참조하는 캐릭터 수집
-			if (ChartUtil.GetChartRows("Character", out JsonData charRows, out err) == false)
-			{
-				dataJson = null;
-				return false;
-			}
-
-			CharacterDto dto = new CharacterDto();
-			int minCharacterId = 0;
-			for (int i = 0; i < charRows.Count; i++)
-			{
-				int unlockConditionId = int.Parse(charRows[i]["UnlockConditionID"].ToString());
-				if (freeConditionIds.Contains(unlockConditionId) == false)
-				{
-					continue;
-				}
-
-				int characterId = int.Parse(charRows[i]["CharacterID"].ToString());
-				OwnedCharacterDto owned = new OwnedCharacterDto();
-				owned.characterId = characterId;
-				owned.grade = 1;
-				owned.level = 1;
-				owned.exp = 0;
-				owned.awakenLevel = 0;
-				owned.dupCount = 0;
-				dto.characters.Add(owned);
-
-				// 선택 캐릭터 기본값 — 가장 작은 캐릭터 ID
-				if (minCharacterId == 0 || characterId < minCharacterId)
-				{
-					minCharacterId = characterId;
-				}
-			}
-
-			dto.selectedCharacterId = minCharacterId;
-			dataJson = JsonConvert.SerializeObject(dto);
-			err = null;
-			return true;
-		}
-
-		// 가챠 테스트용 스타터 재화 JSON — currencyId 는 edt_enums.CurrencyInfo 순서(Gold=1, Dia=2)와 일치.
+		// 가챠 테스트용 스타터 재화 JSON — currencyId 는 클라와 같은 EDT.Currency 정수.
 		private static string buildStarterCurrencyJson()
 		{
 			CurrencyDto starter = new CurrencyDto();
 			CurrencyAmountDto gold = new CurrencyAmountDto();
-			gold.currencyId = 1;   // Gold
+			gold.currencyId = (int)EDT.Currency.Gold;
 			gold.amount = 100000;
 			starter.amounts.Add(gold);
 			CurrencyAmountDto dia = new CurrencyAmountDto();
-			dia.currencyId = 2;    // Dia
+			dia.currencyId = (int)EDT.Currency.Dia;
 			dia.amount = 10000;
 			starter.amounts.Add(dia);
 			return JsonConvert.SerializeObject(starter);
@@ -253,12 +143,6 @@ namespace BackendFunction
 		private static string buildEmptyInventoryJson()
 		{
 			return JsonConvert.SerializeObject(new InventoryDto());
-		}
-
-		// 빈 카드스킬 JSON
-		private static string buildEmptyCardSkillJson()
-		{
-			return JsonConvert.SerializeObject(new CardSkillBookDto());
 		}
 
 		// 빈 던전 클리어 기록 JSON
