@@ -134,6 +134,70 @@ namespace ProjectOne.Reward
 			}
 		}
 
+		// 서버가 UID·등급·품질을 확정한 장비를 같은 값의 인스턴스로 만든다(인벤에는 넣지 않는다).
+		// 서버 USER_INVENTORY 와 UID 가 일치해야 이후 장착 저장(SaveLoadout)의 보유 검증을 통과한다.
+		public static EquipmentInstance CreateServerEquipment(EquipmentInstanceDto src)
+		{
+			if (src == null || src.uid <= 0)
+			{
+				return null;
+			}
+
+			EquipmentInstance instance = EquipmentFactory.CreateExact(src.itemId, (ItemGradeType)src.grade, src.quality);
+			if (instance == null)
+			{
+				return null;
+			}
+
+			instance.uid = src.uid;
+			return instance;
+		}
+
+		// 서버 응답(이미 서버에 저장된 지급분)을 공용 지급 목록으로 옮긴다 — 장비는 서버 UID 그대로 인스턴스를 만든다.
+		// 반영은 호출자가 ApplyAll 로 한다(획득 로그·보상 팝업이 같은 목록을 쓴다).
+		public static void FromServer(GrantedRewardDto[] rewards, EquipmentInstanceDto[] equipments, List<GrantedReward> buffer)
+		{
+			if (equipments != null)
+			{
+				for (int i = 0; i < equipments.Length; i++)
+				{
+					EquipmentInstance instance = CreateServerEquipment(equipments[i]);
+					if (instance == null)
+					{
+						continue;
+					}
+
+					GrantedReward reward = default(GrantedReward);
+					reward.type = RewardType.Item;
+					reward.itemId = instance.itemId;
+					reward.count = 1;
+					reward.equipment = instance;
+					buffer.Add(reward);
+				}
+			}
+
+			if (rewards != null)
+			{
+				for (int i = 0; i < rewards.Length; i++)
+				{
+					GrantedRewardDto dto = rewards[i];
+					GrantedReward reward = default(GrantedReward);
+					reward.type = (RewardType)dto.rewardType;
+					reward.count = dto.count;
+					if (reward.type == RewardType.Currency)
+					{
+						reward.currency = (EDT.Currency)dto.itemId;
+					}
+					else
+					{
+						reward.itemId = dto.itemId;
+					}
+
+					buffer.Add(reward);
+				}
+			}
+		}
+
 		// ── 내부 ──────────────────────────────────────────────────────
 
 		private static void applyOne(GrantedReward granted)

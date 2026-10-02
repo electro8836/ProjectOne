@@ -92,14 +92,26 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			if (DungeonProgress.TryConsumeEnter(DUNGEON_TYPE) == false)
+			if (DungeonProgress.CanEnter(DUNGEON_TYPE) == false)
 			{
 				Debug.Log("[LabyrinthDungeonPopup] 남은 입장 횟수가 없습니다.");
 				return;
 			}
 
+			enterAsync(_selectedStage).Forget();
+		}
+
+		// 입장 횟수 차감과 런 발급은 서버가 한다 — 응답을 받고 들어간다.
+		private async UniTaskVoid enterAsync(int stage)
+		{
+			DungeonEnterResult result = await DungeonEntry.RequestAsync(DUNGEON_TYPE, stage, view.GetDestroyToken());
+			if (result.ok == false)
+			{
+				return;
+			}
+
 			view.Close();
-			MapNavigator.StartDungeon(DUNGEON_TYPE, _selectedStage);
+			MapNavigator.StartDungeon(DUNGEON_TYPE, stage, result.run);
 		}
 
 		// 1초마다. 남은 초가 그대로면 문자열을 새로 만들지 않는다.

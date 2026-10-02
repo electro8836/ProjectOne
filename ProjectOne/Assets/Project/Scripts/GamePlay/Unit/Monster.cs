@@ -26,6 +26,11 @@ namespace ProjectOne.Unit
 		// 고유 드랍(Monster.RewardGroupID)은 원형이 소유하므로 여기 두지 않는다.
 		public int SpawnRewardGroupId { get; private set; }
 
+		// 필드보스 표시 — DailyReset 스폰으로 나온 개체만 (필드, 스폰 행)을 갖는다. 0 이면 필드보스가 아니다.
+		// 처치 보상은 배치 정산이 아니라 FieldBossKill 로 즉시 정산된다.
+		public int FieldBossFieldId { get; private set; }
+		public int FieldBossSpawnId { get; private set; }
+
 		// 브레이크 게이지 — 엘리트/보스만 가진다. MonsterPool 이 등급을 보고 붙여 준다.
 		private MonsterBreak _break;
 
@@ -52,9 +57,18 @@ namespace ProjectOne.Unit
 		}
 
 		// 지역 드랍 그룹 주입 — 스폰마다 바뀐다(풀 재사용이므로 매번 덮어써야 한다).
+		// 스폰마다 불리므로 필드보스 표시도 여기서 지운다 — 필드보스면 스포너가 스폰 직후 다시 표시한다.
 		public void SetSpawnRewardGroup(int groupId)
 		{
 			SpawnRewardGroupId = groupId;
+			FieldBossFieldId = 0;
+			FieldBossSpawnId = 0;
+		}
+
+		public void SetFieldBoss(int fieldId, int spawnId)
+		{
+			FieldBossFieldId = fieldId;
+			FieldBossSpawnId = spawnId;
 		}
 
 		// 브레이크 컴포넌트 주입 — 풀 생성 시 1회. 일반 몬스터는 null 로 남는다.
@@ -100,7 +114,7 @@ namespace ProjectOne.Unit
 
 			if (wasAlive == true)
 			{
-				EventManager.Instance.Publish(new MonsterKillEvent(GetTableID(), Level, HitCenter, SpawnRewardGroupId));
+				EventManager.Instance.Publish(new MonsterKillEvent(GetTableID(), Level, HitCenter, SpawnRewardGroupId, FieldBossFieldId, FieldBossSpawnId));
 			}
 		}
 

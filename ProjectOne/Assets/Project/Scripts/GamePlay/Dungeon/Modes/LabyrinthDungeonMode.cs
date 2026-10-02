@@ -6,6 +6,7 @@ using EDT;
 using ProjectOne.Event;
 using ProjectOne.Map;
 using ProjectOne.Reward;
+using ProjectOne.Shared;
 using ProjectOne.UI;
 using ProjectOne.Unit;
 
@@ -13,11 +14,13 @@ namespace ProjectOne.Dungeon
 {
 	// 미궁 던전 — 탈출형 기믹.
 	//
-	// 시작 지점(Entry)에서 출발해 도착 구역(Exit)에 닿으면 클리어다.
+	// 시작 지점(Entry)에서 출발해 도착 구역(Exit)의 기관장치를 작동하면 클리어다 — 모든 구간을 정리한 뒤
+	// 구역 안에 ExitDeviceSeconds 동안 머물면 불이 멈추고 되돌아가는 길이 장막으로 막힌다.
 	// 아래에서 불(LabyrinthFireWall)이 일정 속도로 올라오고, 닿으면 부활 없이 즉시 실패다.
 	// 트리거는 순서대로 하나씩 발동한다 — 발동하면 스폰 그룹이 나오고 장막이 앞길을 막는다.
 	// 그 구간 몬스터를 모두 처치해야 장막이 걷히고 다음 트리거가 발동할 수 있다.
-	// 상자 반경 안에 머물면 게이지가 차고, 다 차면 열려 그 상자 등급의 보상 그룹(Normal/Advanced/Premium)을 굴려 바로 지급한다.
+	// 상자 반경 안에 머물면 게이지가 차고, 다 차면 열려 그 상자 등급의 보상 그룹(Normal/Advanced/Premium)을 런 시드로 굴려
+	// 바닥에 떨군다(DungeonRunLedger). 주운 것만 런 종료 정산에서 서버가 지급한다 — 끝날 때 바닥에 남은 것은 사라진다.
 	//
 	// 몬스터에게 죽는 것은 StageModeBase 의 공통 Defeat 판정 → 디렉터의 부활 팝업 경로를 그대로 탄다.
 	// 제한시간은 디렉터가 판정한다.
@@ -25,6 +28,9 @@ namespace ProjectOne.Dungeon
 	{
 		// 상자 개봉에 머물러야 하는 시간(초)
 		private const float ChestOpenSeconds = 2f;
+
+		// 출구 기관장치 작동에 머물러야 하는 시간(초)
+		private const float ExitDeviceSeconds = 3f;
 
 		private Table_LabyrinthDungeon.Row _row;
 		private LabyrinthMap _map;
@@ -41,6 +47,13 @@ namespace ProjectOne.Dungeon
 		private float _fireWait;
 		private bool _fireDeath;
 
+		// 기관장치를 작동해 불이 멈췄는가
+		private bool _fireStopped;
+
+		// 출구 기관장치 작동 게이지 — 구역 안에 있는 동안만 찬다.
+		private bool _exitInteracting;
+		private float _exitProgress;
+
 		private DungeonChest _chestTarget;
 		private float _chestProgress;
 		private int _openedChests;
@@ -49,8 +62,8 @@ namespace ProjectOne.Dungeon
 		private float _playerProgress;
 		private float _fireProgress;
 
-		// 이번 판에 지급한 상자 보상. 결과창에 클리어 보상과 함께 보여준다.
-		private readonly List<GrantedReward> _granted = new List<GrantedReward>();
+		// 상자 1개의 추첨 결과 버퍼 — 바닥에 떨구면 다시 쓴다.
+		private readonly List<GrantedReward> _chestRolled = new List<GrantedReward>(8);
 
 		// 캐릭터 위치 진행도 0~1
 		public float PlayerProgress
@@ -78,11 +91,6 @@ namespace ProjectOne.Dungeon
 		public bool IsFireDeath
 		{
 			get { return _fireDeath; }
-		}
-
-		public List<GrantedReward> GrantedRewards
-		{
-			get { return _granted; }
 		}
 
 		protected override async UniTask RunAsync(DungeonContext ctx, CancellationToken ct)
@@ -126,6 +134,7 @@ namespace ProjectOne.Dungeon
 
 			// 재도전은 씬을 유지한 채 맵만 바꾸므로 히어로가 이전 판 위치에 남아 있다 — 매번 시작 지점으로 옮긴다.
 			placeHeroAtEntry();
+			_map.SetExitCurtain(false);
 
 			EventManager.Instance.Publish(new LabyrinthChestChangedEvent(_openedChests, _totalChests));
 
@@ -140,6 +149,7 @@ namespace ProjectOne.Dungeon
 				if (hero == null)
 				{
 					cancelChest();
+					cancelExit();
 					continue;
 				}
 
@@ -150,15 +160,20 @@ namespace ProjectOne.Dungeon
 				}
 
 				updateTriggers(hero);
-				updateChest(hero, dt);
 
 				_playerProgress = Mathf.InverseLerp(_startY, _exitY, hero.CachedPos.y);
 
-				// 모든 구간을 정리해야 탈출로 인정한다 — 마지막 구간은 막을 통로가 없어 장막 대신 이 조건이 막는다.
+				// 모든 구간을 정리해야 기관장치가 작동한다 — 마지막 구간은 막을 통로가 없어 장막 대신 이 조건이 막는다.
+				// 출구 구역 안에서는 기관장치가 게이지를 쓴다 — 상자 게이지와 겹치지 않게 상자는 쉰다.
 				if (isAllSegmentsCleared() == true && _map.IsInExit(hero.CachedPos) == true)
 				{
-					_playerProgress = 1f;
-					_result = DungeonResult.Cleared;
+					cancelChest();
+					updateExit(hero, dt);
+				}
+				else
+				{
+					cancelExit();
+					updateChest(hero, dt);
 				}
 			}
 		}
@@ -166,12 +181,19 @@ namespace ProjectOne.Dungeon
 		protected override void OnFinished()
 		{
 			cancelChest();
+			cancelExit();
 		}
 
 		// ── 불 ────────────────────────────────────────────────────────
 
 		private void updateFire(UnitBase hero, float dt)
 		{
+			// 기관장치를 작동하면 불은 더 오르지 않는다.
+			if (_fireStopped == true)
+			{
+				return;
+			}
+
 			LabyrinthFireWall fire = _map.FireWall;
 
 			if (_fireWait > 0f)
@@ -242,6 +264,60 @@ namespace ProjectOne.Dungeon
 			return _nextTrigger >= _map.Triggers.Count && _activeTrigger < 0;
 		}
 
+		// ── 출구 기관장치 ─────────────────────────────────────────────
+
+		// 구역 안에 머무는 동안 게이지가 차고, 다 차면 불을 멈추고 되돌아가는 길을 막은 뒤 클리어한다.
+		private void updateExit(UnitBase hero, float dt)
+		{
+			if (_exitInteracting == false)
+			{
+				_exitInteracting = true;
+				_exitProgress = 0f;
+
+				InteractionGauge gauge = getGauge();
+				if (gauge != null)
+				{
+					gauge.Show(hero, InteractionKind.Device);
+				}
+			}
+
+			_exitProgress += dt;
+
+			InteractionGauge current = getGauge();
+			if (current != null)
+			{
+				current.SetProgress(_exitProgress / ExitDeviceSeconds);
+			}
+
+			if (_exitProgress < ExitDeviceSeconds)
+			{
+				return;
+			}
+
+			cancelExit();
+			_fireStopped = true;
+			_map.SetExitCurtain(true);
+			_playerProgress = 1f;
+			_result = DungeonResult.Cleared;
+		}
+
+		private void cancelExit()
+		{
+			if (_exitInteracting == false)
+			{
+				return;
+			}
+
+			_exitInteracting = false;
+			_exitProgress = 0f;
+
+			InteractionGauge gauge = getGauge();
+			if (gauge != null)
+			{
+				gauge.Hide();
+			}
+		}
+
 		// ── 상자 ──────────────────────────────────────────────────────
 
 		private void updateChest(UnitBase hero, float dt)
@@ -283,33 +359,47 @@ namespace ProjectOne.Dungeon
 			cancelChest();
 		}
 
-		// TODO(STEP 14) — 지금은 로컬 지급이다. 서버 권위로 옮길 때 여기와 디렉터의 클리어 정산을 함께 바꾼다.
+		// 상자 인덱스는 맵 배치 순서다 — 서버가 상자별 시드를 같은 인덱스로 재현한다.
 		private void openChest(DungeonChest chest)
 		{
 			chest.Open();
 
-			// 공용 지급 경로 — 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
-			RewardGranter.Grant(getRewardGroup(chest), RewardContext.DungeonClear, _granted);
+			// 보상은 상자 주변 바닥에 떨군다 — 주울 때 지급된다(획득 로그도 그때 찍힌다).
+			int index = indexOfChest(chest);
+			if (index >= 0
+				&& DungeonRunLedger.Instance.OpenChest(index, chest.Grade, getRewardGroup(chest), _chestRolled) == true
+				&& DropManager.HasInstance == true)
+			{
+				DropManager.Instance.SpawnChestDrops(chest.Position, _chestRolled, index);
+			}
 
 			_openedChests++;
 			EventManager.Instance.Publish(new LabyrinthChestChangedEvent(_openedChests, _totalChests));
 		}
 
-		// 상자 외형 등급 → 이 단계의 등급별 보상 그룹. 등급이 없는 상자(베이스 프리팹)는 일반으로 본다.
+		// 상자 외형 등급 → 이 단계의 등급별 보상 그룹(서버와 같은 규칙). 등급이 없는 상자(베이스 프리팹)는 일반으로 본다.
 		private int getRewardGroup(DungeonChest chest)
 		{
-			switch (chest.Grade)
+			if (chest.Grade == DungeonChestGrade.None)
 			{
-				case DungeonChestGrade.Advanced:
-					return _row.AdvancedChestRewardGroupID;
-				case DungeonChestGrade.Premium:
-					return _row.PremiumChestRewardGroupID;
-				case DungeonChestGrade.Normal:
-					return _row.NormalChestRewardGroupID;
-				default:
-					Debug.LogError($"[LabyrinthDungeonMode] {chest.name} 의 등급이 없습니다 — 일반 보상으로 지급합니다. 등급 변형 프리팹(Prefab_DungeonChest_*)을 배치하세요.");
-					return _row.NormalChestRewardGroupID;
+				Debug.LogError($"[LabyrinthDungeonMode] {chest.name} 의 등급이 없습니다 — 일반 보상으로 지급합니다. 등급 변형 프리팹(Prefab_DungeonChest_*)을 배치하세요.");
 			}
+
+			return DungeonRules.GetLabyrinthChestGroup(_row, chest.Grade);
+		}
+
+		private int indexOfChest(DungeonChest chest)
+		{
+			IReadOnlyList<DungeonChest> chests = _map.Chests;
+			for (int i = 0; i < chests.Count; i++)
+			{
+				if (chests[i] == chest)
+				{
+					return i;
+				}
+			}
+
+			return -1;
 		}
 
 		private void cancelChest()

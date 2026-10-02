@@ -6,6 +6,7 @@ using UnityEngine;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Map;
+using ProjectOne.Shared;
 using ProjectOne.Skill;
 using ProjectOne.Unit;
 using ProjectOne.Unit.AI;
@@ -25,7 +26,7 @@ namespace ProjectOne.Dungeon
 		private const int MaxLife = 5;
 
 		// 한 마리씩 내보내는 간격(초)
-		private const float SpawnInterval = 1f;
+		private const float SpawnInterval = DungeonRules.RiftSpawnIntervalSeconds;
 
 		// 처치 시 쌓이는 스킬 게이지. 엘리트·보스는 같은 값이다.
 		private const int NormalGauge = 25;

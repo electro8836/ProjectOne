@@ -6,6 +6,7 @@ using ProjectOne.Event;
 using ProjectOne.Map;
 using ProjectOne.Monsters;
 using ProjectOne.Unit;
+using ProjectOne.Utils;
 
 namespace ProjectOne.Field
 {
@@ -38,6 +39,7 @@ namespace ProjectOne.Field
 			public int rewardGroupId;	// MonsterSpawn.RewardGroupID (지역 드랍)
 			public float respawnTime;	// MonsterSpawn.RespawnTime (하한 적용 후)
 			public RespawnType respawnType;	// MonsterSpawn.RespawnType — DailyReset 이면 06시 리젠 + 남은 시간 라벨
+			public int spawnId;			// MonsterSpawn 행 ID — 필드보스(DailyReset) 처치 기록의 키
 			public Vector3 origin;
 
 			public int instanceId;		// 살아있는 개체. 0이면 비어 있음
@@ -140,6 +142,7 @@ namespace ProjectOne.Field
 					slot.rewardGroupId = row.RewardGroupID;
 					slot.respawnTime = respawnTime;
 					slot.respawnType = row.RespawnType;
+					slot.spawnId = row.ID;
 					slot.labelTitle = labelTitle;
 					slot.origin = resolveOrigin(point);
 					_slots.Add(slot);
@@ -183,14 +186,22 @@ namespace ProjectOne.Field
 					continue;
 				}
 
-				if (clock.IsReady(slot.key) == false)
+				// 필드보스는 서버 처치 기록(06시 경계)으로 판정한다.
+				if (slot.respawnType == RespawnType.DailyReset)
 				{
-					// 일일 리젠 슬롯만 남은 시간을 띄운다 — 필드 재입장 시에도 이 경로로 다시 뜬다.
-					if (slot.respawnType == RespawnType.DailyReset && slot.label == null && RespawnTimerLabelManager.HasInstance == true)
+					if (clock.IsBossKilledToday(slot.key.MapId, slot.spawnId) == true)
 					{
-						slot.label = RespawnTimerLabelManager.Instance.Show(slot.origin, clock.GetRemainingSeconds(slot.key), slot.labelTitle);
-					}
+						// 일일 리젠 슬롯만 남은 시간을 띄운다 — 필드 재입장 시에도 이 경로로 다시 뜬다.
+						if (slot.label == null && RespawnTimerLabelManager.HasInstance == true)
+						{
+							slot.label = RespawnTimerLabelManager.Instance.Show(slot.origin, (float)DailyReset.GetRemaining().TotalSeconds, slot.labelTitle);
+						}
 
+						continue;
+					}
+				}
+				else if (clock.IsReady(slot.key) == false)
+				{
 					continue;
 				}
 
@@ -224,6 +235,12 @@ namespace ProjectOne.Field
 
 			slot.instanceId = monster.GetID();
 			_byInstance[slot.instanceId] = slot;
+
+			// 필드보스 표시 — 처치 보상이 배치 정산 대신 FieldBossKill 로 간다. Field.ID 와 Map.ID 는 같다.
+			if (slot.respawnType == RespawnType.DailyReset)
+			{
+				monster.SetFieldBoss(slot.key.MapId, slot.spawnId);
+			}
 		}
 
 		private void onUnitDied(UnitDiedEvent e)
@@ -237,10 +254,10 @@ namespace ProjectOne.Field
 			_byInstance.Remove(e.InstanceID);
 			slot.instanceId = 0;
 
-			// 일일 리젠은 다음 초기화 시각(06시)에 돌아온다.
+			// 일일 리젠은 다음 초기화 시각(06시)에 돌아온다. 서버 기록은 FieldBossReward 가 응답으로 덮는다.
 			if (slot.respawnType == RespawnType.DailyReset)
 			{
-				MonsterRespawnClock.Instance.SetDailyRespawn(slot.key);
+				MonsterRespawnClock.Instance.SetBossKilled(slot.key.MapId, slot.spawnId, DailyReset.GetResetDay());
 				return;
 			}
 

@@ -73,12 +73,12 @@ namespace BackendFunction
 
 				response.costume = JsonConvert.DeserializeObject<CostumeDto>(costumeJson);
 
-				if (ensureDomainRow("USER_DUNGEON", buildEmptyClearedDungeonsJson(), out string dungeonJson, out string dungeonErr) == false)
+				if (ensureDomainRow("USER_DUNGEON", JsonConvert.SerializeObject(new DungeonProgressDto()), out string dungeonJson, out string dungeonErr) == false)
 				{
 					return FuncResult.Error(dungeonErr);
 				}
 
-				response.clearedDungeons = JsonConvert.DeserializeObject<ClearedDungeonsDto>(dungeonJson);
+				response.dungeonProgress = JsonConvert.DeserializeObject<DungeonProgressDto>(dungeonJson);
 
 				if (ensureDomainRow("USER_MASTERY", JsonConvert.SerializeObject(new MasteryDto()), out string masteryJson, out string masteryErr) == false)
 				{
@@ -230,12 +230,6 @@ namespace BackendFunction
 		private static string buildEmptyInventoryJson()
 		{
 			return JsonConvert.SerializeObject(new InventoryDto());
-		}
-
-		// 빈 던전 클리어 기록 JSON
-		private static string buildEmptyClearedDungeonsJson()
-		{
-			return JsonConvert.SerializeObject(new ClearedDungeonsDto());
 		}
 	}
 }

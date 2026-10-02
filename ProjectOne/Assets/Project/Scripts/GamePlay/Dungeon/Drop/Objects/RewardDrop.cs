@@ -36,6 +36,8 @@ namespace ProjectOne.Dungeon
 		// 필드 배치 정산 좌표 — 이 드랍이 몇 번째 처치의 몇 번째 보상인가. -1 이면 정산 대상 아님(오프라인)
 		private int _killIndex = -1;
 		private int _rewardIndex;
+		// 던전 상자 정산 좌표 — 미궁 상자에서 떨어진 드랍이면 상자 인덱스. -1 이면 상자 드랍이 아니다
+		private int _chestIndex = -1;
 
 		// 펫이 이미 누군가 가져간 드랍을 타겟으로 잡지 않도록 공개한다.
 		public bool IsClaimed { get { return _isClaimed; } }
@@ -55,6 +57,7 @@ namespace ProjectOne.Dungeon
 			_isClaimed = false;
 			_isPetOwned = false;
 			_killIndex = -1;
+			_chestIndex = -1;
 			_rewardIndex = 0;
 			_payload.Clear();
 		}
@@ -64,6 +67,41 @@ namespace ProjectOne.Dungeon
 		{
 			_killIndex = killIndex;
 			_rewardIndex = rewardIndex;
+		}
+
+		// 상자 원장 좌표를 단다(미궁 상자 드랍). 주우면 DungeonRunLedger 에 주운 비트가 남는다.
+		public void SetChestTag(int chestIndex, int rewardIndex)
+		{
+			_chestIndex = chestIndex;
+			_rewardIndex = rewardIndex;
+		}
+
+		// 이미 주웠거나 수명이 다해 풀로 돌아갔는가 — DropManager 가 추적 목록을 정리할 때 본다.
+		public bool IsGone
+		{
+			get { return IsReleased; }
+		}
+
+		// 던전 종료 시 바닥에 남은 드랍을 줍지 않은 채 지운다 — 반환 콜백이 처치 보상을 미획득으로 확정한다.
+		public void Discard()
+		{
+			if (IsReleased == false)
+			{
+				ReleaseSelf();
+			}
+		}
+
+		// 던전 종료 시 바닥에 남은 드랍을 한 번에 획득한다 — 지급·연출·반환을 여기서 끝낸다.
+		public void CollectNow()
+		{
+			if (IsReleased == true)
+			{
+				return;
+			}
+
+			claim();
+			PlayPickupFeedback();
+			ReleaseSelf();
 		}
 
 		// 풀 반환 — 줍지 않고 사라지면(수명 만료) 원장에 미획득으로 남긴다.
@@ -180,7 +218,15 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
+			if (_chestIndex >= 0)
+			{
+				DungeonRunLedger.Instance.MarkChestPicked(_chestIndex, _rewardIndex);
+			}
+
 			RewardGranter.ApplyAll(_payload);
+
+			// 던전 결과창 합산 — 던전 밖(필드)에서는 원장이 무시한다.
+			DungeonRunLedger.Instance.RecordPicked(_payload);
 			_payload.Clear();
 		}
 	}

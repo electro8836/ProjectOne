@@ -1,7 +1,11 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
+using ProjectOne.Network;
+using ProjectOne.Reward;
+using ProjectOne.Shared;
 using ProjectOne.Shop;
 using ProjectOne.UserData;
 using UnityEngine;
@@ -10,13 +14,17 @@ namespace ProjectOne.UI
 {
 	// 상점 화면 Presenter — 어떤 카테고리를 그릴지 정하고 구매 입력을 받는다.
 	//
-	// 구매는 아직 서버에 나가지 않는다. 지금은 로그를 남기고 구매 횟수만 올려
-	// 제한이 걸린 상품의 표시가 실제로 줄어드는지 확인할 수 있게 해 둔다.
+	// 보물상자(GoodsType.Box)는 서버(ShopBuy)가 열쇠 차감·추첨·지급을 하고 결과를 내려준다.
+	// 다른 상품은 아직 서버에 나가지 않는다 — 로그를 남기고 구매 횟수만 올린다.
 	public sealed class ShopPresenter : Presenter<ShopUI>
 	{
 		private IReadOnlyList<Table_ShopCategory.Row> _categories;
 
 		private CancellationTokenSource _renderCts;	// 렌더 단위 취소 (아이콘 로드 경합 방지)
+
+		// 응답을 기다리는 상자 상품 — 0 이면 대기 중이 아니다. 응답 전 연타를 막는다.
+		private int _pendingBoxGoodsId;
+		private bool _isDisposed;
 
 		protected override void OnInitialize()
 		{
@@ -27,6 +35,8 @@ namespace ProjectOne.UI
 
 		protected override void OnDispose()
 		{
+			_isDisposed = true;
+
 			if (_renderCts != null)
 			{
 				_renderCts.Cancel();
@@ -77,6 +87,12 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			if (row.GoodsType == GoodsType.Box)
+			{
+				requestBox(row);
+				return;
+			}
+
 			// TODO(서버) — 실제 구매 요청으로 교체한다. 결제 검증·재화 차감·보상 지급 모두 서버 권위여야 한다.
 			Debug.Log($"[Shop] 구매 요청 goodsId={row.ID} name={row.Name} goodsType={row.GoodsType} priceType={row.PriceType} price={row.Price} priceParam={row.PriceParam} rewardGroupId={row.RewardGroupID}");
 
@@ -89,6 +105,79 @@ namespace ProjectOne.UI
 			}
 
 			view.RefreshGoods(row.ID);
+		}
+
+		// ── 보물상자 ──────────────────────────────────────────────────────
+
+		private void requestBox(Table_ShopGoods.Row row)
+		{
+			if (_pendingBoxGoodsId != 0)
+			{
+				return;
+			}
+
+			if (NetworkManager.Instance.IsLoggedIn == false)
+			{
+				Debug.LogWarning($"[Shop] 보물상자는 서버 로그인 상태에서만 열 수 있다 goodsId={row.ID}");
+				return;
+			}
+
+			int keyItemId;
+			if (tryGetKeyItemId(row, out keyItemId) == false)
+			{
+				Debug.LogError($"[Shop] 보물상자 가격이 열쇠 아이템이 아니다 goodsId={row.ID} priceType={row.PriceType} priceParam={row.PriceParam}");
+				return;
+			}
+
+			if (Account.Instance.Inventory.GetCount(keyItemId) < row.Price)
+			{
+				Debug.LogWarning($"[Shop] 열쇠 부족 goodsId={row.ID} key={keyItemId} 필요={row.Price} 보유={Account.Instance.Inventory.GetCount(keyItemId)}");
+				return;
+			}
+
+			ShopBuyRequest request = new ShopBuyRequest();
+			request.goodsId = row.ID;
+			_pendingBoxGoodsId = row.ID;
+			NetworkManager.Instance.RequestShopBuy(request, onBoxOpened);
+		}
+
+		// 계정 반영은 창이 닫혔어도 한다 — 서버에는 이미 저장됐다. 화면 갱신·결과 팝업만 창이 살아 있을 때 한다.
+		private void onBoxOpened(bool success, ShopBuyResponse data, string error)
+		{
+			Table_ShopGoods.Row row = Table_ShopGoods.Get(_pendingBoxGoodsId);
+			_pendingBoxGoodsId = 0;
+
+			if (success == false || data == null || row == null)
+			{
+				Debug.LogWarning($"[Shop] 보물상자 개봉 실패: {error}");
+				return;
+			}
+
+			int keyItemId;
+			if (tryGetKeyItemId(row, out keyItemId) == true)
+			{
+				Account.Instance.Inventory.TrySpend(keyItemId, row.Price);
+			}
+
+			List<GrantedReward> granted = new List<GrantedReward>();
+			RewardGranter.FromServer(data.rewards, data.equipments, granted);
+			RewardGranter.ApplyAll(granted);
+			ShopPurchaseCounter.Increase(row.ID, row.UseDailyReset);
+
+			if (_isDisposed == true)
+			{
+				return;
+			}
+
+			view.RefreshGoods(row.ID);
+			UIManager.Instance.ShowRewardPopupAsync(granted, view.GetDestroyToken()).Forget();
+		}
+
+		private static bool tryGetKeyItemId(Table_ShopGoods.Row row, out int keyItemId)
+		{
+			keyItemId = 0;
+			return row.PriceType == PriceType.Item && row.Price > 0
+				&& int.TryParse(row.PriceParam, NumberStyles.Integer, CultureInfo.InvariantCulture, out keyItemId) == true;
 		}
 
 		// 창을 닫는다. 마지막 창이면 WindowClosedEvent 가 발행되어 네비게이션 바의 탭 선택도 함께 풀린다.

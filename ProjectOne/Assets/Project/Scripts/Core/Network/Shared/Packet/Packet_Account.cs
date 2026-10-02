@@ -17,7 +17,7 @@ namespace ProjectOne.Shared
 		public CurrencyDto currency;
 		public InventoryDto inventory;
 		public LoadoutDto loadout;
-		public ClearedDungeonsDto clearedDungeons;
+		public DungeonProgressDto dungeonProgress;
 		public CostumeDto costume;
 		public MasteryDto mastery;
 		public QuestDto quest;

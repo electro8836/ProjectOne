@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using ProjectOne.Dungeon;
 using ProjectOne.Event;
 using ProjectOne.Loading;
 using ProjectOne.Network;
@@ -79,10 +80,8 @@ namespace ProjectOne.Flow
 					Account.Instance.SetLoadout(data.loadout);
 				}
 
-				if (data.clearedDungeons != null)
-				{
-					Account.Instance.SetClearedDungeons(data.clearedDungeons);
-				}
+				// 던전 진행도(최고 단계·입장 횟수) — 서버가 소유한다.
+				DungeonProgress.Apply(data.dungeonProgress);
 
 				if (data.costume != null)
 				{
@@ -111,6 +110,9 @@ namespace ProjectOne.Flow
 
 				// 필드 처치 배치 정산 세션 — 서버가 로그인마다 새 시드를 발급한다. 없으면 원장이 비활성(로컬 지급).
 				FieldKillLedger.Instance.Begin(data.field);
+
+				// 필드보스 처치 기록 — 하루 1회 리젠 판정
+				MonsterRespawnClock.Instance.ApplyBossKills((data.field != null) ? data.field.bossKills : null);
 			}
 			else
 			{

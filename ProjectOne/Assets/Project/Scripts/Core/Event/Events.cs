@@ -37,12 +37,18 @@ namespace ProjectOne.Event
 				// 지역 드랍 그룹 (MonsterSpawn.RewardGroupID). 고유 드랍은 Monster 원형이 갖고 있어 싣지 않는다.
 				public readonly int SpawnRewardGroupID;
 
-				public MonsterKillEvent(int monsterID, int level, Vector2 position, int spawnRewardGroupID)
+				// 필드보스(DailyReset 스폰)면 (필드, 스폰 행). 0 이면 일반 처치 — 보상 경로가 갈린다.
+				public readonly int FieldBossFieldID;
+				public readonly int FieldBossSpawnID;
+
+				public MonsterKillEvent(int monsterID, int level, Vector2 position, int spawnRewardGroupID, int fieldBossFieldID, int fieldBossSpawnID)
 				{
 						this.MonsterID = monsterID;
 						this.Level = level;
 						this.Position = position;
 						this.SpawnRewardGroupID = spawnRewardGroupID;
+						this.FieldBossFieldID = fieldBossFieldID;
+						this.FieldBossSpawnID = fieldBossSpawnID;
 				}
 		}
 
@@ -418,21 +424,6 @@ namespace ProjectOne.Event
 				{
 						this.Opened = opened;
 						this.Total = total;
-				}
-		}
-
-		// 유적 던전 상자 개봉 수 / 남은 열쇠 변경. 시작 시 1회(0/총수, 보유 열쇠) 발행한다.
-		public readonly struct RuinsChestChangedEvent
-		{
-				public readonly int Opened;
-				public readonly int Total;
-				public readonly int KeyRemaining;
-
-				public RuinsChestChangedEvent(int opened, int total, int keyRemaining)
-				{
-						this.Opened = opened;
-						this.Total = total;
-						this.KeyRemaining = keyRemaining;
 				}
 		}
 

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,7 +9,7 @@ using ProjectOne.Event;
 
 namespace ProjectOne.UI
 {
-	// 균열 던전 HUD — 웨이브·남은시간·라이프·처치 수 상태줄, 웨이브 배너, 균열 스킬 버튼.
+	// 균열 던전 HUD — 웨이브·남은시간·라이프·처치 수 상태줄, 균열 스킬 버튼. 웨이브·종료 배너는 DungeonMessage 가 띄운다.
 	//
 	// GoldDungeonUI 와 같은 자리·같은 규칙으로 산다 — MainHUD 에 상주하지 않고 UIManager.EnsureDungeonHudAsync
 	// 가 던전 진입 시 만들고 종료 시 걷는다. 생성이 startStage 보다 앞이어야 첫 배너와 시작 알림을 놓치지 않는다.
@@ -25,10 +24,6 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _lifeText;		// State/Life/Text
 		[SerializeField] private TMP_Text _killText;		// State/MonsterKill/Text
 
-		[Header("웨이브 배너")]
-		[SerializeField] private CanvasGroup _waveTitleGroup;	// WaveTitle
-		[SerializeField] private TMP_Text _waveTitleText;		// WaveTitle/WaveText
-
 		[Header("균열 스킬")]
 		[SerializeField] private UIButton _skillButton;		// SkillButton
 		[SerializeField] private Image _skillIcon;			// SkillButton/Icon
@@ -36,16 +31,10 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _gaugeText;		// SkillButton/Gauge/Text
 		[SerializeField] private TMP_Text _stackText;		// SkillButton/Stack/StackText
 
-		[Header("연출")]
-		[SerializeField] private float _titleHoldSeconds = 2f;
-		[SerializeField] private float _titleFadeSeconds = 0.5f;
-
 		private Action<WaveStartedEvent> _onWaveStarted;
-		private Action<DungeonStageClearedEvent> _onStageCleared;
 		private Action<MonsterKillEvent> _onMonsterKill;
 		private Action<RiftLifeChangedEvent> _onLifeChanged;
 		private Action<RiftGaugeChangedEvent> _onGaugeChanged;
-		private Coroutine _titleRoutine;
 
 		private int _killed;
 		private int _lastRemainSecond = -1;
@@ -59,26 +48,22 @@ namespace ProjectOne.UI
 			_skillIconBinder = new SpriteBinder(_skillIcon);
 
 			_onWaveStarted = onWaveStarted;
-			_onStageCleared = onStageCleared;
 			_onMonsterKill = onMonsterKill;
 			_onLifeChanged = onLifeChanged;
 			_onGaugeChanged = onGaugeChanged;
 			EventManager.Instance.Subscribe<WaveStartedEvent>(_onWaveStarted);
-			EventManager.Instance.Subscribe<DungeonStageClearedEvent>(_onStageCleared);
 			EventManager.Instance.Subscribe<MonsterKillEvent>(_onMonsterKill);
 			EventManager.Instance.Subscribe<RiftLifeChangedEvent>(_onLifeChanged);
 			EventManager.Instance.Subscribe<RiftGaugeChangedEvent>(_onGaugeChanged);
 
 			_skillButton.OnClickEvent += onSkillClicked;
 
-			_waveTitleGroup.gameObject.SetActive(false);
 			renderKill();
 		}
 
 		private void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<WaveStartedEvent>(_onWaveStarted);
-			EventManager.Instance.Unsubscribe<DungeonStageClearedEvent>(_onStageCleared);
 			EventManager.Instance.Unsubscribe<MonsterKillEvent>(_onMonsterKill);
 			EventManager.Instance.Unsubscribe<RiftLifeChangedEvent>(_onLifeChanged);
 			EventManager.Instance.Unsubscribe<RiftGaugeChangedEvent>(_onGaugeChanged);
@@ -121,13 +106,6 @@ namespace ProjectOne.UI
 		private void onWaveStarted(WaveStartedEvent evt)
 		{
 			_waveText.text = evt.CurrentWave.ToString();
-			showTitle("웨이브 " + evt.CurrentWave.ToString());
-		}
-
-		// 한 판 종료(라이프 소진·제한시간). 결과창은 DungeonDirector 가 이 배너 시간만큼 기다렸다가 연다.
-		private void onStageCleared(DungeonStageClearedEvent evt)
-		{
-			showTitle("균열 종료");
 		}
 
 		private void onMonsterKill(MonsterKillEvent evt)
@@ -189,45 +167,6 @@ namespace ProjectOne.UI
 		private void renderKill()
 		{
 			_killText.text = _killed.ToString();
-		}
-
-		// ── 배너 ──────────────────────────────────────────────────────
-
-		// 배너를 즉시 띄우고 유지·페이드 후 숨긴다.
-		private void showTitle(string text)
-		{
-			_waveTitleText.text = text;
-
-			stopTitleRoutine();
-			_waveTitleGroup.alpha = 1f;
-			_waveTitleGroup.gameObject.SetActive(true);
-
-			_titleRoutine = StartCoroutine(holdThenFadeTitle());
-		}
-
-		private IEnumerator holdThenFadeTitle()
-		{
-			yield return new WaitForSeconds(_titleHoldSeconds);
-
-			float elapsed = 0f;
-			while (elapsed < _titleFadeSeconds)
-			{
-				elapsed += Time.deltaTime;
-				_waveTitleGroup.alpha = Mathf.Clamp01(1f - elapsed / _titleFadeSeconds);
-				yield return null;
-			}
-
-			_waveTitleGroup.gameObject.SetActive(false);
-			_titleRoutine = null;
-		}
-
-		private void stopTitleRoutine()
-		{
-			if (_titleRoutine != null)
-			{
-				StopCoroutine(_titleRoutine);
-				_titleRoutine = null;
-			}
 		}
 
 		// ── 스킬 아이콘 ───────────────────────────────────────────────

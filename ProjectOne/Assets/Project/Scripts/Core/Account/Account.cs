@@ -16,7 +16,6 @@ namespace ProjectOne.UserData
 		public Loadout Loadout { get; private set; }
 		public MasteryBook Mastery { get; private set; }
 		public QuestBook Quests { get; private set; }
-		public ClearedDungeons ClearedDungeons { get; private set; }
 		public CostumeBook Costume { get; private set; }
 		public PetBook Pet { get; private set; }
 		public Wallet Wallet { get; private set; }
@@ -29,7 +28,6 @@ namespace ProjectOne.UserData
 			Loadout = new Loadout(null);
 			Mastery = new MasteryBook(null);
 			Quests = new QuestBook(null);
-			ClearedDungeons = new ClearedDungeons(null);
 			Costume = new CostumeBook(null);
 			Pet = new PetBook(null);
 			Wallet = new Wallet(null);
@@ -58,11 +56,6 @@ namespace ProjectOne.UserData
 		public void SetQuests(QuestDto data)
 		{
 			Quests = new QuestBook(data);
-		}
-
-		public void SetClearedDungeons(ClearedDungeonsDto data)
-		{
-			ClearedDungeons = new ClearedDungeons(data);
 		}
 
 		public void SetCostume(CostumeDto data)

@@ -52,7 +52,7 @@ namespace ProjectOne.Map
 					return;
 				}
 
-				StartDungeon(dungeonType, stage);
+				StartDungeon(dungeonType, stage, null);
 				return;
 			}
 
@@ -78,18 +78,21 @@ namespace ProjectOne.Map
 			changeStateIfNeeded(new TownState(), typeof(TownState));
 		}
 
-		// 던전 씬으로 넘어간다. 입장 횟수 판정은 호출부가 이미 끝냈다고 본다.
-		public static void StartDungeon(EDT.Dungeon type, int stage)
+		// 던전 씬으로 넘어간다. 입장 횟수 판정은 호출부가 이미 끝냈다고 본다(DungeonEntry).
+		// run 은 서버가 발급한 런 — null 이면 로컬 런(개발용 이동 등)이라 정산 요청을 보내지 않는다.
+		public static void StartDungeon(EDT.Dungeon type, int stage, ProjectOne.Shared.DungeonRunDto run)
 		{
 			ProjectOne.Dungeon.DungeonContext ctx = new ProjectOne.Dungeon.DungeonContext(type, stage);
+			ctx.Run = run;
 			GameFlow.Instance.ChangeStateAsync(new DungeonState(ctx)).Forget();
 		}
 
 		// 균열 던전 진입 — 시작 웨이브(체크포인트)와 고른 균열 스킬을 싣는다.
-		public static void StartRiftDungeon(int startWave, int riftSkillId)
+		public static void StartRiftDungeon(int startWave, int riftSkillId, ProjectOne.Shared.DungeonRunDto run)
 		{
 			ProjectOne.Dungeon.DungeonContext ctx = new ProjectOne.Dungeon.DungeonContext(EDT.Dungeon.Rift, startWave);
 			ctx.RiftSkillId = riftSkillId;
+			ctx.Run = run;
 			GameFlow.Instance.ChangeStateAsync(new DungeonState(ctx)).Forget();
 		}
 

@@ -3,7 +3,8 @@ namespace ProjectOne.Shared
 	// 장비 인스턴스 UID 대역.
 	//
 	//   [0, 2^32)        — 서버 채번(InventoryDto.nextEquipmentUid). 던전 클리어·상점·최초 지급
-	//   [2^32, ...)      — 필드 드랍. (epoch << 32) | (killIndex << 8) | rewardIndex
+	//   [2^32, 2^62)     — 필드 드랍. (epoch << 32) | (killIndex << 8) | rewardIndex
+	//   [2^62, ...)      — 던전 상자. (1 << 62) | (runId << 24) | (chestIndex << 8) | rewardIndex
 	//
 	// 필드 드랍은 배치 정산이라 클라가 줍는 시점에 UID 가 필요하다. 줍는 순서와 무관하게
 	// 클라와 서버가 **각자 같은 값을 계산**하도록 처치 좌표로 UID 를 만든다.
@@ -17,6 +18,12 @@ namespace ProjectOne.Shared
 		public static long ForFieldDrop(int epoch, int killIndex, int rewardIndex)
 		{
 			return ((long)epoch << 32) | ((long)killIndex << 8) | (long)rewardIndex;
+		}
+
+		// 던전 상자 — 열 때 클라가 바로 지급하고 런 종료에 서버가 같은 값으로 저장한다.
+		public static long ForDungeonChest(int runId, int chestIndex, int rewardIndex)
+		{
+			return (1L << 62) | ((long)runId << 24) | ((long)chestIndex << 8) | (long)rewardIndex;
 		}
 
 		public static bool IsFieldDrop(long uid)

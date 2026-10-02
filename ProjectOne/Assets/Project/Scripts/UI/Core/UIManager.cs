@@ -350,6 +350,16 @@ namespace ProjectOne.UI
 		private GameObject _dungeonHud;
 		private string _dungeonHudAddress;
 
+		// 던전 공용 메시지(클리어·실패·진행도·경고) — 던전 HUD 와 같은 수명으로 HUD 위에 붙는다.
+		private const string DungeonMessageAddress = "UIPrefab_DungeonMessage";
+		private DungeonMessage _dungeonMessage;
+
+		// 던전 진행 중에만 있다. 없으면 null.
+		public DungeonMessage DungeonMessage
+		{
+			get { return _dungeonMessage; }
+		}
+
 		// 던전 종류 → 프리팹 주소. 모드가 없는 던전은 빈 문자열이다 — 구현되면 여기에 한 줄 늘린다.
 		private static string getDungeonHudAddress(EDT.Dungeon type)
 		{
@@ -398,11 +408,42 @@ namespace ProjectOne.UI
 			_dungeonHud = Instantiate(prefab, _hudCanvas.transform);
 			_dungeonHud.transform.SetAsLastSibling();
 			_dungeonHudAddress = address;
+
+			await ensureDungeonMessageAsync(ct);
+		}
+
+		// 메시지는 HUD 보다 위에 그린다 — HUD 다음 자식으로 붙인다.
+		private async UniTask ensureDungeonMessageAsync(CancellationToken ct)
+		{
+			if (_dungeonMessage != null)
+			{
+				_dungeonMessage.transform.SetAsLastSibling();
+				return;
+			}
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(DungeonMessageAddress, ct);
+			if (prefab == null)
+			{
+				Debug.LogWarning($"[UIManager] 던전 메시지 프리팹을 찾지 못했습니다: {DungeonMessageAddress}");
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _hudCanvas.transform);
+			go.transform.SetAsLastSibling();
+			_dungeonMessage = go.GetComponent<DungeonMessage>();
+			if (_dungeonMessage == null)
+			{
+				Debug.LogError($"[UIManager] {DungeonMessageAddress} 에 DungeonMessage 가 없습니다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(DungeonMessageAddress);
+			}
 		}
 
 		// 던전 종료 시. UIManager 가 영속이라 명시적으로 걷지 않으면 마을까지 따라간다.
 		public void ReleaseDungeonHud()
 		{
+			releaseDungeonMessage();
+
 			if (_dungeonHud == null)
 			{
 				return;
@@ -418,6 +459,22 @@ namespace ProjectOne.UI
 			}
 
 			_dungeonHudAddress = null;
+		}
+
+		private void releaseDungeonMessage()
+		{
+			if (_dungeonMessage == null)
+			{
+				return;
+			}
+
+			Destroy(_dungeonMessage.gameObject);
+			_dungeonMessage = null;
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(DungeonMessageAddress);
+			}
 		}
 
 		// ── 영속 네비게이션 바 ──────────────────────────────────────────

@@ -131,7 +131,9 @@ namespace ProjectOne.Network
 
 			// 필드 처치 배치를 먼저 큐에 넣는다 — SendQueue 가 순서대로 처리하므로 서버는 배치를 먼저 반영한 뒤 클리어를 계산한다.
 			FlushFieldBatch();
-			_caller.Invoke<DungeonClearRequest, DungeonClearResponse>(FunctionName.DungeonClear, request, callback);
+
+			// 종료 정산은 DungeonDirector 가 클리어 메시지로 대기를 연출한다 — 딤을 띄우지 않는다.
+			_caller.Invoke<DungeonClearRequest, DungeonClearResponse>(FunctionName.DungeonClear, request, callback, false);
 		}
 
 		// 장착 저장 — 8슬롯 전체를 서버가 보유 검증 후 갱신.
@@ -255,6 +257,58 @@ namespace ProjectOne.Network
 			{
 				Debug.LogWarning($"[NetworkManager] 지식의 서 서버 반영 실패 — 다음 로그인에 서버값으로 정리된다: {error}");
 			}
+		}
+
+		// ── 던전 런 ───────────────────────────────────────────────────────
+
+		// 던전 입장 — 서버가 해금·남은 횟수를 확인해 차감하고 런(시드)을 발급한다.
+		public void RequestDungeonEnter(DungeonEnterRequest request, ResponseCallback<DungeonEnterResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<DungeonEnterRequest, DungeonEnterResponse>(FunctionName.DungeonEnter, request, callback);
+		}
+
+		// 균열 소탕 — 입장 1회 + 입장보상.
+		public void RequestDungeonSweep(DungeonSweepRequest request, ResponseCallback<DungeonSweepResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<DungeonSweepRequest, DungeonSweepResponse>(FunctionName.DungeonSweep, request, callback);
+		}
+
+		// ── 필드보스 ──────────────────────────────────────────────────────
+
+		// 필드보스 처치 즉시 정산 — 하루 1회 제한·경험치·보상을 서버가 처리한다.
+		// 마스터리 적립 대상 무기를 필드에서 주웠을 수 있어 배치를 먼저 보낸다(SendQueue 순서).
+		public void RequestFieldBossKill(FieldBossKillRequest request, ResponseCallback<FieldBossKillResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<FieldBossKillRequest, FieldBossKillResponse>(FunctionName.FieldBossKill, request, callback, false);
+		}
+
+		// ── 상점 ──────────────────────────────────────────────────────────
+
+		// 상품 구매(지금은 보물상자만) — 서버가 가격 차감·추첨·지급을 모두 하고 결과를 내려준다.
+		public void RequestShopBuy(ShopBuyRequest request, ResponseCallback<ShopBuyResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<ShopBuyRequest, ShopBuyResponse>(FunctionName.ShopBuy, request, callback);
 		}
 
 		// ── 필드 처치 배치 정산 ───────────────────────────────────────────

@@ -72,6 +72,7 @@ namespace ProjectOne.Field
 			// 처치 경험치 지급기는 이벤트 구독형이라 킬이 나기 전에 살아 있어야 한다.
 			// MonoSingleton 이 접근 시점에 자동 생성하므로 여기서 한 번 건드린다.
 			MonsterKillReward.Instance.Touch();
+			FieldBossReward.Instance.Touch();
 			return _instance;
 		}
 

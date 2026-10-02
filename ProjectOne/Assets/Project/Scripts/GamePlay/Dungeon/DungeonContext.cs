@@ -36,6 +36,9 @@
 		// 균열에서 고른 RiftSkill.ID. 다른 던전은 0 이다.
 		public int RiftSkillId;
 
+		// 서버가 입장 때 발급한 런(상자 시드·정산 식별). null 이면 로컬 런(미로그인·개발용 이동)이다.
+		public ProjectOne.Shared.DungeonRunDto Run;
+
 		public DungeonContext(EDT.Dungeon dungeonType, int stage)
 		{
 			DungeonType = dungeonType;

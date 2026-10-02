@@ -49,8 +49,14 @@ namespace ProjectOne.Monsters
 
 		private void onMonsterKill(MonsterKillEvent e)
 		{
+			// 필드보스는 FieldBossReward 가 서버 즉시 정산으로 처리한다 — 경험치·드랍·원장 모두 여기서 빠진다.
+			if (e.FieldBossSpawnID != 0)
+			{
+				return;
+			}
+
 			// 보너스는 처치 시점 값을 퍼밀 정수로 고정한다 — 서버가 같은 값으로 재계산한다.
-			int expBonusPermille = Mathf.RoundToInt(getExpBonus() * 1000f);
+			int expBonusPermille = GetExpBonusPermille();
 			int goldBonusPermille = RewardGranter.GetGoldBonusPermille();
 
 			FieldKillLedger ledger = FieldKillLedger.Instance;
@@ -69,7 +75,7 @@ namespace ProjectOne.Monsters
 				dto.spawnRewardGroupId = e.SpawnRewardGroupID;
 				dto.expBonusPermille = expBonusPermille;
 				dto.goldBonusPermille = goldBonusPermille;
-				dto.masteryId = currentMasteryId();
+				dto.masteryId = CurrentMasteryId();
 				ledger.Register(dto, _granted.Count, exp);
 			}
 
@@ -164,8 +170,14 @@ namespace ProjectOne.Monsters
 			}
 		}
 
+		// 살아있는 히어로의 경험치 획득량 보너스(퍼밀). 필드보스 정산(FieldBossReward)도 같은 값을 보낸다.
+		public static int GetExpBonusPermille()
+		{
+			return Mathf.RoundToInt(getExpBonus() * 1000f);
+		}
+
 		// 처치 시점 장착 무기의 마스터리 — 서버가 같은 마스터리에 경험치를 적립한다. 미착용이면 0.
-		private static int currentMasteryId()
+		public static int CurrentMasteryId()
 		{
 			Table_WeaponMastery.Row current = Account.Instance.Mastery.CurrentMastery;
 			return (current != null) ? (int)current.ID : 0;

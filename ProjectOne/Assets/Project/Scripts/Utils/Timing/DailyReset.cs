@@ -48,12 +48,10 @@ namespace ProjectOne.Utils
 
 		// 오늘이 몇 번째 갱신일인지 — 경계로 자른 날짜의 일련번호.
 		// 값이 달라졌다는 것이 곧 "하루가 넘어갔다" 는 뜻이다. 절대 날짜가 아니므로 비교에만 쓴다.
+		// 서버(던전 입장·필드보스 처치)와 같은 식을 쓴다 — 공유 ResetDay.
 		public static int GetResetDay()
 		{
-			DateTime nowKst = DateTime.UtcNow + KstOffset;
-
-			// 경계 시각만큼 당기면 06시 이전은 전날로 밀려 날짜 하나가 곧 하루가 된다.
-			return (int)(nowKst.AddHours(-RESET_HOUR).Date - DateTime.MinValue).TotalDays;
+			return ProjectOne.Shared.ResetDay.FromUtc(DateTime.UtcNow);
 		}
 	}
 }

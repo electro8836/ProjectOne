@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using EDT;
+using ProjectOne.Shared;
+using ProjectOne.Utils;
 using UnityEngine;
 
 namespace ProjectOne.Dungeon
@@ -9,12 +11,15 @@ namespace ProjectOne.Dungeon
 	// 최고 클리어 단계는 일일 초기화 대상이 아니라 영구 누적이며,
 	// **단계 해금과 Quest.DungeonClear 판정의 유일한 근거**다.
 	//
-	// TODO(STEP 14) — 지금은 인메모리다. 서버가 소유해야 하고 초기화 판정도 서버 시간 기준이어야 한다.
+	// 서버(USER_DUNGEON)가 소유한다 — 로그인 때 Apply, 입장·소탕·정산 응답마다 ApplyEntry 로 서버값을 반영한다.
+	// 입장 차감과 일일 초기화 판정은 서버가 서버 시간으로 한다. 여기 usedToday 는 표시용 사본이다.
+	// 미로그인(오프라인 테스트)에서는 TryConsumeEnter 로 로컬에서만 센다.
 	public static class DungeonProgress
 	{
 		private sealed class Entry
 		{
 			public int usedToday;
+			public int resetDay;		// usedToday 를 센 날 — 오늘이 아니면 0 으로 본다
 			public int maxCount;		// DefaultEnterCount 에서 시작해 MaxEnterCount 까지 확장된다
 			public int highestStage;	// 클리어한 최고 단계. 0이면 아직 하나도 못 깼다
 		}
@@ -25,9 +30,6 @@ namespace ProjectOne.Dungeon
 			public EDT.Dungeon type;
 			public int stage;
 		}
-
-		// 균열 체크포인트 간격 — 1, 6, 11 … 에서 시작한다.
-		private const int RiftCheckpointInterval = 5;
 
 		private static readonly Dictionary<EDT.Dungeon, Entry> _byDungeon = new Dictionary<EDT.Dungeon, Entry>();
 
@@ -47,9 +49,6 @@ namespace ProjectOne.Dungeon
 		private static readonly Dictionary<int, Table_RuinsDungeon.Row> _ruinsIndex = new Dictionary<int, Table_RuinsDungeon.Row>();
 		private static int _ruinsLastStage;
 
-		// 유적 보물 열쇠 — 기본 1개에 아이템·업적·특성 등이 더한다. 던전에서 소모하지 않고 한 판에 열 수 있는 상자 수다.
-		private const int RuinsBaseKeyCount = 1;
-		private static int _ruinsKeyBonus;
 
 		// MapID → 단계. 맵 하나로 던전 단계를 지목하는 경로(개발용 이동 버튼)가 쓴다.
 		private static readonly Dictionary<int, MapTarget> _byMapId = new Dictionary<int, MapTarget>();
@@ -303,11 +302,43 @@ namespace ProjectOne.Dungeon
 			_byMapId[mapId] = target;
 		}
 
+		// ── 서버 반영 ─────────────────────────────────────────────────
+
+		// 로그인 스냅샷 — 서버 진행도로 통째로 덮는다.
+		public static void Apply(DungeonProgressDto dto)
+		{
+			_byDungeon.Clear();
+			if (dto == null || dto.entries == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < dto.entries.Count; i++)
+			{
+				ApplyEntry(dto.entries[i]);
+			}
+		}
+
+		// 입장·소탕·정산 응답의 진행도 하나를 반영한다.
+		public static void ApplyEntry(DungeonEntryDto dto)
+		{
+			if (dto == null)
+			{
+				return;
+			}
+
+			Entry entry = getOrCreate((EDT.Dungeon)dto.dungeonType);
+			entry.highestStage = dto.highestStage;
+			entry.usedToday = dto.usedToday;
+			entry.resetDay = dto.resetDay;
+		}
+
 		// ── 입장 횟수 ─────────────────────────────────────────────────
 
 		public static int GetUsedToday(EDT.Dungeon type)
 		{
-			return getOrCreate(type).usedToday;
+			Entry entry = getOrCreate(type);
+			return (entry.resetDay == DailyReset.GetResetDay()) ? entry.usedToday : 0;
 		}
 
 		// 현재 상한. 유저 데이터로 확장되며 Default 에서 시작해 Max 까지 늘어난다.
@@ -318,8 +349,7 @@ namespace ProjectOne.Dungeon
 
 		public static int GetRemainingCount(EDT.Dungeon type)
 		{
-			Entry entry = getOrCreate(type);
-			int remaining = entry.maxCount - entry.usedToday;
+			int remaining = getOrCreate(type).maxCount - GetUsedToday(type);
 			return remaining > 0 ? remaining : 0;
 		}
 
@@ -329,15 +359,17 @@ namespace ProjectOne.Dungeon
 		}
 
 		// 입장 시 1회 소모. 클리어·실패·즉시 이탈을 가리지 않으며 환불도 없다 (맵 설계 6절).
+		// 미로그인 전용 — 로그인 중에는 서버(DungeonEnter)가 차감하고 ApplyEntry 로 돌려준다.
 		public static bool TryConsumeEnter(EDT.Dungeon type)
 		{
-			Entry entry = getOrCreate(type);
-			if (entry.usedToday >= entry.maxCount)
+			if (GetRemainingCount(type) <= 0)
 			{
 				return false;
 			}
 
-			entry.usedToday++;
+			Entry entry = getOrCreate(type);
+			entry.usedToday = GetUsedToday(type) + 1;
+			entry.resetDay = DailyReset.GetResetDay();
 			return true;
 		}
 
@@ -383,12 +415,7 @@ namespace ProjectOne.Dungeon
 		// Stage N 입장 가능 ⟺ 최고 클리어 단계 >= N - 1 (맵 설계 9장)
 		public static bool IsStageUnlocked(EDT.Dungeon type, int stage)
 		{
-			if (stage <= 0)
-			{
-				return false;
-			}
-
-			return getOrCreate(type).highestStage >= stage - 1;
+			return DungeonRules.IsStageUnlocked(getOrCreate(type).highestStage, stage);
 		}
 
 		public static void MarkStageCleared(EDT.Dungeon type, int stage)
@@ -424,8 +451,7 @@ namespace ProjectOne.Dungeon
 		// 다음 도전의 시작 웨이브. 기록 17 → 16, 기록 4 → 1.
 		public static int GetRiftCheckpoint()
 		{
-			int best = GetHighestStage(EDT.Dungeon.Rift);
-			return (best / RiftCheckpointInterval) * RiftCheckpointInterval + 1;
+			return DungeonRules.GetRiftCheckpoint(GetHighestStage(EDT.Dungeon.Rift));
 		}
 
 		// 웨이브 1개를 넘겼을 때의 보상 수량
@@ -435,48 +461,22 @@ namespace ProjectOne.Dungeon
 			return (row != null) ? row.RewardCount : 0;
 		}
 
-		// [fromWave, toWave] 구간 웨이브 보상의 합. 구간이 비면 0.
+		// [fromWave, toWave] 구간 웨이브 보상의 합. 구간이 비면 0. 서버 정산과 같은 규칙(DungeonRules)이다.
 		public static int SumRiftWaveReward(int fromWave, int toWave)
 		{
-			int sum = 0;
-			for (int wave = fromWave; wave <= toWave; wave++)
-			{
-				sum += GetRiftWaveReward(wave);
-			}
-
-			return sum;
+			return DungeonRules.SumRiftWaveReward(fromWave, toWave);
 		}
 
 		// 입장보상 — 1웨이브부터 체크포인트 웨이브까지(포함)의 보상 합이다. 소탕 보상도 이 값이다.
 		public static int GetRiftEntryReward()
 		{
-			return SumRiftWaveReward(1, GetRiftCheckpoint());
+			return DungeonRules.GetRiftSweepReward(GetHighestStage(EDT.Dungeon.Rift));
 		}
 
 		// 균열 보상 재화. 모든 행이 같은 재화다(Build 에서 검증).
 		public static EDT.Currency GetRiftRewardCurrency()
 		{
-			Table_RiftDungeon.Row row = FindRiftWave(1);
-			return (row != null) ? row.RewardCurrency : EDT.Currency.None;
-		}
-
-		// ── 유적 ──────────────────────────────────────────────────────
-
-		// 한 판에 열 수 있는 상자 수(보물 열쇠 개수).
-		public static int GetRuinsKeyCount()
-		{
-			return RuinsBaseKeyCount + _ruinsKeyBonus;
-		}
-
-		// 보물 열쇠 추가 — 아이템·업적·특성 등 각 시스템이 부여한다.
-		public static void AddRuinsKeyBonus(int delta)
-		{
-			if (delta <= 0)
-			{
-				return;
-			}
-
-			_ruinsKeyBonus += delta;
+			return DungeonRules.GetRiftRewardCurrency();
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────

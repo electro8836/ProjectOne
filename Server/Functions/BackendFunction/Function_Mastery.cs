@@ -128,7 +128,7 @@ namespace BackendFunction
 					return FuncResult.Error(masteryErr);
 				}
 
-				if (trySpendItem(inventory, req.itemId, 1) == false)
+				if (InventoryUtil.TrySpendItem(inventory, req.itemId, 1) == false)
 				{
 					return FuncResult.Error("not owned: " + req.itemId);
 				}
@@ -184,31 +184,6 @@ namespace BackendFunction
 				Table_Equipment.Row equipment = (owned != null) ? Table_Equipment.Get(owned.itemId) : null;
 				if (equipment != null && equipment.WeaponType == mastery.WeaponType)
 				{
-					return true;
-				}
-			}
-
-			return false;
-		}
-
-		private static bool trySpendItem(InventoryDto inventory, int itemId, int count)
-		{
-			for (int i = 0; i < inventory.items.Count; i++)
-			{
-				OwnedItemDto item = inventory.items[i];
-				if (item != null && item.itemId == itemId)
-				{
-					if (item.count < count)
-					{
-						return false;
-					}
-
-					item.count -= count;
-					if (item.count <= 0)
-					{
-						inventory.items.RemoveAt(i);
-					}
-
 					return true;
 				}
 			}

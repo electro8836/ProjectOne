@@ -10,5 +10,6 @@ namespace ProjectOne.UI
 		BossGimmick,	// 보스 전멸기 파훼
 		Chest,			// 상자 개봉
 		Gather,			// 자원 수집
+		Device,			// 기관장치 작동(미궁 출구)
 	}
 }

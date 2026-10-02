@@ -69,11 +69,6 @@ namespace ProjectOne.UI
 		{
 			_selectedStage = stage;
 
-			// 상자 수는 맵 배치가 아니라 테이블 값이다 — 팝업 시점엔 맵이 로드돼 있지 않다.
-			Table_RuinsDungeon.Row row = DungeonProgress.FindRuinsStage(stage);
-			int chestCount = (row != null) ? row.ChestCount : 0;
-			view.SetChestCount(chestCount + "개");
-
 			// 아직 못 여는 단계를 고르면 입장을 막는다. 남은 입장 횟수도 함께 본다.
 			bool unlocked = DungeonProgress.IsStageUnlocked(DUNGEON_TYPE, stage);
 			view.SetEnterInteractable(unlocked == true && DungeonProgress.CanEnter(DUNGEON_TYPE) == true);
@@ -92,14 +87,26 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			if (DungeonProgress.TryConsumeEnter(DUNGEON_TYPE) == false)
+			if (DungeonProgress.CanEnter(DUNGEON_TYPE) == false)
 			{
 				Debug.Log("[RuinsDungeonPopup] 남은 입장 횟수가 없습니다.");
 				return;
 			}
 
+			enterAsync(_selectedStage).Forget();
+		}
+
+		// 입장 횟수 차감과 런 발급은 서버가 한다 — 응답을 받고 들어간다.
+		private async UniTaskVoid enterAsync(int stage)
+		{
+			DungeonEnterResult result = await DungeonEntry.RequestAsync(DUNGEON_TYPE, stage, view.GetDestroyToken());
+			if (result.ok == false)
+			{
+				return;
+			}
+
 			view.Close();
-			MapNavigator.StartDungeon(DUNGEON_TYPE, _selectedStage);
+			MapNavigator.StartDungeon(DUNGEON_TYPE, stage, result.run);
 		}
 
 		// 1초마다. 남은 초가 그대로면 문자열을 새로 만들지 않는다.
@@ -122,7 +129,7 @@ namespace ProjectOne.UI
 
 		// ── 렌더 ──────────────────────────────────────────────────────────
 
-		// 최고 스테이지, 입장 가능 횟수(남은/최대), 보물 열쇠 수. 팝업이 떠 있는 동안 변하지 않는다.
+		// 최고 스테이지, 입장 가능 횟수(남은/최대). 팝업이 떠 있는 동안 변하지 않는다.
 		private void renderStatus()
 		{
 			int highest = DungeonProgress.GetHighestStage(DUNGEON_TYPE);
@@ -130,7 +137,7 @@ namespace ProjectOne.UI
 
 			string enterCount = DungeonProgress.GetRemainingCount(DUNGEON_TYPE) + "/" + DungeonProgress.GetMaxCount(DUNGEON_TYPE);
 
-			view.RenderStatus(maxStage, enterCount, DungeonProgress.GetRuinsKeyCount() + "개");
+			view.RenderStatus(maxStage, enterCount);
 		}
 
 		private void renderInfo()

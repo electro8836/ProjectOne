@@ -16,6 +16,28 @@ namespace ProjectOne.Shared
 		public long pickedMask;				// 획득한 보상 인덱스 비트(추첨 결과 순서 기준)
 	}
 
+	// 필드보스 처치 — 처치 즉시 서버가 하루 1회 제한을 확인하고 경험치·보상을 지급한다(배치 정산에서 빠진다).
+	[System.Serializable]
+	public class FieldBossKillRequest
+	{
+		public int fieldId;					// Table_Field ID — 같은 보스라도 필드마다 하루 1회
+		public int spawnId;					// MonsterSpawn 행 ID (RespawnType.DailyReset)
+		public int monsterId;
+		public int level;
+		public int expBonusPermille;
+		public int goldBonusPermille;
+		public int masteryId;
+	}
+
+	[System.Serializable]
+	public class FieldBossKillResponse : ServerResponse
+	{
+		public int exp;							// 정산 후 누적 경험치(서버값)
+		public GrantedRewardDto[] rewards;
+		public EquipmentInstanceDto[] equipments;
+		public FieldBossKillDto kill;			// 저장된 처치 기록 — 리스폰 판정에 반영한다
+	}
+
 	[System.Serializable]
 	public class FieldSettleRequest
 	{

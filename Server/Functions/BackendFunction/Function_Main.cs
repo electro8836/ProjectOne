@@ -50,6 +50,14 @@ namespace BackendFunction
 					return new MasteryFunctions().SaveMasteryTree();
 				case FunctionName.UseSkillPointItem:
 					return new MasteryFunctions().UseSkillPointItem();
+				case FunctionName.ShopBuy:
+					return new ShopFunctions().ShopBuy();
+				case FunctionName.DungeonEnter:
+					return new DungeonRun().DungeonEnter();
+				case FunctionName.DungeonSweep:
+					return new DungeonRun().DungeonSweep();
+				case FunctionName.FieldBossKill:
+					return new FieldBoss().FieldBossKill();
 				default:
 					return FuncResult.Error("unknown action: " + action);
 			}

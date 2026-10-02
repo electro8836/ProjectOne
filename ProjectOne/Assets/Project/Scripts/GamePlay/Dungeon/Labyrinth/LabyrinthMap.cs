@@ -10,9 +10,13 @@ namespace ProjectOne.Dungeon
 	// 시작 지점은 기존 MapAnchor(Entry)를 그대로 쓴다.
 	public class LabyrinthMap : MonoBehaviour
 	{
-		// 도착 구역. 씬 뷰에서 박스 핸들로 크기를 맞추는 편집 수단일 뿐이다.
+		// 도착 구역 — 기관장치 상호작용 범위다. 씬 뷰에서 박스 핸들로 크기를 맞추는 편집 수단일 뿐이다.
+		// 기관장치 외형은 이 구역 안에 배치한다(코드는 외형을 보지 않는다).
 		[SerializeField] private BoxCollider2D _exitArea;
 		[SerializeField] private LabyrinthFireWall _fireWall;
+
+		// 기관장치를 작동하면 되돌아가는 길을 막는 장막. 비어 있으면 막지 않는다.
+		[SerializeField] private GameObject _exitCurtain;
 
 		private LabyrinthSpawnTrigger[] _triggers;
 		private DungeonChest[] _chests;
@@ -71,6 +75,14 @@ namespace ProjectOne.Dungeon
 		public bool IsInExit(Vector2 pos)
 		{
 			return BoxArea.Contains(_exitArea, pos);
+		}
+
+		public void SetExitCurtain(bool active)
+		{
+			if (_exitCurtain != null)
+			{
+				_exitCurtain.SetActive(active);
+			}
 		}
 
 		private void ensureCollected()

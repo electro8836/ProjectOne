@@ -4,7 +4,9 @@ using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Dungeon;
 using ProjectOne.Map;
+using ProjectOne.Network;
 using ProjectOne.Reward;
+using ProjectOne.Shared;
 using ProjectOne.Utils;
 using UnityEngine;
 
@@ -29,6 +31,10 @@ namespace ProjectOne.UI
 		// 마지막으로 그린 남은 초 — 매초 문자열을 새로 만들지 않기 위해 변화가 있을 때만 갱신한다.
 		private int _lastRefreshSecond = -1;
 
+		// 서버 소탕 응답 대기 중 — 연타로 횟수가 두 번 빠지지 않게 막는다.
+		private bool _sweeping;
+		private bool _isDisposed;
+
 		protected override void OnInitialize()
 		{
 			view.OnSkillSelected += onSkillSelected;
@@ -40,6 +46,8 @@ namespace ProjectOne.UI
 
 		protected override void OnDispose()
 		{
+			_isDisposed = true;
+
 			view.OnSkillSelected -= onSkillSelected;
 			view.OnSkillInfoClicked -= onSkillInfoClicked;
 			view.OnEnterClicked -= onEnterClicked;
@@ -104,22 +112,43 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			if (DungeonProgress.TryConsumeEnter(DUNGEON_TYPE) == false)
+			if (DungeonProgress.CanEnter(DUNGEON_TYPE) == false)
 			{
 				Debug.Log("[RiftDungeonPopup] 남은 입장 횟수가 없습니다.");
 				return;
 			}
 
+			enterAsync(DungeonProgress.GetRiftCheckpoint(), _selected.ID).Forget();
+		}
+
+		// 입장 횟수 차감과 런 발급은 서버가 한다 — 응답을 받고 들어간다.
+		private async UniTaskVoid enterAsync(int startWave, int riftSkillId)
+		{
+			DungeonEnterResult result = await DungeonEntry.RequestAsync(DUNGEON_TYPE, startWave, view.GetDestroyToken());
+			if (result.ok == false)
+			{
+				return;
+			}
+
 			view.Close();
-			MapNavigator.StartRiftDungeon(DungeonProgress.GetRiftCheckpoint(), _selected.ID);
+			MapNavigator.StartRiftDungeon(startWave, riftSkillId, result.run);
 		}
 
 		// 소탕 — 입장 1회를 쓰고 입장보상만 받는다. 1웨이브라도 넘긴 기록이 있어야 한다.
-		// TODO(STEP 14) — 지금은 로컬 지급이다.
+		// 로그인 중이면 서버(DungeonSweep)가 차감·지급하고, 미로그인이면 로컬로 지급한다.
 		private void onSweepClicked()
 		{
-			if (canSweep() == false)
+			if (canSweep() == false || _sweeping == true)
 			{
+				return;
+			}
+
+			if (NetworkManager.Instance.IsLoggedIn == true)
+			{
+				DungeonSweepRequest request = new DungeonSweepRequest();
+				request.dungeonType = (int)DUNGEON_TYPE;
+				_sweeping = true;
+				NetworkManager.Instance.RequestDungeonSweep(request, onSweepResponse);
 				return;
 			}
 
@@ -132,25 +161,52 @@ namespace ProjectOne.UI
 			int reward = DungeonProgress.GetRiftEntryReward();
 			Debug.Log($"[RiftDungeonPopup] 소탕 — {currency} {reward}");
 
-			renderStatus();
+			_granted.Clear();
+			if (currency != EDT.Currency.None && reward > 0)
+			{
+				GrantedReward granted = default(GrantedReward);
+				granted.type = RewardType.Currency;
+				granted.currency = currency;
+				granted.count = reward;
+				_granted.Add(granted);
+			}
 
-			if (currency == EDT.Currency.None || reward <= 0)
+			showSweepResult();
+		}
+
+		// 서버 소탕 결과 — 계정 반영은 창이 닫혔어도 한다(서버에는 이미 저장됐다).
+		private void onSweepResponse(bool success, DungeonSweepResponse data, string error)
+		{
+			_sweeping = false;
+			if (success == false || data == null)
+			{
+				Debug.LogWarning($"[RiftDungeonPopup] 소탕 실패: {error}");
+				return;
+			}
+
+			DungeonProgress.ApplyEntry(data.entry);
+
+			_granted.Clear();
+			RewardGranter.FromServer(data.rewards, null, _granted);
+			showSweepResult();
+		}
+
+		// 공용 지급 경로를 탄다 — 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
+		private void showSweepResult()
+		{
+			RewardGranter.ApplyAll(_granted);
+
+			if (_isDisposed == true)
 			{
 				return;
 			}
 
-			// 공용 지급 경로를 탄다 — 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
-			_granted.Clear();
+			renderStatus();
 
-			GrantedReward granted = default(GrantedReward);
-			granted.type = RewardType.Currency;
-			granted.currency = currency;
-			granted.count = reward;
-			_granted.Add(granted);
-
-			RewardGranter.ApplyAll(_granted);
-
-			UIManager.Instance.ShowRewardPopupAsync(_granted, view.GetDestroyToken()).Forget();
+			if (_granted.Count > 0)
+			{
+				UIManager.Instance.ShowRewardPopupAsync(_granted, view.GetDestroyToken()).Forget();
+			}
 		}
 
 		// 1초마다. 남은 초가 그대로면 문자열을 새로 만들지 않는다.

@@ -58,6 +58,9 @@ namespace ProjectOne.Dungeon
 		// 보상 1건을 담아 넘기기 위한 재사용 버퍼 — 스폰은 메인 스레드 단일 경로다.
 		private readonly List<GrantedReward> _single = new List<GrantedReward>(1);
 
+		// 바닥에 떨군 보상 드랍 — 던전 종료 시 일괄 획득·삭제용. 반환된 것은 순회할 때 걷어낸다.
+		private readonly List<RewardDrop> _rewardDrops = new List<RewardDrop>();
+
 		protected override void Awake()
 		{
 			base.Awake();
@@ -89,6 +92,7 @@ namespace ProjectOne.Dungeon
 		// 던전 종료 시 호출 — 풀 일괄 정리.
 		public void Clear()
 		{
+			_rewardDrops.Clear();
 			clearPools();
 
 			// 풀째 파괴된 드랍은 반환 콜백을 거치지 않는다 — 남은 처치 보상을 미획득으로 확정한다.
@@ -153,6 +157,39 @@ namespace ProjectOne.Dungeon
 		// killIndex 가 0 이상이면 필드 배치 정산 대상이다 — 드랍마다 (killIndex, 보상 인덱스) 를 실어 원장에 결과를 남긴다.
 		public void SpawnRewardDrops(Vector2 center, List<GrantedReward> rewards, int killIndex)
 		{
+			spawnDrops(center, rewards, killIndex, -1);
+		}
+
+		// 미궁 상자 보상을 상자 주변에 흩뿌린다. 주운 것만 런 종료 정산에서 서버가 지급한다(DungeonRunLedger).
+		public void SpawnChestDrops(Vector2 center, List<GrantedReward> rewards, int chestIndex)
+		{
+			spawnDrops(center, rewards, -1, chestIndex);
+		}
+
+		// 바닥에 남은 보상 드랍을 모두 획득한다 — 골드·균열·유적 종료 시점.
+		public void CollectAllRewardDrops()
+		{
+			for (int i = 0; i < _rewardDrops.Count; i++)
+			{
+				_rewardDrops[i].CollectNow();
+			}
+
+			_rewardDrops.Clear();
+		}
+
+		// 바닥에 남은 보상 드랍을 모두 지운다 — 미궁 종료 시점. 반환 콜백이 처치 보상을 미획득으로 확정한다.
+		public void DiscardAllRewardDrops()
+		{
+			for (int i = 0; i < _rewardDrops.Count; i++)
+			{
+				_rewardDrops[i].Discard();
+			}
+
+			_rewardDrops.Clear();
+		}
+
+		private void spawnDrops(Vector2 center, List<GrantedReward> rewards, int killIndex, int chestIndex)
+		{
 			if (rewards == null || rewards.Count == 0)
 			{
 				return;
@@ -161,9 +198,11 @@ namespace ProjectOne.Dungeon
 			DropObjectPool pool;
 			if (_pools.TryGetValue(DropObjectType.Item, out pool) == false || pool == null)
 			{
-				Debug.LogError("[DropManager] Item 풀이 없어 처치 보상을 떨어뜨리지 못했다 — 보상이 유실된다.");
+				Debug.LogError("[DropManager] Item 풀이 없어 보상을 떨어뜨리지 못했다 — 보상이 유실된다.");
 				return;
 			}
+
+			pruneReleasedDrops();
 
 			for (int i = 0; i < rewards.Count; i++)
 			{
@@ -177,10 +216,32 @@ namespace ProjectOne.Dungeon
 				_single.Clear();
 				_single.Add(rewards[i]);
 				drop.SetPayload(_single);
-				drop.SetLedgerTag(killIndex, i);
+
+				if (chestIndex >= 0)
+				{
+					drop.SetChestTag(chestIndex, i);
+				}
+				else
+				{
+					drop.SetLedgerTag(killIndex, i);
+				}
+
+				_rewardDrops.Add(drop);
 			}
 
 			_single.Clear();
+		}
+
+		// 이미 주웠거나 수명이 다해 반환된 드랍을 목록에서 걷어낸다 — 목록이 판 내내 자라지 않게 스폰 때마다 정리한다.
+		private void pruneReleasedDrops()
+		{
+			for (int i = _rewardDrops.Count - 1; i >= 0; i--)
+			{
+				if (_rewardDrops[i] == null || _rewardDrops[i].IsGone == true)
+				{
+					_rewardDrops.RemoveAt(i);
+				}
+			}
 		}
 
 		private void Update()

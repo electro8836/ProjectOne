@@ -35,6 +35,7 @@ namespace BackendFunction
 
 		// 검증용 정적 데이터 — 테이블 로드 후 한 번만 만든다.
 		private static Dictionary<int, HashSet<int>> _spawnGroupsByMonster;
+		private static HashSet<int> _fieldBossOnly;
 		private static int _maxMonsterLevel;
 
 		public Stream FieldSettle()
@@ -363,6 +364,12 @@ namespace BackendFunction
 				return "unknown monster " + kill.monsterId;
 			}
 
+			// 필드보스(DailyReset 스폰으로만 나오는 몬스터)는 FieldBossKill 로만 정산한다 — 배치로 반복 청구하는 것을 막는다.
+			if (_fieldBossOnly.Contains(kill.monsterId) == true)
+			{
+				return "field boss in batch: " + kill.monsterId;
+			}
+
 			// 지역 드랍 그룹은 그 몬스터가 실제로 배치된 MonsterSpawn 행의 값이어야 한다(0 = 없음).
 			if (kill.spawnRewardGroupId != 0)
 			{
@@ -396,6 +403,8 @@ namespace BackendFunction
 			}
 
 			Dictionary<int, HashSet<int>> groups = new Dictionary<int, HashSet<int>>();
+			HashSet<int> dailyMonsters = new HashSet<int>();
+			HashSet<int> otherMonsters = new HashSet<int>();
 			int maxLevel = 1;
 
 			Dictionary<int, Table_MonsterSpawn.Row>.Enumerator se = Table_MonsterSpawn.All().GetEnumerator();
@@ -411,6 +420,15 @@ namespace BackendFunction
 				if (row.RewardGroupID > 0)
 				{
 					set.Add(row.RewardGroupID);
+				}
+
+				if (row.RespawnType == RespawnType.DailyReset)
+				{
+					dailyMonsters.Add(row.MonsterID);
+				}
+				else
+				{
+					otherMonsters.Add(row.MonsterID);
 				}
 
 				maxLevel = Math.Max(maxLevel, row.Level);
@@ -441,7 +459,10 @@ namespace BackendFunction
 				maxLevel = Math.Max(maxLevel, ue.Current.Value.MonsterLevel);
 			}
 
+			dailyMonsters.ExceptWith(otherMonsters);
+
 			_maxMonsterLevel = maxLevel;
+			_fieldBossOnly = dailyMonsters;
 			_spawnGroupsByMonster = groups;
 		}
 

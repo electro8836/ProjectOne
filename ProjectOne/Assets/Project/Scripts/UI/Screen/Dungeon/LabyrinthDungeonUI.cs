@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -11,8 +10,7 @@ namespace ProjectOne.UI
 {
 	// 미궁던전의 진행 표시. GoldDungeonUI 와 같이 던전 입장 시 UIManager.EnsureDungeonHudAsync 가 만들고 종료 시 파괴한다.
 	//
-	// 구성
-	//  - NoticeTitle : 단계 시작 안내. 즉시 뜨고 유지 후 페이드아웃한다.
+	// 구성 (단계 시작 안내는 DungeonMessage 가 띄운다)
 	//  - Wave / Time / Chest : 단계, 남은 시간, 상자 개봉 수
 	//  - Progress : 캐릭터·불 위치 슬라이더, 구간 포인트 5개, 진행률 %
 	//
@@ -21,11 +19,6 @@ namespace ProjectOne.UI
 	{
 		// 구간 포인트가 켜지는 진행도 — Point_01 ~ Point_05 순서다.
 		private static readonly float[] PointThresholds = { 0f, 0.25f, 0.5f, 0.75f, 1f };
-
-		[Header("안내 배너")]
-		[SerializeField] private CanvasGroup _noticeGroup;		// NoticeTitle
-		[SerializeField] private float _noticeHoldSeconds = 3f;
-		[SerializeField] private float _noticeFadeSeconds = 0.5f;
 
 		[Header("상태")]
 		[SerializeField] private TMP_Text _waveText;			// Wave/Text
@@ -44,7 +37,6 @@ namespace ProjectOne.UI
 
 		private Action<DungeonStageStartedEvent> _onStageStarted;
 		private Action<LabyrinthChestChangedEvent> _onChestChanged;
-		private Coroutine _noticeRoutine;
 
 		// 마지막으로 그린 값 — 바뀐 프레임에만 문자열·SetActive 를 건드린다.
 		private int _lastRemainSecond = -1;
@@ -58,11 +50,6 @@ namespace ProjectOne.UI
 			_onChestChanged = onChestChanged;
 			EventManager.Instance.Subscribe<DungeonStageStartedEvent>(_onStageStarted);
 			EventManager.Instance.Subscribe<LabyrinthChestChangedEvent>(_onChestChanged);
-
-			if (_noticeGroup != null)
-			{
-				_noticeGroup.gameObject.SetActive(false);
-			}
 		}
 
 		private void OnDestroy()
@@ -97,8 +84,6 @@ namespace ProjectOne.UI
 			_lastRemainMonster = -1;
 			_lastPercent = -1;
 			_lastReachedCount = -1;
-
-			showNotice();
 		}
 
 		private void onChestChanged(LabyrinthChestChangedEvent evt)
@@ -225,42 +210,6 @@ namespace ProjectOne.UI
 					_pointNotReached[i].SetActive(on == false);
 				}
 			}
-		}
-
-		// ── 안내 배너 ─────────────────────────────────────────────────
-
-		private void showNotice()
-		{
-			if (_noticeGroup == null)
-			{
-				return;
-			}
-
-			if (_noticeRoutine != null)
-			{
-				StopCoroutine(_noticeRoutine);
-				_noticeRoutine = null;
-			}
-
-			_noticeGroup.alpha = 1f;
-			_noticeGroup.gameObject.SetActive(true);
-			_noticeRoutine = StartCoroutine(holdThenFadeNotice());
-		}
-
-		private IEnumerator holdThenFadeNotice()
-		{
-			yield return new WaitForSeconds(_noticeHoldSeconds);
-
-			float elapsed = 0f;
-			while (elapsed < _noticeFadeSeconds)
-			{
-				elapsed += Time.deltaTime;
-				_noticeGroup.alpha = Mathf.Clamp01(1f - elapsed / _noticeFadeSeconds);
-				yield return null;
-			}
-
-			_noticeGroup.gameObject.SetActive(false);
-			_noticeRoutine = null;
 		}
 	}
 }

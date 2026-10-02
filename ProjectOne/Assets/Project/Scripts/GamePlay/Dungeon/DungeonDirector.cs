@@ -34,10 +34,9 @@ namespace ProjectOne.Dungeon
 		private const string DungeonResultAddress = "UIPrefab_DungeonResult";
 		private const string ContinuePopupAddress = "UIPrefab_ContinuePopup";
 
-		// 클리어 배너가 화면에 머무는 총 시간(초) — 결과창은 이 뒤에 뜬다.
-		// **GoldDungeonUI 의 _titleHoldSeconds + _titleFadeSeconds 와 같은 값이어야 한다.**
-		// 인스펙터에서 연출 시간을 바꾸면 여기도 같이 바꾼다.
-		private const float ClearBannerSeconds = 2.5f;
+		// 종료 메시지(클리어·실패)를 띄운 뒤 결과창까지의 최소 시간(초).
+		// 서버 응답이 이보다 늦으면 응답이 올 때까지 메시지를 띄운 채 기다린다.
+		private const float ResultDelaySeconds = 3f;
 
 		private Table_Dungeon.Row _dungeon;
 		private DungeonContext _ctx;
@@ -164,6 +163,9 @@ namespace ProjectOne.Dungeon
 			_cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
 			DungeonRunState.Instance.Reset();
+
+			// 상자 원장 — 서버가 입장 때 발급한 런 시드로 상자를 굴린다(없으면 로컬 런).
+			DungeonRunLedger.Instance.Begin(ctx.Run);
 
 			// 이전 씬(마을·필드)의 유닛과 풀을 걷어낸다 — 세 디렉터가 같은 규약을 쓴다.
 			// 풀 오브젝트는 씬 컨테이너 아래에 살아 씬과 함께 파괴되므로, 비우지 않으면
@@ -452,59 +454,43 @@ namespace ProjectOne.Dungeon
 			// 결과창에서 재도전·다음 단계를 고르면 다시 들어갈 컨텍스트. 없으면 마을로 간다.
 			DungeonContext restart = null;
 
-			if (victory == true && _forcedLobbyReturn == false && _ctx.DungeonType == EDT.Dungeon.Rift)
-			{
-				// 균열 — 서버 요청 없이 로컬로 기록·지급한다. 배너를 걸어 두고 결과창을 연다.
-				_grantedEquipments.Clear();
-
-				DungeonClearResponse riftResp = settleRift();
-
-				await UniTask.Delay(System.TimeSpan.FromSeconds(ClearBannerSeconds), cancellationToken: _cts.Token);
-				restart = await showDungeonResultAsync(riftResp, _cts.Token);
-			}
-			else if (victory == true && _forcedLobbyReturn == false && _ctx.DungeonType == EDT.Dungeon.Labyrinth)
-			{
-				// 미궁 — 균열과 같이 서버 요청 없이 로컬로 기록·지급한다. 클리어 배너가 없어 결과창을 바로 연다.
-				_grantedEquipments.Clear();
-
-				DungeonClearResponse labyrinthResp = settleLabyrinth();
-				restart = await showDungeonResultAsync(labyrinthResp, _cts.Token);
-			}
-			else if (victory == true && _forcedLobbyReturn == false && _ctx.DungeonType == EDT.Dungeon.Ruins)
-			{
-				// 유적 — 미궁과 같이 로컬로 기록·지급한다. 포탈 진입이 곧 끝이라 결과창을 바로 연다.
-				_grantedEquipments.Clear();
-
-				DungeonClearResponse ruinsResp = settleRuins();
-				restart = await showDungeonResultAsync(ruinsResp, _cts.Token);
-			}
-			else if (victory == true && _forcedLobbyReturn == false)
+			if (victory == true && _forcedLobbyReturn == false)
 			{
 				// 이전 판(다음 단계 재진입)의 지급 장비가 결과창에 섞이지 않게 비운다.
 				_grantedEquipments.Clear();
 
-				// 최고 클리어 단계 갱신 — 다음 단계 해금과 퀘스트 판정의 근거다.
-				DungeonProgress.MarkStageCleared(_ctx.DungeonType, _ctx.Stage);
+				// 최고 단계 갱신·퀘스트 이벤트는 서버 응답을 기다리지 않는다(서버도 같은 값으로 저장한다).
+				markVictory();
 
-				// 퀘스트(QuestTargetType.DungeonClear)가 최고 클리어 단계를 다시 보게 하는 지점이다.
-				EventManager.Instance.Publish(new DungeonStageClearedEvent(_ctx.DungeonType, _ctx.Stage));
+				// 바닥 드랍 — 미궁은 남은 것을 지우고, 나머지는 모두 획득한다. 정산 요청 전이어야
+				// 처치 원장이 모두 확정돼 이 요청 직전의 필드 배치에 함께 실린다.
+				settleGroundDrops();
 
-				beginClearRequestIfNeeded();
+				// 종료 메시지를 띄워 두고 서버 응답을 기다린다 — 두 시계가 같이 흘러야 한다.
+				// 응답이 빨라도 메시지 시간이 끝날 때까지, 시간이 끝나도 응답이 올 때까지 기다린다.
+				showEndMessage();
+				UniTask delay = UniTask.Delay(System.TimeSpan.FromSeconds(ResultDelaySeconds), cancellationToken: _cts.Token);
 
-				// 배너를 먼저 걸어 두고 응답을 기다린다 — 두 시계가 같이 흘러야 한다.
-				// 응답이 빨라도 배너가 끝날 때까지, 배너가 끝나도 응답이 올 때까지 기다린다.
-				// 이미 지난 배너를 await 하면 즉시 통과하므로 분기가 필요 없다.
-				UniTask banner = UniTask.Delay(System.TimeSpan.FromSeconds(ClearBannerSeconds), cancellationToken: _cts.Token);
+				DungeonClearResponse clear;
+				if (DungeonRunLedger.Instance.IsServerRun == true)
+				{
+					beginClearRequestIfNeeded();
+					clear = await _clearTask;
+					applyClearResponse(clear);
+				}
+				else
+				{
+					// 로컬 런(미로그인·개발용 이동) — 클리어 보상만 로컬로 지급한다. 골드는 서버 없이는 보상이 없다.
+					clear = settleLocal();
+				}
 
-				DungeonClearResponse resp = await _clearTask;
-				await banner;
+				await delay;
 
-				applyClearResponse(resp);
-
-				restart = await showDungeonResultAsync(resp, _cts.Token);
+				restart = await showDungeonResultAsync(buildResultResponse(clear), _cts.Token);
 			}
 			else
 			{
+				// 실패·강제 귀환도 런을 정산한다 — 주운 상자 보상은 결과와 무관하게 남는다.
 				sendDungeonClearFailLog();
 			}
 
@@ -560,12 +546,6 @@ namespace ProjectOne.Dungeon
 			await LoadingManager.Instance.ShowAsync(LoadingFlow.ToDungeon, ct);
 			await UIManager.Instance.CloseWindowAsync(false);
 
-			// 재도전도 다음 단계도 새 입장이다 — 횟수를 못 쓰면 그대로 마을로 나간다.
-			if (DungeonProgress.TryConsumeEnter(_ctx.DungeonType) == false)
-			{
-				return null;
-			}
-
 			int stage = (action == DungeonResultAction.NextStage) ? _ctx.Stage + 1 : _ctx.Stage;
 
 			// 균열 재도전은 방금 갱신된 기록의 체크포인트에서 시작한다.
@@ -580,8 +560,16 @@ namespace ProjectOne.Dungeon
 				return null;
 			}
 
+			// 재도전도 다음 단계도 새 입장이다 — 서버가 횟수를 차감하고 새 런을 준다. 못 쓰면 그대로 마을로 나간다.
+			DungeonEnterResult enter = await DungeonEntry.RequestAsync(_ctx.DungeonType, stage, ct);
+			if (enter.ok == false)
+			{
+				return null;
+			}
+
 			DungeonContext next = new DungeonContext(_ctx.DungeonType, stage);
 			next.RiftSkillId = _ctx.RiftSkillId;
+			next.Run = enter.run;
 			return next;
 		}
 
@@ -591,13 +579,120 @@ namespace ProjectOne.Dungeon
 			return Account.Instance.Loadout.Exp;
 		}
 
+		// ── 승리 처리 ─────────────────────────────────────────────────
+
+		// 최고 클리어 단계 갱신 — 다음 단계 해금과 퀘스트 판정의 근거다. 서버도 정산에서 같은 값으로 저장한다.
+		// 퀘스트(QuestTargetType.DungeonClear)가 최고 클리어 단계를 다시 보게 하는 지점이기도 하다.
+		private void markVictory()
+		{
+			if (_ctx.DungeonType == EDT.Dungeon.Rift)
+			{
+				finishRift();
+				return;
+			}
+
+			DungeonProgress.MarkStageCleared(_ctx.DungeonType, _ctx.Stage);
+			EventManager.Instance.Publish(new DungeonStageClearedEvent(_ctx.DungeonType, _ctx.Stage));
+		}
+
+		// 종료 시점에 바닥에 남은 보상 드랍 — 미궁은 출구로 빠져나가며 두고 가므로 지우고, 나머지는 모두 획득한다.
+		private void settleGroundDrops()
+		{
+			if (DropManager.HasInstance == false)
+			{
+				return;
+			}
+
+			if (_ctx.DungeonType == EDT.Dungeon.Labyrinth)
+			{
+				DropManager.Instance.DiscardAllRewardDrops();
+				return;
+			}
+
+			DropManager.Instance.CollectAllRewardDrops();
+		}
+
+		// 종료 메시지 — 균열은 라이프를 다 잃으면 패배, 제한시간이 끝나면 시간 종료다(둘 다 보상은 정산된다).
+		private void showEndMessage()
+		{
+			DungeonMessage message = UIManager.HasInstance ? UIManager.Instance.DungeonMessage : null;
+			if (message == null)
+			{
+				return;
+			}
+
+			if (_ctx.DungeonType == EDT.Dungeon.Rift)
+			{
+				if (_timedOut == true)
+				{
+					message.ShowClear("시간 종료!");
+				}
+				else
+				{
+					message.ShowFailed("방어 실패!");
+				}
+
+				return;
+			}
+
+			message.ShowClear("던전 클리어!");
+		}
+
+		// 결과창 한 장 — 런 중 주운 보상(처치 드랍 + 상자 드랍) + 클리어 보상. 같은 종류는 결과창이 합쳐 보여준다.
+		// 드랍은 주울 때 이미 지급됐고, 클리어 보상은 서버 응답(applyClearResponse) 또는 로컬 정산이 지급했다.
+		private DungeonClearResponse buildResultResponse(DungeonClearResponse clear)
+		{
+			DungeonClearResponse shown = buildLocalResponse(DungeonRunLedger.Instance.PickedRewards);
+			if (clear == null || clear.rewards == null || clear.rewards.Length == 0)
+			{
+				return shown;
+			}
+
+			List<GrantedRewardDto> merged = new List<GrantedRewardDto>(shown.rewards);
+			merged.AddRange(clear.rewards);
+			shown.rewards = merged.ToArray();
+			return shown;
+		}
+
+		// 로컬 런 정산 — 서버 없이 클리어 보상만 지급한다(미로그인·개발용 이동). markVictory 를 이미 거쳤다.
+		private DungeonClearResponse settleLocal()
+		{
+			switch (_ctx.DungeonType)
+			{
+				case EDT.Dungeon.Rift:
+					return settleRift();
+				case EDT.Dungeon.Labyrinth:
+				{
+					Table_LabyrinthDungeon.Row row = DungeonProgress.FindLabyrinthStage(_ctx.Stage);
+					return grantLocalClear((row != null) ? row.ClearRewardGroupID : 0);
+				}
+				case EDT.Dungeon.Ruins:
+				{
+					Table_RuinsDungeon.Row row = DungeonProgress.FindRuinsStage(_ctx.Stage);
+					return grantLocalClear((row != null) ? row.ClearRewardGroupID : 0);
+				}
+			}
+
+			return null;
+		}
+
+		// 클리어 보상 그룹을 로컬로 굴려 지급한다 — 공용 지급 경로라 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
+		private DungeonClearResponse grantLocalClear(int groupId)
+		{
+			List<ProjectOne.Reward.GrantedReward> granted = new List<ProjectOne.Reward.GrantedReward>();
+			ProjectOne.Reward.RewardGranter.Grant(groupId, ProjectOne.Reward.RewardContext.DungeonClear, granted);
+
+			Debug.Log($"[DungeonDirector] {_ctx.DungeonType} 로컬 정산 — Stage {_ctx.Stage}, 클리어 보상 {granted.Count}건");
+			return buildLocalResponse(granted);
+		}
+
 		// ── 균열 정산 ─────────────────────────────────────────────────
 		//
 		// 최고 기록 = 종료 웨이브의 전 웨이브(모드의 ClearedWave).
-		// 보상 = 입장보상(1웨이브 ~ 시작 웨이브 합) + 시작 웨이브 다음부터 통과한 웨이브 보상 합. 재화 1종이다.
-		// 시작 웨이브는 입장보상에 들어 있으므로 웨이브 보상에서 뺀다 — 시작 웨이브에서 끝나도 입장보상은 받는다.
-		// TODO(STEP 14) — 지금은 로컬 지급이다. 서버 권위로 옮길 때 여기 한 곳만 바꾼다.
-		private DungeonClearResponse settleRift()
+		// 보상 = 입장보상(1웨이브 ~ 시작 웨이브 합) + 시작 웨이브 다음부터 통과한 웨이브 보상 합. 재화 1종이다(DungeonRules.GetRiftRunReward).
+
+		// 모드를 멈추고 통과 웨이브를 확정해 기록한다 — 서버 정산 요청의 clearedWave 가 이 값이다.
+		private void finishRift()
 		{
 			RiftDungeonMode mode = _currentMode as RiftDungeonMode;
 			if (mode != null)
@@ -606,14 +701,8 @@ namespace ProjectOne.Dungeon
 				mode.Stop();
 			}
 
-			int startWave = _ctx.Stage;
-			int clearedWave = (mode != null) ? mode.ClearedWave : startWave - 1;
+			int clearedWave = (mode != null) ? mode.ClearedWave : _ctx.Stage - 1;
 			_riftClearedWave = clearedWave;
-
-			// 입장보상은 이번 판의 시작 웨이브 기준이다 — 기록 갱신 전에 계산해야 체크포인트가 밀리지 않는다.
-			int entryReward = DungeonProgress.SumRiftWaveReward(1, startWave);
-			int waveReward = DungeonProgress.SumRiftWaveReward(startWave + 1, clearedWave);
-			int total = entryReward + waveReward;
 
 			if (clearedWave > 0)
 			{
@@ -621,6 +710,14 @@ namespace ProjectOne.Dungeon
 			}
 
 			EventManager.Instance.Publish(new DungeonStageClearedEvent(EDT.Dungeon.Rift, clearedWave));
+		}
+
+		// 로컬 런 전용 지급.
+		private DungeonClearResponse settleRift()
+		{
+			int startWave = _ctx.Stage;
+			int clearedWave = _riftClearedWave;
+			int total = DungeonRules.GetRiftRunReward(startWave, clearedWave);
 
 			EDT.Currency currency = DungeonProgress.GetRiftRewardCurrency();
 			DungeonClearResponse resp = new DungeonClearResponse();
@@ -647,61 +744,7 @@ namespace ProjectOne.Dungeon
 				resp.rewards = new GrantedRewardDto[0];
 			}
 
-			Debug.Log($"[DungeonDirector] 균열 정산 — 시작 {startWave}, 통과 {clearedWave}, 입장보상 {entryReward} + 웨이브보상 {waveReward} ({currency})");
-			return resp;
-		}
-
-		// ── 미궁 정산 ─────────────────────────────────────────────────
-		//
-		// 상자 보상은 열 때 이미 지급됐다(실패해도 유지). 여기서는 기록 갱신과 클리어 보상만 지급하고,
-		// 결과창에는 상자 보상과 클리어 보상을 함께 보여준다.
-		// TODO(STEP 14) — 지금은 로컬 지급이다. 서버 권위로 옮길 때 여기와 LabyrinthDungeonMode.openChest 를 함께 바꾼다.
-		private DungeonClearResponse settleLabyrinth()
-		{
-			DungeonProgress.MarkStageCleared(EDT.Dungeon.Labyrinth, _ctx.Stage);
-			EventManager.Instance.Publish(new DungeonStageClearedEvent(EDT.Dungeon.Labyrinth, _ctx.Stage));
-
-			List<ProjectOne.Reward.GrantedReward> shown = new List<ProjectOne.Reward.GrantedReward>();
-
-			LabyrinthDungeonMode mode = _currentMode as LabyrinthDungeonMode;
-			if (mode != null)
-			{
-				shown.AddRange(mode.GrantedRewards);
-			}
-
-			// 공용 지급 경로 — 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
-			Table_LabyrinthDungeon.Row row = DungeonProgress.FindLabyrinthStage(_ctx.Stage);
-			if (row != null)
-			{
-				ProjectOne.Reward.RewardGranter.Grant(row.ClearRewardGroupID, ProjectOne.Reward.RewardContext.DungeonClear, shown);
-			}
-
-			DungeonClearResponse resp = buildLocalResponse(shown);
-
-			Debug.Log($"[DungeonDirector] 미궁 정산 — Stage {_ctx.Stage}, 보상 {shown.Count}건");
-			return resp;
-		}
-
-		// ── 유적 정산 ─────────────────────────────────────────────────
-		//
-		// 상자 보상은 열 때 이미 지급됐다. 클리어 보상은 없고 기록 갱신과 결과창 표시만 한다.
-		// TODO(STEP 14) — 지금은 로컬 지급이다. 서버 권위로 옮길 때 여기와 RuinsDungeonMode.openChest 를 함께 바꾼다.
-		private DungeonClearResponse settleRuins()
-		{
-			DungeonProgress.MarkStageCleared(EDT.Dungeon.Ruins, _ctx.Stage);
-			EventManager.Instance.Publish(new DungeonStageClearedEvent(EDT.Dungeon.Ruins, _ctx.Stage));
-
-			List<ProjectOne.Reward.GrantedReward> shown = new List<ProjectOne.Reward.GrantedReward>();
-
-			RuinsDungeonMode mode = _currentMode as RuinsDungeonMode;
-			if (mode != null)
-			{
-				shown.AddRange(mode.GrantedRewards);
-			}
-
-			DungeonClearResponse resp = buildLocalResponse(shown);
-
-			Debug.Log($"[DungeonDirector] 유적 정산 — Stage {_ctx.Stage}, 보상 {shown.Count}건");
+			Debug.Log($"[DungeonDirector] 균열 로컬 정산 — 시작 {startWave}, 통과 {clearedWave}, 보상 {total} ({currency})");
 			return resp;
 		}
 
@@ -763,9 +806,10 @@ namespace ProjectOne.Dungeon
 			_clearTcs?.TrySetResult(data);
 		}
 
+		// 실패·강제 귀환 — 런을 닫고 연 상자를 저장한다. 응답은 기다리지 않는다(결과창이 없다).
 		private void sendDungeonClearFailLog()
 		{
-			if (_ctx == null || NetworkManager.Instance.IsLoggedIn == false)
+			if (_ctx == null || DungeonRunLedger.Instance.IsServerRun == false || NetworkManager.Instance.IsLoggedIn == false)
 			{
 				return;
 			}
@@ -773,13 +817,16 @@ namespace ProjectOne.Dungeon
 			NetworkManager.Instance.RequestDungeonClear(buildClearRequest(false), null);
 		}
 
-		// 어느 던전의 몇 단계를 클리어했는지만 보낸다. 보상 계산은 서버가 RewardGroupID 로 한다.
+		// 어느 런이 어떻게 끝났는지와 연 상자만 보낸다. 보상 계산은 서버가 RewardGroupID 와 런 시드로 한다.
 		private DungeonClearRequest buildClearRequest(bool cleared)
 		{
 			DungeonClearRequest req = new DungeonClearRequest();
+			req.runId = DungeonRunLedger.Instance.RunId;
 			req.dungeonType = (int)_ctx.DungeonType;
 			req.stage = _ctx.Stage;
 			req.cleared = cleared;
+			req.clearedWave = _riftClearedWave;
+			req.chests = DungeonRunLedger.Instance.GetChests();
 
 			// 서버가 클리어 경험치를 같은 마스터리에 적립한다(마스터리 설계 5.2). 미착용이면 0.
 			Table_WeaponMastery.Row mastery = Account.Instance.Mastery.CurrentMastery;
@@ -794,6 +841,9 @@ namespace ProjectOne.Dungeon
 			{
 				return;
 			}
+
+			// 최고 단계 — 서버 정산값으로 맞춘다.
+			DungeonProgress.ApplyEntry(resp.entry);
 
 			// 캐릭터는 서버 권위값, 마스터리는 증가분만 적립된다 (마스터리 설계 5.2).
 			// 아직 서버에 올라가지 않은 필드 처치 경험치를 더한다 — 빼면 그만큼 경험치가 줄어든다.
@@ -844,18 +894,12 @@ namespace ProjectOne.Dungeon
 		// 이후 장착 저장(SaveLoadout)의 보유 검증을 통과한다.
 		private void grantEquipmentFromServer(EquipmentInstanceDto src)
 		{
-			if (src == null || src.uid <= 0)
-			{
-				return;
-			}
-
-			EquipmentInstance instance = EquipmentFactory.CreateExact(src.itemId, (ItemGradeType)src.grade, src.quality);
+			EquipmentInstance instance = ProjectOne.Reward.RewardGranter.CreateServerEquipment(src);
 			if (instance == null)
 			{
 				return;
 			}
 
-			instance.uid = src.uid;
 			Account.Instance.Inventory.AddEquipment(instance);
 			_grantedEquipments.Add(instance);
 		}
@@ -883,6 +927,9 @@ namespace ProjectOne.Dungeon
 
 			MonsterPoolHub.Instance.Clear();
 			SummonPoolHub.Instance.Clear();
+
+			// 런 원장 — 이후의 획득(마을·필드)은 결과창 합산에 넣지 않는다.
+			DungeonRunLedger.Instance.End();
 
 			if (DropManager.HasInstance == true)
 			{

@@ -12,7 +12,7 @@ namespace ProjectOne.UI
 {
 	// 유적던전 팝업의 View(MVP). UIManager.ShowRuinsDungeonPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
 	// 표시와 입력 전달만 담당하고, 어느 단계를 열 수 있는지·입장 판정은 RuinsDungeonPopupPresenter 가 한다.
-	// 구성은 미궁던전 팝업과 같고, 보상 칸 대신 선택 단계의 상자 수(Chest)와 보물 열쇠 수(Key)가 있다.
+	// 구성은 미궁던전 팝업과 같다. 유적은 보스(코어) 처치가 곧 클리어라 상자·열쇠 표시가 없다.
 	public class RuinsDungeonPopup : UIScreen, IView
 	{
 		[Header("던전 정보")]
@@ -23,8 +23,6 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _maxStageText;		// Frame/DungeonInfo/Info/MaxLevel/RightText
 		[SerializeField] private TMP_Text _enterCountText;		// Frame/DungeonInfo/Info/EnterCount/RightText
 		[SerializeField] private TMP_Text _refreshTimeText;		// Frame/DungeonInfo/Info/RefreshTime/RightText
-		[SerializeField] private TMP_Text _chestText;			// Frame/DungeonInfo/Info/Chest/RightText — 선택 단계의 상자 수
-		[SerializeField] private TMP_Text _keyText;				// Frame/DungeonInfo/Info/Key/RightText — 한 판에 열 수 있는 상자 수
 
 		[Header("단계 선택")]
 		[SerializeField] private RectTransform _stageGrid;		// Frame/StageSelect/ScrollRect/Veiwport/Content/Grid
@@ -119,21 +117,15 @@ namespace ProjectOne.UI
 		}
 
 		// 팝업이 떠 있는 동안 변하지 않는 현황 — 입장하면 팝업이 닫히므로 한 번만 그린다.
-		public void RenderStatus(string maxStage, string enterCount, string keyCount)
+		public void RenderStatus(string maxStage, string enterCount)
 		{
 			_maxStageText.text = maxStage;
 			_enterCountText.text = enterCount;
-			_keyText.text = keyCount;
 		}
 
 		public void SetRefreshTime(string text)
 		{
 			_refreshTimeText.text = text;
-		}
-
-		public void SetChestCount(string text)
-		{
-			_chestText.text = text;
 		}
 
 		public void RenderStages(IReadOnlyList<DungeonStageSlotData> data)

@@ -4,6 +4,7 @@ using BackEnd;
 using LitJson;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ProjectOne.Shared;
 
 namespace BackendFunction
 {
@@ -94,6 +95,36 @@ namespace BackendFunction
 
 			fileId = null;
 			err = "chart not found: " + chartName;
+			return false;
+		}
+	}
+
+	// 인벤토리 DTO 공용 조작 — 소모 아이템 차감(지식의 서·상자 열쇠 등).
+	public static class InventoryUtil
+	{
+		// 보유 수량이 충분하면 차감하고 true. 0 이 되면 항목을 지운다.
+		public static bool TrySpendItem(InventoryDto inventory, int itemId, int count)
+		{
+			for (int i = 0; i < inventory.items.Count; i++)
+			{
+				OwnedItemDto item = inventory.items[i];
+				if (item != null && item.itemId == itemId)
+				{
+					if (item.count < count)
+					{
+						return false;
+					}
+
+					item.count -= count;
+					if (item.count <= 0)
+					{
+						inventory.items.RemoveAt(i);
+					}
+
+					return true;
+				}
+			}
+
 			return false;
 		}
 	}

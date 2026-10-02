@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectOne.Shared;
 using ProjectOne.Utils;
 
 namespace ProjectOne.Field
@@ -13,77 +14,53 @@ namespace ProjectOne.Field
 	//
 	// 기록이 없다 = 즉시 스폰 가능. 한 번도 죽인 적 없는 슬롯, 살아있는 채로 회수된 슬롯이 여기 해당한다.
 	//
-	// 리젠 시각은 로컬 전용이다. 서버에 올리지 않는다.
-	// 초 단위 리젠(RespawnType.Time)은 저장하지 않는다 — 앱을 껐다 켜면 살아있는 상태로 시작한다. 의도된 동작이다.
-	// 일일 리젠(RespawnType.DailyReset, 필드보스)만 처치한 초기화일을 PlayerPrefs 에 남긴다 —
-	// 재시작으로 하루에 여러 번 잡는 것을 막기 위해서다. 초기화 경계는 DailyReset(06시)을 따른다.
+	// 초 단위 리젠(RespawnType.Time)은 로컬 전용이고 저장하지 않는다 — 앱을 껐다 켜면 살아있는 상태로 시작한다. 의도된 동작이다.
+	// 일일 리젠(RespawnType.DailyReset, 필드보스)은 서버가 소유한다 — 처치 기록(USER_FIELD.bossKills)을
+	// 로그인 때 받고, 처치하면 바로 로컬에 표시한 뒤 서버(FieldBossKill)가 확정한다. 키는 (필드, 스폰 행)이다.
 	public sealed class MonsterRespawnClock : Singleton<MonsterRespawnClock>
 	{
-		// 기록 없음 표시 — PlayerPrefs 를 한 번 조회한 뒤 캐시해 다시 읽지 않는다.
-		private const int NoRecord = -1;
-
 		// 슬롯 → 리젠 가능해지는 시각
 		private readonly Dictionary<SlotKey, float> _readyAt = new Dictionary<SlotKey, float>();
 
-		// 슬롯 → 처치한 초기화일(DailyReset.GetResetDay). 오늘과 같으면 아직 리젠 전이다.
-		private readonly Dictionary<SlotKey, int> _killedDay = new Dictionary<SlotKey, int>();
+		// (필드, 스폰 행) → 처치한 초기화일(DailyReset.GetResetDay). 오늘과 같으면 아직 리젠 전이다.
+		private readonly Dictionary<long, int> _bossKilledDay = new Dictionary<long, int>();
 
 		protected MonsterRespawnClock() { }
 
-		// 일일 리젠 — 오늘 처치했다고 기록한다. 다음 06시에 리젠된다.
-		public void SetDailyRespawn(in SlotKey key)
+		// 로그인 스냅샷 — 서버의 필드보스 처치 기록으로 덮는다.
+		public void ApplyBossKills(List<FieldBossKillDto> kills)
 		{
-			int today = DailyReset.GetResetDay();
-			_killedDay[key] = today;
-			PlayerPrefs.SetInt(getPrefsKey(key), today);
-			PlayerPrefs.Save();
-		}
-
-		// 리젠까지 남은 초. 기록이 없거나 이미 지났으면 0.
-		public float GetRemainingSeconds(in SlotKey key)
-		{
-			if (isKilledToday(key) == true)
+			_bossKilledDay.Clear();
+			if (kills == null)
 			{
-				return (float)DailyReset.GetRemaining().TotalSeconds;
+				return;
 			}
 
-			float ready;
-			if (_readyAt.TryGetValue(key, out ready) == false)
+			for (int i = 0; i < kills.Count; i++)
 			{
-				return 0f;
+				if (kills[i] != null)
+				{
+					_bossKilledDay[bossKey(kills[i].fieldId, kills[i].spawnId)] = kills[i].resetDay;
+				}
 			}
-
-			return Mathf.Max(0f, ready - Time.time);
 		}
 
-		// 오늘 처치한 일일 리젠 슬롯인지. 날이 넘어간 기록은 여기서 지운다.
-		private bool isKilledToday(in SlotKey key)
+		// 필드보스 처치 기록 — 처치 즉시(오늘) 로컬에 남기고, 서버 응답이 오면 서버값으로 다시 남긴다.
+		public void SetBossKilled(int fieldId, int spawnId, int resetDay)
+		{
+			_bossKilledDay[bossKey(fieldId, spawnId)] = resetDay;
+		}
+
+		// 오늘 처치한 필드보스인지 — 다음 06시까지 리젠되지 않는다.
+		public bool IsBossKilledToday(int fieldId, int spawnId)
 		{
 			int day;
-			if (_killedDay.TryGetValue(key, out day) == false)
-			{
-				day = PlayerPrefs.GetInt(getPrefsKey(key), NoRecord);
-				_killedDay[key] = day;
-			}
-
-			if (day == NoRecord)
-			{
-				return false;
-			}
-
-			if (day == DailyReset.GetResetDay())
-			{
-				return true;
-			}
-
-			_killedDay[key] = NoRecord;
-			PlayerPrefs.DeleteKey(getPrefsKey(key));
-			return false;
+			return _bossKilledDay.TryGetValue(bossKey(fieldId, spawnId), out day) == true && day == DailyReset.GetResetDay();
 		}
 
-		private static string getPrefsKey(in SlotKey key)
+		private static long bossKey(int fieldId, int spawnId)
 		{
-			return $"FieldDailyKill_{key.MapId}_{key.PointIndex}_{key.RowIndex}_{key.UnitIndex}";
+			return ((long)fieldId << 32) | (uint)spawnId;
 		}
 
 		public void SetRespawn(in SlotKey key, float respawnTime)
@@ -100,11 +77,6 @@ namespace ProjectOne.Field
 		// 기록이 없으면 즉시 스폰 가능하다.
 		public bool IsReady(in SlotKey key)
 		{
-			if (isKilledToday(key) == true)
-			{
-				return false;
-			}
-
 			float ready;
 			if (_readyAt.TryGetValue(key, out ready) == false)
 			{
