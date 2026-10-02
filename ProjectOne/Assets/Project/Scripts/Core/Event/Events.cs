@@ -272,6 +272,20 @@ namespace ProjectOne.Event
 			}
 		}
 
+		// 히어로패스 경험치 증가 알림 — 팝업 진행도 갱신과 레벨업 로그가 구독한다.
+		// Level > PrevLevel 이면 이번 적립으로 레벨이 올랐다.
+		public readonly struct HeroPassExpChangedEvent
+		{
+			public readonly int Level;
+			public readonly int PrevLevel;
+
+			public HeroPassExpChangedEvent(int level, int prevLevel)
+			{
+				this.Level = level;
+				this.PrevLevel = prevLevel;
+			}
+		}
+
 		// 마스터리 변경 알림 (노드 투자 / 트리 초기화 / 레벨업).
 		// 리졸브 캐시와 스탯 캐시를 함께 무효화해야 하는 지점이다 (스킬 설계 11.4).
 		public readonly struct MasteryChangeEvent

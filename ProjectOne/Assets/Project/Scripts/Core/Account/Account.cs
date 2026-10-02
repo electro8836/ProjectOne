@@ -33,8 +33,8 @@ namespace ProjectOne.UserData
 			Wallet = new Wallet(null);
 			DailyBonus = new DailyBonusBook(null);
 
-			// 시즌 기준일(계정 첫 접속일)이 여기서 정해진다 — TODO(서버): 계정 생성일로 교체.
-			HeroPass = new HeroPassBook();
+			// 로그인 전 기본값 — 시즌 기준일은 SetHeroPass 로 서버 값(계정 생성일)을 받는다.
+			HeroPass = new HeroPassBook(null);
 		}
 
 		// 도메인별 개별 셋팅 — 공유 DTO 를 받아 도메인 모델로 변환 보유. 추후 도메인 추가 시 Set 메서드만 늘리면 됨
@@ -76,6 +76,11 @@ namespace ProjectOne.UserData
 		public void SetDailyBonus(DailyBonusDto data)
 		{
 			DailyBonus = new DailyBonusBook(data);
+		}
+
+		public void SetHeroPass(HeroPassDto data)
+		{
+			HeroPass = new HeroPassBook(data);
 		}
 
 		// 경험치 적립 단일 진입점 (마스터리 설계 5.2).

@@ -268,6 +268,11 @@ namespace BackendFunction
 				return new SettleResult(SettleStatus.Error, masteryErr);
 			}
 
+			if (HeroPassOps.Load(out HeroPassDto heroPass, out string heroPassErr) == false)
+			{
+				return new SettleResult(SettleStatus.Error, heroPassErr);
+			}
+
 			// 4. 처치별 검증 → 재현 → 주운 것만 지급
 			RewardApplier applier = new RewardApplier(inventory, currency);
 			List<RolledReward> rolled = new List<RolledReward>();
@@ -333,6 +338,12 @@ namespace BackendFunction
 				}
 			}
 
+			// 히어로패스 활동 — 배치 전체가 검증을 통과한 뒤에만 센다(discard 된 배치는 세지 않는다).
+			for (int i = 0; i < kills.Count; i++)
+			{
+				HeroPassOps.CountKill(heroPass, kills[i].monsterId);
+			}
+
 			loadout.exp += gainedExp;
 			loadout.level = MasteryRules.CharacterLevelFromExp(loadout.exp);
 			field.nextKillIndex = kills[kills.Count - 1].killIndex + 1;
@@ -344,6 +355,7 @@ namespace BackendFunction
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), toParam(inventory)));
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), toParam(currency)));
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_MASTERY", new Where(), toParam(mastery)));
+			result.dataTx.Add(HeroPassOps.ToUpdate(heroPass));
 			return result;
 		}
 

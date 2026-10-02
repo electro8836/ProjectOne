@@ -107,6 +107,11 @@ namespace BackendFunction
 					return FuncResult.Error(masteryErr);
 				}
 
+				if (HeroPassOps.Load(out HeroPassDto heroPass, out string heroPassErr) == false)
+				{
+					return FuncResult.Error(heroPassErr);
+				}
+
 				// 3. 경험치 — 캐릭터와 장착 무기 마스터리에 같은 값(마스터리 설계 5.2). 무기가 없으면 마스터리 적립만 건너뛴다.
 				int exp = MonsterExp.Calc(req.monsterId, req.level, req.expBonusPermille);
 				loadout.exp += exp;
@@ -125,6 +130,9 @@ namespace BackendFunction
 				RewardApplier applier = new RewardApplier(inventory, currency);
 				applier.ApplyAll(rolled);
 
+				// 히어로패스 활동 — 필드보스는 배치에서 빠지므로 여기서 센다.
+				HeroPassOps.CountKill(heroPass, req.monsterId);
+
 				// 5. 원자 저장
 				List<TransactionValue> tx = new List<TransactionValue>();
 				tx.Add(TransactionValue.SetUpdate("USER_FIELD", new Where(), DungeonProgressOps.ToParam(field)));
@@ -132,6 +140,7 @@ namespace BackendFunction
 				tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), DungeonProgressOps.ToParam(inventory)));
 				tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), DungeonProgressOps.ToParam(currency)));
 				tx.Add(TransactionValue.SetUpdate("USER_MASTERY", new Where(), DungeonProgressOps.ToParam(mastery)));
+				tx.Add(HeroPassOps.ToUpdate(heroPass));
 
 				var txResult = Backend.GameData.TransactionWriteV2(tx);
 				if (!txResult.IsSuccess())

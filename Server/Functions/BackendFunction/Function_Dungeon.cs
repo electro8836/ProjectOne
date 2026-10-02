@@ -78,6 +78,11 @@ namespace BackendFunction
 					return FuncResult.Error(masteryErr);
 				}
 
+				if (HeroPassOps.Load(out HeroPassDto heroPass, out string heroPassErr) == false)
+				{
+					return FuncResult.Error(heroPassErr);
+				}
+
 				EDT.Dungeon type = (EDT.Dungeon)req.dungeonType;
 				DungeonEntryDto entry = DungeonProgressOps.GetEntry(progress, type);
 				run.settled = true;
@@ -118,6 +123,12 @@ namespace BackendFunction
 					return FuncResult.Error("rejected: " + invalid);
 				}
 
+				// 히어로패스 활동 — 정상 정산된 클리어만 센다(클라 DungeonStageClearedEvent 와 같은 시점).
+				if (req.cleared == true)
+				{
+					HeroPassOps.CountDungeonClear(heroPass);
+				}
+
 				// 3. 원자 저장
 				List<TransactionValue> tx = new List<TransactionValue>();
 				tx.Add(TransactionValue.SetUpdate("USER_DUNGEON", new Where(), DungeonProgressOps.ToParam(progress)));
@@ -125,6 +136,7 @@ namespace BackendFunction
 				tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), DungeonProgressOps.ToParam(inventory)));
 				tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), DungeonProgressOps.ToParam(currency)));
 				tx.Add(TransactionValue.SetUpdate("USER_MASTERY", new Where(), DungeonProgressOps.ToParam(mastery)));
+				tx.Add(HeroPassOps.ToUpdate(heroPass));
 
 				var txResult = Backend.GameData.TransactionWriteV2(tx);
 				if (!txResult.IsSuccess())

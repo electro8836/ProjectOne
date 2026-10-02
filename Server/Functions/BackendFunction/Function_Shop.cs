@@ -34,8 +34,13 @@ namespace BackendFunction
 					return FuncResult.Error("req parse failed");
 				}
 
-				// 1. 상품 — 열쇠(아이템) 가격의 보물상자만 받는다.
+				// 1. 상품 — 열쇠(아이템) 가격의 보물상자만 받는다. 히어로패스는 [임시] 경로로 따로 처리한다.
 				Table_ShopGoods.Row goods = Table_ShopGoods.Get(req.goodsId);
+				if (goods != null && goods.GoodsType == EDT.GoodsType.HeroPass)
+				{
+					return buyHeroPass();
+				}
+
 				if (goods == null || goods.GoodsType != EDT.GoodsType.Box)
 				{
 					return FuncResult.Error("unsupported goods: " + req.goodsId);
@@ -96,6 +101,35 @@ namespace BackendFunction
 			{
 				return FuncResult.Error("Server Error: " + ex.ToString());
 			}
+		}
+
+		// [임시] 히어로패스 구매 — 결제 검증 없이 이번 시즌 패스를 활성화한다. 결제 단계에서 영수증 검증으로 교체한다.
+		private static Stream buyHeroPass()
+		{
+			if (HeroPassOps.Load(out HeroPassDto pass, out string passErr) == false)
+			{
+				return FuncResult.Error(passErr);
+			}
+
+			if (pass.purchased == true)
+			{
+				return FuncResult.Error("hero pass already purchased");
+			}
+
+			pass.purchased = true;
+
+			List<TransactionValue> tx = new List<TransactionValue>();
+			tx.Add(HeroPassOps.ToUpdate(pass));
+
+			var txResult = Backend.GameData.TransactionWriteV2(tx);
+			if (!txResult.IsSuccess())
+			{
+				return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
+			}
+
+			ShopBuyResponse response = new ShopBuyResponse();
+			response.success = true;
+			return FuncResult.Json(response);
 		}
 
 		private static Param toParam(object dto)

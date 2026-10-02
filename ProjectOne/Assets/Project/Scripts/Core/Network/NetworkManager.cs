@@ -478,6 +478,18 @@ namespace ProjectOne.Network
 			_caller.Invoke<DailyBonusClaimRequest, DailyBonusClaimResponse>(FunctionName.DailyBonusClaim, request, callback);
 		}
 
+		// 히어로패스 레벨 보상 수령 — 서버가 센 경험치로 판정한다. 밀린 처치를 먼저 보내 서버 레벨을 따라잡게 한다.
+		public void RequestHeroPassClaim(HeroPassClaimRequest request, ResponseCallback<HeroPassClaimResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<HeroPassClaimRequest, HeroPassClaimResponse>(FunctionName.HeroPassClaim, request, callback);
+		}
+
 		// ── 필드 처치 배치 정산 ───────────────────────────────────────────
 
 		// 정리가 끝난 처치를 앞에서부터 묶어 보낸다(주기·일시정지·종료·다른 펑션 직전 트리거).

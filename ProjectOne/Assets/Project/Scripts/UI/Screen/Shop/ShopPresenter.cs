@@ -22,7 +22,7 @@ namespace ProjectOne.UI
 
 		private CancellationTokenSource _renderCts;	// 렌더 단위 취소 (아이콘 로드 경합 방지)
 
-		// 응답을 기다리는 상자 상품 — 0 이면 대기 중이 아니다. 응답 전 연타를 막는다.
+		// 응답을 기다리는 서버 구매 상품(상자·히어로패스) — 0 이면 대기 중이 아니다. 응답 전 연타를 막는다.
 		private int _pendingBoxGoodsId;
 		private bool _isDisposed;
 
@@ -93,15 +93,53 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			if (row.GoodsType == GoodsType.HeroPass)
+			{
+				requestHeroPass(row);
+				return;
+			}
+
 			// TODO(서버) — 실제 구매 요청으로 교체한다. 결제 검증·재화 차감·보상 지급 모두 서버 권위여야 한다.
 			Debug.Log($"[Shop] 구매 요청 goodsId={row.ID} name={row.Name} goodsType={row.GoodsType} priceType={row.PriceType} price={row.Price} priceParam={row.PriceParam} rewardGroupId={row.RewardGroupID}");
 
 			ShopPurchaseCounter.Increase(row.ID, row.UseDailyReset);
+			view.RefreshGoods(row.ID);
+		}
 
-			// 패스는 보상 그룹이 없다 — 구매 효과는 이번 시즌 패스 활성화다.
-			if (row.GoodsType == GoodsType.HeroPass)
+		// ── 히어로패스 ────────────────────────────────────────────────────
+
+		// 패스는 보상 그룹이 없다 — 구매 효과는 이번 시즌 패스 활성화다.
+		// [임시] 서버가 결제 검증 없이 활성화한다(결제 단계에서 영수증 검증으로 교체).
+		private void requestHeroPass(Table_ShopGoods.Row row)
+		{
+			if (_pendingBoxGoodsId != 0 || NetworkManager.Instance.IsLoggedIn == false || Account.Instance.HeroPass.IsPurchased == true)
 			{
-				Account.Instance.HeroPass.SetPurchased();
+				return;
+			}
+
+			ShopBuyRequest request = new ShopBuyRequest();
+			request.goodsId = row.ID;
+			_pendingBoxGoodsId = row.ID;
+			NetworkManager.Instance.RequestShopBuy(request, onHeroPassBought);
+		}
+
+		private void onHeroPassBought(bool success, ShopBuyResponse data, string error)
+		{
+			Table_ShopGoods.Row row = Table_ShopGoods.Get(_pendingBoxGoodsId);
+			_pendingBoxGoodsId = 0;
+
+			if (success == false || row == null)
+			{
+				Debug.LogWarning($"[Shop] 히어로패스 구매 실패: {error}");
+				return;
+			}
+
+			Account.Instance.HeroPass.SetPurchased();
+			ShopPurchaseCounter.Increase(row.ID, row.UseDailyReset);
+
+			if (_isDisposed == true)
+			{
+				return;
 			}
 
 			view.RefreshGoods(row.ID);

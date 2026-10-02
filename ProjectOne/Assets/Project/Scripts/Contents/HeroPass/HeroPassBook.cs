@@ -1,36 +1,42 @@
 using System;
 using System.Collections.Generic;
 using EDT;
+using ProjectOne.Event;
+using ProjectOne.Network;
+using ProjectOne.Shared;
 using ProjectOne.Utils;
 
 namespace ProjectOne.HeroPasses
 {
 	// 히어로패스 진행도 — 경험치, 유형별 활동 카운터, 레벨별 수령 기록, 구매 여부.
 	//
-	// 시즌은 계정 첫 접속일부터 35일 주기다. 경계는 DailyReset 의 하루 경계(KST 06시)를 그대로 쓴다.
+	// 시즌은 계정 생성일부터 35일 주기다. 경계는 DailyReset 의 하루 경계(KST 06시)를 그대로 쓴다.
 	// 시즌이 넘어가면 경험치·카운터·수령 기록·구매 여부가 전부 초기화된다.
 	// 공개 메서드는 모두 ensureSeason() 을 먼저 불러 경계를 넘긴 상태를 읽지 않게 한다.
 	//
-	// TODO(서버): 지금은 인메모리다. 시즌 기준일은 Account 생성 시점(= 앱 실행)이라 재실행하면 시즌이 새로 시작된다.
-	// 서버 권위로 넘어가면 기준일은 계정 생성일로, 경험치·수령·구매는 서버가 소유해야 한다.
+	// 서버 권위다 — 경험치는 서버가 처치·던전 클리어 정산 때 같은 규칙(HeroPassRules)으로 센다.
+	// 여기서 세는 것은 표시용이고, 수령·구매는 서버 응답 후에만 반영한다. 로그인 때 서버 값으로 다시 맞춘다.
 	public sealed class HeroPassBook
 	{
-		public const int SEASON_DAYS = 35;
+		private readonly HeroPassDto _dto;
 
-		private readonly int _startResetDay;
-		private int _seasonIndex;
-
-		private int _exp;
-		private bool _isPurchased;
-
-		private readonly Dictionary<HeroPassExpType, int> _counters = new Dictionary<HeroPassExpType, int>();
-		private readonly HashSet<int> _claimedNormal = new HashSet<int>();
-		private readonly HashSet<int> _claimedAdvanced = new HashSet<int>();
-
-		public HeroPassBook()
+		public HeroPassBook(HeroPassDto dto)
 		{
-			_startResetDay = DailyReset.GetResetDay();
-			_seasonIndex = 0;
+			_dto = (dto != null) ? dto : createLocal();
+			if (_dto.counters == null)
+			{
+				_dto.counters = new List<HeroPassCounterDto>();
+			}
+
+			if (_dto.claimedNormal == null)
+			{
+				_dto.claimedNormal = new List<int>();
+			}
+
+			if (_dto.claimedAdvanced == null)
+			{
+				_dto.claimedAdvanced = new List<int>();
+			}
 		}
 
 		public int Exp
@@ -38,7 +44,7 @@ namespace ProjectOne.HeroPasses
 			get
 			{
 				ensureSeason();
-				return _exp;
+				return _dto.exp;
 			}
 		}
 
@@ -47,7 +53,7 @@ namespace ProjectOne.HeroPasses
 			get
 			{
 				ensureSeason();
-				return HeroPassCatalog.GetLevelByExp(_exp);
+				return HeroPassRules.GetLevelByExp(_dto.exp);
 			}
 		}
 
@@ -56,75 +62,58 @@ namespace ProjectOne.HeroPasses
 			get
 			{
 				ensureSeason();
-				return _isPurchased;
+				return _dto.purchased;
 			}
 		}
 
-		// 활동 1회를 센다. ReqCount 배수에 닿은 규칙마다 ExpAmount 를 적립하고, 이번에 늘어난 경험치를 돌려준다.
+		// 활동 1회를 센다(표시용 — 서버도 같은 처치를 정산 때 센다). 이번에 늘어난 경험치를 돌려준다.
+		// 레벨이 오르면 밀린 처치 배치를 바로 보내 서버 레벨이 뒤처지지 않게 한다(곧 수령할 수 있어야 한다).
 		public int AddCount(HeroPassExpType type)
 		{
 			ensureSeason();
 
-			int count;
-			_counters.TryGetValue(type, out count);
-			count++;
-			_counters[type] = count;
-
-			int gained = 0;
-			IReadOnlyList<Table_HeroPassExpInfo.Row> infos = HeroPassCatalog.GetExpInfos(type);
-			for (int i = 0; i < infos.Count; i++)
-			{
-				if (count % infos[i].ReqCount == 0)
-				{
-					gained += infos[i].ExpAmount;
-				}
-			}
-
+			int levelBefore = HeroPassRules.GetLevelByExp(_dto.exp);
+			int gained = HeroPassRules.AddCount(_dto, type);
 			if (gained <= 0)
 			{
 				return 0;
 			}
 
-			// 최대 레벨을 넘는 몫은 버린다.
-			int before = _exp;
-			_exp = Math.Min(_exp + gained, HeroPassCatalog.GetMaxExp());
-			return _exp - before;
+			int levelAfter = HeroPassRules.GetLevelByExp(_dto.exp);
+			if (levelAfter > levelBefore)
+			{
+				NetworkManager.Instance.FlushFieldBatch();
+			}
+
+			EventManager.Instance.Publish(new HeroPassExpChangedEvent(levelAfter, levelBefore));
+			return gained;
 		}
 
 		public bool IsClaimed(int level, bool advanced)
 		{
 			ensureSeason();
-			return getClaimed(advanced).Contains(level);
+			return HeroPassRules.IsClaimed(_dto, level, advanced);
 		}
 
 		// 도달했고, 아직 안 받았고, 추가 보상이면 구매까지 했는가.
 		public bool CanClaim(int level, bool advanced)
 		{
 			ensureSeason();
-
-			if (level <= 0 || level > HeroPassCatalog.GetLevelByExp(_exp))
-			{
-				return false;
-			}
-
-			if (advanced == true && _isPurchased == false)
-			{
-				return false;
-			}
-
-			return getClaimed(advanced).Contains(level) == false;
+			return HeroPassRules.CanClaim(_dto, level, advanced);
 		}
 
+		// 서버 수령 성공 후에만 부른다.
 		public void MarkClaimed(int level, bool advanced)
 		{
 			ensureSeason();
-			getClaimed(advanced).Add(level);
+			HeroPassRules.MarkClaimed(_dto, level, advanced);
 		}
 
+		// 서버 구매 성공 후에만 부른다.
 		public void SetPurchased()
 		{
 			ensureSeason();
-			_isPurchased = true;
+			_dto.purchased = true;
 		}
 
 		// 이번 시즌이 끝나기까지 남은 시간.
@@ -132,8 +121,7 @@ namespace ProjectOne.HeroPasses
 		{
 			ensureSeason();
 
-			int elapsedDays = DailyReset.GetResetDay() - _startResetDay;
-			int daysLeft = SEASON_DAYS - (elapsedDays % SEASON_DAYS);
+			int daysLeft = HeroPassRules.GetSeasonDaysLeft(_dto, DailyReset.GetResetDay());
 
 			// GetRemaining 은 오늘 경계까지다 — 남은 온전한 날수를 더한다.
 			return DailyReset.GetRemaining() + TimeSpan.FromDays(daysLeft - 1);
@@ -141,25 +129,17 @@ namespace ProjectOne.HeroPasses
 
 		// ── 내부 ──────────────────────────────────────────────────────────
 
-		private HashSet<int> getClaimed(bool advanced)
+		// 서버 데이터가 없으면(미로그인) 오늘을 시즌 시작일로 둔다.
+		private static HeroPassDto createLocal()
 		{
-			return advanced ? _claimedAdvanced : _claimedNormal;
+			HeroPassDto dto = new HeroPassDto();
+			dto.startResetDay = DailyReset.GetResetDay();
+			return dto;
 		}
 
 		private void ensureSeason()
 		{
-			int season = (DailyReset.GetResetDay() - _startResetDay) / SEASON_DAYS;
-			if (season == _seasonIndex)
-			{
-				return;
-			}
-
-			_seasonIndex = season;
-			_exp = 0;
-			_isPurchased = false;
-			_counters.Clear();
-			_claimedNormal.Clear();
-			_claimedAdvanced.Clear();
+			HeroPassRules.EnsureSeason(_dto, DailyReset.GetResetDay());
 		}
 	}
 }

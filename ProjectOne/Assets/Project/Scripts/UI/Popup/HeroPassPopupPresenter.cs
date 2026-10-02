@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
+using ProjectOne.Event;
 using ProjectOne.HeroPasses;
+using ProjectOne.Network;
 using ProjectOne.Reward;
+using ProjectOne.Shared;
 using ProjectOne.UserData;
 using UnityEngine;
 
@@ -17,8 +20,16 @@ namespace ProjectOne.UI
 	{
 		private readonly List<HeroPassRewardSlotData> _slotData = new List<HeroPassRewardSlotData>(50);
 
-		// 지급 결과 버퍼 — 지급 자체는 RewardGranter 가 인벤/지갑에 반영하므로 여기선 재사용만 한다.
+		// 지급 결과 버퍼 — 서버 응답을 RewardGranter 로 인벤/지갑에 반영할 때 재사용한다.
 		private readonly List<GrantedReward> _granted = new List<GrantedReward>(4);
+
+		// 이번 요청으로 받을 (레벨, 추가 여부) 목록 — 응답이 오면 이 목록대로 수령 표시를 한다.
+		private readonly List<int> _claimLevels = new List<int>(50);
+		private readonly List<bool> _claimAdvanced = new List<bool>(50);
+
+		// 서버 응답 대기 중 — 응답 전 재요청을 막는다(입력은 네트워크 차단막도 막는다).
+		private bool _pendingClaim;
+		private bool _isDisposed;
 
 		private Action _onSecondTick;
 		private Action<int, bool> _onClaimRequested;
@@ -39,10 +50,14 @@ namespace ProjectOne.UI
 			view.OnSecondTick += _onSecondTick;
 			view.OnClaimRequested += _onClaimRequested;
 			view.OnAllReceiveRequested += _onAllReceiveRequested;
+
+			EventManager.Instance.Subscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
 		}
 
 		protected override void OnDispose()
 		{
+			_isDisposed = true;
+
 			if (_renderCts != null)
 			{
 				_renderCts.Cancel();
@@ -53,6 +68,8 @@ namespace ProjectOne.UI
 			view.OnSecondTick -= _onSecondTick;
 			view.OnClaimRequested -= _onClaimRequested;
 			view.OnAllReceiveRequested -= _onAllReceiveRequested;
+
+			EventManager.Instance.Unsubscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
 		}
 
 		public async UniTask ShowAsync(CancellationToken ct)
@@ -70,33 +87,66 @@ namespace ProjectOne.UI
 
 		// ── 수령 ──────────────────────────────────────────────────────────
 
-		private bool tryClaim(int level, bool advanced)
+		// 받을 수 있는 항목만 목록에 담는다 — 수령 판단은 항상 HeroPassBook 에서 다시 확인한다.
+		private void collectClaim(int level, bool advanced)
 		{
-			HeroPassBook book = Account.Instance.HeroPass;
-			if (book.CanClaim(level, advanced) == false)
+			if (Account.Instance.HeroPass.CanClaim(level, advanced) == false)
 			{
-				return false;
+				return;
 			}
 
-			IReadOnlyList<Table_HeroPass.Row> levels = HeroPassCatalog.GetLevels();
-			if (level > levels.Count)
+			_claimLevels.Add(level);
+			_claimAdvanced.Add(advanced);
+		}
+
+		// 모은 목록을 서버에 한 번에 요청한다. 보상 지급·수령 표시는 응답에서 한다.
+		private void requestClaim()
+		{
+			if (_claimLevels.Count == 0)
 			{
-				return false;
+				return;
 			}
 
-			Table_HeroPass.Row row = levels[level - 1];
-			int groupId = advanced ? row.RewardGroupID_Advanced : row.RewardGroupID_Normal;
-			if (groupId <= 0)
+			HeroPassClaimRequest request = new HeroPassClaimRequest();
+			request.levels = _claimLevels.ToArray();
+			request.advanced = _claimAdvanced.ToArray();
+
+			_pendingClaim = true;
+			NetworkManager.Instance.RequestHeroPassClaim(request, onClaimed);
+		}
+
+		// 계정 반영은 팝업이 닫혔어도 한다 — 서버에는 이미 저장됐다. 다시 그리기만 팝업이 살아 있을 때 한다.
+		private void onClaimed(bool success, HeroPassClaimResponse data, string error)
+		{
+			_pendingClaim = false;
+
+			if (success == false || data == null)
 			{
-				Debug.LogWarning($"[HeroPass] {level}레벨 {(advanced ? "추가" : "일반")} 보상 그룹이 비어 있다 — HeroPass 테이블을 확인한다.");
-				return false;
+				Debug.LogWarning($"[HeroPass] 수령 실패 — 서버 경험치가 아직 따라오지 않았을 수 있다(바닥 드랍 미정산): {error}");
+				_claimLevels.Clear();
+				_claimAdvanced.Clear();
+				return;
 			}
 
 			_granted.Clear();
-			RewardGranter.Grant(groupId, RewardContext.HeroPass, _granted);
+			RewardGranter.FromServer(data.rewards, data.equipments, _granted);
+			RewardGranter.ApplyAll(_granted);
 
-			book.MarkClaimed(level, advanced);
-			return true;
+			HeroPassBook book = Account.Instance.HeroPass;
+			for (int i = 0; i < _claimLevels.Count; i++)
+			{
+				book.MarkClaimed(_claimLevels[i], _claimAdvanced[i]);
+			}
+
+			_claimLevels.Clear();
+			_claimAdvanced.Clear();
+
+			if (_isDisposed == true)
+			{
+				return;
+			}
+
+			render();
 		}
 
 		// ── 렌더 ──────────────────────────────────────────────────────────
@@ -208,34 +258,45 @@ namespace ProjectOne.UI
 
 		private void onClaimRequested(int level, bool advanced)
 		{
-			if (tryClaim(level, advanced) == false)
+			if (_pendingClaim == true || NetworkManager.Instance.IsLoggedIn == false)
 			{
 				return;
 			}
 
-			render();
+			_claimLevels.Clear();
+			_claimAdvanced.Clear();
+			collectClaim(level, advanced);
+			requestClaim();
 		}
 
-		// 받을 수 있는 일반·추가 보상을 전부 받는다. 하나도 없으면 다시 그리지 않는다.
+		// 받을 수 있는 일반·추가 보상을 전부 모아 한 번에 받는다. 하나도 없으면 보내지 않는다.
 		private void onAllReceiveRequested()
 		{
-			bool claimedAny = false;
+			if (_pendingClaim == true || NetworkManager.Instance.IsLoggedIn == false)
+			{
+				return;
+			}
+
+			_claimLevels.Clear();
+			_claimAdvanced.Clear();
 
 			int maxLevel = HeroPassCatalog.MaxLevel;
 			for (int level = 1; level <= maxLevel; level++)
 			{
-				if (tryClaim(level, false) == true)
-				{
-					claimedAny = true;
-				}
-
-				if (tryClaim(level, true) == true)
-				{
-					claimedAny = true;
-				}
+				collectClaim(level, false);
+				collectClaim(level, true);
 			}
 
-			if (claimedAny == true)
+			requestClaim();
+		}
+
+		// 열어 둔 채 사냥해도 진행도가 따라온다. 레벨이 바뀌면 새로 받을 칸이 생기므로 슬롯까지 다시 그린다.
+		// 수령 응답 대기 중이면 슬롯은 응답 후 render 가 다시 그린다.
+		private void onHeroPassExpChanged(HeroPassExpChangedEvent e)
+		{
+			applyHeader();
+
+			if (e.Level != e.PrevLevel && _pendingClaim == false)
 			{
 				render();
 			}

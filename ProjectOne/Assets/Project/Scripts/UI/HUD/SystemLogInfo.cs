@@ -31,11 +31,13 @@ namespace ProjectOne.UI
 		private void Awake()
 		{
 			EventManager.Instance.Subscribe<RewardAcquiredEvent>(onRewardAcquired);
+			EventManager.Instance.Subscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
 		}
 
 		private void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<RewardAcquiredEvent>(onRewardAcquired);
+			EventManager.Instance.Unsubscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
 		}
 
 		// 만료 시각은 들어온 순서와 같으므로 맨 앞만 보면 된다.
@@ -60,6 +62,17 @@ namespace ProjectOne.UI
 			}
 
 			addLog(text);
+		}
+
+		// 한 번에 여러 레벨이 올라도 최종 레벨로 한 줄만 찍는다. 획득 로그와 구분되게 노란색으로 찍는다.
+		private void onHeroPassExpChanged(HeroPassExpChangedEvent e)
+		{
+			if (e.Level <= e.PrevLevel)
+			{
+				return;
+			}
+
+			addLog($"<color=#DFE528>히어로패스 레벨 {e.Level} 달성!</color>");
 		}
 
 		// ── 표시 ──────────────────────────────────────────────────────

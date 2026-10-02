@@ -76,6 +76,8 @@ namespace BackendFunction
 					return new QuestFunctions().SaveQuestProgress();
 				case FunctionName.DailyBonusClaim:
 					return new DailyBonusFunctions().DailyBonusClaim();
+				case FunctionName.HeroPassClaim:
+					return new HeroPassFunctions().HeroPassClaim();
 				default:
 					return FuncResult.Error("unknown action: " + action);
 			}

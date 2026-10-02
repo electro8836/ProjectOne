@@ -108,6 +108,17 @@ namespace BackendFunction
 
 				response.dailyBonus = JsonConvert.DeserializeObject<DailyBonusDto>(dailyBonusJson);
 
+				// 히어로패스 — 시즌 기준일은 행이 처음 생기는 날(= 계정 생성일)이다.
+				HeroPassDto heroPassDefault = new HeroPassDto();
+				heroPassDefault.startResetDay = HeroPassOps.Today();
+				if (ensureDomainRow("USER_HEROPASS", JsonConvert.SerializeObject(heroPassDefault), out string heroPassJson, out string heroPassErr) == false)
+				{
+					return FuncResult.Error(heroPassErr);
+				}
+
+				response.heroPass = JsonConvert.DeserializeObject<HeroPassDto>(heroPassJson);
+				HeroPassRules.EnsureSeason(response.heroPass, HeroPassOps.Today());
+
 				// 필드 처치 배치 정산 세션 — 로그인마다 새 시드를 발급하고 epoch 를 올린다(필드 드랍 장비 UID 대역).
 				if (ensureDomainRow("USER_FIELD", JsonConvert.SerializeObject(new FieldSessionDto()), out string fieldJson, out string fieldErr) == false)
 				{
