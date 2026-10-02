@@ -46,6 +46,7 @@ namespace ProjectOne.UI
 			OnPointerDownEvent += playDownFeedback;
 			OnPointerUpEvent += playUpFeedback;
 			OnClickEvent += playClickFeedback;
+			OnHoldEvent += playClickFeedback;	// 누른 채 반복도 클릭과 같은 피드백
 		}
 
 		private void OnDestroy()
@@ -56,6 +57,7 @@ namespace ProjectOne.UI
 			OnPointerDownEvent -= playDownFeedback;
 			OnPointerUpEvent -= playUpFeedback;
 			OnClickEvent -= playClickFeedback;
+			OnHoldEvent -= playClickFeedback;
 		}
 
 		private void playDownFeedback()

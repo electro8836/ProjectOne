@@ -58,6 +58,12 @@ namespace BackendFunction
 					return new DungeonRun().DungeonSweep();
 				case FunctionName.FieldBossKill:
 					return new FieldBoss().FieldBossKill();
+				case FunctionName.EquipmentEnhance:
+					return new EquipmentFunctions().EquipmentEnhance();
+				case FunctionName.EquipmentPromote:
+					return new EquipmentFunctions().EquipmentPromote();
+				case FunctionName.EquipmentTransfer:
+					return new EquipmentFunctions().EquipmentTransfer();
 				default:
 					return FuncResult.Error("unknown action: " + action);
 			}

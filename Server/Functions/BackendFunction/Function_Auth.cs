@@ -126,6 +126,9 @@ namespace BackendFunction
 				//    USER_INFO 가 지급과 함께 생기므로, 실패하면 다음 로그인에 다시 시도되고 성공하면 다시 지급되지 않는다.
 				if (isNewAccount == true)
 				{
+					// [임시] 테스트용 재화 충전 — 정식 전환 시 삭제. 저장은 grantStarter 트랜잭션에 함께 실린다.
+					devTopUpCurrency(response.currency);
+
 					if (grantStarter(tableName, response, out string starterErr) == false)
 					{
 						return FuncResult.Error(starterErr);
@@ -192,6 +195,46 @@ namespace BackendFunction
 
 			err = null;
 			return true;
+		}
+
+		// [임시] 테스트용 재화 충전 — 정식 전환 시 삭제.
+		// 신규 계정 생성 시 1회, 모든 재화를 DevCurrencyAmount 까지 채운다(DTO 만 바꾼다).
+		private const int DevCurrencyAmount = 10000000;
+
+		private static void devTopUpCurrency(CurrencyDto currency)
+		{
+
+			System.Array values = System.Enum.GetValues(typeof(EDT.Currency));
+			for (int i = 0; i < values.Length; i++)
+			{
+				int currencyId = (int)values.GetValue(i);
+				if (currencyId == (int)EDT.Currency.None)
+				{
+					continue;
+				}
+
+				CurrencyAmountDto entry = null;
+				for (int j = 0; j < currency.amounts.Count; j++)
+				{
+					if (currency.amounts[j] != null && currency.amounts[j].currencyId == currencyId)
+					{
+						entry = currency.amounts[j];
+						break;
+					}
+				}
+
+				if (entry == null)
+				{
+					entry = new CurrencyAmountDto();
+					entry.currencyId = currencyId;
+					currency.amounts.Add(entry);
+				}
+
+				if (entry.amount < DevCurrencyAmount)
+				{
+					entry.amount = DevCurrencyAmount;
+				}
+			}
 		}
 
 		// 최초 지급 — 응답 DTO 에 직접 반영한 뒤 그대로 저장한다(응답과 저장값이 같다).

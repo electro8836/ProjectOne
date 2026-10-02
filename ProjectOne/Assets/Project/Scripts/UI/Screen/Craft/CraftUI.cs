@@ -71,6 +71,7 @@ namespace ProjectOne.UI
 		public event Action<long> OnGridSlotClicked;
 		public event Action<CraftSlotRoot> OnRegisteredSlotClicked;
 		public event Action OnActionClicked;
+		public event Action OnActionHeld;	// 실행 버튼을 누른 채 반복 — 버튼에 _holdRepeat 가 켜진 강화만 발생한다
 		public event Action OnCancelClicked;
 		public event Action OnHomeClicked;
 		public event Action OnSortClicked;
@@ -306,6 +307,11 @@ namespace ProjectOne.UI
 			if (OnActionClicked != null) { OnActionClicked.Invoke(); }
 		}
 
+		private void onActionHeld()
+		{
+			if (OnActionHeld != null) { OnActionHeld.Invoke(); }
+		}
+
 		private void onCancelClicked()
 		{
 			if (OnCancelClicked != null) { OnCancelClicked.Invoke(); }
@@ -337,12 +343,14 @@ namespace ProjectOne.UI
 		private void bindPanelButtons(ModePanel panel)
 		{
 			panel.actionButton.OnClickEvent += onActionClicked;
+			panel.actionButton.OnHoldEvent += onActionHeld;
 			panel.cancelButton.OnClickEvent += onCancelClicked;
 		}
 
 		private void unbindPanelButtons(ModePanel panel)
 		{
 			panel.actionButton.OnClickEvent -= onActionClicked;
+			panel.actionButton.OnHoldEvent -= onActionHeld;
 			panel.cancelButton.OnClickEvent -= onCancelClicked;
 		}
 

@@ -25,6 +25,7 @@ namespace ProjectOne.UI
 		public virtual bool interactable { get => _interactable; set => _interactable = value; }
 
 		private bool _isPressed;
+		private bool _holdFired;	// 이번 누름에서 Hold 가 한 번이라도 나갔으면 뗄 때의 Click 을 건너뛴다
 		private Coroutine _holdRoutine;
 
 		public void OnPointerDown(PointerEventData eventData)
@@ -32,6 +33,7 @@ namespace ProjectOne.UI
 			if (!_interactable) { return; }
 
 			_isPressed = true;
+			_holdFired = false;
 			invokeDown();
 			startHold();
 		}
@@ -44,6 +46,7 @@ namespace ProjectOne.UI
 		public void OnPointerClick(PointerEventData eventData)
 		{
 			if (!_interactable) { return; }
+			if (_holdFired) { return; }
 
 			invokeClick();
 		}
@@ -86,6 +89,14 @@ namespace ProjectOne.UI
 			WaitForSeconds wait = new WaitForSeconds(_holdInterval);
 			while (true)
 			{
+				// 반복 도중 비활성이 되면(상한 도달·재화 부족) 멈춘다 — 꺼진 버튼에서 피드백이 계속 나지 않게.
+				if (!_interactable)
+				{
+					_holdRoutine = null;
+					yield break;
+				}
+
+				_holdFired = true;
 				invokeHold();
 				yield return wait;
 			}

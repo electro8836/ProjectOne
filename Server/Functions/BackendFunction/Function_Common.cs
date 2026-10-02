@@ -129,6 +129,54 @@ namespace BackendFunction
 		}
 	}
 
+	// 재화 DTO 공용 조작 — 성장 비용 차감.
+	public static class CurrencyUtil
+	{
+		// 전부 충분할 때만 차감하고 true — 부분 차감이 남지 않도록 검사를 먼저 끝낸다.
+		// 같은 재화가 두 번 나올 수 있어(승급의 ReqCurrency + ReqGoldCount) 재화별 합계로 검사한다.
+		public static bool TrySpendAll(CurrencyDto currency, List<CurrencyCost> costs)
+		{
+			for (int i = 0; i < costs.Count; i++)
+			{
+				int required = 0;
+				for (int j = 0; j < costs.Count; j++)
+				{
+					if (costs[j].currency == costs[i].currency)
+					{
+						required += costs[j].amount;
+					}
+				}
+
+				CurrencyAmountDto owned = find(currency, (int)costs[i].currency);
+				if (owned == null || owned.amount < required)
+				{
+					return false;
+				}
+			}
+
+			for (int i = 0; i < costs.Count; i++)
+			{
+				find(currency, (int)costs[i].currency).amount -= costs[i].amount;
+			}
+
+			return true;
+		}
+
+		private static CurrencyAmountDto find(CurrencyDto currency, int currencyId)
+		{
+			for (int i = 0; i < currency.amounts.Count; i++)
+			{
+				CurrencyAmountDto entry = currency.amounts[i];
+				if (entry != null && entry.currencyId == currencyId)
+				{
+					return entry;
+				}
+			}
+
+			return null;
+		}
+	}
+
 	// 내 도메인 행(유저당 1행) 조회 공용 헬퍼 — Data 컬럼의 DTO JSON 을 읽는다.
 	public static class MyData
 	{

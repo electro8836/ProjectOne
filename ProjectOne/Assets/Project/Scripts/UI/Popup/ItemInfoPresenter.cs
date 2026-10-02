@@ -89,7 +89,7 @@ namespace ProjectOne.UI
 			_slot = (equip != null) ? equip.EquipSlotType : EquipSlotTypes.None;
 
 			// 등급·레벨·품질은 아이템 테이블이 아니라 인스턴스가 소유한다.
-			view.SetInfo(row, instance.grade, instance.level, EquipmentCatalog.GetMaxLevel(instance.grade), instance.quality);
+			view.SetInfo(row, instance.grade, instance.level, EquipmentUpgrade.GetMaxLevel(instance), instance.quality);
 			view.SetEquipInteractable(_slot != EquipSlotTypes.None);
 			view.SetEquipLabel(equipLabel());
 

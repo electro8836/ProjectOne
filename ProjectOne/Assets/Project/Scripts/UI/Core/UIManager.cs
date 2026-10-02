@@ -39,8 +39,9 @@ namespace ProjectOne.UI
 		[Header("네트워크 딤")]
 		[SerializeField] private GameObject _networkBlockerPrefab;
 
-		// 이 시간(초) 안에 응답이 오면 딤을 띄우지 않는다(빠른 응답에서 화면 깜빡임 방지).
-		private const float NetworkBlockerShowDelaySec = 0.2f;
+		// 이 시간(초) 안에 응답이 오면 딤을 보이지 않는다 — 응답이 실제로 지연될 때만 보인다.
+		// 그동안에도 입력은 투명 차단막으로 즉시 막는다(응답 전 연타·탭 전환·창 닫기 방지).
+		private const float NetworkBlockerShowDelaySec = 3f;
 
 		// 열린 창 스택 (Back키 처리, 직렬 닫기용)
 		// 주소를 함께 들고 있어야 닫을 때 참조카운트를 되돌릴 수 있다 — 화면만으로는 무엇을 Acquire 했는지 모른다.
@@ -103,6 +104,8 @@ namespace ProjectOne.UI
 
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
+		// 딤 표시 여부 — 요청 즉시 alpha 0 으로 입력만 막고, 지연 뒤 alpha 1 로 보인다.
+		private CanvasGroup _networkBlockerGroup;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
 		private int _blockerRefCount;
 		// 지연 표시 코루틴 — 닫힘 시 중지
@@ -223,9 +226,10 @@ namespace ProjectOne.UI
 
 		// ── 네트워크 딤(블로커) ─────────────────────────────────────────
 		// 뒤끝 호출(BackndFunctionCaller)이 응답 대기 동안 입력을 막기 위해 호출한다.
-		// 참조카운트로 동시/연속 요청을 견디고, 지연 시간 내 응답이 오면 딤을 띄우지 않는다.
+		// 참조카운트로 동시/연속 요청을 견딘다. 요청 즉시 투명하게 켜서 입력을 막고,
+		// 지연 시간 내 응답이 오면 딤을 보이지 않은 채 닫는다.
 
-		// 요청 시작 — 참조카운트를 올리고 첫 요청이면 지연 표시를 예약한다.
+		// 요청 시작 — 참조카운트를 올리고 첫 요청이면 투명 차단 후 지연 표시를 예약한다.
 		public void ShowNetworkBlocker()
 		{
 			_blockerRefCount++;
@@ -234,11 +238,22 @@ namespace ProjectOne.UI
 				return;	// 이미 표시(또는 지연 대기) 중
 			}
 
-			// 0→1: 지연 표시 시작. 직전 대기가 남아있지 않게 정리 후 재시작.
+			// 0→1: 투명 차단 후 지연 표시 시작. 직전 대기가 남아있지 않게 정리 후 재시작.
 			if (_blockerDelayCo != null)
 			{
 				StopCoroutine(_blockerDelayCo);
 			}
+
+			// 딤은 최초 1회만 생성해 캐시하고, 이후 SetActive 로 재사용한다.
+			if (_networkBlocker == null)
+			{
+				Transform parent = (_systemCanvas != null) ? _systemCanvas.transform : _popupCanvas.transform;
+				_networkBlocker = Instantiate(_networkBlockerPrefab, parent);
+				_networkBlockerGroup = _networkBlocker.GetComponent<CanvasGroup>();
+			}
+
+			setBlockerVisible(false);
+			_networkBlocker.SetActive(true);
 
 			_blockerDelayCo = StartCoroutine(showBlockerDelayed());
 		}
@@ -281,14 +296,19 @@ namespace ProjectOne.UI
 				yield break;
 			}
 
-			// 딤은 최초 1회만 생성해 캐시하고, 이후 SetActive 로 재사용한다.
-			if (_networkBlocker == null)
+			setBlockerVisible(true);
+		}
+
+		// 차단막은 그대로 두고 보이기만 바꾼다 — 자식 이미지의 RaycastTarget 이 alpha 0 에서도 입력을 막는다.
+		private void setBlockerVisible(bool visible)
+		{
+			if (_networkBlockerGroup == null)
 			{
-				Transform parent = (_systemCanvas != null) ? _systemCanvas.transform : _popupCanvas.transform;
-				_networkBlocker = Instantiate(_networkBlockerPrefab, parent);
+				Debug.LogWarning("[UIManager] 네트워크 딤 프리팹 루트에 CanvasGroup 이 없습니다 — 즉시 보입니다.");
+				return;
 			}
 
-			_networkBlocker.SetActive(true);
+			_networkBlockerGroup.alpha = visible ? 1f : 0f;
 		}
 
 		// ── 영속 MainHUD ────────────────────────────────────────────────

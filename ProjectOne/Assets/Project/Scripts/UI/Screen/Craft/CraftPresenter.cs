@@ -4,8 +4,11 @@ using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Items;
+using ProjectOne.Network;
+using ProjectOne.Shared;
 using ProjectOne.Upgrade;
 using ProjectOne.UserData;
+using UnityEngine;
 
 namespace ProjectOne.UI
 {
@@ -71,8 +74,12 @@ namespace ProjectOne.UI
 		private long _sourceUid;
 		private long _targetUid;
 
-		// 이번 rebuild 끝에 실행 성공 연출을 재생할지. 실행 버튼에서만 채운다.
+		// 이번 rebuild 끝에 실행 성공 연출을 재생할지. 실행 성공 응답에서만 채운다.
 		private bool _pendingPop;
+
+		// 승급·전이 서버 응답 대기 중 — 응답 전 재실행을 막는다. 강화는 EnhanceBatcher 가 묶어 보내므로 쓰지 않는다.
+		private bool _pendingGrowth;
+		private bool _isDisposed;
 
 		private readonly List<CraftSlotData> _gridData = new List<CraftSlotData>();
 		private readonly List<UpgradeCost> _costs = new List<UpgradeCost>(3);
@@ -89,6 +96,7 @@ namespace ProjectOne.UI
 			view.OnGridSlotClicked += onGridSlotClicked;
 			view.OnRegisteredSlotClicked += onRegisteredSlotClicked;
 			view.OnActionClicked += onActionClicked;
+			view.OnActionHeld += onActionHeld;
 			view.OnCancelClicked += onCancelClicked;
 			view.OnHomeClicked += onHomeClicked;
 			view.OnSortClicked += onSortClicked;
@@ -102,6 +110,11 @@ namespace ProjectOne.UI
 
 		protected override void OnDispose()
 		{
+			_isDisposed = true;
+
+			// 닫기 없이 파괴되는 경우(씬 전환)에도 모아 둔 강화를 보낸다.
+			EnhanceBatcher.Instance.Flush();
+
 			if (_rebuildCts != null)
 			{
 				_rebuildCts.Cancel();
@@ -114,6 +127,7 @@ namespace ProjectOne.UI
 			view.OnGridSlotClicked -= onGridSlotClicked;
 			view.OnRegisteredSlotClicked -= onRegisteredSlotClicked;
 			view.OnActionClicked -= onActionClicked;
+			view.OnActionHeld -= onActionHeld;
 			view.OnCancelClicked -= onCancelClicked;
 			view.OnHomeClicked -= onHomeClicked;
 			view.OnSortClicked -= onSortClicked;
@@ -136,6 +150,13 @@ namespace ProjectOne.UI
 			view.SetSortLabel(getSortLabel(_sortMode));
 
 			rebuild();
+			return UniTask.CompletedTask;
+		}
+
+		// 모아 둔 강화를 창이 닫힐 때 바로 보낸다.
+		public override UniTask OnCloseAsync()
+		{
+			EnhanceBatcher.Instance.Flush();
 			return UniTask.CompletedTask;
 		}
 
@@ -255,27 +276,104 @@ namespace ProjectOne.UI
 			UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, instance, view.GetDestroyToken()).Forget();
 		}
 
-		// 실행 — 성공하면 연출을 예약하고 다시 그린다.
-		// 실행 중 재화·장비 이벤트로 rebuild 가 먼저 돌 수 있어, 연출은 실행이 끝난 뒤의 rebuild 에 싣는다.
+		// 실행 — 강화는 즉시 적용하고 묶어 보낸다(EnhanceBatcher).
+		// 승급·전이는 로컬로 미리 판정해 서버에 요청하고, 차감·변경은 서버 응답에서 반영한다.
 		private void onActionClicked()
 		{
-			bool success = false;
+			if (_mode == CraftMode.Enhance)
+			{
+				enhance();
+				return;
+			}
+
+			if (_pendingGrowth == true || NetworkManager.Instance.IsLoggedIn == false)
+			{
+				return;
+			}
+
 			switch (_mode)
 			{
-			case CraftMode.Enhance:
-				success = EquipmentUpgrade.TryEnhance(findEquipment(_enhanceUid));
-				break;
 
 			case CraftMode.Promote:
-				success = EquipmentUpgrade.TryPromote(findEquipment(_promoteUid));
+				requestPromote(findEquipment(_promoteUid));
 				break;
 
 			case CraftMode.Transfer:
-				success = EquipmentTransfer.TryTransfer(findEquipment(_sourceUid), findEquipment(_targetUid));
+				requestTransfer(findEquipment(_sourceUid), findEquipment(_targetUid));
 				break;
 			}
+		}
 
-			if (success == false)
+		// 누른 채 반복 — 강화만 반복한다.
+		private void onActionHeld()
+		{
+			if (_mode == CraftMode.Enhance)
+			{
+				enhance();
+			}
+		}
+
+		// 강화 1회 — 즉시 적용되므로 서버를 기다리지 않고 연출한다.
+		// 적용 중 재화·장비 이벤트로 rebuild 가 먼저 돌 수 있어, 연출은 적용이 끝난 뒤의 rebuild 에 싣는다.
+		private void enhance()
+		{
+			if (EnhanceBatcher.Instance.TryEnhance(findEquipment(_enhanceUid)) == false)
+			{
+				return;
+			}
+
+			_pendingPop = true;
+			rebuild();
+		}
+
+		private void requestPromote(EquipmentInstance instance)
+		{
+			if (EquipmentUpgrade.CanPromote(instance) == false)
+			{
+				return;
+			}
+
+			EquipmentUpgrade.GetPromoteCost(instance, _costs);
+			if (EquipmentUpgrade.IsAffordable(_costs) == false)
+			{
+				return;
+			}
+
+			EquipmentPromoteRequest request = new EquipmentPromoteRequest();
+			request.uid = instance.uid;
+			_pendingGrowth = true;
+			NetworkManager.Instance.RequestEquipmentPromote(request, onGrowthResponse);
+		}
+
+		private void requestTransfer(EquipmentInstance source, EquipmentInstance target)
+		{
+			if (EquipmentTransfer.GetBlock(source, target) != TransferBlock.None)
+			{
+				return;
+			}
+
+			EquipmentTransferRequest request = new EquipmentTransferRequest();
+			request.sourceUid = source.uid;
+			request.targetUid = target.uid;
+			_pendingGrowth = true;
+			NetworkManager.Instance.RequestEquipmentTransfer(request, onGrowthResponse);
+		}
+
+		// 계정 반영은 창이 닫혔어도 한다 — 서버에는 이미 저장됐다. 연출·다시 그리기만 창이 살아 있을 때 한다.
+		// 반영 중 재화·장비 이벤트로 rebuild 가 먼저 돌 수 있어, 연출은 반영이 끝난 뒤의 rebuild 에 싣는다.
+		private void onGrowthResponse(bool success, EquipmentGrowthResponse data, string error)
+		{
+			_pendingGrowth = false;
+
+			if (success == false || data == null)
+			{
+				Debug.LogWarning($"[Craft] 장비 성장 실패: {error}");
+				return;
+			}
+
+			EquipmentUpgrade.ApplyGrowthResponse(data);
+
+			if (_isDisposed == true)
 			{
 				return;
 			}

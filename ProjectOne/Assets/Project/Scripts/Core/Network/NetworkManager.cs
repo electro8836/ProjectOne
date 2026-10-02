@@ -311,6 +311,44 @@ namespace ProjectOne.Network
 			_caller.Invoke<ShopBuyRequest, ShopBuyResponse>(FunctionName.ShopBuy, request, callback);
 		}
 
+		// ── 장비 성장 ─────────────────────────────────────────────────────
+
+		// 강화·승급·전이 — 서버가 공유 규칙으로 검증하고 재화 차감·장비 변경을 저장한다.
+		// 필드에서 주운 재화가 서버에 먼저 반영되도록 처치 배치를 앞에 보낸다(SendQueue 순서).
+		// 강화는 클라가 미리 적용하고 묶음으로 보낸다(EnhanceBatcher) — 딤을 띄우지 않는다.
+		public void RequestEquipmentEnhance(EquipmentEnhanceRequest request, ResponseCallback<EquipmentGrowthResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<EquipmentEnhanceRequest, EquipmentGrowthResponse>(FunctionName.EquipmentEnhance, request, callback, false);
+		}
+
+		public void RequestEquipmentPromote(EquipmentPromoteRequest request, ResponseCallback<EquipmentGrowthResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<EquipmentPromoteRequest, EquipmentGrowthResponse>(FunctionName.EquipmentPromote, request, callback);
+		}
+
+		public void RequestEquipmentTransfer(EquipmentTransferRequest request, ResponseCallback<EquipmentGrowthResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<EquipmentTransferRequest, EquipmentGrowthResponse>(FunctionName.EquipmentTransfer, request, callback);
+		}
+
 		// ── 필드 처치 배치 정산 ───────────────────────────────────────────
 
 		// 정리가 끝난 처치를 앞에서부터 묶어 보낸다(주기·일시정지·종료·다른 펑션 직전 트리거).
