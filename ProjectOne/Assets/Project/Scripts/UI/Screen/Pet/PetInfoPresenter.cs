@@ -4,6 +4,7 @@ using Cysharp.Threading.Tasks;
 using EDT;
 using UnityEngine;
 using ProjectOne.Event;
+using ProjectOne.Network;
 using ProjectOne.Pets;
 using ProjectOne.UserData;
 
@@ -67,6 +68,13 @@ namespace ProjectOne.UI
 			view.SetSortLabel(getSortLabel(_sortMode));
 			render();
 
+			return UniTask.CompletedTask;
+		}
+
+		// 화면 닫힘 — 펫 장착 변경(dirty)이 있으면 서버에 1회 저장한다(코스튬 착용과 함께).
+		public override UniTask OnCloseAsync()
+		{
+			NetworkManager.Instance.FlushAppearanceIfDirty();
 			return UniTask.CompletedTask;
 		}
 

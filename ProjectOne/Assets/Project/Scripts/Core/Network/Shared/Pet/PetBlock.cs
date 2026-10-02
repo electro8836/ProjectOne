@@ -1,4 +1,4 @@
-namespace ProjectOne.Pets
+namespace ProjectOne.Shared
 {
 	// 강화가 막힌 이유. 선언 순서가 곧 안내 우선순위다.
 	//

@@ -22,5 +22,11 @@ namespace ProjectOne.Shared
 		public const string EquipmentEnhance = "EquipmentEnhance";
 		public const string EquipmentPromote = "EquipmentPromote";
 		public const string EquipmentTransfer = "EquipmentTransfer";
+		public const string PetEnhance = "PetEnhance";
+		public const string PetPromote = "PetPromote";
+		public const string SaveAppearance = "SaveAppearance";
+		public const string QuestComplete = "QuestComplete";
+		public const string SaveQuestProgress = "SaveQuestProgress";
+		public const string DailyBonusClaim = "DailyBonusClaim";
 	}
 }

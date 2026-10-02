@@ -3,7 +3,9 @@ using Cysharp.Threading.Tasks;
 using EDT;
 using UnityEngine;
 using ProjectOne.Event;
+using ProjectOne.Network;
 using ProjectOne.Pets;
+using ProjectOne.Shared;
 using ProjectOne.UserData;
 
 namespace ProjectOne.UI
@@ -16,12 +18,16 @@ namespace ProjectOne.UI
 	{
 		private EDT.Pet _petId = EDT.Pet.None;
 
+		// 승급 서버 응답 대기 중 — 응답 전 재실행을 막는다(입력은 네트워크 차단막도 막는다).
+		private bool _pendingPromote;
+
 		private CancellationTokenSource _renderCts;
 
 		protected override void OnInitialize()
 		{
 			view.OnEquipClicked += onEquipClicked;
 			view.OnLevelUpClicked += onLevelUpClicked;
+			view.OnLevelUpHeld += onLevelUpClicked;
 			view.OnGradeUpClicked += onGradeUpClicked;
 
 			EventManager.Instance.Subscribe<PetChangeEvent>(onPetChanged);
@@ -32,6 +38,9 @@ namespace ProjectOne.UI
 
 		protected override void OnDispose()
 		{
+			// 모아 둔 강화를 팝업이 닫힐 때 바로 보낸다.
+			PetEnhanceBatcher.Instance.Flush();
+
 			if (_renderCts != null)
 			{
 				_renderCts.Cancel();
@@ -41,6 +50,7 @@ namespace ProjectOne.UI
 
 			view.OnEquipClicked -= onEquipClicked;
 			view.OnLevelUpClicked -= onLevelUpClicked;
+			view.OnLevelUpHeld -= onLevelUpClicked;
 			view.OnGradeUpClicked -= onGradeUpClicked;
 
 			EventManager.Instance.Unsubscribe<PetChangeEvent>(onPetChanged);
@@ -81,14 +91,38 @@ namespace ProjectOne.UI
 			book.TryEquip(_petId);
 		}
 
+		// 강화는 즉시 적용하고 묶어 보낸다(PetEnhanceBatcher) — 연타·누른 채 반복 공용.
 		private void onLevelUpClicked()
 		{
-			Account.Instance.Pet.TryEnhance(_petId);
+			PetEnhanceBatcher.Instance.TryEnhance(_petId);
 		}
 
+		// 승급은 서버에 요청하고, 차감·변경은 응답에서 반영한다.
 		private void onGradeUpClicked()
 		{
-			Account.Instance.Pet.TryPromote(_petId);
+			if (_pendingPromote == true || Account.Instance.Pet.GetPromoteBlock(_petId) != PetPromoteBlock.None)
+			{
+				return;
+			}
+
+			PetPromoteRequest request = new PetPromoteRequest();
+			request.petId = (int)_petId;
+			_pendingPromote = true;
+			NetworkManager.Instance.RequestPetPromote(request, onPromoteResponse);
+		}
+
+		// 계정 반영은 팝업이 닫혔어도 한다 — 서버에는 이미 저장됐다. 화면 갱신은 PetChangeEvent 가 한다.
+		private void onPromoteResponse(bool success, PetGrowthResponse data, string error)
+		{
+			_pendingPromote = false;
+
+			if (success == false || data == null)
+			{
+				Debug.LogWarning($"[PetEnhancePopup] 펫 승급 실패: {error}");
+				return;
+			}
+
+			Account.Instance.Pet.ApplyGrowthResponse(data);
 		}
 
 		private void onPetChanged(PetChangeEvent e)

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using EDT;
+using UnityEngine;
 using ProjectOne.Currency;
 using ProjectOne.Event;
 using ProjectOne.Shared;
@@ -24,6 +25,9 @@ namespace ProjectOne.Pets
 		// None = 미장착. 필드가 하나라 "동시에 한 마리" 제한이 자연히 성립한다.
 		private EDT.Pet _equipped = EDT.Pet.None;
 
+		// 장착 변경이 서버에 미반영인지 — 외형 저장(SaveAppearance) flush 가 확인한다.
+		private bool _equipDirty;
+
 		public PetBook(PetDto dto)
 		{
 			buildFromDto(dto);
@@ -40,6 +44,22 @@ namespace ProjectOne.Pets
 		public EDT.Pet Equipped
 		{
 			get { return _equipped; }
+		}
+
+		public bool IsEquipDirty
+		{
+			get { return _equipDirty; }
+		}
+
+		// 전송 시점에 dirty 해제 — 실패하면 MarkEquipDirty 로 되살린다.
+		public void MarkEquipSynced()
+		{
+			_equipDirty = false;
+		}
+
+		public void MarkEquipDirty()
+		{
+			_equipDirty = true;
 		}
 
 		public bool IsEquipped(EDT.Pet id)
@@ -115,6 +135,7 @@ namespace ProjectOne.Pets
 			}
 
 			_equipped = id;
+			_equipDirty = true;
 			notifyChanged(id);
 			return true;
 		}
@@ -128,12 +149,13 @@ namespace ProjectOne.Pets
 
 			EDT.Pet prev = _equipped;
 			_equipped = EDT.Pet.None;
+			_equipDirty = true;
 			notifyChanged(prev);
 		}
 
 		// ── 강화 ──────────────────────────────────────────────────────
 
-		// 강화가 막힌 이유. 버튼 잠금도 TryEnhance 도 이것만 본다.
+		// 강화가 막힌 이유. 버튼 잠금도 PetEnhanceBatcher.TryEnhance 도 이것만 본다.
 		public PetEnhanceBlock GetEnhanceBlock(EDT.Pet id)
 		{
 			PetEntry entry = Find(id);
@@ -142,18 +164,15 @@ namespace ProjectOne.Pets
 				return PetEnhanceBlock.NotOwned;
 			}
 
-			if (entry.IsMaxLevel == true)
+			PetEnhanceBlock block = PetRules.GetEnhanceBlock(entry.Level, entry.Grade);
+			if (block != PetEnhanceBlock.None)
 			{
-				return PetEnhanceBlock.MaxLevel;
+				return block;
 			}
 
 			EDT.Currency currency;
 			int amount;
-			if (PetCatalog.TryGetEnhanceCost(entry.Level, out currency, out amount) == false)
-			{
-				return PetEnhanceBlock.NoTable;
-			}
-
+			PetCatalog.TryGetEnhanceCost(entry.Level, out currency, out amount);
 			if (CurrencyManager.Instance.GetAmount(currency) < amount)
 			{
 				return PetEnhanceBlock.NotEnough;
@@ -162,27 +181,17 @@ namespace ProjectOne.Pets
 			return PetEnhanceBlock.None;
 		}
 
-		public bool TryEnhance(EDT.Pet id)
+		// 강화 실행은 서버 권위다 — PetEnhanceBatcher 가 즉시 적용하고 묶어 보낸다(적용·되돌림 모두 이 경로).
+		internal void SetLevel(EDT.Pet id, int level)
 		{
-			if (GetEnhanceBlock(id) != PetEnhanceBlock.None)
-			{
-				return false;
-			}
-
 			PetEntry entry = Find(id);
-
-			EDT.Currency currency;
-			int amount;
-			PetCatalog.TryGetEnhanceCost(entry.Level, out currency, out amount);
-
-			if (CurrencyManager.Instance.TrySpend(currency, amount) == false)
+			if (entry == null)
 			{
-				return false;
+				return;
 			}
 
-			entry.LevelUp();
+			entry.SetLevel(level);
 			notifyChanged(id);
-			return true;
 		}
 
 		// ── 승급 ──────────────────────────────────────────────────────
@@ -196,17 +205,13 @@ namespace ProjectOne.Pets
 				return PetPromoteBlock.NotOwned;
 			}
 
+			PetPromoteBlock block = PetRules.GetPromoteBlock(entry.Grade);
+			if (block != PetPromoteBlock.None)
+			{
+				return block;
+			}
+
 			Table_PetPromotion.Row row = PetCatalog.GetPromotion(entry.Grade);
-			if (row == null)
-			{
-				return PetPromoteBlock.MaxGrade;
-			}
-
-			if (row.ToGrade == ItemGradeType.None || row.CostCurrencyID == EDT.Currency.None)
-			{
-				return PetPromoteBlock.NoTable;
-			}
-
 			if (CurrencyManager.Instance.GetAmount(row.CostCurrencyID) < row.CostCurrencyValue)
 			{
 				return PetPromoteBlock.NotEnough;
@@ -215,24 +220,36 @@ namespace ProjectOne.Pets
 			return PetPromoteBlock.None;
 		}
 
-		public bool TryPromote(EDT.Pet id)
+		// 승급 실행은 서버 권위다 — 성공 응답의 차감량을 빼고 펫을 서버 최종 상태로 덮는다.
+		public void ApplyGrowthResponse(PetGrowthResponse response)
 		{
-			if (GetPromoteBlock(id) != PetPromoteBlock.None)
+			if (response.spent != null)
 			{
-				return false;
+				for (int i = 0; i < response.spent.Length; i++)
+				{
+					CurrencyAmountDto spent = response.spent[i];
+					if (CurrencyManager.Instance.TrySpend((EDT.Currency)spent.currencyId, spent.amount) == false)
+					{
+						Debug.LogWarning($"[PetBook] 서버 차감분이 로컬 보유량보다 큽니다 — currency:{spent.currencyId} amount:{spent.amount}");
+					}
+				}
 			}
 
+			if (response.pet == null)
+			{
+				return;
+			}
+
+			EDT.Pet id = (EDT.Pet)response.pet.petId;
 			PetEntry entry = Find(id);
-			Table_PetPromotion.Row row = PetCatalog.GetPromotion(entry.Grade);
-
-			if (CurrencyManager.Instance.TrySpend(row.CostCurrencyID, row.CostCurrencyValue) == false)
+			if (entry == null)
 			{
-				return false;
+				Debug.LogWarning($"[PetBook] 응답 펫을 찾을 수 없습니다 — pet:{response.pet.petId}");
+				return;
 			}
 
-			entry.Promote(row.ToGrade);
+			entry.LoadFrom(response.pet);
 			notifyChanged(id);
-			return true;
 		}
 
 		// ── 직렬화 ────────────────────────────────────────────────────

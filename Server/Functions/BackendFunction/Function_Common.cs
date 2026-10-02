@@ -162,6 +162,48 @@ namespace BackendFunction
 			return true;
 		}
 
+		// 1회분 비용을 재화별 합계에 더한다 — 묶음 강화의 차감 합계(응답 spent).
+		public static void AddCosts(List<CurrencyCost> sum, List<CurrencyCost> costs)
+		{
+			for (int i = 0; i < costs.Count; i++)
+			{
+				int index = -1;
+				for (int j = 0; j < sum.Count; j++)
+				{
+					if (sum[j].currency == costs[i].currency)
+					{
+						index = j;
+						break;
+					}
+				}
+
+				if (index < 0)
+				{
+					sum.Add(costs[i]);
+					continue;
+				}
+
+				CurrencyCost total = sum[index];
+				total.amount += costs[i].amount;
+				sum[index] = total;
+			}
+		}
+
+		// 차감 합계를 응답용 DTO 배열로 바꾼다.
+		public static CurrencyAmountDto[] ToSpentDto(List<CurrencyCost> costs)
+		{
+			CurrencyAmountDto[] result = new CurrencyAmountDto[costs.Count];
+			for (int i = 0; i < costs.Count; i++)
+			{
+				CurrencyAmountDto spent = new CurrencyAmountDto();
+				spent.currencyId = (int)costs[i].currency;
+				spent.amount = costs[i].amount;
+				result[i] = spent;
+			}
+
+			return result;
+		}
+
 		private static CurrencyAmountDto find(CurrencyDto currency, int currencyId)
 		{
 			for (int i = 0; i < currency.amounts.Count; i++)

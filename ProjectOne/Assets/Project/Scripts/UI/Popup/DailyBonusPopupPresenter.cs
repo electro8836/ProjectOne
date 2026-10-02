@@ -4,7 +4,9 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.DailyBonuses;
+using ProjectOne.Network;
 using ProjectOne.Reward;
+using ProjectOne.Shared;
 using ProjectOne.UserData;
 using ProjectOne.Utils;
 using UnityEngine;
@@ -23,8 +25,13 @@ namespace ProjectOne.UI
 	{
 		private readonly List<DailyBonusSlotData> _slotData = new List<DailyBonusSlotData>(30);
 
-		// 지급 결과 버퍼 — 지급 자체는 RewardGranter 가 인벤/지갑에 반영하므로 여기선 재사용만 한다.
+		// 지급 결과 버퍼 — 서버 응답을 RewardGranter 로 인벤/지갑에 반영할 때 재사용한다.
 		private readonly List<GrantedReward> _granted = new List<GrantedReward>(4);
+
+		// 서버 응답 대기 중인 수령 — 응답 전 재요청을 막는다(입력은 네트워크 차단막도 막는다).
+		private bool _pendingClaim;
+		private DailyBonusType _pendingType;
+		private bool _isDisposed;
 
 		private Action _onSecondTick;
 		private Action<DailyBonusType> _onTabSelected;
@@ -51,6 +58,8 @@ namespace ProjectOne.UI
 
 		protected override void OnDispose()
 		{
+			_isDisposed = true;
+
 			if (_renderCts != null)
 			{
 				_renderCts.Cancel();
@@ -78,12 +87,12 @@ namespace ProjectOne.UI
 
 		// ── 수령 ──────────────────────────────────────────────────────────
 
-		// 누른 칸이 정말 지금 받을 수 있는 칸인지 다시 확인하고 지급한다.
+		// 누른 칸이 정말 지금 받을 수 있는 칸인지 다시 확인하고 서버에 수령을 요청한다.
 		// 연타나 화면이 다시 그려지기 전의 늦은 클릭이 두 번 들어와도 여기서 걸린다.
 		private bool tryClaim(DailyBonusType type, int dayCount)
 		{
 			DailyBonusBook book = Account.Instance.DailyBonus;
-			if (book.CanClaim(type) == false)
+			if (_pendingClaim == true || NetworkManager.Instance.IsLoggedIn == false || book.CanClaim(type) == false)
 			{
 				return false;
 			}
@@ -106,11 +115,40 @@ namespace ProjectOne.UI
 				return false;
 			}
 
-			_granted.Clear();
-			RewardGranter.Grant(row.RewardGroupID, RewardContext.DailyBonus, _granted);
+			DailyBonusClaimRequest request = new DailyBonusClaimRequest();
+			request.typeId = (int)type;
+			request.dayCount = dayCount;
 
-			book.MarkClaimed(type, cycleLength);
+			_pendingClaim = true;
+			_pendingType = type;
+			NetworkManager.Instance.RequestDailyBonusClaim(request, onClaimed);
 			return true;
+		}
+
+		// 계정 반영은 팝업이 닫혔어도 한다 — 서버에는 이미 저장됐다. 다시 그리기만 팝업이 살아 있을 때 한다.
+		private void onClaimed(bool success, DailyBonusClaimResponse data, string error)
+		{
+			DailyBonusType type = _pendingType;
+			_pendingClaim = false;
+
+			if (success == false || data == null)
+			{
+				Debug.LogWarning($"[DailyBonus] {type} 수령 실패: {error}");
+				return;
+			}
+
+			_granted.Clear();
+			RewardGranter.FromServer(data.rewards, data.equipments, _granted);
+			RewardGranter.ApplyAll(_granted);
+
+			Account.Instance.DailyBonus.MarkClaimed(type, DailyBonusCatalog.GetCycleLength(type));
+
+			if (_isDisposed == true || type != _currentType)
+			{
+				return;
+			}
+
+			render(_currentType);
 		}
 
 		// ── 렌더 ──────────────────────────────────────────────────────────
@@ -178,15 +216,10 @@ namespace ProjectOne.UI
 			render(_currentType);
 		}
 
-		// Focus 가 켜진 칸을 눌렀다.
+		// Focus 가 켜진 칸을 눌렀다. 다시 그리기는 서버 응답(onClaimed)에서 한다.
 		private void onClaimRequested(int dayCount)
 		{
-			if (tryClaim(_currentType, dayCount) == false)
-			{
-				return;
-			}
-
-			render(_currentType);
+			tryClaim(_currentType, dayCount);
 		}
 
 		// 1초마다. 남은 분이 그대로면 문자열을 새로 만들지 않는다.

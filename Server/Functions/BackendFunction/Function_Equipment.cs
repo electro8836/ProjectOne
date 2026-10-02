@@ -56,7 +56,7 @@ namespace BackendFunction
 					}
 
 					target.level++;
-					addSpent(spent, costs);
+					CurrencyUtil.AddCosts(spent, costs);
 				}
 
 				if (spent.Count == 0)
@@ -219,43 +219,9 @@ namespace BackendFunction
 				? new EquipmentInstanceDto[] { changedA, changedB }
 				: new EquipmentInstanceDto[] { changedA };
 
-			response.spent = new CurrencyAmountDto[costs.Count];
-			for (int i = 0; i < costs.Count; i++)
-			{
-				CurrencyAmountDto spent = new CurrencyAmountDto();
-				spent.currencyId = (int)costs[i].currency;
-				spent.amount = costs[i].amount;
-				response.spent[i] = spent;
-			}
+			response.spent = CurrencyUtil.ToSpentDto(costs);
 
 			return FuncResult.Json(response);
-		}
-
-		// 강화 1회분 비용을 재화별 합계에 더한다.
-		private static void addSpent(List<CurrencyCost> spent, List<CurrencyCost> costs)
-		{
-			for (int i = 0; i < costs.Count; i++)
-			{
-				int index = -1;
-				for (int j = 0; j < spent.Count; j++)
-				{
-					if (spent[j].currency == costs[i].currency)
-					{
-						index = j;
-						break;
-					}
-				}
-
-				if (index < 0)
-				{
-					spent.Add(costs[i]);
-					continue;
-				}
-
-				CurrencyCost sum = spent[index];
-				sum.amount += costs[i].amount;
-				spent[index] = sum;
-			}
 		}
 
 		private static EquipmentInstanceDto findEquipment(InventoryDto inventory, long uid)

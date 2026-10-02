@@ -23,6 +23,9 @@ namespace ProjectOne.UserData
 		private int _equippedWeaponId;
 		private int _equippedBodyId;
 
+		// 착용 변경이 서버에 미반영인지 — 외형 저장(SaveAppearance) flush 가 확인한다.
+		private bool _dirty;
+
 		public CostumeBook(CostumeDto dto)
 		{
 			buildFromDto(dto);
@@ -48,6 +51,22 @@ namespace ProjectOne.UserData
 		public IReadOnlyCollection<int> Owned
 		{
 			get { return _owned; }
+		}
+
+		public bool IsDirty
+		{
+			get { return _dirty; }
+		}
+
+		// 전송 시점에 dirty 해제 — 실패하면 MarkDirty 로 되살린다.
+		public void MarkSynced()
+		{
+			_dirty = false;
+		}
+
+		public void MarkDirty()
+		{
+			_dirty = true;
 		}
 
 		// ── 변경 ──────────────────────────────────────────────────────
@@ -83,6 +102,7 @@ namespace ProjectOne.UserData
 			}
 
 			_equippedWeaponId = costumeId;
+			_dirty = true;
 			reapplyAvatar();
 			return true;
 		}
@@ -104,6 +124,7 @@ namespace ProjectOne.UserData
 			}
 
 			_equippedBodyId = costumeId;
+			_dirty = true;
 			reapplyAvatar();
 			return true;
 		}

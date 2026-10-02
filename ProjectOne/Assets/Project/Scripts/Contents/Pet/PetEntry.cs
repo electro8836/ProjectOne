@@ -68,14 +68,10 @@ namespace ProjectOne.Pets
 
 		// ── 변경 (PetBook 만 부른다) ──────────────────────────────────
 
-		internal void LevelUp()
+		// 강화 적용·서버 기준 되돌림 공용. 보유 = 최소 1레벨.
+		internal void SetLevel(int level)
 		{
-			_level++;
-		}
-
-		internal void Promote(ItemGradeType to)
-		{
-			_grade = to;
+			_level = (level < 1) ? 1 : level;
 		}
 
 		// ── 직렬화 ────────────────────────────────────────────────────

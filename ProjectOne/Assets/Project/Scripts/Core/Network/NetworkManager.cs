@@ -20,6 +20,8 @@ namespace ProjectOne.Network
 
 		// 장착 저장 전송 진행 중 가드 — 중복 flush(닫기+pause 동시 등) 방지.
 		private bool _loadoutFlushing;
+		private bool _appearanceFlushing;
+		private bool _questProgressFlushing;
 
 		// 스킬트리 저장 전송 중인 트리 — 실패하면 다시 dirty 로 되돌린다. null 이면 전송 중이 아니다.
 		private MasteryProgressDto[] _masteryInFlight;
@@ -347,6 +349,133 @@ namespace ProjectOne.Network
 
 			FlushFieldBatch();
 			_caller.Invoke<EquipmentTransferRequest, EquipmentGrowthResponse>(FunctionName.EquipmentTransfer, request, callback);
+		}
+
+		// ── 펫·외형 ───────────────────────────────────────────────────────
+
+		// 펫 강화는 클라가 미리 적용하고 묶음으로 보낸다(PetEnhanceBatcher) — 딤을 띄우지 않는다.
+		public void RequestPetEnhance(PetEnhanceRequest request, ResponseCallback<PetGrowthResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<PetEnhanceRequest, PetGrowthResponse>(FunctionName.PetEnhance, request, callback, false);
+		}
+
+		// 펫 승급 — 서버가 검증·차감·변경을 저장하고, 클라는 응답을 받은 뒤 반영한다.
+		public void RequestPetPromote(PetPromoteRequest request, ResponseCallback<PetGrowthResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<PetPromoteRequest, PetGrowthResponse>(FunctionName.PetPromote, request, callback);
+		}
+
+		// 펫 장착·코스튬 착용이 dirty 면 세 값을 1회 전송한다(펫·코스튬 창 닫기·앱 일시정지/종료 트리거).
+		// 클릭은 이미 로컬에 반영돼 있으므로 묶인 변경을 한 번에 보낸다(장착 flush 와 같은 패턴).
+		public void FlushAppearanceIfDirty()
+		{
+			if (IsLoggedIn == false || _appearanceFlushing == true)
+			{
+				return;
+			}
+
+			if (Account.Instance.Pet.IsEquipDirty == false && Account.Instance.Costume.IsDirty == false)
+			{
+				return;
+			}
+
+			SaveAppearanceRequest request = new SaveAppearanceRequest();
+			request.equippedPetId = (int)Account.Instance.Pet.Equipped;
+			request.costumeWeaponId = Account.Instance.Costume.EquippedWeaponId;
+			request.costumeBodyId = Account.Instance.Costume.EquippedBodyId;
+
+			// 전송 시점 값으로 dirty 를 먼저 내린다 — 응답 전에 또 바뀌면 다시 dirty 가 되어 다음 트리거에 보낸다.
+			Account.Instance.Pet.MarkEquipSynced();
+			Account.Instance.Costume.MarkSynced();
+
+			_appearanceFlushing = true;
+			_caller.Invoke<SaveAppearanceRequest, SaveAppearanceResponse>(FunctionName.SaveAppearance, request, onAppearanceFlushed, false);
+		}
+
+		// 실패하면 dirty 를 되살려 다음 트리거에 재전송한다.
+		private void onAppearanceFlushed(bool success, SaveAppearanceResponse data, string error)
+		{
+			_appearanceFlushing = false;
+			if (success == false)
+			{
+				Debug.LogWarning($"[NetworkManager] 외형 저장 실패 — 다음에 재전송: {error}");
+				Account.Instance.Pet.MarkEquipDirty();
+				Account.Instance.Costume.MarkDirty();
+			}
+		}
+
+		// ── 퀘스트·출석 ──────────────────────────────────────────────────
+
+		// 퀘스트 완료 — 서버가 목표를 판정하고 보상을 굴려 지급한다.
+		// 자동 완료는 전투 중에 일어나므로 딤으로 입력을 막지 않는다. 레벨 목표·주운 장비를 위해 배치를 먼저 보낸다.
+		public void RequestQuestComplete(QuestCompleteRequest request, ResponseCallback<QuestCompleteResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<QuestCompleteRequest, QuestCompleteResponse>(FunctionName.QuestComplete, request, callback, false);
+		}
+
+		// 처치 카운터가 dirty 면 1회 저장한다(앱 일시정지/종료 트리거). 완료 요청은 카운터를 직접 싣는다.
+		public void FlushQuestProgressIfDirty()
+		{
+			if (IsLoggedIn == false || _questProgressFlushing == true)
+			{
+				return;
+			}
+
+			ProjectOne.Quests.QuestBook book = Account.Instance.Quests;
+			if (book.IsCounterDirty == false || book.Current.IsActive == false)
+			{
+				return;
+			}
+
+			SaveQuestProgressRequest request = new SaveQuestProgressRequest();
+			request.questId = book.Current.questId;
+			request.counter = book.Current.counter;
+
+			// 전송 시점 값으로 dirty 를 먼저 내린다 — 응답 전에 또 바뀌면 다시 dirty 가 되어 다음 트리거에 보낸다.
+			book.MarkCounterSynced();
+
+			_questProgressFlushing = true;
+			_caller.Invoke<SaveQuestProgressRequest, SaveQuestProgressResponse>(FunctionName.SaveQuestProgress, request, onQuestProgressFlushed, false);
+		}
+
+		private void onQuestProgressFlushed(bool success, SaveQuestProgressResponse data, string error)
+		{
+			_questProgressFlushing = false;
+			if (success == false)
+			{
+				Debug.LogWarning($"[NetworkManager] 퀘스트 진행 저장 실패 — 다음에 재전송: {error}");
+				Account.Instance.Quests.MarkCounterDirty();
+			}
+		}
+
+		// 출석 수령 — 서버가 오늘 수령 여부·일차를 확인하고 보상을 굴려 지급한다.
+		public void RequestDailyBonusClaim(DailyBonusClaimRequest request, ResponseCallback<DailyBonusClaimResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<DailyBonusClaimRequest, DailyBonusClaimResponse>(FunctionName.DailyBonusClaim, request, callback);
 		}
 
 		// ── 필드 처치 배치 정산 ───────────────────────────────────────────

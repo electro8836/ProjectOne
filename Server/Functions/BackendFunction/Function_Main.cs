@@ -64,6 +64,18 @@ namespace BackendFunction
 					return new EquipmentFunctions().EquipmentPromote();
 				case FunctionName.EquipmentTransfer:
 					return new EquipmentFunctions().EquipmentTransfer();
+				case FunctionName.PetEnhance:
+					return new PetFunctions().PetEnhance();
+				case FunctionName.PetPromote:
+					return new PetFunctions().PetPromote();
+				case FunctionName.SaveAppearance:
+					return new PetFunctions().SaveAppearance();
+				case FunctionName.QuestComplete:
+					return new QuestFunctions().QuestComplete();
+				case FunctionName.SaveQuestProgress:
+					return new QuestFunctions().SaveQuestProgress();
+				case FunctionName.DailyBonusClaim:
+					return new DailyBonusFunctions().DailyBonusClaim();
 				default:
 					return FuncResult.Error("unknown action: " + action);
 			}

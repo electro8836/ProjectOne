@@ -5,6 +5,7 @@ using EDT;
 using UnityEngine;
 using ProjectOne.Costumes;
 using ProjectOne.Mastery;
+using ProjectOne.Network;
 using ProjectOne.UserData;
 
 namespace ProjectOne.UI
@@ -80,6 +81,13 @@ namespace ProjectOne.UI
 			view.SelectTab(TAB_WEAPON);	// Select 는 OnTabChanged 를 발행하지 않으므로 직접 render
 			render();
 
+			return UniTask.CompletedTask;
+		}
+
+		// 화면 닫힘 — 코스튬 착용 변경(dirty)이 있으면 서버에 1회 저장한다(펫 장착과 함께).
+		public override UniTask OnCloseAsync()
+		{
+			NetworkManager.Instance.FlushAppearanceIfDirty();
 			return UniTask.CompletedTask;
 		}
 

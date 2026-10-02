@@ -1,21 +1,13 @@
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using EDT;
 using UnityEngine;
+using ProjectOne.Shared;
 
 namespace ProjectOne.Quests
 {
 	// 퀘스트 정적 조회 캐시 + 데이터 정합성 검증.
 	//
-	// QuestParam_1~2 는 자유 형식 문자열이고 QuestTargetType 마다 뜻이 다르다.
-	//
-	//   MonsterKill  Param1=MapID        Param2=처치 수   (그 맵에서 어떤 몬스터든 센다)
-	//   BossKill     Param1=MapID        Param2=미사용
-	//   DungeonClear Param1=던전타입     Param2=스테이지
-	//   ReachLevel   Param1=히어로 레벨  Param2=미사용
-	//
-	// 슬롯의 뜻은 이 표가 전부이며 타입 간 공통 의미는 없다 — SkillEffectParams 와 같은 방식이다.
+	// QuestParam_1~2 의 슬롯 뜻은 공유 QuestRules 의 표가 전부다 — 서버도 같은 해석을 쓴다.
 	// 판정 때마다 문자열을 파싱하지 않도록 Build 시점에 강타입으로 굽는다.
 	//
 	// RewardCatalog / ConsumableCatalog 와 동일 패턴 — BootState 가 테이블 로드 직후 Build() 를 호출한다.
@@ -164,42 +156,20 @@ namespace ProjectOne.Quests
 			return a.row.ID.CompareTo(b.row.ID);
 		}
 
+		// 파라미터 해석은 서버와 같이 쓰는 QuestRules 가 한다(규칙 한 벌).
 		private static BakedQuest bake(Table_Quest.Row row)
 		{
+			QuestTarget target;
+			bool isValid = QuestRules.TryParseTarget(row, out target);
+
 			BakedQuest baked = new BakedQuest();
 			baked.row = row;
-			baked.isValid = true;
-
-			switch (row.QuestTargetType)
-			{
-				case QuestTargetType.MonsterKill:
-				case QuestTargetType.EliteKill:
-					baked.mapId = parseInt(row.QuestParam_1, 0);
-					baked.killCount = parseInt(row.QuestParam_2, 0);
-					baked.isValid = baked.mapId > 0 && baked.killCount > 0;
-					break;
-
-				case QuestTargetType.BossKill:
-					baked.mapId = parseInt(row.QuestParam_1, 0);
-					baked.isValid = baked.mapId > 0;
-					break;
-
-				case QuestTargetType.DungeonClear:
-					baked.dungeon = parseEnum<EDT.Dungeon>(row.QuestParam_1);
-					baked.dungeonStage = parseInt(row.QuestParam_2, 1);
-					baked.isValid = baked.dungeon != EDT.Dungeon.None;
-					break;
-
-				case QuestTargetType.ReachLevel:
-					baked.reachLevel = parseInt(row.QuestParam_1, 0);
-					baked.isValid = baked.reachLevel > 0;
-					break;
-
-				default:
-					baked.isValid = false;
-					break;
-			}
-
+			baked.mapId = target.mapId;
+			baked.killCount = target.killCount;
+			baked.dungeon = target.dungeon;
+			baked.dungeonStage = target.dungeonStage;
+			baked.reachLevel = target.reachLevel;
+			baked.isValid = isValid;
 			return baked;
 		}
 
@@ -224,38 +194,6 @@ namespace ProjectOne.Quests
 
 				list.Add(row);
 			}
-		}
-
-		private static T parseEnum<T>(string text) where T : struct
-		{
-			if (string.IsNullOrEmpty(text) == true)
-			{
-				return default(T);
-			}
-
-			T value;
-			if (Enum.TryParse<T>(text.Trim(), false, out value) == true)
-			{
-				return value;
-			}
-
-			return default(T);
-		}
-
-		private static int parseInt(string text, int fallback)
-		{
-			if (string.IsNullOrEmpty(text) == true)
-			{
-				return fallback;
-			}
-
-			int value;
-			if (int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out value) == true)
-			{
-				return value;
-			}
-
-			return fallback;
 		}
 
 		// ── 검증 ──────────────────────────────────────────────────────

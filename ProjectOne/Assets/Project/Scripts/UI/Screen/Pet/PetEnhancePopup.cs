@@ -74,6 +74,7 @@ namespace ProjectOne.UI
 
 		public event Action OnEquipClicked;
 		public event Action OnLevelUpClicked;
+		public event Action OnLevelUpHeld;	// 강화 버튼을 누른 채 반복 — 버튼에 _holdRepeat 가 켜져 있다
 		public event Action OnGradeUpClicked;
 
 		private readonly PetEnhancePopupPresenter _presenter = new PetEnhancePopupPresenter();
@@ -87,6 +88,7 @@ namespace ProjectOne.UI
 		{
 			_equipButton.OnClickEvent += onEquipClicked;
 			_levelUpButton.OnClickEvent += onLevelUpClicked;
+			_levelUpButton.OnHoldEvent += onLevelUpHeld;
 			_gradeUpButton.OnClickEvent += onGradeUpClicked;
 
 			// Frame 은 Bg 가 레이캐스트를 흡수하므로, Dim 까지 내려오는 클릭은 곧 "팝업 밖을 눌렀다"는 뜻이다.
@@ -102,6 +104,7 @@ namespace ProjectOne.UI
 
 			_equipButton.OnClickEvent -= onEquipClicked;
 			_levelUpButton.OnClickEvent -= onLevelUpClicked;
+			_levelUpButton.OnHoldEvent -= onLevelUpHeld;
 			_gradeUpButton.OnClickEvent -= onGradeUpClicked;
 			_exitButton.OnClickEvent -= onCloseClicked;
 			_dimButton.OnClickEvent -= onCloseClicked;
@@ -276,6 +279,14 @@ namespace ProjectOne.UI
 			if (OnLevelUpClicked != null)
 			{
 				OnLevelUpClicked.Invoke();
+			}
+		}
+
+		private void onLevelUpHeld()
+		{
+			if (OnLevelUpHeld != null)
+			{
+				OnLevelUpHeld.Invoke();
 			}
 		}
 
