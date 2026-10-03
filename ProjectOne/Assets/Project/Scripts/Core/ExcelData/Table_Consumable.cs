@@ -11,8 +11,6 @@ namespace EDT {
             public ConsumeEffect ConsumeEffect { get; set; } = ConsumeEffect.None;
             public string EffectParam_1 { get; set; } = string.Empty;
             public string EffectParam_2 { get; set; } = string.Empty;
-            public int CooldownGroup { get; set; } = 0;
-            public float Cooldown { get; set; } = 0f;
         }
 
         public const string Filename = "edt_consumable.bytes";
@@ -39,8 +37,6 @@ namespace EDT {
                 row.ConsumeEffect = (ConsumeEffect)reader.ReadInt32();
                 row.EffectParam_1 = reader.ReadString();
                 row.EffectParam_2 = reader.ReadString();
-                row.CooldownGroup = reader.ReadInt32();
-                row.Cooldown = reader.ReadSingle();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

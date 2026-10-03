@@ -22,8 +22,6 @@ namespace EDT {
 
     public enum ConsumeEffect {
         None,
-        Skill,
-        Reward,
         SkillPoint,
     }
 
@@ -77,7 +75,6 @@ namespace EDT {
         Crafting,
         Enhance,
         Usable,
-        Box,
         SkillBook,
         Costume,
         Pet,
@@ -477,7 +474,7 @@ namespace EDT {
         TreasureBox,
         Pet,
         Costume,
-        AdShop,
+        Etc,
     }
 
     public enum Skill {

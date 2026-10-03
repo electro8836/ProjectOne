@@ -26,7 +26,9 @@ namespace ProjectOne.UI
 		[SerializeField] private Image _masteryIcon;		// Info/Frame/MasteryIcon
 		[SerializeField] private TMP_Text _masteryName;	// Info/MasteryName
 		[SerializeField] private TMP_Text _masteryLevel;	// Info/MasteryLevel
-		[SerializeField] private TMP_Text _masteryPoint;	// Info/MasteryPoint
+		[SerializeField] private TMP_Text _masteryPoint;	// Info/MasteryPointGroup/MastertyLevelPoint/Group/PointText — 레벨 포인트
+		[SerializeField] private TMP_Text _skillbookPointText;	// Info/MasteryPointGroup/SkillbookPoint/Group/PointText — 지식의 서
+		[SerializeField] private TMP_Text _pointInfoText;	// Info/MasteryPointInfo — 미사용 포인트가 있을 때만 보인다
 		[SerializeField] private Slider _expSlider;		// Info/ExpInfo
 		[SerializeField] private TMP_Text _expText;		// Info/ExpInfo/ExpText
 
@@ -164,7 +166,16 @@ namespace ProjectOne.UI
 		{
 			_masteryName.text = data.name;
 			_masteryLevel.text = $"레벨 {data.level}";
-			_masteryPoint.text = $"마스터리 포인트 {data.availablePoint}/{data.levelPointTotal}";
+			_masteryPoint.text = $"{data.levelPointTotal}/{data.levelPointMax}";
+			_skillbookPointText.text = $"{data.itemPointUsed}/{data.itemPointMax}";
+
+			bool hasUnused = data.availablePoint > 0;
+			_pointInfoText.gameObject.SetActive(hasUnused);
+			if (hasUnused == true)
+			{
+				_pointInfoText.text = $"사용하지 않은 마스터리 포인트가 <color=green>{data.availablePoint}</color>개 있습니다.";
+			}
+
 
 			_expSlider.value = data.expRatio;
 			_expText.text = data.isMaxLevel ? "MAX" : $"{data.expRatio * 100f:F2}%";

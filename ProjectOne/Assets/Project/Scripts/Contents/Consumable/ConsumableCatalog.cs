@@ -3,15 +3,13 @@ using System.Collections.Generic;
 using System.Globalization;
 using EDT;
 using UnityEngine;
-using ProjectOne.Reward;
 
 namespace ProjectOne.Consumables
 {
 	// 소모품 정적 조회 캐시 + 데이터 정합성 검증.
 	//
-	// 설계의 핵심 판단은 "효과 시스템을 새로 만들지 않는다" 이다 (설계 2장).
-	// 포션·비약·폭탄이 전부 SkillEffect 로 표현되므로 소모품은 "무엇을 발동하는가"만 갖고,
-	// 실제 효과는 스킬 / 보상 / 마스터리 세 시스템에 위임한다.
+	// 소모품은 단발성만 둔다 — 지속 버프·회복·상자형은 넣지 않는다(밸런스·공수 대비 단점).
+	// 지금은 지식의 서(SkillPoint)뿐이고, 효과는 마스터리 시스템에 위임한다.
 	//
 	// EffectParam_1/2 는 자유 형식 문자열이라 사용할 때마다 파싱하지 않고 Build 시점에 굽는다.
 	// RewardCatalog 와 동일 패턴 — BootState 가 테이블 로드 직후 Build() 를 호출한다.
@@ -23,19 +21,9 @@ namespace ProjectOne.Consumables
 			public int itemId;
 			public ConsumeEffect effect;
 
-			// ConsumeEffect.Skill
-			public EDT.Skill skillId;
-
-			// ConsumeEffect.Reward
-			public int rewardGroupId;
-			public int repeatCount;			// 비었으면 1
-
 			// ConsumeEffect.SkillPoint
 			public EDT.SkillPoint pointSource;
 			public int pointAmount;
-
-			public int cooldownGroup;
-			public float cooldown;
 
 			// 파싱에 실패한 행은 사용 대상에서 제외한다. 경고는 Build 가 이미 냈다.
 			public bool isValid;
@@ -98,29 +86,10 @@ namespace ProjectOne.Consumables
 			BakedConsumable baked = new BakedConsumable();
 			baked.itemId = row.ID;
 			baked.effect = row.ConsumeEffect;
-			baked.cooldownGroup = row.CooldownGroup;
-			baked.cooldown = row.Cooldown;
-			baked.repeatCount = 1;
 			baked.isValid = true;
 
 			switch (row.ConsumeEffect)
 			{
-				case ConsumeEffect.Skill:
-					baked.skillId = parseEnum<EDT.Skill>(row.EffectParam_1);
-					baked.isValid = baked.skillId != EDT.Skill.None;
-					break;
-
-				case ConsumeEffect.Reward:
-					baked.rewardGroupId = parseInt(row.EffectParam_1, 0);
-					baked.repeatCount = parseInt(row.EffectParam_2, 1);
-					if (baked.repeatCount <= 0)
-					{
-						baked.repeatCount = 1;
-					}
-
-					baked.isValid = baked.rewardGroupId > 0;
-					break;
-
 				case ConsumeEffect.SkillPoint:
 					baked.pointSource = parseEnum<EDT.SkillPoint>(row.EffectParam_1);
 					baked.pointAmount = parseInt(row.EffectParam_2, 1);
@@ -182,7 +151,6 @@ namespace ProjectOne.Consumables
 			int issues = 0;
 			issues += validateRows();
 			issues += validateItemSide();
-			issues += validateCooldownGroups();
 
 			if (issues > 0)
 			{
@@ -236,48 +204,6 @@ namespace ProjectOne.Consumables
 
 			switch (baked.effect)
 			{
-				case ConsumeEffect.Skill:
-					if (baked.skillId == EDT.Skill.None)
-					{
-						Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 EffectParam_1 이 Skill 로 해석되지 않습니다.");
-						issues++;
-						break;
-					}
-
-					Table_Skill.Row skill = Table_Skill.Get(baked.skillId);
-					if (skill == null)
-					{
-						Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 스킬 {baked.skillId} 이 Skill 테이블에 없습니다.");
-						issues++;
-						break;
-					}
-
-					// 조건 발동형은 아이템으로 켤 수 없다. 이 검증이 없으면 눌러도 아무 일이 안 일어나고
-					// 에러도 안 난다 (설계 5.1).
-					if (skill.CastingType != SkillCastingTypes.Instant && skill.CastingType != SkillCastingTypes.Casting)
-					{
-						Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 스킬 {baked.skillId} 이 {skill.CastingType} 입니다 — Instant 또는 Casting 만 허용됩니다.");
-						issues++;
-					}
-
-					break;
-
-				case ConsumeEffect.Reward:
-					if (baked.rewardGroupId <= 0)
-					{
-						Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 EffectParam_1 이 Reward.GroupID 로 해석되지 않습니다.");
-						issues++;
-						break;
-					}
-
-					if (RewardCatalog.GetGroup(baked.rewardGroupId).Count == 0)
-					{
-						Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 보상 그룹 {baked.rewardGroupId} 에 Reward 행이 없습니다.");
-						issues++;
-					}
-
-					break;
-
 				case ConsumeEffect.SkillPoint:
 					if (baked.pointSource == EDT.SkillPoint.None)
 					{
@@ -325,38 +251,6 @@ namespace ProjectOne.Consumables
 				if (_byItem.ContainsKey(item.ID) == false)
 				{
 					Debug.LogWarning($"[ConsumableCatalog] Item {item.ID}({item.Name}) 는 Consumable 인데 Consumable 행이 없습니다.");
-					issues++;
-				}
-			}
-
-			return issues;
-		}
-
-		// 같은 그룹인데 쿨다운 값이 다르면 어느 쪽이 적용될지 데이터만 보고 알 수 없다 (설계 8장).
-		private static int validateCooldownGroups()
-		{
-			int issues = 0;
-
-			Dictionary<int, float> byGroup = new Dictionary<int, float>();
-			Dictionary<int, BakedConsumable>.Enumerator e = _byItem.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				BakedConsumable baked = e.Current.Value;
-				if (baked.cooldownGroup <= 0)
-				{
-					continue;
-				}
-
-				float known;
-				if (byGroup.TryGetValue(baked.cooldownGroup, out known) == false)
-				{
-					byGroup[baked.cooldownGroup] = baked.cooldown;
-					continue;
-				}
-
-				if (known != baked.cooldown)
-				{
-					Debug.LogWarning($"[ConsumableCatalog] CooldownGroup {baked.cooldownGroup} 의 Cooldown 값이 서로 다릅니다 ({known} vs {baked.cooldown}).");
 					issues++;
 				}
 			}

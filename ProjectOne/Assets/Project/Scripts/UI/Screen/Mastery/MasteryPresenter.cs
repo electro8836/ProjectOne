@@ -17,7 +17,10 @@ namespace ProjectOne.UI
 		public string name;
 		public int level;
 		public int availablePoint;	// 아직 쓰지 않은 포인트
-		public int levelPointTotal;	// 레벨로 얻은 포인트 총합 (지식의 서·업적은 미정이라 제외)
+		public int levelPointTotal;	// 레벨로 얻은 포인트 총합 — min(레벨, 레벨 상한)
+		public int levelPointMax;	// 레벨로 얻을 수 있는 최대 포인트 (SkillPoint_Level.MaxPoint)
+		public int itemPointUsed;	// 이 마스터리에 사용한 지식의 서 포인트
+		public int itemPointMax;	// 지식의 서로 얻을 수 있는 최대 포인트 (SkillPoint_Item.MaxPoint)
 		public float expRatio;		// 현재 레벨 구간의 진행률 0~1
 		public bool isMaxLevel;
 	}
@@ -260,6 +263,9 @@ namespace ProjectOne.UI
 			data.level = level;
 			data.availablePoint = progress.GetAvailablePoints(Account.Instance.Mastery.AchievementPoint);
 			data.levelPointTotal = (levelCap > 0 && level > levelCap) ? levelCap : level;
+			data.levelPointMax = levelCap;
+			data.itemPointUsed = progress.ItemPointUsed;
+			data.itemPointMax = MasteryCatalog.GetMaxPoint(SkillPoint.SkillPoint_Item);
 			data.isMaxLevel = level >= MasteryCatalog.MasteryMaxLevel;
 
 			if (data.isMaxLevel == true)

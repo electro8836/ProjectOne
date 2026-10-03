@@ -30,5 +30,6 @@ namespace ProjectOne.Shared
 		public const string SaveQuestProgress = "SaveQuestProgress";
 		public const string DailyBonusClaim = "DailyBonusClaim";
 		public const string HeroPassClaim = "HeroPassClaim";
+		public const string ItemSpend = "ItemSpend";
 	}
 }

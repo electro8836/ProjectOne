@@ -1,12 +1,8 @@
-using System.Collections.Generic;
 using EDT;
 using UnityEngine;
 using ProjectOne.Event;
 using ProjectOne.Mastery;
 using ProjectOne.Network;
-using ProjectOne.Reward;
-using ProjectOne.Skill;
-using ProjectOne.Unit;
 using ProjectOne.UserData;
 
 namespace ProjectOne.Consumables
@@ -16,8 +12,7 @@ namespace ProjectOne.Consumables
 		Success = 0,
 		NoData,			// Consumable 행이 없거나 파라미터 해석 실패
 		NotOwned,		// 인벤토리에 없다
-		OnCooldown,
-		NoTarget,		// 시전할 히어로가 없다 (마을·로딩 중)
+		NoTarget,		// 지식의 서를 줄 대상이 없다 (무기 미착용)
 		Failed			// 효과 자체가 실패 (스킬포인트 상한 등)
 	}
 
@@ -27,9 +22,6 @@ namespace ProjectOne.Consumables
 	// 지식의 서가 상한에 막혔는데 아이템이 사라지면 복구할 방법이 없다.
 	public static class ConsumableUser
 	{
-		// Reward 지급 결과 버퍼 — 사용은 메인 스레드 단일 경로라 재사용해도 안전하다.
-		private static readonly List<GrantedReward> _granted = new List<GrantedReward>(16);
-
 		// pointTarget 은 ConsumeEffect.SkillPoint 전용이다. 대상 마스터리는 테이블이 아니라
 		// 열려 있는 스킬 트리 화면이 정한다 (설계 5.3). None 이면 현재 장착 무기로 폴백한다.
 		public static ConsumableUseResult Use(int itemId, WeaponMastery pointTarget = WeaponMastery.None)
@@ -46,20 +38,14 @@ namespace ProjectOne.Consumables
 				return finish(itemId, ConsumableUseResult.NotOwned);
 			}
 
-			if (ConsumableCooldown.IsReady(itemId, baked.cooldownGroup) == false)
-			{
-				return finish(itemId, ConsumableUseResult.OnCooldown);
-			}
-
 			ConsumableUseResult result = apply(baked, pointTarget);
 			if (result != ConsumableUseResult.Success)
 			{
-				// 효과가 실패하면 차감도 쿨다운도 없다.
+				// 효과가 실패하면 차감도 없다.
 				return finish(itemId, result);
 			}
 
 			Account.Instance.Inventory.TrySpend(itemId, 1);
-			ConsumableCooldown.Begin(itemId, baked.cooldownGroup, baked.cooldown);
 
 			// 지식의 서는 영속 상태(아이템 수·포인트)를 바꾼다 — 서버가 같은 차감·증가를 저장한다.
 			if (baked.effect == ConsumeEffect.SkillPoint)
@@ -76,47 +62,11 @@ namespace ProjectOne.Consumables
 		{
 			switch (baked.effect)
 			{
-				case ConsumeEffect.Skill:
-					return applySkill(baked);
-
-				case ConsumeEffect.Reward:
-					return applyReward(baked);
-
 				case ConsumeEffect.SkillPoint:
 					return applySkillPoint(baked, pointTarget);
 			}
 
 			return ConsumableUseResult.NoData;
-		}
-
-		// 시전자는 사용자 자신이다. 대상 탐색·효과 적용은 전부 스킬 시스템이 처리한다 (설계 5.1).
-		//
-		// SkillContainer 에 등록하지 않는다 — 소모품 스킬은 보유 스킬이 아니고 쿨다운은 아이템이 갖는다.
-		// 공속 사이클도 타지 않으므로 useSpeed 는 1 고정이다.
-		private static ConsumableUseResult applySkill(ConsumableCatalog.BakedConsumable baked)
-		{
-			UnitBase hero = findHero();
-			if (hero == null)
-			{
-				return ConsumableUseResult.NoTarget;
-			}
-
-			SkillExecutor.Execute(baked.skillId, hero, 1f);
-			return ConsumableUseResult.Success;
-		}
-
-		// 보상 그룹의 규칙(확률·수량·등급 추첨)은 전부 보상 시스템이 소유한다 (설계 5.2).
-		// Grant 가 버퍼를 비우지 않고 누적하므로 반복 횟수가 자연히 성립한다 (STEP 10 규약).
-		private static ConsumableUseResult applyReward(ConsumableCatalog.BakedConsumable baked)
-		{
-			_granted.Clear();
-
-			for (int i = 0; i < baked.repeatCount; i++)
-			{
-				RewardGranter.Grant(baked.rewardGroupId, RewardContext.ConsumableUse, _granted);
-			}
-
-			return ConsumableUseResult.Success;
 		}
 
 		// 상한(SkillPoint_Item.MaxPoint)은 런타임 카운터가 막는다 (설계 5.3).
@@ -155,25 +105,6 @@ namespace ProjectOne.Consumables
 
 			Table_WeaponMastery.Row current = Account.Instance.Mastery.CurrentMastery;
 			return (current != null) ? current.ID : WeaponMastery.None;
-		}
-
-		private static UnitBase findHero()
-		{
-			if (UnitManager.HasInstance == false)
-			{
-				return null;
-			}
-
-			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
-			for (int i = 0; i < heroes.Count; i++)
-			{
-				if (heroes[i] != null && heroes[i].IsDead == false)
-				{
-					return heroes[i];
-				}
-			}
-
-			return null;
 		}
 
 		private static ConsumableUseResult finish(int itemId, ConsumableUseResult result)

@@ -24,7 +24,6 @@ namespace ProjectOne.Reward
 		MonsterKill,
 		QuestComplete,
 		DungeonClear,
-		ConsumableUse,
 		DailyBonus,
 		HeroPass
 	}

@@ -261,6 +261,19 @@ namespace ProjectOne.Network
 			}
 		}
 
+		// 스택 아이템 차감(파괴) — 로컬은 이미 뺐다. 묶음 전송은 ItemSpendSender 가 한다(딤 없음).
+		// 필드에서 주운 아이템일 수 있다 — 배치를 먼저 보내 서버 인벤토리에 넣어 둔다.
+		public void RequestItemSpend(ItemSpendRequest request, ResponseCallback<ItemSpendResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<ItemSpendRequest, ItemSpendResponse>(FunctionName.ItemSpend, request, callback, false);
+		}
+
 		// ── 던전 런 ───────────────────────────────────────────────────────
 
 		// 던전 입장 — 서버가 해금·남은 횟수를 확인해 차감하고 런(시드)을 발급한다.
