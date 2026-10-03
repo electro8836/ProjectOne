@@ -35,12 +35,12 @@ namespace ProjectOne.Pets
 		{
 			_sorted.Clear();
 
-			Dictionary<Pet, Table_Pet.Row> pets = Table_Pet.All();
-			Dictionary<Pet, Table_Pet.Row>.Enumerator pe = pets.GetEnumerator();
+			Dictionary<int, Table_Pet.Row> pets = Table_Pet.All();
+			Dictionary<int, Table_Pet.Row>.Enumerator pe = pets.GetEnumerator();
 			while (pe.MoveNext() == true)
 			{
 				Table_Pet.Row row = pe.Current.Value;
-				if (row.ID == Pet.None)
+				if (row.ID == 0)
 				{
 					continue;
 				}
@@ -52,7 +52,7 @@ namespace ProjectOne.Pets
 			_isBuilt = true;
 		}
 
-		public static Table_Pet.Row Get(Pet id)
+		public static Table_Pet.Row Get(int id)
 		{
 			return Table_Pet.Get(id);
 		}

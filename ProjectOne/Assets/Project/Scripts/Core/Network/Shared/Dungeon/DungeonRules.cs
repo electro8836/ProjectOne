@@ -22,6 +22,16 @@ namespace ProjectOne.Shared
 		private static Dictionary<int, Table_RuinsDungeon.Row> _ruins;
 		private static int _riftLastWave;
 
+		// ── 부활 ──────────────────────────────────────────────────────
+
+		// 유료 부활 비용 = RevivalCost + (부활회차 - 1) × RevivalCostRatioStep × RevivalCost
+		// tryCount 는 이번에 시도하는 회차(이미 쓴 횟수 + 1)다. 반올림은 Mathf.RoundToInt 와 같다(짝수 쪽).
+		public static int GetRevivalCost(Table_Dungeon.Row dungeon, int tryCount)
+		{
+			float cost = dungeon.RevivalCost + (tryCount - 1) * dungeon.RevivalCostRatioStep * dungeon.RevivalCost;
+			return (int)System.Math.Round(cost);
+		}
+
 		// ── 입장 ──────────────────────────────────────────────────────
 
 		public static int GetDefaultEnterCount(EDT.Dungeon type)

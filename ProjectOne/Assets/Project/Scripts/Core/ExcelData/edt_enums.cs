@@ -80,6 +80,7 @@ namespace EDT {
         Box,
         SkillBook,
         Costume,
+        Pet,
     }
 
     public enum ItemGradeType {
@@ -461,16 +462,6 @@ namespace EDT {
         OPT_DMG_DualBlades_Active_01,
         OPT_APPEND_DualBlades_AtkSpeedBuff,
         OPT_ATKSPEED_DualBlades_Buff,
-    }
-
-    public enum Pet {
-        None,
-        Pet_01,
-        Pet_02,
-        Pet_03,
-        Pet_04,
-        Pet_05,
-        Pet_06,
     }
 
     public enum Projectile {

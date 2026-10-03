@@ -7,7 +7,7 @@ namespace EDT {
     public static class Table_Pet
     {
         public class Row {
-            public Pet ID { get; set; } = Pet.None;
+            public int ID { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Model { get; set; } = string.Empty;
             public string Image { get; set; } = string.Empty;
@@ -20,16 +20,16 @@ namespace EDT {
 
         public const string Filename = "edt_pet.bytes";
         public const TableType Type = TableType.TablePet;
-        static Dictionary<Pet, Row> _all = new Dictionary<Pet, Row>();
+        static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
-        public static Row Get( Pet id )
+        public static Row Get( int id )
         {
             Row row = null;
             _all.TryGetValue( id, out row );
             return row;
         }
 
-        public static Dictionary<Pet, Row> All()
+        public static Dictionary<int, Row> All()
         {
             return _all;
         }
@@ -38,7 +38,7 @@ namespace EDT {
         {
             try {
                 Row row = new Row();
-                row.ID = (Pet)reader.ReadInt32();
+                row.ID = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.Model = reader.ReadString();
                 row.Image = reader.ReadString();

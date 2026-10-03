@@ -63,7 +63,7 @@ namespace ProjectOne.Unit
 		}
 
 		// 펫 옵션은 Stat 타입만 허용한다 — 스킬 부여나 변형은 펫의 설계에 없다.
-		private void applyStatOption(Hero hero, EDT.Pet petId, Option option, float value)
+		private void applyStatOption(Hero hero, int petId, Option option, float value)
 		{
 			OptionCatalog.Entry entry;
 			if (OptionCatalog.TryGet(option, out entry) == false)

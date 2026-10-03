@@ -20,10 +20,10 @@ namespace ProjectOne.Pets
 		// PetAspect.SourceKey 와 같아야 한다.
 		private const string PetSource = "Pet";
 
-		private readonly Dictionary<EDT.Pet, PetEntry> _owned = new Dictionary<EDT.Pet, PetEntry>();
+		private readonly Dictionary<int, PetEntry> _owned = new Dictionary<int, PetEntry>();
 
 		// None = 미장착. 필드가 하나라 "동시에 한 마리" 제한이 자연히 성립한다.
-		private EDT.Pet _equipped = EDT.Pet.None;
+		private int _equipped = 0;
 
 		// 장착 변경이 서버에 미반영인지 — 외형 저장(SaveAppearance) flush 가 확인한다.
 		private bool _equipDirty;
@@ -41,7 +41,7 @@ namespace ProjectOne.Pets
 			get { return _owned.Count; }
 		}
 
-		public EDT.Pet Equipped
+		public int Equipped
 		{
 			get { return _equipped; }
 		}
@@ -62,18 +62,18 @@ namespace ProjectOne.Pets
 			_equipDirty = true;
 		}
 
-		public bool IsEquipped(EDT.Pet id)
+		public bool IsEquipped(int id)
 		{
-			return id != EDT.Pet.None && _equipped == id;
+			return id != 0 && _equipped == id;
 		}
 
-		public bool IsOwned(EDT.Pet id)
+		public bool IsOwned(int id)
 		{
 			return _owned.ContainsKey(id);
 		}
 
 		// 보유 항목을 읽기만 한다. 없으면 null — 조회 때문에 항목이 생기는 것을 막는다.
-		public PetEntry Find(EDT.Pet id)
+		public PetEntry Find(int id)
 		{
 			PetEntry entry;
 			_owned.TryGetValue(id, out entry);
@@ -81,14 +81,14 @@ namespace ProjectOne.Pets
 		}
 
 		// 미보유는 0. 슬롯이 레벨 뱃지를 끄는 기준이다.
-		public int GetLevel(EDT.Pet id)
+		public int GetLevel(int id)
 		{
 			PetEntry entry = Find(id);
 			return (entry != null) ? entry.Level : 0;
 		}
 
 		// 미보유는 테이블의 기본 등급 — 잠긴 카드도 등급 표기는 보여야 한다.
-		public ItemGradeType GetGrade(EDT.Pet id)
+		public ItemGradeType GetGrade(int id)
 		{
 			PetEntry entry = Find(id);
 			if (entry != null)
@@ -103,9 +103,9 @@ namespace ProjectOne.Pets
 		// ── 변경 ──────────────────────────────────────────────────────
 
 		// 지급으로 보유에 추가한다. 이미 가지고 있으면 아무것도 하지 않는다(중복 보유가 없다).
-		public bool Grant(EDT.Pet id)
+		public bool Grant(int id)
 		{
-			if (id == EDT.Pet.None || _owned.ContainsKey(id) == true)
+			if (id == 0 || _owned.ContainsKey(id) == true)
 			{
 				return false;
 			}
@@ -122,7 +122,7 @@ namespace ProjectOne.Pets
 		}
 
 		// 장착. 이전에 장착한 펫은 필드를 덮어쓰는 것으로 자동 해제된다.
-		public bool TryEquip(EDT.Pet id)
+		public bool TryEquip(int id)
 		{
 			if (IsOwned(id) == false)
 			{
@@ -142,13 +142,13 @@ namespace ProjectOne.Pets
 
 		public void Unequip()
 		{
-			if (_equipped == EDT.Pet.None)
+			if (_equipped == 0)
 			{
 				return;
 			}
 
-			EDT.Pet prev = _equipped;
-			_equipped = EDT.Pet.None;
+			int prev = _equipped;
+			_equipped = 0;
 			_equipDirty = true;
 			notifyChanged(prev);
 		}
@@ -156,7 +156,7 @@ namespace ProjectOne.Pets
 		// ── 강화 ──────────────────────────────────────────────────────
 
 		// 강화가 막힌 이유. 버튼 잠금도 PetEnhanceBatcher.TryEnhance 도 이것만 본다.
-		public PetEnhanceBlock GetEnhanceBlock(EDT.Pet id)
+		public PetEnhanceBlock GetEnhanceBlock(int id)
 		{
 			PetEntry entry = Find(id);
 			if (entry == null)
@@ -182,7 +182,7 @@ namespace ProjectOne.Pets
 		}
 
 		// 강화 실행은 서버 권위다 — PetEnhanceBatcher 가 즉시 적용하고 묶어 보낸다(적용·되돌림 모두 이 경로).
-		internal void SetLevel(EDT.Pet id, int level)
+		internal void SetLevel(int id, int level)
 		{
 			PetEntry entry = Find(id);
 			if (entry == null)
@@ -197,7 +197,7 @@ namespace ProjectOne.Pets
 		// ── 승급 ──────────────────────────────────────────────────────
 
 		// 레벨 조건은 보지 않는다 — PetPromotion 테이블에 그런 컬럼이 없다.
-		public PetPromoteBlock GetPromoteBlock(EDT.Pet id)
+		public PetPromoteBlock GetPromoteBlock(int id)
 		{
 			PetEntry entry = Find(id);
 			if (entry == null)
@@ -240,7 +240,7 @@ namespace ProjectOne.Pets
 				return;
 			}
 
-			EDT.Pet id = (EDT.Pet)response.pet.petId;
+			int id = response.pet.petId;
 			PetEntry entry = Find(id);
 			if (entry == null)
 			{
@@ -258,7 +258,7 @@ namespace ProjectOne.Pets
 		{
 			PetDto dto = new PetDto();
 
-			Dictionary<EDT.Pet, PetEntry>.Enumerator e = _owned.GetEnumerator();
+			Dictionary<int, PetEntry>.Enumerator e = _owned.GetEnumerator();
 			while (e.MoveNext() == true)
 			{
 				dto.pets.Add(e.Current.Value.ToDto());
@@ -272,7 +272,7 @@ namespace ProjectOne.Pets
 
 		// 보유·레벨·등급이 바뀌면 보유 효과가 달라지고, 장착이 바뀌면 따라다니는 모델이 달라진다.
 		// 둘 다 여기서 한 번에 처리한다 — 호출부가 무엇을 다시 굽을지 고르지 않게 한다.
-		private void notifyChanged(EDT.Pet id)
+		private void notifyChanged(int id)
 		{
 			reapplyHero();
 			PetSpawner.Instance.Refresh();
@@ -304,7 +304,7 @@ namespace ProjectOne.Pets
 		private void buildFromDto(PetDto dto)
 		{
 			_owned.Clear();
-			_equipped = EDT.Pet.None;
+			_equipped = 0;
 
 			// 서버 DTO 주입 — 없으면 빈 상태(미로그인/오프라인).
 			if (dto == null)
@@ -322,8 +322,8 @@ namespace ProjectOne.Pets
 						continue;
 					}
 
-					EDT.Pet id = (EDT.Pet)src.petId;
-					if (id == EDT.Pet.None || _owned.ContainsKey(id) == true)
+					int id = src.petId;
+					if (id == 0 || _owned.ContainsKey(id) == true)
 					{
 						continue;
 					}
@@ -342,8 +342,8 @@ namespace ProjectOne.Pets
 			}
 
 			// 보유하지 않은 것이 장착으로 남아 있으면 버린다(데이터 불일치 방어).
-			EDT.Pet equipped = (EDT.Pet)dto.equippedPetId;
-			if (equipped != EDT.Pet.None && _owned.ContainsKey(equipped) == true)
+			int equipped = dto.equippedPetId;
+			if (equipped != 0 && _owned.ContainsKey(equipped) == true)
 			{
 				_equipped = equipped;
 			}

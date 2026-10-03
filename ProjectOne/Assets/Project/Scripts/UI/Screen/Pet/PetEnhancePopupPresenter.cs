@@ -16,7 +16,7 @@ namespace ProjectOne.UI
 	// 같은 함수에서 나와야 둘이 조용히 갈라지지 않는다.
 	public sealed class PetEnhancePopupPresenter : Presenter<PetEnhancePopup>
 	{
-		private EDT.Pet _petId = EDT.Pet.None;
+		private int _petId = 0;
 
 		// 승급 서버 응답 대기 중 — 응답 전 재실행을 막는다(입력은 네트워크 차단막도 막는다).
 		private bool _pendingPromote;
@@ -58,7 +58,7 @@ namespace ProjectOne.UI
 		}
 
 		// View 가 인스턴스화 직후 부른다. 표시를 채우고 돌아온다(닫힘 대기는 View 가 한다).
-		public UniTask ShowAsync(EDT.Pet petId, CancellationToken ct)
+		public UniTask ShowAsync(int petId, CancellationToken ct)
 		{
 			_petId = petId;
 

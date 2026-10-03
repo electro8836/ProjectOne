@@ -140,8 +140,8 @@ namespace ProjectOne.Unit
 		private static string getEquippedModelAddress()
 		{
 			// 이 네임스페이스의 Pet 은 자석 펫 MonoBehaviour 다 — 테이블 enum 은 항상 정규화한다.
-			EDT.Pet equipped = Account.Instance.Pet.Equipped;
-			if (equipped == EDT.Pet.None)
+			int equipped = Account.Instance.Pet.Equipped;
+			if (equipped == 0)
 			{
 				return string.Empty;
 			}

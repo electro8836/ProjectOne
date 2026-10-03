@@ -222,8 +222,35 @@ namespace ProjectOne.Reward
 				return;
 			}
 
+			// 수집품(펫·코스튬)은 인벤토리가 아니라 보유로 간다. 이미 가졌으면 지급도 로그도 없다(서버와 같은 규칙).
+			if (CollectionRules.IsCollection(granted.itemId) == true)
+			{
+				if (grantCollection(granted.itemId) == true)
+				{
+					EventManager.Instance.Publish(new RewardAcquiredEvent(granted.type, granted.itemId, EDT.Currency.None, 1, ItemGradeType.None, 0, false));
+				}
+
+				return;
+			}
+
 			Account.Instance.Inventory.Add(granted.itemId, granted.count);
 			EventManager.Instance.Publish(new RewardAcquiredEvent(granted.type, granted.itemId, EDT.Currency.None, granted.count, ItemGradeType.None, 0, false));
+		}
+
+		private static bool grantCollection(int itemId)
+		{
+			if (CollectionRules.IsPet(itemId) == true)
+			{
+				return Account.Instance.Pet.Grant(itemId);
+			}
+
+			if (CollectionRules.IsCostume(itemId) == true && Account.Instance.Costume.IsOwned(itemId) == false)
+			{
+				Account.Instance.Costume.Add(itemId);
+				return true;
+			}
+
+			return false;
 		}
 
 		private static void logRoll(bool isError, string message)

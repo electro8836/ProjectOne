@@ -9,7 +9,7 @@ namespace ProjectOne.Pets
 	// 저장하는 것은 레벨과 등급 둘뿐이고, 최대 레벨·옵션 수치·비용은 전부 테이블에서 계산한다.
 	public sealed class PetEntry
 	{
-		public readonly Pet id;
+		public readonly int id;
 
 		// 보유 = 최소 1레벨. 0 레벨은 존재하지 않는다.
 		private int _level = 1;
@@ -17,7 +17,7 @@ namespace ProjectOne.Pets
 		// 최초에는 Table_Pet.Grade, 이후 승급으로만 오른다.
 		private ItemGradeType _grade = ItemGradeType.None;
 
-		public PetEntry(Pet petId, ItemGradeType grade)
+		public PetEntry(int petId, ItemGradeType grade)
 		{
 			id = petId;
 			_grade = grade;

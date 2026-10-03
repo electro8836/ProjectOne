@@ -146,7 +146,6 @@ namespace BackendFunction
 				{
 					// [임시] 테스트용 재화 충전 — 정식 전환 시 삭제. 저장은 grantStarter 트랜잭션에 함께 실린다.
 					devTopUpCurrency(response.currency);
-					devGrantAllPetsCostumes(response.pet, response.costume);
 
 					if (grantStarter(tableName, response, out string starterErr) == false)
 					{
@@ -256,61 +255,6 @@ namespace BackendFunction
 			}
 		}
 
-		// [임시] 테스트용 펫·코스튬 전부 지급 — 정식 전환 시 삭제(grantStarter 의 PET·COSTUME 저장 두 줄 포함).
-		// 펫은 1레벨·테이블 기본 등급, 코스튬은 기본 코스튬(IsDefault)을 뺀 전부.
-		private static void devGrantAllPetsCostumes(PetDto pet, CostumeDto costume)
-		{
-			Dictionary<EDT.Pet, EDT.Table_Pet.Row>.Enumerator pe = EDT.Table_Pet.All().GetEnumerator();
-			while (pe.MoveNext() == true)
-			{
-				EDT.Table_Pet.Row row = pe.Current.Value;
-				if (row.ID == EDT.Pet.None)
-				{
-					continue;
-				}
-
-				bool owned = false;
-				for (int i = 0; i < pet.pets.Count; i++)
-				{
-					if (pet.pets[i] != null && pet.pets[i].petId == (int)row.ID)
-					{
-						owned = true;
-						break;
-					}
-				}
-
-				if (owned == true)
-				{
-					continue;
-				}
-
-				PetEntryDto entry = new PetEntryDto();
-				entry.petId = (int)row.ID;
-				entry.level = 1;
-				entry.grade = (int)row.Grade;
-				pet.pets.Add(entry);
-			}
-
-			Dictionary<int, EDT.Table_Costume.Row>.Enumerator ce = EDT.Table_Costume.All().GetEnumerator();
-			while (ce.MoveNext() == true)
-			{
-				EDT.Table_Costume.Row row = ce.Current.Value;
-				if (row.ID <= 0 || row.IsDefault == true || costume.owned.Contains(row.ID) == true)
-				{
-					continue;
-				}
-
-				costume.owned.Add(row.ID);
-			}
-		}
-
-		private static Param toDataParam(object dto)
-		{
-			Param param = new Param();
-			param.Add("Data", JsonConvert.SerializeObject(dto));
-			return param;
-		}
-
 		// 최초 지급 — 응답 DTO 에 직접 반영한 뒤 그대로 저장한다(응답과 저장값이 같다).
 		private static bool grantStarter(string infoTableName, GetUserDataResponse response, out string err)
 		{
@@ -331,10 +275,6 @@ namespace BackendFunction
 			tx.Add(TransactionValue.SetInsert(infoTableName, infoParam));
 			tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), inventoryParam));
 			tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), currencyParam));
-
-			// [임시] devGrantAllPetsCostumes 지급분 — 정식 전환 시 이 두 줄도 삭제
-			tx.Add(TransactionValue.SetUpdate("USER_PET", new Where(), toDataParam(response.pet)));
-			tx.Add(TransactionValue.SetUpdate("USER_COSTUME", new Where(), toDataParam(response.costume)));
 
 			var txResult = Backend.GameData.TransactionWriteV2(tx);
 			if (!txResult.IsSuccess())

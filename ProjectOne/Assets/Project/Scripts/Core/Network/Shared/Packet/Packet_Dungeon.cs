@@ -42,6 +42,21 @@
 		public DungeonEntryDto entry;
 	}
 
+	// 던전 사망 후 유료 부활 — 진행 중인 런에 대해 서버가 상한 판정과 재화 차감을 한다.
+	[System.Serializable]
+	public class DungeonReviveRequest
+	{
+		public int runId;
+	}
+
+	// spent = 서버가 차감한 재화. 클라는 이 양만큼 빼서 따라간다(증감 반영).
+	[System.Serializable]
+	public class DungeonReviveResponse : ServerResponse
+	{
+		public CurrencyAmountDto spent;
+		public int reviveCount;		// 차감 후 이번 런의 부활 횟수
+	}
+
 	// 미궁에서 연 상자 1개 — 맵 배치 순서의 인덱스와 외형 등급. 상자 보상은 바닥에 드랍되고 주운 것만 지급된다.
 	[System.Serializable]
 	public class DungeonChestDto

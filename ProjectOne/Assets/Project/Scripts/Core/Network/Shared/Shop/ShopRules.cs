@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using EDT;
 
@@ -75,6 +76,30 @@ namespace ProjectOne.Shared
 			itemId = 0;
 			return row.PriceType == PriceType.Item && row.Price > 0
 				&& int.TryParse(row.PriceParam, NumberStyles.Integer, CultureInfo.InvariantCulture, out itemId) == true;
+		}
+
+		// 수집품(펫·코스튬) 상품이면 그 아이템 ID 를 돌려준다 — 보유 중이면 살 수 없다.
+		// 보상 그룹의 유효한 Item 행 중 첫 수집품을 본다.
+		public static bool TryGetCollectible(Table_ShopGoods.Row row, out int itemId)
+		{
+			itemId = 0;
+			if (row == null || row.RewardGroupID <= 0)
+			{
+				return false;
+			}
+
+			IReadOnlyList<RewardTable.RewardEntry> entries = RewardTable.GetGroup(row.RewardGroupID);
+			for (int i = 0; i < entries.Count; i++)
+			{
+				RewardTable.RewardEntry entry = entries[i];
+				if (entry.isValid == true && entry.row.RewardType == RewardType.Item && CollectionRules.IsCollection(entry.itemId) == true)
+				{
+					itemId = entry.itemId;
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private static ShopPurchaseDto find(ShopDto dto, int goodsId)

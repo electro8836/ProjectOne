@@ -94,7 +94,8 @@ namespace ProjectOne.UI
 
 			_levelText.gameObject.SetActive(false);
 
-			_countText.gameObject.SetActive(true);
+			// 1개(또는 개수가 의미 없는 0)는 숫자가 없어도 한 개로 읽힌다 — 2개 이상만 표시한다.
+			_countText.gameObject.SetActive(count > 1);
 			_countText.text = count.ToString();
 
 			if (_qualitySlider != null)

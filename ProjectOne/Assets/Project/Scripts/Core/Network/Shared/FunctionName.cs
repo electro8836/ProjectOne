@@ -18,6 +18,7 @@ namespace ProjectOne.Shared
 		public const string ShopBuy = "ShopBuy";
 		public const string DungeonEnter = "DungeonEnter";
 		public const string DungeonSweep = "DungeonSweep";
+		public const string DungeonRevive = "DungeonRevive";
 		public const string FieldBossKill = "FieldBossKill";
 		public const string EquipmentEnhance = "EquipmentEnhance";
 		public const string EquipmentPromote = "EquipmentPromote";

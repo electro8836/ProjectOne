@@ -112,6 +112,17 @@ namespace BackendFunction
 					return FuncResult.Error(heroPassErr);
 				}
 
+				// 보스 보상에는 수집품(펫)이 섞일 수 있다.
+				if (MyData.Load("USER_PET", out PetDto pet, out string petErr) == false)
+				{
+					return FuncResult.Error(petErr);
+				}
+
+				if (MyData.Load("USER_COSTUME", out CostumeDto costume, out string costumeErr) == false)
+				{
+					return FuncResult.Error(costumeErr);
+				}
+
 				// 3. 경험치 — 캐릭터와 장착 무기 마스터리에 같은 값(마스터리 설계 5.2). 무기가 없으면 마스터리 적립만 건너뛴다.
 				int exp = MonsterExp.Calc(req.monsterId, req.level, req.expBonusPermille);
 				loadout.exp += exp;
@@ -127,7 +138,7 @@ namespace BackendFunction
 				RewardRoller.Roll(monster.RewardGroupID, req.goldBonusPermille, rng, rolled, null);
 				RewardRoller.Roll(spawn.RewardGroupID, req.goldBonusPermille, rng, rolled, null);
 
-				RewardApplier applier = new RewardApplier(inventory, currency);
+				RewardApplier applier = new RewardApplier(inventory, currency, pet, costume);
 				applier.ApplyAll(rolled);
 
 				// 히어로패스 활동 — 필드보스는 배치에서 빠지므로 여기서 센다.
@@ -141,6 +152,16 @@ namespace BackendFunction
 				tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), DungeonProgressOps.ToParam(currency)));
 				tx.Add(TransactionValue.SetUpdate("USER_MASTERY", new Where(), DungeonProgressOps.ToParam(mastery)));
 				tx.Add(HeroPassOps.ToUpdate(heroPass));
+
+				if (applier.PetChanged == true)
+				{
+					tx.Add(TransactionValue.SetUpdate("USER_PET", new Where(), DungeonProgressOps.ToParam(pet)));
+				}
+
+				if (applier.CostumeChanged == true)
+				{
+					tx.Add(TransactionValue.SetUpdate("USER_COSTUME", new Where(), DungeonProgressOps.ToParam(costume)));
+				}
 
 				var txResult = Backend.GameData.TransactionWriteV2(tx);
 				if (!txResult.IsSuccess())

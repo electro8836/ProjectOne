@@ -285,6 +285,18 @@ namespace ProjectOne.Network
 			_caller.Invoke<DungeonSweepRequest, DungeonSweepResponse>(FunctionName.DungeonSweep, request, callback);
 		}
 
+		// 던전 유료 부활 — 서버가 부활 상한을 판정하고 재화를 차감한다.
+		public void RequestDungeonRevive(DungeonReviveRequest request, ResponseCallback<DungeonReviveResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<DungeonReviveRequest, DungeonReviveResponse>(FunctionName.DungeonRevive, request, callback);
+		}
+
 		// ── 필드보스 ──────────────────────────────────────────────────────
 
 		// 필드보스 처치 즉시 정산 — 하루 1회 제한·경험치·보상을 서버가 처리한다.

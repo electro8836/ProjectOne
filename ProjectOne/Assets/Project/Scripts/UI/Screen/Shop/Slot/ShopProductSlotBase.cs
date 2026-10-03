@@ -4,6 +4,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Resources;
+using ProjectOne.Shared;
 using ProjectOne.Shop;
 using TMPro;
 using UnityEngine;
@@ -198,9 +199,13 @@ namespace ProjectOne.UI
 				_priceText.text = SOLD_OUT_TEXT;
 			}
 
+			// 수집품(펫·코스튬)은 보유하면 끝이라 횟수 표시가 의미 없다 — 보유 여부는 구매 완료 표시가 알린다.
+			int collectibleId;
+			bool isCollectible = ShopRules.TryGetCollectible(row, out collectibleId);
+
 			if (_limitText != null)
 			{
-				if (unlimited == true)
+				if (unlimited == true || isCollectible == true)
 				{
 					_limitText.gameObject.SetActive(false);
 				}

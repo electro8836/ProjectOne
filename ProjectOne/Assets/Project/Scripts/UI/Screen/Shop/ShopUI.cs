@@ -216,9 +216,15 @@ namespace ProjectOne.UI
 			}
 
 			deactivateUnused();
+			rebuildLayout();
 
 			// 아이콘이 전부 준비된 뒤 한 번에 보이게 한다 — 캐시 히트면 즉시 끝난다.
-			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
+			bool canceled = await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
+			if (canceled == false)
+			{
+				// 바인드 중 바뀐 문구 길이 등을 반영한다.
+				rebuildLayout();
+			}
 
 			if (_scrollRect != null)
 			{
@@ -357,6 +363,19 @@ namespace ProjectOne.UI
 					cache.slots[i].gameObject.SetActive(false);
 				}
 			}
+		}
+
+		// 그리드(ContentSizeFitter)가 Content(세로 레이아웃) 안에 중첩돼 있어, 그대로 두면 부모가 그리드의
+		// 이전 높이(직전 탭의 상품 수)로 먼저 배치해 다음 그룹이 겹치거나 벌어진다.
+		// 자식 그리드 → Content 순서로 즉시 다시 계산해 이번 탭 기준 크기로 맞춘다.
+		private void rebuildLayout()
+		{
+			for (int i = 0; i < _gridCursor; i++)
+			{
+				LayoutRebuilder.ForceRebuildLayoutImmediate(_grids[i]);
+			}
+
+			LayoutRebuilder.ForceRebuildLayoutImmediate(_content);
 		}
 
 		// ── 내부: 입력 ────────────────────────────────────────────────────

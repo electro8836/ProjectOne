@@ -67,6 +67,24 @@ namespace BackendFunction
 					return FuncResult.Error(curErr);
 				}
 
+				if (MyData.Load("USER_PET", out PetDto pet, out string petErr) == false)
+				{
+					return FuncResult.Error(petErr);
+				}
+
+				if (MyData.Load("USER_COSTUME", out CostumeDto costume, out string costumeErr) == false)
+				{
+					return FuncResult.Error(costumeErr);
+				}
+
+				// 수집품(펫·코스튬)은 보유 중이면 살 수 없다.
+				int collectibleId;
+				if (ShopRules.TryGetCollectible(goods, out collectibleId) == true
+					&& RewardApplier.IsCollectionOwned(pet, costume, collectibleId) == true)
+				{
+					return FuncResult.Error("already owned: " + collectibleId);
+				}
+
 				// 2. 가격 차감 — 메모리에서만. 아래 단계가 실패하면 저장하지 않으므로 차감도 없던 일이 된다.
 				if (trySpendPrice(goods, inventory, currency, out string priceErr) == false)
 				{
@@ -75,7 +93,7 @@ namespace BackendFunction
 
 				// 3. 추첨 → 반영. 상점 보상은 골드 보너스를 받지 않는다(보너스 0‰).
 				//    보상 그룹이 없는 상품(광고 제거 등)은 구매 횟수만 남는다.
-				RewardApplier applier = new RewardApplier(inventory, currency);
+				RewardApplier applier = new RewardApplier(inventory, currency, pet, costume);
 				if (goods.RewardGroupID > 0)
 				{
 					List<RolledReward> rolled = new List<RolledReward>();
@@ -95,6 +113,16 @@ namespace BackendFunction
 				tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), toParam(inventory)));
 				tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), toParam(currency)));
 				tx.Add(TransactionValue.SetUpdate("USER_SHOP", new Where(), toParam(shop)));
+
+				if (applier.PetChanged == true)
+				{
+					tx.Add(TransactionValue.SetUpdate("USER_PET", new Where(), toParam(pet)));
+				}
+
+				if (applier.CostumeChanged == true)
+				{
+					tx.Add(TransactionValue.SetUpdate("USER_COSTUME", new Where(), toParam(costume)));
+				}
 
 				var txResult = Backend.GameData.TransactionWriteV2(tx);
 				if (!txResult.IsSuccess())

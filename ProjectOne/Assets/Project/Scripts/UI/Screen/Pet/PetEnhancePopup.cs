@@ -124,7 +124,7 @@ namespace ProjectOne.UI
 		}
 
 		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
-		public async UniTask ShowAsync(EDT.Pet petId, CancellationToken ct)
+		public async UniTask ShowAsync(int petId, CancellationToken ct)
 		{
 			await _presenter.ShowAsync(petId, ct);
 

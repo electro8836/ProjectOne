@@ -6,7 +6,10 @@ using TMPro;
 using EDT;
 using ProjectOne.CameraSystem;
 using ProjectOne.Currency;
+using ProjectOne.Dungeon;
+using ProjectOne.Network;
 using ProjectOne.Resources;
+using ProjectOne.Shared;
 
 namespace ProjectOne.UI
 {
@@ -15,7 +18,7 @@ namespace ProjectOne.UI
 	{
 		Exit,     // 나가기 — 마을로 복귀
 		Revive,   // 무료 부활 — 필드
-		Retry,    // 유료 부활 — 던전 (재화 소모까지 끝난 상태)
+		Retry,    // 유료 부활 — 던전 (서버 재화 차감까지 끝난 상태)
 	}
 
 	// 계속하기 팝업 표시 데이터.
@@ -67,7 +70,7 @@ namespace ProjectOne.UI
 			data.desc = "재화를 사용하여 " + remaining + "회 부활 할 수 있습니다.\n부활 하시겠습니까?";
 			data.showRetry = true;
 			data.costType = dungeon.RevivalCostType;
-			data.cost = Mathf.RoundToInt(dungeon.RevivalCost + (tryCount - 1) * dungeon.RevivalCostRatioStep * dungeon.RevivalCost);
+			data.cost = DungeonRules.GetRevivalCost(dungeon, tryCount);
 			return data;
 		}
 
@@ -153,6 +156,10 @@ namespace ProjectOne.UI
 		private ContinuePopupData _data;
 		private UniTaskCompletionSource<ContinueChoice> _choiceSource;
 
+		// 부활 요청 응답 대기 중 — 연타로 두 번 차감되지 않게 막는다.
+		private bool _isReviving;
+		private bool _isDestroyed;
+
 		// 참조카운트 해제용 아이콘 주소 추적 (아틀라스 스프라이트는 null 로 두어 대상 제외)
 		private string _iconAddress;
 
@@ -165,6 +172,8 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
+			_isDestroyed = true;
+
 			_retryButton.OnClickEvent -= onRetryClicked;
 			_exitButton.OnClickEvent -= onExitClicked;
 			_reviveButton.OnClickEvent -= onReviveClicked;
@@ -267,10 +276,38 @@ namespace ProjectOne.UI
 
 		// ── 입력 ──────────────────────────────────────────────────────
 
-		// 재화 소모가 성공해야 부활이 확정된다. 버튼이 비활성이라 정상 흐름에선 잔액 부족에 도달하지 않는다.
+		// 서버(DungeonRevive)가 부활 상한 판정과 재화 차감을 해야 부활이 확정된다.
+		// 버튼이 비활성이라 정상 흐름에선 잔액 부족에 도달하지 않는다.
 		private void onRetryClicked()
 		{
-			if (CurrencyManager.Instance.TrySpend(_data.costType, _data.cost) == false)
+			if (_isReviving == true)
+			{
+				return;
+			}
+
+			DungeonReviveRequest request = new DungeonReviveRequest();
+			request.runId = DungeonRunLedger.Instance.RunId;
+			_isReviving = true;
+			NetworkManager.Instance.RequestDungeonRevive(request, onRevived);
+		}
+
+		// 차감은 서버에 이미 저장됐다 — 로컬도 같은 양을 뺀다(증감 반영). 실패하면 팝업을 그대로 두어 나가기를 고를 수 있게 한다.
+		private void onRevived(bool success, DungeonReviveResponse data, string error)
+		{
+			_isReviving = false;
+
+			if (success == false || data == null)
+			{
+				Debug.LogWarning($"[ContinuePopup] 던전 부활 실패: {error}");
+				return;
+			}
+
+			if (data.spent != null)
+			{
+				CurrencyManager.Instance.TrySpend((EDT.Currency)data.spent.currencyId, data.spent.amount);
+			}
+
+			if (_isDestroyed == true)
 			{
 				return;
 			}

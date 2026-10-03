@@ -56,6 +56,8 @@ namespace BackendFunction
 					return new DungeonRun().DungeonEnter();
 				case FunctionName.DungeonSweep:
 					return new DungeonRun().DungeonSweep();
+				case FunctionName.DungeonRevive:
+					return new DungeonRun().DungeonRevive();
 				case FunctionName.FieldBossKill:
 					return new FieldBoss().FieldBossKill();
 				case FunctionName.EquipmentEnhance:

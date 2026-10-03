@@ -9,7 +9,7 @@ namespace ProjectOne.Shared
 	[System.Serializable]
 	public class PetEntryDto
 	{
-		public int petId;		// EDT.Pet
+		public int petId;		// 펫 ID = 펫 아이템 ID(Table_Pet.ID)
 
 		// 보유 = 최소 1레벨
 		public int level = 1;

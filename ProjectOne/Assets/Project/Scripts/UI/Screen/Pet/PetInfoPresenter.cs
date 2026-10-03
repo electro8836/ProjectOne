@@ -81,7 +81,7 @@ namespace ProjectOne.UI
 		// ── View 입력 핸들러 ──────────────────────────────────────────────
 
 		// 잠긴 칸은 슬롯이 버튼을 잠가 두므로 여기까지 오지 않는다 — 와도 팝업이 스스로 되돌아 나온다.
-		private void onSlotClicked(EDT.Pet petId)
+		private void onSlotClicked(int petId)
 		{
 			UIManager.Instance.ShowPetEnhancePopupAsync(petId, view.GetDestroyToken()).Forget();
 		}

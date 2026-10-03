@@ -60,7 +60,7 @@ namespace ProjectOne.Boot
 		[System.Serializable]
 		public struct DevPet
 		{
-			public EDT.Pet pet;
+			public int pet;
 			public int level;
 			public EDT.ItemGradeType grade;
 		}
@@ -136,7 +136,7 @@ namespace ProjectOne.Boot
 		[SerializeField] private List<DevPet> _pets = new List<DevPet>();
 
 		[Header("펫 장착 (None = 미장착)")]
-		[SerializeField] private EDT.Pet _equippedPet;
+		[SerializeField] private int _equippedPet;
 
 		[Header("런타임 조회 (읽기 전용)")]
 		[SerializeField] private float _viewRefreshInterval = 0.5f;
@@ -281,7 +281,7 @@ namespace ProjectOne.Boot
 			for (int i = 0; i < _pets.Count; i++)
 			{
 				DevPet src = _pets[i];
-				if (src.pet == EDT.Pet.None || containsPet(dto, src.pet) == true)
+				if (src.pet == 0 || containsPet(dto, src.pet) == true)
 				{
 					continue;
 				}
@@ -289,7 +289,7 @@ namespace ProjectOne.Boot
 				dto.pets.Add(makePetEntry(src.pet, src.level, src.grade));
 			}
 
-			if (_equippedPet != EDT.Pet.None && containsPet(dto, _equippedPet) == false)
+			if (_equippedPet != 0 && containsPet(dto, _equippedPet) == false)
 			{
 				dto.pets.Add(makePetEntry(_equippedPet, 1, EDT.ItemGradeType.None));
 			}
@@ -299,7 +299,7 @@ namespace ProjectOne.Boot
 		}
 
 		// 등급이 None 이면 PetEntry 가 테이블의 기본 등급으로 되돌린다 — 여기서는 그대로 넘긴다.
-		private static PetEntryDto makePetEntry(EDT.Pet pet, int level, EDT.ItemGradeType grade)
+		private static PetEntryDto makePetEntry(int pet, int level, EDT.ItemGradeType grade)
 		{
 			PetEntryDto entry = new PetEntryDto();
 			entry.petId = (int)pet;
@@ -308,7 +308,7 @@ namespace ProjectOne.Boot
 			return entry;
 		}
 
-		private static bool containsPet(PetDto dto, EDT.Pet pet)
+		private static bool containsPet(PetDto dto, int pet)
 		{
 			for (int i = 0; i < dto.pets.Count; i++)
 			{

@@ -37,5 +37,6 @@ namespace ProjectOne.Shared
 		public int stage;			// 균열은 시작 웨이브
 		public long startUnixMs;
 		public bool settled;
+		public int reviveCount;		// 이번 런에서 쓴 유료 부활 횟수(DungeonRevive)
 	}
 }

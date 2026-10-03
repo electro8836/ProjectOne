@@ -30,7 +30,29 @@ namespace ProjectOne.Shop
 				return Account.Instance.HeroPass.IsPurchased ? 0 : 1;
 			}
 
+			// 수집품(펫·코스튬)은 이미 가지고 있으면 살 수 없다 — 다른 경로(필드보스 등)로 얻었어도 같다.
+			if (isOwnedCollectible(row) == true)
+			{
+				return 0;
+			}
+
 			return ShopRules.GetRemaining(_dto, row, DailyReset.GetResetDay());
+		}
+
+		private static bool isOwnedCollectible(Table_ShopGoods.Row row)
+		{
+			int itemId;
+			if (ShopRules.TryGetCollectible(row, out itemId) == false)
+			{
+				return false;
+			}
+
+			if (CollectionRules.IsPet(itemId) == true)
+			{
+				return Account.Instance.Pet.IsOwned(itemId);
+			}
+
+			return Account.Instance.Costume.IsOwned(itemId);
 		}
 
 		public static bool CanPurchase(Table_ShopGoods.Row row)

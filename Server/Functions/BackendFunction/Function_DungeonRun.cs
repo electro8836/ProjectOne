@@ -154,6 +154,92 @@ namespace BackendFunction
 				return FuncResult.Error("Server Error: " + ex.ToString());
 			}
 		}
+
+		// DungeonRevive — 진행 중인 런의 유료 부활. 상한(MaxRevivalCount)과 회차별 비용을 서버가 판정해 즉시 차감한다.
+		// 부활 횟수는 런 단위다 — 다음 단계·재도전은 DungeonEnter 가 새 런을 주므로 0 부터 다시 센다.
+		public Stream DungeonRevive()
+		{
+			try
+			{
+				if (GameData.EnsureLoaded(out string loadErr) == false)
+				{
+					return FuncResult.Error(loadErr);
+				}
+
+				if (Backend.HasKey("req") == false)
+				{
+					return FuncResult.Error("req key is not exist");
+				}
+
+				DungeonReviveRequest req = JsonConvert.DeserializeObject<DungeonReviveRequest>(Backend.Content["req"].ToString());
+				if (req == null)
+				{
+					return FuncResult.Error("req parse failed");
+				}
+
+				if (MyData.Load("USER_DUNGEON", out DungeonProgressDto progress, out string dungeonErr) == false)
+				{
+					return FuncResult.Error(dungeonErr);
+				}
+
+				DungeonRunDto run = progress.run;
+				if (run == null || run.runId != req.runId || run.settled == true)
+				{
+					return FuncResult.Error("no active run: " + req.runId);
+				}
+
+				Table_Dungeon.Row dungeon = Table_Dungeon.Get((EDT.Dungeon)run.dungeonType);
+				if (dungeon == null)
+				{
+					return FuncResult.Error("invalid dungeonType: " + run.dungeonType);
+				}
+
+				if (run.reviveCount >= dungeon.MaxRevivalCount)
+				{
+					return FuncResult.Error("no revive left: " + run.reviveCount);
+				}
+
+				if (MyData.Load("USER_CURRENCY", out CurrencyDto currency, out string curErr) == false)
+				{
+					return FuncResult.Error(curErr);
+				}
+
+				CurrencyCost cost = new CurrencyCost();
+				cost.currency = dungeon.RevivalCostType;
+				cost.amount = DungeonRules.GetRevivalCost(dungeon, run.reviveCount + 1);
+				List<CurrencyCost> costs = new List<CurrencyCost>();
+				costs.Add(cost);
+
+				if (CurrencyUtil.TrySpendAll(currency, costs) == false)
+				{
+					return FuncResult.Error("not enough currency: " + cost.currency);
+				}
+
+				run.reviveCount++;
+
+				List<TransactionValue> tx = new List<TransactionValue>();
+				tx.Add(TransactionValue.SetUpdate("USER_DUNGEON", new Where(), DungeonProgressOps.ToParam(progress)));
+				tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), DungeonProgressOps.ToParam(currency)));
+
+				var txResult = Backend.GameData.TransactionWriteV2(tx);
+				if (!txResult.IsSuccess())
+				{
+					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
+				}
+
+				DungeonReviveResponse response = new DungeonReviveResponse();
+				response.success = true;
+				response.spent = new CurrencyAmountDto();
+				response.spent.currencyId = (int)cost.currency;
+				response.spent.amount = cost.amount;
+				response.reviveCount = run.reviveCount;
+				return FuncResult.Json(response);
+			}
+			catch (Exception ex)
+			{
+				return FuncResult.Error("Server Error: " + ex.ToString());
+			}
+		}
 	}
 
 	// 던전 진행도 DTO 공용 조작 — 입장·소탕·정산이 함께 쓴다.

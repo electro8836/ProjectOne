@@ -41,8 +41,8 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			// 재료는 보여줄 것이 이름·설명뿐이라 정식 팝업을 열지 않는다.
-			if (itemRow.MainCategory == ItemMainCategory.Material)
+			// 재료·수집품(펫·코스튬)은 보여줄 것이 이름·설명뿐이라 정식 팝업을 열지 않는다.
+			if (itemRow.MainCategory == ItemMainCategory.Material || itemRow.MainCategory == ItemMainCategory.Collection)
 			{
 				showSimple(itemRow.Name, itemRow.Desc, anchor, ct);
 				return;

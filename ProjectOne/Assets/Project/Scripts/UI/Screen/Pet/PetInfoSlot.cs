@@ -12,7 +12,7 @@ namespace ProjectOne.UI
 	// 보유/미보유 판정과 색·문구 결정은 Presenter 가 끝내고, 슬롯은 받은 값을 그리기만 한다.
 	public struct PetSlotData
 	{
-		public EDT.Pet pet;
+		public int pet;
 		public bool owned;
 		public string imageAddress;
 		public string name;
@@ -54,12 +54,12 @@ namespace ProjectOne.UI
 
 		public event Action<PetInfoSlot> OnClicked;
 
-		public EDT.Pet PetId
+		public int PetId
 		{
 			get { return _petId; }
 		}
 
-		private EDT.Pet _petId = EDT.Pet.None;
+		private int _petId = 0;
 
 		// 현재 로드한 아이콘 주소 (Acquire/Release 짝 맞춤용)
 		private string _iconAddress;

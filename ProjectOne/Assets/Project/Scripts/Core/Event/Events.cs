@@ -264,9 +264,9 @@ namespace ProjectOne.Event
 		// 보유 효과가 달라지므로 스탯 캐시와 펫 화면 표시를 함께 무효화하는 지점이다.
 		public readonly struct PetChangeEvent
 		{
-			public readonly EDT.Pet Pet;
+			public readonly int Pet;
 
-			public PetChangeEvent(EDT.Pet pet)
+			public PetChangeEvent(int pet)
 			{
 				this.Pet = pet;
 			}

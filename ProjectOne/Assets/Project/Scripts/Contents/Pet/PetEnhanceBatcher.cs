@@ -6,7 +6,7 @@ using ProjectOne.UserData;
 
 namespace ProjectOne.Pets
 {
-	// 펫 강화 묶음 전송 — 묶음·되돌림·환불 규칙은 GrowthBatcher 참고. 키는 펫 ID(EDT.Pet)다.
+	// 펫 강화 묶음 전송 — 묶음·되돌림·환불 규칙은 GrowthBatcher 참고. 키는 펫 ID다.
 	public sealed class PetEnhanceBatcher : GrowthBatcher<PetEnhanceBatcher>
 	{
 		private readonly List<UpgradeCost> _costs = new List<UpgradeCost>(1);
@@ -21,7 +21,7 @@ namespace ProjectOne.Pets
 		}
 
 		// 강화 1회를 즉시 적용하고 묶음에 쌓는다. 적용했으면 true.
-		public bool TryEnhance(EDT.Pet id)
+		public bool TryEnhance(int id)
 		{
 			PetBook book = Account.Instance.Pet;
 			if (NetworkManager.Instance.IsLoggedIn == false || book.GetEnhanceBlock(id) != PetEnhanceBlock.None)
@@ -48,7 +48,7 @@ namespace ProjectOne.Pets
 
 		protected override void SetLevel(long key, int level)
 		{
-			Account.Instance.Pet.SetLevel((EDT.Pet)key, level);
+			Account.Instance.Pet.SetLevel((int)key, level);
 		}
 
 		protected override void Send(long key, int fromLevel, int count)

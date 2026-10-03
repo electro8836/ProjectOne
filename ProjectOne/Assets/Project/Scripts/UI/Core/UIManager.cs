@@ -288,7 +288,8 @@ namespace ProjectOne.UI
 		// 지연 후 딤 표시 — 지연 동안 모든 요청이 끝나면(refCount 0) 표시하지 않는다.
 		private IEnumerator showBlockerDelayed()
 		{
-			yield return new WaitForSeconds(NetworkBlockerShowDelaySec);
+			// 실시간으로 기다린다 — 계속하기 팝업 등 timeScale 0 상태에서도 딤이 보여야 한다.
+			yield return new WaitForSecondsRealtime(NetworkBlockerShowDelaySec);
 			_blockerDelayCo = null;
 
 			if (_blockerRefCount <= 0)
@@ -961,7 +962,7 @@ namespace ProjectOne.UI
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
-		public async UniTask ShowPetEnhancePopupAsync(EDT.Pet petId, CancellationToken ct)
+		public async UniTask ShowPetEnhancePopupAsync(int petId, CancellationToken ct)
 		{
 			_popupCts?.Cancel();
 			_popupCts?.Dispose();

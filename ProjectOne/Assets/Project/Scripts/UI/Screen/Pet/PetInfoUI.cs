@@ -26,7 +26,7 @@ namespace ProjectOne.UI
 		[Header("닫기")]
 		[SerializeField] private UIButton _returnButton;	// Return_Button
 
-		public event Action<EDT.Pet> OnSlotClicked;
+		public event Action<int> OnSlotClicked;
 		public event Action OnSortClicked;
 		public event Action OnReturnClicked;
 
