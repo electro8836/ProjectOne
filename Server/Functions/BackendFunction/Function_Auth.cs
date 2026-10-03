@@ -108,6 +108,13 @@ namespace BackendFunction
 
 				response.dailyBonus = JsonConvert.DeserializeObject<DailyBonusDto>(dailyBonusJson);
 
+				if (ensureDomainRow("USER_SHOP", JsonConvert.SerializeObject(new ShopDto()), out string shopJson, out string shopErr) == false)
+				{
+					return FuncResult.Error(shopErr);
+				}
+
+				response.shop = JsonConvert.DeserializeObject<ShopDto>(shopJson);
+
 				// 히어로패스 — 시즌 기준일은 행이 처음 생기는 날(= 계정 생성일)이다.
 				HeroPassDto heroPassDefault = new HeroPassDto();
 				heroPassDefault.startResetDay = HeroPassOps.Today();

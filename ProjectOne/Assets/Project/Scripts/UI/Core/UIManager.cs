@@ -41,7 +41,7 @@ namespace ProjectOne.UI
 
 		// 이 시간(초) 안에 응답이 오면 딤을 보이지 않는다 — 응답이 실제로 지연될 때만 보인다.
 		// 그동안에도 입력은 투명 차단막으로 즉시 막는다(응답 전 연타·탭 전환·창 닫기 방지).
-		private const float NetworkBlockerShowDelaySec = 3f;
+		private const float NetworkBlockerShowDelaySec = 0.3f;
 
 		// 열린 창 스택 (Back키 처리, 직렬 닫기용)
 		// 주소를 함께 들고 있어야 닫을 때 참조카운트를 되돌릴 수 있다 — 화면만으로는 무엇을 Acquire 했는지 모른다.

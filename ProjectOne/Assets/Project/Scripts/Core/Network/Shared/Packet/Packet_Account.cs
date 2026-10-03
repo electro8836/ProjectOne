@@ -24,6 +24,7 @@ namespace ProjectOne.Shared
 		public PetDto pet;
 		public DailyBonusDto dailyBonus;
 		public HeroPassDto heroPass;
+		public ShopDto shop;
 		public FieldSessionDto field;
 	}
 }

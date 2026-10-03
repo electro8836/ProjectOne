@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
+using ProjectOne.Currency;
 using ProjectOne.Network;
 using ProjectOne.Reward;
 using ProjectOne.Shared;
@@ -14,16 +14,16 @@ namespace ProjectOne.UI
 {
 	// 상점 화면 Presenter — 어떤 카테고리를 그릴지 정하고 구매 입력을 받는다.
 	//
-	// 보물상자(GoodsType.Box)는 서버(ShopBuy)가 열쇠 차감·추첨·지급을 하고 결과를 내려준다.
-	// 다른 상품은 아직 서버에 나가지 않는다 — 로그를 남기고 구매 횟수만 올린다.
+	// 모든 상품은 서버(ShopBuy)가 구매 한도 판정·가격 차감·추첨·지급을 하고 결과를 내려준다.
+	// 히어로패스는 보상 대신 패스 활성화가 효과라 응답 처리만 따로 둔다.
 	public sealed class ShopPresenter : Presenter<ShopUI>
 	{
 		private IReadOnlyList<Table_ShopCategory.Row> _categories;
 
 		private CancellationTokenSource _renderCts;	// 렌더 단위 취소 (아이콘 로드 경합 방지)
 
-		// 응답을 기다리는 서버 구매 상품(상자·히어로패스) — 0 이면 대기 중이 아니다. 응답 전 연타를 막는다.
-		private int _pendingBoxGoodsId;
+		// 응답을 기다리는 서버 구매 상품 — 0 이면 대기 중이 아니다. 응답 전 연타를 막는다.
+		private int _pendingGoodsId;
 		private bool _isDisposed;
 
 		protected override void OnInitialize()
@@ -87,23 +87,13 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			if (row.GoodsType == GoodsType.Box)
-			{
-				requestBox(row);
-				return;
-			}
-
 			if (row.GoodsType == GoodsType.HeroPass)
 			{
 				requestHeroPass(row);
 				return;
 			}
 
-			// TODO(서버) — 실제 구매 요청으로 교체한다. 결제 검증·재화 차감·보상 지급 모두 서버 권위여야 한다.
-			Debug.Log($"[Shop] 구매 요청 goodsId={row.ID} name={row.Name} goodsType={row.GoodsType} priceType={row.PriceType} price={row.Price} priceParam={row.PriceParam} rewardGroupId={row.RewardGroupID}");
-
-			ShopPurchaseCounter.Increase(row.ID, row.UseDailyReset);
-			view.RefreshGoods(row.ID);
+			requestPurchase(row);
 		}
 
 		// ── 히어로패스 ────────────────────────────────────────────────────
@@ -112,21 +102,21 @@ namespace ProjectOne.UI
 		// [임시] 서버가 결제 검증 없이 활성화한다(결제 단계에서 영수증 검증으로 교체).
 		private void requestHeroPass(Table_ShopGoods.Row row)
 		{
-			if (_pendingBoxGoodsId != 0 || NetworkManager.Instance.IsLoggedIn == false || Account.Instance.HeroPass.IsPurchased == true)
+			if (_pendingGoodsId != 0 || NetworkManager.Instance.IsLoggedIn == false || Account.Instance.HeroPass.IsPurchased == true)
 			{
 				return;
 			}
 
 			ShopBuyRequest request = new ShopBuyRequest();
 			request.goodsId = row.ID;
-			_pendingBoxGoodsId = row.ID;
+			_pendingGoodsId = row.ID;
 			NetworkManager.Instance.RequestShopBuy(request, onHeroPassBought);
 		}
 
 		private void onHeroPassBought(bool success, ShopBuyResponse data, string error)
 		{
-			Table_ShopGoods.Row row = Table_ShopGoods.Get(_pendingBoxGoodsId);
-			_pendingBoxGoodsId = 0;
+			Table_ShopGoods.Row row = Table_ShopGoods.Get(_pendingGoodsId);
+			_pendingGoodsId = 0;
 
 			if (success == false || row == null)
 			{
@@ -135,7 +125,6 @@ namespace ProjectOne.UI
 			}
 
 			Account.Instance.HeroPass.SetPurchased();
-			ShopPurchaseCounter.Increase(row.ID, row.UseDailyReset);
 
 			if (_isDisposed == true)
 			{
@@ -145,62 +134,50 @@ namespace ProjectOne.UI
 			view.RefreshGoods(row.ID);
 		}
 
-		// ── 보물상자 ──────────────────────────────────────────────────────
+		// ── 일반 상품(보물상자·패키지·재화 등) ─────────────────────────────
 
-		private void requestBox(Table_ShopGoods.Row row)
+		private void requestPurchase(Table_ShopGoods.Row row)
 		{
-			if (_pendingBoxGoodsId != 0)
+			if (_pendingGoodsId != 0)
 			{
 				return;
 			}
 
 			if (NetworkManager.Instance.IsLoggedIn == false)
 			{
-				Debug.LogWarning($"[Shop] 보물상자는 서버 로그인 상태에서만 열 수 있다 goodsId={row.ID}");
+				Debug.LogWarning($"[Shop] 상품 구매는 서버 로그인 상태에서만 할 수 있다 goodsId={row.ID}");
 				return;
 			}
 
-			int keyItemId;
-			if (tryGetKeyItemId(row, out keyItemId) == false)
+			if (hasEnoughPrice(row) == false)
 			{
-				Debug.LogError($"[Shop] 보물상자 가격이 열쇠 아이템이 아니다 goodsId={row.ID} priceType={row.PriceType} priceParam={row.PriceParam}");
-				return;
-			}
-
-			if (Account.Instance.Inventory.GetCount(keyItemId) < row.Price)
-			{
-				Debug.LogWarning($"[Shop] 열쇠 부족 goodsId={row.ID} key={keyItemId} 필요={row.Price} 보유={Account.Instance.Inventory.GetCount(keyItemId)}");
 				return;
 			}
 
 			ShopBuyRequest request = new ShopBuyRequest();
 			request.goodsId = row.ID;
-			_pendingBoxGoodsId = row.ID;
-			NetworkManager.Instance.RequestShopBuy(request, onBoxOpened);
+			_pendingGoodsId = row.ID;
+			NetworkManager.Instance.RequestShopBuy(request, onPurchased);
 		}
 
 		// 계정 반영은 창이 닫혔어도 한다 — 서버에는 이미 저장됐다. 화면 갱신·결과 팝업만 창이 살아 있을 때 한다.
-		private void onBoxOpened(bool success, ShopBuyResponse data, string error)
+		private void onPurchased(bool success, ShopBuyResponse data, string error)
 		{
-			Table_ShopGoods.Row row = Table_ShopGoods.Get(_pendingBoxGoodsId);
-			_pendingBoxGoodsId = 0;
+			Table_ShopGoods.Row row = Table_ShopGoods.Get(_pendingGoodsId);
+			_pendingGoodsId = 0;
 
 			if (success == false || data == null || row == null)
 			{
-				Debug.LogWarning($"[Shop] 보물상자 개봉 실패: {error}");
+				Debug.LogWarning($"[Shop] 상품 구매 실패: {error}");
 				return;
 			}
 
-			int keyItemId;
-			if (tryGetKeyItemId(row, out keyItemId) == true)
-			{
-				Account.Instance.Inventory.TrySpend(keyItemId, row.Price);
-			}
+			spendPrice(row);
 
 			List<GrantedReward> granted = new List<GrantedReward>();
 			RewardGranter.FromServer(data.rewards, data.equipments, granted);
 			RewardGranter.ApplyAll(granted);
-			ShopPurchaseCounter.Increase(row.ID, row.UseDailyReset);
+			ShopPurchaseCounter.Increase(row);
 
 			if (_isDisposed == true)
 			{
@@ -208,14 +185,66 @@ namespace ProjectOne.UI
 			}
 
 			view.RefreshGoods(row.ID);
-			UIManager.Instance.ShowRewardPopupAsync(granted, view.GetDestroyToken()).Forget();
+
+			if (granted.Count > 0)
+			{
+				UIManager.Instance.ShowRewardPopupAsync(granted, view.GetDestroyToken()).Forget();
+			}
 		}
 
-		private static bool tryGetKeyItemId(Table_ShopGoods.Row row, out int keyItemId)
+		// 요청 전 사전 검사 — 최종 판정은 서버가 한다. 무료·광고·현금 상품은 로컬에서 볼 것이 없다.
+		private static bool hasEnoughPrice(Table_ShopGoods.Row row)
 		{
-			keyItemId = 0;
-			return row.PriceType == PriceType.Item && row.Price > 0
-				&& int.TryParse(row.PriceParam, NumberStyles.Integer, CultureInfo.InvariantCulture, out keyItemId) == true;
+			int itemId;
+			if (ShopRules.TryGetItemPrice(row, out itemId) == true)
+			{
+				int owned = Account.Instance.Inventory.GetCount(itemId);
+				if (owned < row.Price)
+				{
+					Debug.LogWarning($"[Shop] 아이템 부족 goodsId={row.ID} item={itemId} 필요={row.Price} 보유={owned}");
+					return false;
+				}
+
+				return true;
+			}
+
+			EDT.Currency currency;
+			if (ShopRules.TryGetCurrencyPrice(row, out currency) == true)
+			{
+				int owned = CurrencyManager.Instance.GetAmount(currency);
+				if (owned < row.Price)
+				{
+					Debug.LogWarning($"[Shop] 재화 부족 goodsId={row.ID} currency={currency} 필요={row.Price} 보유={owned}");
+					return false;
+				}
+
+				return true;
+			}
+
+			if (row.PriceType == PriceType.Item || row.PriceType == PriceType.Currency || row.PriceType == PriceType.None)
+			{
+				Debug.LogError($"[Shop] 가격 정보가 잘못됐다 goodsId={row.ID} priceType={row.PriceType} priceParam={row.PriceParam} price={row.Price}");
+				return false;
+			}
+
+			return true;
+		}
+
+		// 서버가 차감을 확정한 가격을 로컬에도 증감으로 반영한다.
+		private static void spendPrice(Table_ShopGoods.Row row)
+		{
+			int itemId;
+			if (ShopRules.TryGetItemPrice(row, out itemId) == true)
+			{
+				Account.Instance.Inventory.TrySpend(itemId, row.Price);
+				return;
+			}
+
+			EDT.Currency currency;
+			if (ShopRules.TryGetCurrencyPrice(row, out currency) == true)
+			{
+				CurrencyManager.Instance.TrySpend(currency, row.Price);
+			}
 		}
 
 		// 창을 닫는다. 마지막 창이면 WindowClosedEvent 가 발행되어 네비게이션 바의 탭 선택도 함께 풀린다.
