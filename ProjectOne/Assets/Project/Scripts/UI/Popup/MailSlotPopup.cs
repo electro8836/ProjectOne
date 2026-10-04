@@ -12,6 +12,7 @@ namespace ProjectOne.UI
 	// 메일 한 통을 여는 팝업. UIManager.ShowMailSlotPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
 	//
 	// 첨부가 있고 아직 받지 않았으면 수령 버튼만, 그 밖에는 삭제 버튼만 보인다.
+	// 받은 메일은 기기 보관함에 남고, 삭제는 보관함에서 지운다(MailArchive).
 	// 수령·삭제는 메일함이 넘겨준 공급자로 처리한다 — 표시와 버튼 두 개뿐이라 Presenter 를 두지 않는다.
 	public class MailSlotPopup : UIScreen
 	{
@@ -125,6 +126,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			// 받은 메일은 보관함으로 옮겨져 목록에 남는다 — 버튼을 삭제로 바꾼다.
 			applyButtons();
 
 			await UIManager.Instance.ShowRewardPopupAsync(rewards, ct).SuppressCancellationThrow();

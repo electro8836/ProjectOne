@@ -5,7 +5,7 @@ using ProjectOne.Reward;
 
 namespace ProjectOne.Mail
 {
-	// 메일 데이터 출처. 지금은 가짜 데이터(DummyMailProvider)이고, 뒤끝 우편 연동 시 구현체만 바꾼다.
+	// 메일 데이터 출처. 구현체는 뒤끝 우편(BackndMailProvider).
 	public interface IMailProvider
 	{
 		// 삭제하지 않은 메일 — 최신순.

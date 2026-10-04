@@ -63,6 +63,17 @@ namespace ProjectOne.UI
 		{
 			// 열람 기록은 수령·삭제와 별개다 — 여는 순간 남기고 바로 Dim 을 켠다.
 			MailReadLog.MarkRead(mail.id);
+
+			// 메시지만 있는 메일은 읽으면 수령이다 — 서버에서 받아 보관함으로 옮긴 뒤 연다(삭제 버튼만 보인다).
+			if (mail.HasAttachments == false && mail.claimed == false)
+			{
+				(bool claimCancelled, List<GrantedReward> _) = await _provider.ClaimAsync(mail.id, ct).SuppressCancellationThrow();
+				if (claimCancelled == true)
+				{
+					return;
+				}
+			}
+
 			if (await refreshAsync(ct) == true)
 			{
 				return;

@@ -31,5 +31,7 @@ namespace ProjectOne.Shared
 		public const string DailyBonusClaim = "DailyBonusClaim";
 		public const string HeroPassClaim = "HeroPassClaim";
 		public const string ItemSpend = "ItemSpend";
+		public const string MailList = "MailList";
+		public const string MailReceive = "MailReceive";
 	}
 }

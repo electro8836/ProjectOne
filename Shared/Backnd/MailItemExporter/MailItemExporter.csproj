@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>MailItemExporter</AssemblyName>
+    <RootNamespace>MailItemExporter</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <!-- 엑셀 자동생성 테이블 코드(Loader·Table_*·edt_enums) — 클라·서버와 같은 파서로 같은 bytes 를 읽는다 -->
+  <ItemGroup>
+    <Compile Include="..\..\..\ProjectOne\Assets\Project\Scripts\Core\ExcelData\*.cs"
+             Link="ExcelData\%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

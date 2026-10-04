@@ -60,6 +60,10 @@ namespace BackendFunction
 					return new DungeonRun().DungeonRevive();
 				case FunctionName.ItemSpend:
 					return new ItemFunctions().ItemSpend();
+				case FunctionName.MailList:
+					return new MailFunctions().MailList();
+				case FunctionName.MailReceive:
+					return new MailFunctions().MailReceive();
 				case FunctionName.FieldBossKill:
 					return new FieldBoss().FieldBossKill();
 				case FunctionName.EquipmentEnhance:

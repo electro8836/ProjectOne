@@ -17,7 +17,7 @@ namespace ProjectOne.Mail
 		public DateTime sentAt;
 		public readonly List<RewardPreviewItem> attachments = new List<RewardPreviewItem>();
 
-		// 첨부를 받았는지. 첨부 없는 메일은 의미가 없다.
+		// 서버에서 받았는지(보관함에 있는지). 메시지만 있는 메일은 읽으면 받는다.
 		public bool claimed;
 
 		public bool HasAttachments

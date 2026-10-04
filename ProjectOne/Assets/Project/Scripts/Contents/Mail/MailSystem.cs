@@ -7,8 +7,7 @@ namespace ProjectOne.Mail
 	// 메일 공급자의 단일 접근점. 메일함 팝업과 배지(메인 HUD·메뉴 팝업)가 같은 목록을 본다.
 	public static class MailSystem
 	{
-		// [임시] 뒤끝 우편이 생기면 뒤끝 구현체로 교체한다.
-		public static IMailProvider Provider = new DummyMailProvider();
+		public static IMailProvider Provider = new BackndMailProvider();
 
 		// 삭제하지 않은 메일 중 아직 열어 보지 않은 것이 있는지. 수령 여부와는 무관하다.
 		public static bool HasUnread(IReadOnlyList<MailData> mails)

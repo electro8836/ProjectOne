@@ -338,6 +338,30 @@ namespace ProjectOne.Network
 			_caller.Invoke<ShopBuyRequest, ShopBuyResponse>(FunctionName.ShopBuy, request, callback);
 		}
 
+		// ── 우편 ──────────────────────────────────────────────────────────
+
+		// 관리자·랭킹 우편 목록 — 최신순. 배지 확인에도 쓰여 딤을 띄우지 않는다.
+		public void RequestMailList(ResponseCallback<MailListResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<MailListRequest, MailListResponse>(FunctionName.MailList, new MailListRequest(), callback, false);
+		}
+
+		// 우편 수령 — 서버가 받으면서 첨부를 지급한다. 받은 우편은 목록에서 사라진다.
+		public void RequestMailReceive(MailReceiveRequest request, ResponseCallback<MailReceiveResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<MailReceiveRequest, MailReceiveResponse>(FunctionName.MailReceive, request, callback);
+		}
+
 		// ── 장비 성장 ─────────────────────────────────────────────────────
 
 		// 강화·승급·전이 — 서버가 공유 규칙으로 검증하고 재화 차감·장비 변경을 저장한다.
