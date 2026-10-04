@@ -11,6 +11,9 @@ namespace ProjectOne.Mail
 		// 삭제하지 않은 메일 — 최신순.
 		UniTask<IReadOnlyList<MailData>> GetMailsAsync(CancellationToken ct);
 
+		// 캐시한 목록을 버린다 — 다음 GetMailsAsync 가 서버에서 다시 받는다(새 우편 알림).
+		void MarkStale();
+
 		// 첨부를 수령하고 받은 목록을 돌려준다. 이미 받았거나 첨부가 없으면 빈 목록.
 		UniTask<List<GrantedReward>> ClaimAsync(string mailId, CancellationToken ct);
 

@@ -5,6 +5,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using EDT;
+using ProjectOne.Event;
 using ProjectOne.Network;
 using ProjectOne.Reward;
 using ProjectOne.Shared;
@@ -51,6 +52,11 @@ namespace ProjectOne.Mail
 			}
 
 			return _listTcs.Task.AttachExternalCancellation(ct);
+		}
+
+		public void MarkStale()
+		{
+			_fetchedAt = float.NegativeInfinity;
 		}
 
 		// 받으면 보관함으로 옮기고 claimed 로 표시한다 — 목록에는 남는다.
@@ -148,6 +154,9 @@ namespace ProjectOne.Mail
 			}
 
 			rebuild();
+
+			// 서버 목록이 바뀌는 유일한 지점 — 메뉴 팝업·새 우편 알림으로 받아도 메뉴 버튼 배지가 같이 바뀐다.
+			EventManager.Instance.Publish(new MailChangedEvent(MailSystem.HasUnread(_mails)));
 			tcs.TrySetResult(_mails);
 		}
 
