@@ -86,6 +86,15 @@ namespace ProjectOne.Network
 				return;
 			}
 
+			// 실패인데 사유가 비어 있으면 핸들러가 만든 본문이 아니다(펑션 시간 초과 등 런타임 오류 봉투).
+			// 원문을 그대로 남겨 원인을 볼 수 있게 한다.
+			if (resp.success == false && string.IsNullOrEmpty(resp.error) == true)
+			{
+				Debug.LogError($"[NetworkManager] 함수 응답 형식 오류({action}): {respJson}");
+				callback?.Invoke(false, resp, respJson);
+				return;
+			}
+
 			callback?.Invoke(resp.success, resp, resp.error);
 		}
 	}

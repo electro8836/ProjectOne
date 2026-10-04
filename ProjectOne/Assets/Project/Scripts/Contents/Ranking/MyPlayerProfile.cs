@@ -15,9 +15,9 @@ namespace ProjectOne.Ranking
 		// 비로그인 상태의 내 식별자. 로그인 중이면 뒤끝 inDate 를 쓴다.
 		private const string LocalPlayerId = "local";
 
-		// 닉네임 기능이 없어 임시 이름을 쓴다 — 닉네임이 생기면 교체한다.
-		private const string TempNamePrefix = "Player";
-		private const int TempNameSuffixLength = 4;
+		// 뒤끝 계정 닉네임 — 로그인 데이터(GetUserData)로 받는다. 클라 SDK 의 UserNickName 은 로그인 시점 캐시라
+		// 서버가 방금 부여한 닉네임을 모르므로 응답값을 쓴다.
+		private static string _nickname = string.Empty;
 
 		public static string PlayerId
 		{
@@ -32,24 +32,15 @@ namespace ProjectOne.Ranking
 			}
 		}
 
-		// "Player" + inDate 끝 4자리. 비로그인이면 "Player".
+		// 비로그인이거나 아직 닉네임이 없으면 빈 문자열.
 		public static string PlayerName
 		{
-			get
-			{
-				if (isLoggedIn() == false)
-				{
-					return TempNamePrefix;
-				}
+			get { return _nickname; }
+		}
 
-				string inDate = Backend.UserInDate;
-				if (string.IsNullOrEmpty(inDate) == true || inDate.Length < TempNameSuffixLength)
-				{
-					return TempNamePrefix;
-				}
-
-				return TempNamePrefix + inDate.Substring(inDate.Length - TempNameSuffixLength);
-			}
+		public static void SetNickname(string nickname)
+		{
+			_nickname = (nickname != null) ? nickname : string.Empty;
 		}
 
 		// 최고 전투력은 서버 저장이 생길 때까지 현재 전투력으로 대신한다.

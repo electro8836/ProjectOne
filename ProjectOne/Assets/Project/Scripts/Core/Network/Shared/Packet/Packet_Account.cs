@@ -26,5 +26,6 @@ namespace ProjectOne.Shared
 		public HeroPassDto heroPass;
 		public ShopDto shop;
 		public FieldSessionDto field;
+		public string nickname;		// 뒤끝 계정 닉네임 — 없으면 서버가 Player + 8자리 숫자로 부여한다
 	}
 }

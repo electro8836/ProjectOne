@@ -153,6 +153,14 @@ namespace BackendFunction
 					}
 				}
 
+				// 5. 닉네임 — 없으면 Player + 8자리 숫자로 부여. 실패해도 로그인은 막지 않고 원인만 error 로 알린다(다음 로그인에 재시도).
+				if (NicknameOps.EnsureNickname(out string nickname, out string nicknameErr) == false)
+				{
+					response.error = nicknameErr;
+				}
+
+				response.nickname = nickname;
+
 				return FuncResult.Json(response);
 			}
 			catch (Exception ex)

@@ -8,6 +8,7 @@ using ProjectOne.Mail;
 using ProjectOne.Network;
 using ProjectOne.Field;
 using ProjectOne.Quests;
+using ProjectOne.Ranking;
 using ProjectOne.Shared;
 using ProjectOne.Shop;
 using ProjectOne.UserData;
@@ -118,6 +119,13 @@ namespace ProjectOne.Flow
 				if (data.shop != null)
 				{
 					ShopPurchaseCounter.Set(data.shop);
+				}
+
+				// 닉네임 — 없으면 서버가 Player + 8자리 숫자로 부여한다. 실패하면 다음 로그인에 다시 시도된다.
+				MyPlayerProfile.SetNickname(data.nickname);
+				if (string.IsNullOrEmpty(data.nickname) == true)
+				{
+					Debug.LogWarning($"[DataLoadState] 닉네임 없음 — 다음 로그인에 다시 부여한다: {data.error}");
 				}
 
 				// 새 우편 실시간 알림 — 메뉴 버튼 배지를 바로 갱신한다.
