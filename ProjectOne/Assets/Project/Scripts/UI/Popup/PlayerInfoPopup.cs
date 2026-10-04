@@ -5,6 +5,7 @@ using UnityEngine;
 using TMPro;
 using EDT;
 using ProjectOne.Items;
+using ProjectOne.Mastery;
 using ProjectOne.Ranking;
 
 namespace ProjectOne.UI
@@ -19,8 +20,10 @@ namespace ProjectOne.UI
 
 		[Header("정보")]
 		[SerializeField] private TMP_Text _playerNameText;		// Frame/Top/PlayerNameText
-		[SerializeField] private TMP_Text _levelText;			// InfoGroup/HeroInfo/LevelText
-		[SerializeField] private TMP_Text _battlePowerText;	// InfoGroup/HeroInfo/BattlePowerText
+		[SerializeField] private TMP_Text _heroLevelText;			// HeroLevelText
+		[SerializeField] private TMP_Text _masteryLevelText;		// MasteryLevelText
+		[SerializeField] private TMP_Text _battlePowerText;		// BattlePowerText — 현재 전투력
+		[SerializeField] private TMP_Text _recordBattlePowerText;	// RecordBattlePowerText — 최고 전투력(랭킹 점수)
 		[SerializeField] private CharacterPreview _characterPreview;	// InfoGroup/Character
 
 		[Header("장비")]
@@ -69,9 +72,11 @@ namespace ProjectOne.UI
 		public async UniTask ShowAsync(PlayerProfile profile, CancellationToken ct)
 		{
 			_playerNameText.text = profile.playerName;
-			// "레벨 12" / "전투력 12,345" — 마스터리 레벨은 표시하지 않는다.
-			_levelText.text = "레벨 " + profile.level.ToString();
-			_battlePowerText.text = "전투력 " + profile.battlePower.ToString("N0");
+			// "현재/최대" — 라벨 문구는 프리펩에 있다.
+			_heroLevelText.text = profile.level.ToString() + "/" + MasteryCatalog.CharacterMaxLevel.ToString();
+			_masteryLevelText.text = profile.masteryLevel.ToString() + "/" + MasteryCatalog.TotalMasteryMaxLevel.ToString();
+			_battlePowerText.text = profile.battlePower.ToString("N0");
+			_recordBattlePowerText.text = profile.bestBattlePower.ToString("N0");
 
 			_characterPreview.SetExternalAppearance(profile.weaponCostumeId, profile.bodyCostumeId, profile.equipped[(int)EquipSlotTypes.Weapon]);
 

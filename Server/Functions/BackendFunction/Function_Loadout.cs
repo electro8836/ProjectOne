@@ -98,6 +98,8 @@ namespace BackendFunction
 					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 				}
 
+				RankOps.Refresh(loadout, inventory, null, null, null);
+
 				SaveLoadoutResponse response = new SaveLoadoutResponse();
 				response.success = true;
 				return FuncResult.Json(response);

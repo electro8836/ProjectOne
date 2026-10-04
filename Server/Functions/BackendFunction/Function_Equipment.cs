@@ -207,6 +207,8 @@ namespace BackendFunction
 				return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 			}
 
+			RankOps.Refresh(null, inventory, null, null, null);
+
 			return respond(costs, changedA, changedB);
 		}
 

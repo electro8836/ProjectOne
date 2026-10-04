@@ -19,6 +19,9 @@ namespace ProjectOne.Ranking
 		// 서버가 방금 부여한 닉네임을 모르므로 응답값을 쓴다.
 		private static string _nickname = string.Empty;
 
+		// 서버가 알려 준 최고 전투력(랭킹 점수). 아직 받지 못했으면 0.
+		private static int _bestBattlePower;
+
 		public static string PlayerId
 		{
 			get
@@ -43,8 +46,7 @@ namespace ProjectOne.Ranking
 			_nickname = (nickname != null) ? nickname : string.Empty;
 		}
 
-		// 최고 전투력은 서버 저장이 생길 때까지 현재 전투력으로 대신한다.
-		// 살아 있는 히어로가 없으면(씬 전환 중) 0.
+		// 현재 전투력. 살아 있는 히어로가 없으면(씬 전환 중) 0.
 		public static int BattlePower
 		{
 			get
@@ -59,12 +61,29 @@ namespace ProjectOne.Ranking
 			}
 		}
 
+		// 최고 전투력 — 서버 기록과 현재 값 중 큰 쪽(아직 보고 전인 상승분 포함).
+		public static int BestBattlePower
+		{
+			get
+			{
+				int current = BattlePower;
+				return (current > _bestBattlePower) ? current : _bestBattlePower;
+			}
+		}
+
+		public static void SetBestBattlePower(int bestBattlePower)
+		{
+			_bestBattlePower = bestBattlePower;
+		}
+
 		public static PlayerProfile Build()
 		{
 			PlayerProfile profile = new PlayerProfile();
 			profile.playerId = PlayerId;
 			profile.playerName = PlayerName;
 			profile.battlePower = BattlePower;
+			profile.bestBattlePower = BestBattlePower;
+			profile.masteryLevel = Account.Instance.Mastery.TotalLevel;
 
 			Loadout loadout = Account.Instance.Loadout;
 			if (loadout != null)

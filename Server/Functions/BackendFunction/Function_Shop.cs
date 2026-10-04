@@ -130,6 +130,12 @@ namespace BackendFunction
 					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 				}
 
+				// 펫은 보유만으로 스탯이 붙는다.
+				if (applier.PetChanged == true)
+				{
+					RankOps.Refresh(null, inventory, null, pet, costume);
+				}
+
 				ShopBuyResponse response = new ShopBuyResponse();
 				response.success = true;
 				response.rewards = applier.Granted;

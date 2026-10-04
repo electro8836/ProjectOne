@@ -64,6 +64,10 @@ namespace BackendFunction
 					return new MailFunctions().MailList();
 				case FunctionName.MailReceive:
 					return new MailFunctions().MailReceive();
+				case FunctionName.RankList:
+					return new RankingFunctions().RankList();
+				case FunctionName.RankProfile:
+					return new RankingFunctions().RankProfile();
 				case FunctionName.FieldBossKill:
 					return new FieldBoss().FieldBossKill();
 				case FunctionName.EquipmentEnhance:

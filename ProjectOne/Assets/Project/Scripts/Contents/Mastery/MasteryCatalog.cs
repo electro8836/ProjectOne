@@ -57,6 +57,18 @@ namespace ProjectOne.Mastery
 			get { return _masteryExp.Count > 0 ? _masteryExp[_masteryExp.Count - 1].ID : 1; }
 		}
 
+		// 캐릭터 만렙 — 서버와 같은 곡선을 쓰므로 공유 규칙에 위임한다.
+		public static int CharacterMaxLevel
+		{
+			get { return MasteryRules.CharacterMaxLevel; }
+		}
+
+		// 전 마스터리 레벨 합의 상한 — MasteryBook.TotalLevel 과 같은 범위(전 마스터리)를 센다.
+		public static int TotalMasteryMaxLevel
+		{
+			get { return MasteryMaxLevel * Table_WeaponMastery.All().Count; }
+		}
+
 		public static void Build()
 		{
 			_byWeaponType.Clear();

@@ -539,6 +539,33 @@ namespace ProjectOne.Network
 			_caller.Invoke<HeroPassClaimRequest, HeroPassClaimResponse>(FunctionName.HeroPassClaim, request, callback);
 		}
 
+		// ── 랭킹 ──────────────────────────────────────────────────────────
+
+		// 랭킹 목록 — offset 부터 50명. 첫 페이지(offset 0)에는 내 순위가 함께 온다.
+		// 스크롤 중에 이어 받는 다음 페이지는 딤을 띄우지 않는다.
+		public void RequestRankList(int offset, ResponseCallback<RankListResponse> callback, bool showOverlay)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			RankListRequest request = new RankListRequest();
+			request.offset = offset;
+			_caller.Invoke<RankListRequest, RankListResponse>(FunctionName.RankList, request, callback, showOverlay);
+		}
+
+		// 다른 유저의 정보 스냅샷.
+		public void RequestRankProfile(RankProfileRequest request, ResponseCallback<RankProfileResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<RankProfileRequest, RankProfileResponse>(FunctionName.RankProfile, request, callback);
+		}
+
 		// ── 필드 처치 배치 정산 ───────────────────────────────────────────
 
 		// 정리가 끝난 처치를 앞에서부터 묶어 보낸다(주기·일시정지·종료·다른 펑션 직전 트리거).

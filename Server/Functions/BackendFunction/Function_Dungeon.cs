@@ -83,6 +83,8 @@ namespace BackendFunction
 					return FuncResult.Error(heroPassErr);
 				}
 
+				int levelKeyBefore = RankOps.LevelKey(loadout, mastery);
+
 				EDT.Dungeon type = (EDT.Dungeon)req.dungeonType;
 				DungeonEntryDto entry = DungeonProgressOps.GetEntry(progress, type);
 				run.settled = true;
@@ -142,6 +144,11 @@ namespace BackendFunction
 				if (!txResult.IsSuccess())
 				{
 					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
+				}
+
+				if (RankOps.LevelKey(loadout, mastery) != levelKeyBefore)
+				{
+					RankOps.Refresh(loadout, inventory, mastery, null, null);
 				}
 
 				DungeonClearResponse response = new DungeonClearResponse();

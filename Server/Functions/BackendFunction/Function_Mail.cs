@@ -168,6 +168,12 @@ namespace BackendFunction
 						+ " postType " + req.postType + " inDate " + req.inDate + " items " + JsonConvert.SerializeObject(attachments));
 				}
 
+				// 펫은 보유만으로 스탯이 붙는다.
+				if (applier.PetChanged == true)
+				{
+					RankOps.Refresh(null, inventory, null, pet, costume);
+				}
+
 				MailReceiveResponse response = new MailReceiveResponse();
 				response.success = true;
 				response.rewards = applier.Granted;

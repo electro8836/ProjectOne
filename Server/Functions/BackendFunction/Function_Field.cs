@@ -102,6 +102,11 @@ namespace BackendFunction
 					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 				}
 
+				if (result.leveledUp == true)
+				{
+					RankOps.Refresh(null, null, null, null, null);
+				}
+
 				return succeed(field.nextKillIndex, result.exp);
 			}
 			catch (Exception ex)
@@ -167,6 +172,11 @@ namespace BackendFunction
 					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 				}
 
+				if (result.status == SettleStatus.Settled && result.leveledUp == true)
+				{
+					RankOps.Refresh(null, null, null, null, null);
+				}
+
 				FieldRotateResponse response = new FieldRotateResponse();
 				response.success = true;
 				response.error = (result.status == SettleStatus.Discarded) ? "rejected: " + result.message : null;
@@ -197,6 +207,9 @@ namespace BackendFunction
 			public readonly SettleStatus status;
 			public readonly string message;
 			public int exp = -1;
+
+			// 캐릭터·마스터리 레벨이 올랐다 — 저장 뒤 랭킹을 갱신한다.
+			public bool leveledUp;
 			public readonly List<TransactionValue> dataTx = new List<TransactionValue>();
 
 			public SettleResult(SettleStatus status, string message)
@@ -272,6 +285,8 @@ namespace BackendFunction
 			{
 				return new SettleResult(SettleStatus.Error, heroPassErr);
 			}
+
+			int levelKeyBefore = RankOps.LevelKey(loadout, mastery);
 
 			// 4. 처치별 검증 → 재현 → 주운 것만 지급
 			RewardApplier applier = new RewardApplier(inventory, currency);
@@ -351,6 +366,7 @@ namespace BackendFunction
 
 			SettleResult result = new SettleResult(SettleStatus.Settled, null);
 			result.exp = loadout.exp;
+			result.leveledUp = RankOps.LevelKey(loadout, mastery) != levelKeyBefore;
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_LOADOUT", new Where(), toParam(loadout)));
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), toParam(inventory)));
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), toParam(currency)));

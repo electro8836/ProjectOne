@@ -9,11 +9,11 @@ namespace ProjectOne.UI
 {
 	// 랭킹 목록의 한 줄(UIPrefab_PlayerRankSlot). 목록 칸과 MyRankSlot 의 내 칸이 같은 프리펩을 쓴다.
 	//
-	// 순위 표시: 1~3위는 메달 아이콘, 4~10000위는 숫자, 집계 밖(0 이하·10001위 이상)은 "---".
+	// 순위 표시: 1~3위는 메달 아이콘, 4~9999위는 숫자, 순위 외(0 이하·10000위 이상)는 "---".
 	public class PlayerRankSlot : MonoBehaviour
 	{
-		// 순위 집계 한도. 이보다 아래는 숫자 대신 "---" 로 표시한다.
-		private const int MaxCountedRank = 10000;
+		// 순위 표시 한도. 이보다 아래는 숫자 대신 "---" 로 표시한다.
+		private const int MaxCountedRank = 9999;
 		private const int IconRankCount = 3;
 		private const string RankIconPrefix = "Icon_Rank_0";
 		private const string UncountedRankText = "---";

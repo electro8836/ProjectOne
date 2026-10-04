@@ -1,6 +1,6 @@
 namespace ProjectOne.Ranking
 {
-	// 랭킹 목록의 한 줄. rank 가 0 이하면 집계 밖(순위 없음)이다.
+	// 랭킹 목록의 한 줄. rank 가 0 이하면 리더보드 미등록(순위 외)이다.
 	public readonly struct RankEntry
 	{
 		public readonly string playerId;

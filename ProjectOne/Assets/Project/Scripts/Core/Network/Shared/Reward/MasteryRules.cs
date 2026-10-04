@@ -208,6 +208,16 @@ namespace ProjectOne.Shared
 			return sum;
 		}
 
+		// 캐릭터 만렙 — 곡선의 마지막 레벨이 사실상의 상한이다.
+		public static int CharacterMaxLevel
+		{
+			get
+			{
+				List<Table_CharacterLevelExp.Row> curve = getCharacterCurve();
+				return curve.Count > 0 ? curve[curve.Count - 1].ID : 1;
+			}
+		}
+
 		private static List<Table_MasteryLevelExp.Row> getCurve()
 		{
 			if (_curve != null && _curve.Count > 0)

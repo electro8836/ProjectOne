@@ -153,6 +153,13 @@ namespace BackendFunction
 					}
 				}
 
+				// 랭킹 — 기존 계정은 로그인 때 점수·정보를 맞춘다(테이블 변경으로 전투력이 달라졌을 수 있다).
+				// 신규 계정은 가입 경로를 늘리지 않도록 건너뛴다 — 첫 장착·강화나 랭킹 조회 때 올라간다.
+				if (isNewAccount == false)
+				{
+					RankOps.Refresh(response.loadout, response.inventory, response.mastery, response.pet, response.costume);
+				}
+
 				// 5. 닉네임 — 없으면 Player + 8자리 숫자로 부여. 실패해도 로그인은 막지 않고 원인만 error 로 알린다(다음 로그인에 재시도).
 				if (NicknameOps.EnsureNickname(out string nickname, out string nicknameErr) == false)
 				{

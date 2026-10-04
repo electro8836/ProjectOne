@@ -33,5 +33,7 @@ namespace ProjectOne.Shared
 		public const string ItemSpend = "ItemSpend";
 		public const string MailList = "MailList";
 		public const string MailReceive = "MailReceive";
+		public const string RankList = "RankList";
+		public const string RankProfile = "RankProfile";
 	}
 }

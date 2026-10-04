@@ -124,6 +124,7 @@ namespace BackendFunction
 				}
 
 				// 3. 경험치 — 캐릭터와 장착 무기 마스터리에 같은 값(마스터리 설계 5.2). 무기가 없으면 마스터리 적립만 건너뛴다.
+				int levelKeyBefore = RankOps.LevelKey(loadout, mastery);
 				int exp = MonsterExp.Calc(req.monsterId, req.level, req.expBonusPermille);
 				loadout.exp += exp;
 				loadout.level = MasteryRules.CharacterLevelFromExp(loadout.exp);
@@ -167,6 +168,12 @@ namespace BackendFunction
 				if (!txResult.IsSuccess())
 				{
 					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
+				}
+
+				// 레벨이 올랐거나 펫을 얻었으면 전투력이 바뀐다.
+				if (applier.PetChanged == true || RankOps.LevelKey(loadout, mastery) != levelKeyBefore)
+				{
+					RankOps.Refresh(loadout, inventory, mastery, pet, costume);
 				}
 
 				FieldBossKillResponse response = new FieldBossKillResponse();

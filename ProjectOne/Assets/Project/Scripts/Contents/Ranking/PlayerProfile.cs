@@ -10,7 +10,9 @@ namespace ProjectOne.Ranking
 		public string playerId;
 		public string playerName;
 		public int level;			// 캐릭터 레벨(마스터리 제외)
-		public int battlePower;
+		public int masteryLevel;	// 전 마스터리 레벨 합
+		public int battlePower;		// 현재 전투력
+		public int bestBattlePower;	// 최고 전투력(랭킹 점수)
 		public int weaponCostumeId;	// 0 이면 미착용
 		public int bodyCostumeId;	// 0 이면 미착용(기본 바디)
 

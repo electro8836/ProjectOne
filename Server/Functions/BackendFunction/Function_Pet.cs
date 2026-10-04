@@ -175,6 +175,8 @@ namespace BackendFunction
 					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 				}
 
+				RankOps.Refresh(null, null, null, pet, costume);
+
 				SaveAppearanceResponse response = new SaveAppearanceResponse();
 				response.success = true;
 				return FuncResult.Json(response);
@@ -232,6 +234,8 @@ namespace BackendFunction
 			{
 				return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 			}
+
+			RankOps.Refresh(null, null, null, pet, null);
 
 			return respond(costs, changed);
 		}

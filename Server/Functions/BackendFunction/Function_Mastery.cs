@@ -67,6 +67,8 @@ namespace BackendFunction
 					return FuncResult.Error("USER_MASTERY Update Failed: " + updateResult.GetErrorCode());
 				}
 
+				RankOps.Refresh(null, null, mastery, null, null);
+
 				SaveMasteryTreeResponse response = new SaveMasteryTreeResponse();
 				response.success = true;
 				return FuncResult.Json(response);
