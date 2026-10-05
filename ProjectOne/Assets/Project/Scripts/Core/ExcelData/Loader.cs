@@ -29,11 +29,33 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - BadWord
+            #region Table - BadWord_KR
             {
-                CurrentFile = Table_BadWord.Filename;
+                CurrentFile = Table_BadWord_KR.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_BadWord._parser ) == false ) {
+                if( Load( reader, Table_BadWord_KR._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - BadWord_US
+            {
+                CurrentFile = Table_BadWord_US.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_BadWord_US._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - BadWord_JP
+            {
+                CurrentFile = Table_BadWord_JP.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_BadWord_JP._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

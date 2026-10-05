@@ -644,7 +644,9 @@ namespace EDT {
     public enum TableType {
         None,
         TableBanWord,
-        TableBadWord,
+        TableBadWord_KR,
+        TableBadWord_US,
+        TableBadWord_JP,
         TableBattlePower_Stat,
         TableBattlePower_Option,
         TableBuff,

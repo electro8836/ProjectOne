@@ -73,7 +73,7 @@ namespace ProjectOne.Shared
 			return nickname;
 		}
 
-		// 금칙어·비속어 검사는 테이블(BanWord, BadWord)이 로드돼 있어야 한다.
+		// 금칙어·비속어 검사는 테이블(BanWord, BadWord_KR/US/JP)이 로드돼 있어야 한다.
 		public static NicknameError Validate(string nickname)
 		{
 			int bytes = GetByteCount(nickname);
@@ -153,19 +153,13 @@ namespace ProjectOne.Shared
 			return false;
 		}
 
-		// 금칙어를 포함하면 막는다 — 영문은 대소문자를 가리지 않는다.
+		// 금칙어를 포함하면 막는다.
 		private static bool containsBanWord(string nickname)
 		{
 			Dictionary<int, Table_BanWord.Row>.Enumerator e = Table_BanWord.All().GetEnumerator();
 			while (e.MoveNext() == true)
 			{
-				string word = e.Current.Value.Word;
-				if (string.IsNullOrEmpty(word) == true)
-				{
-					continue;
-				}
-
-				if (nickname.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0)
+				if (containsWord(nickname, e.Current.Value.Word) == true)
 				{
 					return true;
 				}
@@ -174,25 +168,48 @@ namespace ProjectOne.Shared
 			return false;
 		}
 
-		// 비속어도 같은 방식으로 본다 — 목록만 다르다(외부 목록을 가져와 교체한다).
+		// 비속어는 언어별 테이블(KR/US/JP)로 나뉘어 있다 — 닉네임에는 어느 언어든 섞일 수 있어 접속 언어와 무관하게 전부 본다.
 		private static bool containsBadWord(string nickname)
 		{
-			Dictionary<int, Table_BadWord.Row>.Enumerator e = Table_BadWord.All().GetEnumerator();
-			while (e.MoveNext() == true)
+			Dictionary<int, Table_BadWord_KR.Row>.Enumerator kr = Table_BadWord_KR.All().GetEnumerator();
+			while (kr.MoveNext() == true)
 			{
-				string word = e.Current.Value.Word;
-				if (string.IsNullOrEmpty(word) == true)
+				if (containsWord(nickname, kr.Current.Value.Word) == true)
 				{
-					continue;
+					return true;
 				}
+			}
 
-				if (nickname.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0)
+			Dictionary<int, Table_BadWord_US.Row>.Enumerator us = Table_BadWord_US.All().GetEnumerator();
+			while (us.MoveNext() == true)
+			{
+				if (containsWord(nickname, us.Current.Value.Word) == true)
+				{
+					return true;
+				}
+			}
+
+			Dictionary<int, Table_BadWord_JP.Row>.Enumerator jp = Table_BadWord_JP.All().GetEnumerator();
+			while (jp.MoveNext() == true)
+			{
+				if (containsWord(nickname, jp.Current.Value.Word) == true)
 				{
 					return true;
 				}
 			}
 
 			return false;
+		}
+
+		// 영문은 대소문자를 가리지 않는다. 빈 칸은 건너뛴다.
+		private static bool containsWord(string nickname, string word)
+		{
+			if (string.IsNullOrEmpty(word) == true)
+			{
+				return false;
+			}
+
+			return nickname.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0;
 		}
 	}
 }

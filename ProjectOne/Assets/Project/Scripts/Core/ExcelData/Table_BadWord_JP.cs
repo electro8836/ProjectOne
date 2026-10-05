@@ -4,15 +4,15 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_BadWord
+    public static class Table_BadWord_JP
     {
         public class Row {
             public int ID { get; set; } = 0;
             public string Word { get; set; } = string.Empty;
         }
 
-        public const string Filename = "edt_badword.bytes";
-        public const TableType Type = TableType.TableBadWord;
+        public const string Filename = "edt_badword_jp.bytes";
+        public const TableType Type = TableType.TableBadWord_JP;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
