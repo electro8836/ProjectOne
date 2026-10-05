@@ -123,6 +123,7 @@ namespace ProjectOne.Flow
 
 				// 닉네임 — 없으면 서버가 Player + 8자리 숫자로 부여한다. 실패하면 다음 로그인에 다시 시도된다.
 				MyPlayerProfile.SetNickname(data.nickname);
+				MyPlayerProfile.SetNicknameChangeCount(data.nicknameChangeCount);
 				if (string.IsNullOrEmpty(data.nickname) == true)
 				{
 					Debug.LogWarning($"[DataLoadState] 닉네임 없음 — 다음 로그인에 다시 부여한다: {data.error}");

@@ -68,6 +68,8 @@ namespace BackendFunction
 					return new RankingFunctions().RankList();
 				case FunctionName.RankProfile:
 					return new RankingFunctions().RankProfile();
+				case FunctionName.ChangeNickname:
+					return new NicknameFunctions().ChangeNickname();
 				case FunctionName.FieldBossKill:
 					return new FieldBoss().FieldBossKill();
 				case FunctionName.EquipmentEnhance:

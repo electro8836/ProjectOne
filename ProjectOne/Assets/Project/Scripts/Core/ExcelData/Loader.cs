@@ -18,6 +18,28 @@ namespace EDT {
         {
             BinaryReader reader = null;
 
+            #region Table - BanWord
+            {
+                CurrentFile = Table_BanWord.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_BanWord._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - BadWord
+            {
+                CurrentFile = Table_BadWord.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_BadWord._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - BattlePower_Stat
             {
                 CurrentFile = Table_BattlePower_Stat.Filename;

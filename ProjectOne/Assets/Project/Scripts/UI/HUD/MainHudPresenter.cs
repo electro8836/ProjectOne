@@ -105,6 +105,11 @@ namespace ProjectOne.UI
 			{
 				await confirmQuitAsync(ct);
 			}
+			else if (result == MenuPopupResult.Setting)
+			{
+				// 설정 팝업이 생기기 전까지는 닉네임 변경 팝업을 바로 연다.
+				await UIManager.Instance.ShowNicknamePopupAsync(ct);
+			}
 		}
 
 		// 잘못 눌러 꺼지지 않도록 한 번 더 확인받는다.

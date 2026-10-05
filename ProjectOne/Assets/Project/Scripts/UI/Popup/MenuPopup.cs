@@ -10,7 +10,8 @@ namespace ProjectOne.UI
 	{
 		None = 0,
 		Mail,
-		Quit
+		Quit,
+		Setting
 	}
 
 	// 메인 HUD 의 MenuButton 으로 여는 메뉴 팝업. UIManager.ShowMenuPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
@@ -94,12 +95,13 @@ namespace ProjectOne.UI
 			Close();
 		}
 
-		// 아래 2개는 정식 기능 연결 전까지의 임시 처리다. 기능이 준비되면 교체한다.
 		private void onSettingClicked()
 		{
-			Debug.Log("[MenuPopup] 설정 기능 준비 중");
+			_result = MenuPopupResult.Setting;
+			Close();
 		}
 
+		// 정식 기능 연결 전까지의 임시 처리다. 기능이 준비되면 교체한다.
 		private void onAfkClicked()
 		{
 			Debug.Log("[MenuPopup] 방치모드 기능 준비 중");

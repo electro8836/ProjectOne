@@ -167,6 +167,7 @@ namespace BackendFunction
 				}
 
 				response.nickname = nickname;
+				response.nicknameChangeCount = (isNewAccount == false) ? NicknameOps.ReadChangeCount(rows[0]) : 0;
 
 				return FuncResult.Json(response);
 			}

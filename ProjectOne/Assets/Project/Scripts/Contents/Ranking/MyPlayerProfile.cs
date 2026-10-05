@@ -18,6 +18,7 @@ namespace ProjectOne.Ranking
 		// 뒤끝 계정 닉네임 — 로그인 데이터(GetUserData)로 받는다. 클라 SDK 의 UserNickName 은 로그인 시점 캐시라
 		// 서버가 방금 부여한 닉네임을 모르므로 응답값을 쓴다.
 		private static string _nickname = string.Empty;
+		private static int _nicknameChangeCount;
 
 		// 서버가 알려 준 최고 전투력(랭킹 점수). 아직 받지 못했으면 0.
 		private static int _bestBattlePower;
@@ -44,6 +45,17 @@ namespace ProjectOne.Ranking
 		public static void SetNickname(string nickname)
 		{
 			_nickname = (nickname != null) ? nickname : string.Empty;
+		}
+
+		// 닉네임을 바꾼 횟수 — 변경 비용 판정(NicknameRules.GetCost)에 쓴다.
+		public static int NicknameChangeCount
+		{
+			get { return _nicknameChangeCount; }
+		}
+
+		public static void SetNicknameChangeCount(int count)
+		{
+			_nicknameChangeCount = count;
 		}
 
 		// 현재 전투력. 살아 있는 히어로가 없으면(씬 전환 중) 0.

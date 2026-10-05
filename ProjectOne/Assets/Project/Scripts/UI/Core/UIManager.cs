@@ -959,6 +959,7 @@ namespace ProjectOne.UI
 		private const string PLAYER_INFO_POPUP_ADDRESS = "UIPrefab_PlayerInfoPopup";
 		private const string MAIL_BOX_POPUP_ADDRESS = "UIPrefab_MailBoxPopup";
 		private const string MAIL_SLOT_POPUP_ADDRESS = "UIPrefab_MailSlotPopup";
+		private const string NICKNAME_POPUP_ADDRESS = "UIPrefab_NicknamePopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -1056,6 +1057,38 @@ namespace ProjectOne.UI
 			}
 
 			return result;
+		}
+
+		// 닉네임 변경 팝업을 _popupCanvas 에 열고 닫힘을 기다린다.
+		public async UniTask ShowNicknamePopupAsync(CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(NICKNAME_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			NicknamePopup popup = go.GetComponent<NicknamePopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_NicknamePopup 루트에 NicknamePopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(NICKNAME_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(NICKNAME_POPUP_ADDRESS);
+			}
 		}
 
 		// 메일함 팝업을 _popupCanvas 에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_mailBoxCts 참고).

@@ -566,6 +566,19 @@ namespace ProjectOne.Network
 			_caller.Invoke<RankProfileRequest, RankProfileResponse>(FunctionName.RankProfile, request, callback);
 		}
 
+		// ── 닉네임 ────────────────────────────────────────────────────────
+
+		// 닉네임 변경 — 서버가 규칙·중복을 판정하고 비용을 차감한다.
+		public void RequestChangeNickname(ChangeNicknameRequest request, ResponseCallback<ChangeNicknameResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<ChangeNicknameRequest, ChangeNicknameResponse>(FunctionName.ChangeNickname, request, callback);
+		}
+
 		// ── 필드 처치 배치 정산 ───────────────────────────────────────────
 
 		// 정리가 끝난 처치를 앞에서부터 묶어 보낸다(주기·일시정지·종료·다른 펑션 직전 트리거).

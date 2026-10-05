@@ -27,5 +27,21 @@ namespace ProjectOne.Shared
 		public ShopDto shop;
 		public FieldSessionDto field;
 		public string nickname;		// 뒤끝 계정 닉네임 — 없으면 서버가 Player + 8자리 숫자로 부여한다
+		public int nicknameChangeCount;	// 닉네임을 바꾼 횟수 — 비용 판정(NicknameRules.GetCost)
+	}
+
+	// 닉네임 변경 요청 — 규칙·중복·비용은 서버가 판정한다.
+	[System.Serializable]
+	public class ChangeNicknameRequest
+	{
+		public string nickname;
+	}
+
+	[System.Serializable]
+	public class ChangeNicknameResponse : ServerResponse
+	{
+		public string nickname;			// 바뀐 닉네임
+		public int changeCount;			// 변경 후 누적 횟수
+		public CurrencyAmountDto spent;	// 차감한 재화 — 무료 변경이면 null
 	}
 }
