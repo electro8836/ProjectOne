@@ -57,6 +57,12 @@ namespace ProjectOne.Network
 				GoogleSignInUser user = await GoogleSignIn.DefaultInstance.SignIn().AsUniTask();
 				idToken = (user != null) ? user.IdToken : null;
 			}
+			catch (GoogleSignIn.SignInException e)
+			{
+				// 상태 코드로 원인을 가른다 — DeveloperError 는 패키지명·서명 키(SHA-1) 불일치, Canceled 는 유저 취소.
+				Debug.LogError($"[Backnd] 구글 로그인 취소/실패: {e.Status} - {e.Message}");
+				idToken = null;
+			}
 			catch (System.Exception e)
 			{
 				Debug.LogError($"[Backnd] 구글 로그인 취소/실패: {e.Message}");
