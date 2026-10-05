@@ -2,7 +2,9 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using ProjectOne.Loading;
 using ProjectOne.Network;
+using ProjectOne.UI;
 
 namespace ProjectOne.Flow
 {
@@ -20,12 +22,23 @@ namespace ProjectOne.Flow
 		// 미로그인 진행 자체는 안전하다 — DataLoadState 가 빈 계정으로 통과하도록 이미 되어 있다.
 		public static bool SkipLogin { get; set; }
 
+		// 타이틀에 도착하면 팝업으로 띄울 안내 — 연결이 끊겨 돌려보낼 때 채운다(DataLoadState.GoToTitleAsync).
+		public static string PendingNotice { get; set; }
+
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
 			// 뒤끝 초기화 1회 — 로그인 전에 수행.
 			NetworkManager.Instance.Init();
 
 			await SceneManager.LoadSceneAsync(SceneName).ToUniTask(cancellationToken: ct);
+
+			// 게임 중 연결이 끊겨 돌아온 경우 로딩 화면을 띄운 채 넘어온다 — 로그인 버튼이 보이도록 걷는다.
+			if (LoadingManager.Instance.IsShowing == true)
+			{
+				await LoadingManager.Instance.HideAsync();
+			}
+
+			await showPendingNoticeAsync(ct);
 
 			// 로그인 결과 대기 (Button_Guest / Button_Google → NetworkManager.Login)
 			//
@@ -51,6 +64,24 @@ namespace ProjectOne.Flow
 		public UniTask ExitAsync()
 		{
 			return UniTask.CompletedTask;
+		}
+
+		// 돌려보낸 이유를 알리고 확인을 받는다. 팝업이 떠 있는 동안은 Dim 이 로그인 버튼을 가린다.
+		private static async UniTask showPendingNoticeAsync(CancellationToken ct)
+		{
+			if (string.IsNullOrEmpty(PendingNotice) == true)
+			{
+				return;
+			}
+
+			CommonPopupData data;
+			data.title = NetworkMessages.Title;
+			data.desc = PendingNotice;
+			data.button1Text = NetworkMessages.Confirm;
+			data.button2Text = string.Empty;
+			PendingNotice = null;
+
+			await UIManager.Instance.ShowCommonPopupAsync(data, ct);
 		}
 
 		private bool isLoginResolved()

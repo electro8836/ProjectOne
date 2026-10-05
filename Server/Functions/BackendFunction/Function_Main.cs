@@ -34,6 +34,51 @@ namespace BackendFunction
 			}
 
 			string action = Backend.Content["action"].ToString();
+
+			// 요청 번호가 없으면(백그라운드 저장 등) 그대로 처리한다.
+			if (Backend.HasKey(RequestOps.RidKey) == false || RequestOps.IsGuarded(action) == false)
+			{
+				return dispatch(action);
+			}
+
+			string rid = Backend.Content[RequestOps.RidKey].ToString();
+
+			try
+			{
+				// 재전송 — 같은 번호를 이미 처리했으면 그때의 응답을 그대로 돌려준다(두 번 반영하지 않는다).
+				if (Backend.HasKey(RequestOps.RetryKey) == true)
+				{
+					string saved = RequestOps.FindResult(rid);
+					if (saved != null)
+					{
+						return Backend.StringToStream(saved);
+					}
+				}
+
+				string result = RequestOps.ReadAll(dispatch(action));
+				if (RequestOps.IsSuccess(result) == true)
+				{
+					// 기록에 실패해도 요청은 이미 반영됐다 — 성공 응답을 그대로 돌려준다.
+					try
+					{
+						RequestOps.Save(rid, action, result);
+					}
+					catch (Exception)
+					{
+					}
+				}
+
+				return Backend.StringToStream(result);
+			}
+			catch (Exception e)
+			{
+				return FuncResult.Error("Request guard failed: " + e.ToString());
+			}
+		}
+
+		// action → 실제 처리 핸들러.
+		private static Stream dispatch(string action)
+		{
 			switch (action)
 			{
 				case FunctionName.GetUserData:

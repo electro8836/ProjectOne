@@ -95,6 +95,14 @@ namespace ProjectOne.Network
 			callback?.Invoke(success, error);
 		}
 
+		// 로그인 상태를 지운다 — 타이틀로 돌려보낼 때 쓴다.
+		// 지우지 않으면 TitleState 가 이미 로그인된 것으로 보고 곧바로 다음 상태로 넘어간다.
+		public void ResetLogin()
+		{
+			IsLoggedIn = false;
+			LoginAttempted = false;
+		}
+
 		// 로그인 타입 → 핸들러. (Apple/Facebook 은 핸들러 추가 시 case 만 늘린다.)
 		private ILoginHandler createLoginHandler(LoginType type)
 		{
@@ -576,7 +584,8 @@ namespace ProjectOne.Network
 				return;
 			}
 
-			_caller.Invoke<ChangeNicknameRequest, ChangeNicknameResponse>(FunctionName.ChangeNickname, request, callback);
+			// 거절 사유(중복 등)는 닉네임 팝업이 직접 안내한다.
+			_caller.Invoke<ChangeNicknameRequest, ChangeNicknameResponse>(FunctionName.ChangeNickname, request, callback, true, false);
 		}
 
 		// ── 필드 처치 배치 정산 ───────────────────────────────────────────

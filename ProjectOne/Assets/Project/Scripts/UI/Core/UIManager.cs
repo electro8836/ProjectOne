@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using TMPro;
 using ProjectOne.Utils;
 using ProjectOne.Event;
 using ProjectOne.Items;
@@ -110,6 +111,9 @@ namespace ProjectOne.UI
 		private int _blockerRefCount;
 		// 지연 표시 코루틴 — 닫힘 시 중지
 		private Coroutine _blockerDelayCo;
+		// 딤 안의 문구(Text). 평소 응답 대기에는 쓰지 않고 꺼 둔다 — ShowNetworkMessage 로만 켠다.
+		private TMP_Text _networkBlockerText;
+		private bool _networkMessageShown;
 
 		protected override void Awake()
 		{
@@ -244,15 +248,14 @@ namespace ProjectOne.UI
 				StopCoroutine(_blockerDelayCo);
 			}
 
-			// 딤은 최초 1회만 생성해 캐시하고, 이후 SetActive 로 재사용한다.
-			if (_networkBlocker == null)
+			ensureNetworkBlocker();
+
+			// 문구가 떠 있는 중이면 이미 보이는 상태다 — 다시 숨기지 않는다.
+			if (_networkMessageShown == false)
 			{
-				Transform parent = (_systemCanvas != null) ? _systemCanvas.transform : _popupCanvas.transform;
-				_networkBlocker = Instantiate(_networkBlockerPrefab, parent);
-				_networkBlockerGroup = _networkBlocker.GetComponent<CanvasGroup>();
+				setBlockerVisible(false);
 			}
 
-			setBlockerVisible(false);
 			_networkBlocker.SetActive(true);
 
 			_blockerDelayCo = StartCoroutine(showBlockerDelayed());
@@ -279,9 +282,74 @@ namespace ProjectOne.UI
 				_blockerDelayCo = null;
 			}
 
-			if (_networkBlocker != null)
+			// 문구가 떠 있으면 그쪽이 닫을 때까지 둔다.
+			if (_networkBlocker != null && _networkMessageShown == false)
 			{
 				_networkBlocker.SetActive(false);
+			}
+		}
+
+		// 딤에 문구를 띄운다(재연결 안내 등) — 지연 없이 바로 보이고 입력을 막는다. 버튼은 없다.
+		// 응답 대기(Show/HideNetworkBlocker)와 별개로 돌며, 둘 다 끝나야 딤이 닫힌다.
+		public void ShowNetworkMessage(string message)
+		{
+			ensureNetworkBlocker();
+
+			_networkMessageShown = true;
+			if (_networkBlockerText != null)
+			{
+				_networkBlockerText.text = message;
+				_networkBlockerText.gameObject.SetActive(true);
+			}
+
+			_networkBlocker.transform.SetAsLastSibling();
+			_networkBlocker.SetActive(true);
+			setBlockerVisible(true);
+		}
+
+		public void HideNetworkMessage()
+		{
+			if (_networkMessageShown == false)
+			{
+				return;
+			}
+
+			_networkMessageShown = false;
+			if (_networkBlockerText != null)
+			{
+				_networkBlockerText.gameObject.SetActive(false);
+			}
+
+			if (_blockerRefCount <= 0)
+			{
+				_networkBlocker.SetActive(false);
+				return;
+			}
+
+			// 응답 대기가 남아 있다 — 아직 지연 중이면 다시 투명 차단으로 돌린다.
+			if (_blockerDelayCo != null)
+			{
+				setBlockerVisible(false);
+			}
+		}
+
+		// 딤은 최초 1회만 생성해 캐시하고, 이후 SetActive 로 재사용한다.
+		private void ensureNetworkBlocker()
+		{
+			if (_networkBlocker != null)
+			{
+				return;
+			}
+
+			Transform parent = (_systemCanvas != null) ? _systemCanvas.transform : _popupCanvas.transform;
+			_networkBlocker = Instantiate(_networkBlockerPrefab, parent);
+			_networkBlockerGroup = _networkBlocker.GetComponent<CanvasGroup>();
+
+			// 문구는 필요할 때만 켠다 — 평소 응답 대기는 회전 아이콘만 보인다.
+			_networkBlockerText = _networkBlocker.GetComponentInChildren<TMP_Text>(true);
+			if (_networkBlockerText != null)
+			{
+				_networkBlockerText.gameObject.SetActive(false);
 			}
 		}
 
@@ -358,6 +426,124 @@ namespace ProjectOne.UI
 			if (_bossUI == null)
 			{
 				Debug.LogWarning("[UIManager] MainHUD 안에서 BossUI 를 찾지 못했습니다 — 던전 HUD 가 보스 배너에 자리를 비켜주지 못합니다.");
+			}
+		}
+
+		// ── 타이틀 복귀 ────────────────────────────────────────────────
+
+		// 타이틀로 돌려보낼 때 — 타이틀에 처음 들어온 것처럼 영속 UI 를 전부 걷는다.
+		// 걷어 둔 것은 다음 마을 진입의 Ensure* 가 다시 세운다.
+		public void ResetForTitle()
+		{
+			CloseAllWindowsAsync().Forget();
+
+			// 떠 있는 팝업 — 취소를 받은 Show 메서드가 스스로 파괴·해제한다.
+			cancelPopup(ref _popupCts);
+			cancelPopup(ref _commonPopupCts);
+			cancelPopup(ref _currencyListCts);
+			cancelPopup(ref _questListCts);
+			cancelPopup(ref _dailyBonusCts);
+			cancelPopup(ref _heroPassCts);
+			cancelPopup(ref _rankingCts);
+			cancelPopup(ref _playerInfoCts);
+			cancelPopup(ref _rewardPopupCts);
+			cancelPopup(ref _riftPopupCts);
+			cancelPopup(ref _mailBoxCts);
+			cancelPopup(ref _mailSlotCts);
+
+			releaseMainHud();
+			ReleaseDungeonHud();
+			ReleaseWorldGauge();
+			releaseNavigationBar();
+			releaseNoticeMessages();
+			resetNetworkBlocker();
+		}
+
+		private static void cancelPopup(ref CancellationTokenSource cts)
+		{
+			if (cts == null)
+			{
+				return;
+			}
+
+			cts.Cancel();
+			cts.Dispose();
+			cts = null;
+		}
+
+		// HUD 는 맥락이 None 이어도 재화 바·조이스틱 같은 상시 위젯이 남아 타이틀을 덮는다.
+		private void releaseMainHud()
+		{
+			if (_mainHud == null)
+			{
+				return;
+			}
+
+			Destroy(_mainHud);
+			_mainHud = null;
+			_bossUI = null;
+			ResourceManager.Instance.Release(MainHudAddress);
+		}
+
+		private void releaseNavigationBar()
+		{
+			if (_navigationBar == null)
+			{
+				return;
+			}
+
+			Destroy(_navigationBar);
+			_navigationBar = null;
+			_navigationBarView = null;
+			ResourceManager.Instance.Release(NavigationBarAddress);
+		}
+
+		private void releaseNoticeMessages()
+		{
+			releaseNotice(_systemLogInfo, SystemLogInfoAddress);
+			releaseNotice(_alertMessage, AlertMessageAddress);
+			releaseNotice(_levelUpMessage, LevelUpMessageAddress);
+			releaseNotice(_systemMessage, SystemMessageAddress);
+			releaseNotice(_warningMessage, WarningMessageAddress);
+
+			_systemLogInfo = null;
+			_alertMessage = null;
+			_levelUpMessage = null;
+			_systemMessage = null;
+			_warningMessage = null;
+		}
+
+		private static void releaseNotice(MonoBehaviour view, string address)
+		{
+			if (view == null)
+			{
+				return;
+			}
+
+			Destroy(view.gameObject);
+			ResourceManager.Instance.Release(address);
+		}
+
+		// 딤은 프리팹을 인스펙터로 들고 있어 파괴하지 않는다 — 꺼진 상태로만 되돌린다.
+		private void resetNetworkBlocker()
+		{
+			_blockerRefCount = 0;
+			_networkMessageShown = false;
+
+			if (_blockerDelayCo != null)
+			{
+				StopCoroutine(_blockerDelayCo);
+				_blockerDelayCo = null;
+			}
+
+			if (_networkBlockerText != null)
+			{
+				_networkBlockerText.gameObject.SetActive(false);
+			}
+
+			if (_networkBlocker != null)
+			{
+				_networkBlocker.SetActive(false);
 			}
 		}
 
