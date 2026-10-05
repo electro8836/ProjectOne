@@ -65,7 +65,7 @@ Unity 6.4 / URP 2D 기반 게임 프로젝트. 유니티 프로젝트 루트는 
 ```
 ProjectOne/Assets/Project/Scripts/
   Core/
-    Audio/      AudioManager, AudioChannel, AudioSourcePool, AudioSourceItem
+    Audio/      AudioManager, AudioSfxHandle (FMOD)
     Event/      EventManager, EventChannel, Events.cs
     Managers/   ResourceManager (+ Editor/AddressableHelper)
   GamePlay/
@@ -150,11 +150,13 @@ ResourceManager.Instance.Release(address); // 참조카운트 0이 되면 실제
 
 ### 오디오 (`Core/Audio/`)
 
-`AudioManager`(`MonoSingleton`)가 진입점. 구조는 다음과 같다.
+`AudioManager`(`MonoSingleton`)가 진입점. 재생은 전부 FMOD Studio 이벤트다 (Unity 내장 오디오는 꺼져 있다 — `AudioSource`/`AudioClip` 은 소리가 나지 않는다).
 
-- BGM: `_bgmSourceA/B` 두 개를 번갈아가며 코루틴으로 크로스페이드 (`PlayBGM(clip, fade)`, `StopBGM(fade)`)
-- SFX: `AudioSourcePool`(`PoolBase` 기반)에서 `AudioSourceItem`을 꺼내 재생 (`PlaySFX(clip, baseVolume)`)
-- 볼륨: `AudioChannel` 3개 (Master/BGM/SFX). 실효 볼륨 = baseVolume × 그룹 × Master. SFX 그룹은 신규 재생부터 적용, 기재생 SFX는 그대로
+- FMOD Studio 프로젝트: `ProjectOne/FMOD/ProjectOne_FMOD/`. 이벤트를 추가·수정하면 Studio 에서 뱅크를 빌드해야 Unity 에 반영된다
+- SFX: `PlaySFX(name, baseVolume)` → `event:/SFX/<name>`. 테이블·테마의 SFX 값이 곧 `<name>` 이다. 피격음은 `PlaySFXThrottled`
+- BGM: `PlayBGM(name, fade)` / `StopBGM(fade)` → `event:/BGM/<name>`. 페이드 길이는 이벤트의 AHDSR 로 정한다
+- 볼륨: FMOD 버스 3개(`bus:/`, `bus:/BGM`, `bus:/SFX`)에 건다. 재생 중인 소리에도 즉시 반영된다
+- 이벤트가 없는 이름은 1회 경고 후 조용히 무시한다
 - 볼륨은 `PlayerPrefs`(`MasterVolume` / `BGMVolume` / `SFXVolume`)로 자동 저장/복원
 
 ### Unit / Combat (`GamePlay/Unit/`, `GamePlay/Combat/`)

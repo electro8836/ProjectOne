@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.04.00">
+	<object class="AudioFile" id="{d0da4097-4eab-4a99-a388-98d05948034c}">
+		<property name="assetPath">
+			<value>bone_breaking_03.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>1.8055208333333332</value>
+		</property>
+		<property name="embeddedMetadataTagsHash">
+			<value>221108918</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{5f138bf9-0fe2-4d88-b6d3-f91af9df8b32}</destination>
+		</relationship>
+		<relationship name="metadataTags">
+			<destination>{ff3604bb-37b8-4e9c-bf1f-5d502b8d25fa}</destination>
+		</relationship>
+	</object>
+	<object class="MetadataTags" id="{ff3604bb-37b8-4e9c-bf1f-5d502b8d25fa}">
+		<relationship name="assetMarkers">
+			<destination>{33527f04-b43b-4118-b4e8-6fca81cd6c64}</destination>
+		</relationship>
+	</object>
+	<object class="AssetMarker" id="{33527f04-b43b-4118-b4e8-6fca81cd6c64}">
+		<property name="name">
+			<value>Marker 03</value>
+		</property>
+	</object>
+</objects>

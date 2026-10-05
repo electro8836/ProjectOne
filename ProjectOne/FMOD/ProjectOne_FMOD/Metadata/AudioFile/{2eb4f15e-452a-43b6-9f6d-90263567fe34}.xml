@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.04.00">
+	<object class="AudioFile" id="{2eb4f15e-452a-43b6-9f6d-90263567fe34}">
+		<property name="assetPath">
+			<value>block_medium_09.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>0.23556250000000001</value>
+		</property>
+		<property name="embeddedMetadataTagsHash">
+			<value>1639693019</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{5f138bf9-0fe2-4d88-b6d3-f91af9df8b32}</destination>
+		</relationship>
+		<relationship name="metadataTags">
+			<destination>{5a86f066-bd8a-4490-a1d5-b8685b60e26a}</destination>
+		</relationship>
+	</object>
+	<object class="MetadataTags" id="{5a86f066-bd8a-4490-a1d5-b8685b60e26a}">
+		<relationship name="assetMarkers">
+			<destination>{f350cc8d-e190-4caf-810e-2226cab49dfb}</destination>
+		</relationship>
+	</object>
+	<object class="AssetMarker" id="{f350cc8d-e190-4caf-810e-2226cab49dfb}">
+		<property name="name">
+			<value>Marker 354</value>
+		</property>
+	</object>
+</objects>

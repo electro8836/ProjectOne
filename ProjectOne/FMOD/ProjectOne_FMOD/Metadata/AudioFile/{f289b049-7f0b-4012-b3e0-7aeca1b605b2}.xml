@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.04.00">
+	<object class="AudioFile" id="{f289b049-7f0b-4012-b3e0-7aeca1b605b2}">
+		<property name="assetPath">
+			<value>guts_and_gore_68.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>1.6124166666666666</value>
+		</property>
+		<property name="embeddedMetadataTagsHash">
+			<value>458427302</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{5f138bf9-0fe2-4d88-b6d3-f91af9df8b32}</destination>
+		</relationship>
+		<relationship name="metadataTags">
+			<destination>{3c76f225-77bc-4272-895e-6c92ec6aa6f5}</destination>
+		</relationship>
+	</object>
+	<object class="MetadataTags" id="{3c76f225-77bc-4272-895e-6c92ec6aa6f5}">
+		<relationship name="assetMarkers">
+			<destination>{eb7ccb04-e38c-4c9d-aac6-b3eb0a32b2c9}</destination>
+		</relationship>
+	</object>
+	<object class="AssetMarker" id="{eb7ccb04-e38c-4c9d-aac6-b3eb0a32b2c9}">
+		<property name="name">
+			<value>Marker 141</value>
+		</property>
+	</object>
+</objects>

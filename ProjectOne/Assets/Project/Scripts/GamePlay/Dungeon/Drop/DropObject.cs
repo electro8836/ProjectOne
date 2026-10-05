@@ -19,8 +19,8 @@ namespace ProjectOne.Dungeon
 		[Header("픽업 연출")]
 		// 픽업 FX 프리팹 (직접 링크) — VFXManager 가 풀링 재생/회수
 		[SerializeField] private GameObject _pickupFx;
-		// 픽업 SFX (직접 링크) — AudioManager 풀에서 2D 재생
-		[SerializeField] private AudioClip _pickupSfx;
+		// 픽업 SFX 이름 — AudioManager 가 event:/SFX/<이름> 으로 재생
+		[SerializeField] private string _pickupSfx;
 
 		private DropObjectPool _ownerPool;
 		// 같은 프레임 다중 트리거로 이중 반환되는 것 방지
@@ -164,7 +164,7 @@ namespace ProjectOne.Dungeon
 				VFXManager.Instance.PlayOneShot(_pickupFx, transform.position);
 			}
 
-			if (_pickupSfx != null)
+			if (string.IsNullOrEmpty(_pickupSfx) == false)
 			{
 				AudioManager.Instance.PlaySFX(_pickupSfx);
 			}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.04.00">
+	<object class="AudioFile" id="{c05dcbd4-9d60-4916-bb90-a048dbdd940b}">
+		<property name="assetPath">
+			<value>body_hit_finisher_42.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>1.2615208333333334</value>
+		</property>
+		<property name="embeddedMetadataTagsHash">
+			<value>633923239</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{5f138bf9-0fe2-4d88-b6d3-f91af9df8b32}</destination>
+		</relationship>
+		<relationship name="metadataTags">
+			<destination>{245f2c09-6332-4074-af59-934f33758263}</destination>
+		</relationship>
+	</object>
+	<object class="MetadataTags" id="{245f2c09-6332-4074-af59-934f33758263}">
+		<relationship name="assetMarkers">
+			<destination>{171bd37c-c732-4803-94a2-2cf052b2987b}</destination>
+		</relationship>
+	</object>
+	<object class="AssetMarker" id="{171bd37c-c732-4803-94a2-2cf052b2987b}">
+		<property name="name">
+			<value>Marker 130</value>
+		</property>
+	</object>
+</objects>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.04.00">
+	<object class="AudioFile" id="{6e6106c7-f4c4-4122-a5ad-e2ce9c481177}">
+		<property name="assetPath">
+			<value>somersalt_10.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>1.5037499999999999</value>
+		</property>
+		<property name="embeddedMetadataTagsHash">
+			<value>3902438625</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{5f138bf9-0fe2-4d88-b6d3-f91af9df8b32}</destination>
+		</relationship>
+		<relationship name="metadataTags">
+			<destination>{9ecea73e-59c1-45ec-acaf-5280f1dbec93}</destination>
+		</relationship>
+	</object>
+	<object class="MetadataTags" id="{9ecea73e-59c1-45ec-acaf-5280f1dbec93}">
+		<relationship name="assetMarkers">
+			<destination>{5c27b6d1-ebdd-40e3-bb20-6202670ffd9d}</destination>
+		</relationship>
+	</object>
+	<object class="AssetMarker" id="{5c27b6d1-ebdd-40e3-bb20-6202670ffd9d}">
+		<property name="name">
+			<value>Marker 10</value>
+		</property>
+	</object>
+</objects>

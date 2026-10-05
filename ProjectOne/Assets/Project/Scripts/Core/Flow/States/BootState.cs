@@ -75,8 +75,8 @@ namespace ProjectOne.Flow
 			DungeonProgress.Build();
 			ShopCatalog.Build();
 
-			// 2) SFX 클립 일괄 프리로드 (Addressables 라벨 "SFX") — 첫 재생 끊김 방지
-			cancelled = await AudioManager.Instance.PreloadSFXByLabelAsync("SFX", ct).SuppressCancellationThrow();
+			// 2) FMOD 뱅크 로드 대기 + 샘플 데이터 선로드 — 첫 재생 끊김 방지
+			cancelled = await AudioManager.Instance.WaitForBanksAsync(ct).SuppressCancellationThrow();
 			if (cancelled)
 			{
 				return;

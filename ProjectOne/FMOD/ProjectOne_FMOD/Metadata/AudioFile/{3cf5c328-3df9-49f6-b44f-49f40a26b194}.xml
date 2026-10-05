@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.04.00">
+	<object class="AudioFile" id="{3cf5c328-3df9-49f6-b44f-49f40a26b194}">
+		<property name="assetPath">
+			<value>face_hit_Large_20.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>0.50475000000000003</value>
+		</property>
+		<property name="embeddedMetadataTagsHash">
+			<value>992852526</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{5f138bf9-0fe2-4d88-b6d3-f91af9df8b32}</destination>
+		</relationship>
+		<relationship name="metadataTags">
+			<destination>{db8b48f8-cbc6-433b-aeba-edda5b3015f3}</destination>
+		</relationship>
+	</object>
+	<object class="MetadataTags" id="{db8b48f8-cbc6-433b-aeba-edda5b3015f3}">
+		<relationship name="assetMarkers">
+			<destination>{a1cd9554-420d-4d19-ab62-1d8b5b582c89}</destination>
+		</relationship>
+	</object>
+	<object class="AssetMarker" id="{a1cd9554-420d-4d19-ab62-1d8b5b582c89}">
+		<property name="name">
+			<value>Marker 108</value>
+		</property>
+	</object>
+</objects>

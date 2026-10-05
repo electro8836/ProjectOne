@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.04.00">
+	<object class="AudioFile" id="{b57b6dfe-2c56-4177-863e-52ed5818ac45}">
+		<property name="assetPath">
+			<value>wood_bat_finisher_01.wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>48</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>0.49593749999999998</value>
+		</property>
+		<property name="embeddedMetadataTagsHash">
+			<value>974016395</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{5f138bf9-0fe2-4d88-b6d3-f91af9df8b32}</destination>
+		</relationship>
+		<relationship name="metadataTags">
+			<destination>{5bdb0cbc-3638-42ae-8073-672eb9d30211}</destination>
+		</relationship>
+	</object>
+	<object class="MetadataTags" id="{5bdb0cbc-3638-42ae-8073-672eb9d30211}">
+		<relationship name="assetMarkers">
+			<destination>{f3a026e4-bd23-491f-8d77-29a397639728}</destination>
+		</relationship>
+	</object>
+	<object class="AssetMarker" id="{f3a026e4-bd23-491f-8d77-29a397639728}">
+		<property name="name">
+			<value>Marker 42</value>
+		</property>
+	</object>
+</objects>
