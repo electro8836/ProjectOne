@@ -6,32 +6,20 @@ namespace ProjectOne.Unit.AI
 {
 	// 히어로 자동전투 전략 — 이동은 플레이어(HeroController)가, 조준과 시전은 AI 가 담당한다.
 	//
-	// 교전은 정지 상태에서만 일어난다.
-	//   이동 중       : 시선 = 이동 방향, 공격 없음
-	//   정지 + 적 있음 : 시선 = 최근접 적, 공격
-	//   정지 + 적 없음 : 직전 이동 방향 유지
+	// 교전은 이동 여부와 무관하게 일어난다.
+	//   사거리 안에 적 있음 : 시선 = 최근접 적, 공격
+	//   사거리 안에 적 없음 : 시선 = 이동 방향 (정지 시 직전 이동 방향 유지)
 	//
-	// 정지 시의 조준은 이동 방향과 무관하다. UnitMover.Facing 은 이동 속도로 자동 갱신되므로
-	// 그대로 두면 조이스틱을 놓은 방향이 곧 공격 방향이 되어, 적을 때리려면 적 쪽을 향해 멈춰야 한다.
+	// 조준은 이동 방향과 무관하다. UnitMover.Facing 은 이동 속도로 자동 갱신되므로
+	// 그대로 두면 조이스틱 방향이 곧 공격 방향이 되어, 적을 때리려면 적 쪽으로 움직여야 한다.
 	// SetFacing 으로 덮어써서 이동과 조준을 분리한다.
 	//
 	// 고유스킬(Special)은 HUD 버튼 수동이므로 castSpecial=false.
 	public sealed class HeroAutoBehavior : IAiBehavior
 	{
-		// [임시] DevTester 체크박스로 켜는 테스트 스위치 — 켜면 이동 중에도 조준/시전한다.
-		// 정식 사양이 정해지면 이 필드와 아래 조건을 함께 제거한다.
-		public static bool AllowAttackWhileMoving;
-
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
 			if (self.Mover == null)
-			{
-				return;
-			}
-
-			// 이동 중에는 조준도 시전도 하지 않는다 — 멈춰 서야 교전이 시작된다.
-			// SetFacing 을 부르지 않으면 UnitMover 의 자동 갱신이 시선을 이동 방향으로 유지한다.
-			if (self.Mover.IsMoving == true && AllowAttackWhileMoving == false)
 			{
 				return;
 			}

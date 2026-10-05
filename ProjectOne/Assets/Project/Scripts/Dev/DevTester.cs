@@ -126,9 +126,6 @@ namespace ProjectOne.Boot
 		[SerializeField] private int _questId;
 		[SerializeField] private int _questCounter;
 
-		[Header("임시 — 체크 시 이동 중에도 공격")]
-		[SerializeField] private bool _attackWhileMoving;
-
 		[Header("메일 — 체크 시 시작할 때 열람 기록 초기화")]
 		[SerializeField] private bool _resetMailRead;
 
@@ -179,9 +176,6 @@ namespace ProjectOne.Boot
 
 		private void Update()
 		{
-			// [임시] 이동 중 공격 스위치 — 플레이 중 체크를 바로 반영하려고 주기 갱신보다 앞에 둔다
-			ProjectOne.Unit.AI.HeroAutoBehavior.AllowAttackWhileMoving = _attackWhileMoving;
-
 			_viewTimer += Time.unscaledDeltaTime;
 			if (_viewTimer < _viewRefreshInterval)
 			{
