@@ -1373,7 +1373,8 @@ namespace ProjectOne.UI
 		}
 
 		// 아이템 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
-		public async UniTask ShowItemInfoPopupAsync(string address, long uid, CancellationToken ct)
+		// stashMode = true 면 보관함↔인벤토리 이동 버튼이 함께 나온다(장비 화면의 보관함 모드).
+		public async UniTask ShowItemInfoPopupAsync(string address, long uid, bool stashMode, CancellationToken ct)
 		{
 			_popupCts?.Cancel();
 			_popupCts?.Dispose();
@@ -1394,7 +1395,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			await popup.ShowAsync(uid, _popupCts.Token);
+			await popup.ShowAsync(uid, stashMode, _popupCts.Token);
 			Destroy(go);
 
 			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제

@@ -221,6 +221,8 @@ namespace EDT {
         Box,
         Item,
         Currency,
+        InventorySlot,
+        StashSlot,
     }
 
     public enum PriceType {

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using BackEnd;
@@ -20,6 +21,8 @@ namespace ProjectOne.Network
 
 		// 장착 저장 전송 진행 중 가드 — 중복 flush(닫기+pause 동시 등) 방지.
 		private bool _loadoutFlushing;
+		private bool _stashFlushing;
+		private readonly List<long> _stashUidBuffer = new List<long>();
 		private bool _appearanceFlushing;
 		private bool _questProgressFlushing;
 
@@ -204,6 +207,48 @@ namespace ProjectOne.Network
 			else
 			{
 				Debug.LogWarning($"[NetworkManager] 장착 저장 실패 — dirty 유지: {error}");
+			}
+		}
+
+		// ── 보관함 flush 코디네이터 ───────────────────────────────────────
+
+		// dirty(미저장 보관함 이동)면 보관함 UID 전체를 1회 전송한다(화면 닫기·앱 일시정지/종료 트리거).
+		public void FlushStashIfDirty()
+		{
+			if (IsLoggedIn == false || _stashFlushing == true)
+			{
+				return;
+			}
+
+			Inventory inventory = Account.Instance.Inventory;
+			if (inventory.IsStashDirty == false)
+			{
+				return;
+			}
+
+			// 필드에서 주운 장비를 보관했을 수 있다 — 배치를 먼저 보내 서버 인벤토리에 넣어 둔다.
+			FlushFieldBatch();
+
+			inventory.CollectStashUids(_stashUidBuffer);
+
+			SaveStashRequest request = new SaveStashRequest();
+			request.stashUids = _stashUidBuffer.ToArray();
+
+			_stashFlushing = true;
+			_caller.Invoke<SaveStashRequest, SaveStashResponse>(FunctionName.SaveStash, request, onStashFlushed, false);
+		}
+
+		// flush 응답 — 성공 시 dirty 해제, 실패 시 dirty 유지(다음 트리거에서 재시도).
+		private void onStashFlushed(bool success, SaveStashResponse data, string error)
+		{
+			_stashFlushing = false;
+			if (success == true)
+			{
+				Account.Instance.Inventory.MarkStashSynced();
+			}
+			else
+			{
+				Debug.LogWarning($"[NetworkManager] 보관함 저장 실패 — dirty 유지: {error}");
 			}
 		}
 

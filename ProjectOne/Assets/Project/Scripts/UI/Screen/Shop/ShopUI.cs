@@ -62,6 +62,8 @@ namespace ProjectOne.UI
 		{
 			registerSlotPrefab(GoodsType.Currency, _singleSlotPrefab);
 			registerSlotPrefab(GoodsType.Item, _singleSlotPrefab);
+			registerSlotPrefab(GoodsType.InventorySlot, _singleSlotPrefab);
+			registerSlotPrefab(GoodsType.StashSlot, _singleSlotPrefab);
 			registerSlotPrefab(GoodsType.Box, _boxSlotPrefab);
 			registerSlotPrefab(GoodsType.Package, _packageSlotPrefab);
 			registerSlotPrefab(GoodsType.HeroPass, _passSlotPrefab);
@@ -256,7 +258,8 @@ namespace ProjectOne.UI
 		// 나머지(패스·광고제거·패키지·상자)는 한 건이 화면 폭을 통째로 쓰므로 Content 에 직접 쌓는다.
 		private static bool isGridType(GoodsType type)
 		{
-			return type == GoodsType.Currency || type == GoodsType.Item;
+			return type == GoodsType.Currency || type == GoodsType.Item
+				|| type == GoodsType.InventorySlot || type == GoodsType.StashSlot;
 		}
 
 		private void registerSlotPrefab(GoodsType type, ShopProductSlotBase prefab)

@@ -46,6 +46,7 @@ namespace ProjectOne.UI
 		{
 			view.OnEquipToggleClicked += onEquipToggleClicked;
 			view.OnEnchantClicked += onEnchantClicked;
+			view.OnStashClicked += onStashClicked;
 			view.OnExitClicked += onExitClicked;
 		}
 
@@ -53,14 +54,16 @@ namespace ProjectOne.UI
 		{
 			view.OnEquipToggleClicked -= onEquipToggleClicked;
 			view.OnEnchantClicked -= onEnchantClicked;
+			view.OnStashClicked -= onStashClicked;
 			view.OnExitClicked -= onExitClicked;
 		}
 
 		// 인벤토리 경로 — 내 장비를 UID 로 찾아 연다. 장착·강화가 살아 있다.
-		public UniTask ShowAsync(long uid, CancellationToken ct)
+		// stashMode = true 면 보관함↔인벤토리 이동 버튼을 함께 보여준다.
+		public UniTask ShowAsync(long uid, bool stashMode, CancellationToken ct)
 		{
 			EquipmentInstance instance = Account.Instance.Inventory.GetEquipment(uid);
-			return showAsync(instance, uid, false, ct);
+			return showAsync(instance, uid, false, stashMode, ct);
 		}
 
 		// 디스플레이 경로 — 결과창·상점처럼 내 것이 아닌 목록에서 연다.
@@ -69,12 +72,15 @@ namespace ProjectOne.UI
 		// 상점 진열)도 등급·품질을 정확히 보여줘야 하는데, UID 는 인벤토리에 들어가야 생긴다.
 		public UniTask ShowAsync(EquipmentInstance instance, CancellationToken ct)
 		{
-			return showAsync(instance, 0, true, ct);
+			return showAsync(instance, 0, true, false, ct);
 		}
 
 		// 팝업 표시 — 데이터 계산 후 View 에 그리기 지시, 닫힘까지 대기.
-		private async UniTask showAsync(EquipmentInstance instance, long uid, bool readOnly, CancellationToken ct)
+		private async UniTask showAsync(EquipmentInstance instance, long uid, bool readOnly, bool stashMode, CancellationToken ct)
 		{
+			// 프리펩 기본 상태와 무관하게, 조건이 맞을 때만 아래에서 켠다.
+			view.SetStashVisible(false);
+
 			Table_Item.Row row = (instance != null) ? instance.Item : null;
 			if (instance == null || row == null)
 			{
@@ -92,6 +98,11 @@ namespace ProjectOne.UI
 			view.SetInfo(row, instance.grade, instance.level, EquipmentUpgrade.GetMaxLevel(instance), instance.quality);
 			view.SetEquipInteractable(_slot != EquipSlotTypes.None);
 			view.SetEquipLabel(equipLabel());
+
+			if (stashMode == true)
+			{
+				refreshStashButton(instance);
+			}
 
 			// 읽기 전용이면 버튼 묶음이 통째로 숨겨지므로 판단할 필요가 없다.
 			if (readOnly == false)
@@ -131,6 +142,31 @@ namespace ProjectOne.UI
 			// 장착·해제는 목록으로 돌아가 결과를 확인하는 흐름이라 팝업을 닫는다.
 			// 닫히는 마당에 라벨·슬롯 표시를 갱신할 이유가 없다.
 			view.CloseFromInput();
+		}
+
+		// 보관함↔인벤토리 이동 — 지금 있는 곳의 반대편으로 보낸다. 목록에서 결과를 확인하는 흐름이라 팝업을 닫는다.
+		private void onStashClicked()
+		{
+			Inventory inventory = Account.Instance.Inventory;
+			EquipmentInstance instance = inventory.GetEquipment(_uid);
+			if (instance == null)
+			{
+				return;
+			}
+
+			inventory.SetStash(_uid, instance.inStash == false);
+			view.CloseFromInput();
+		}
+
+		// 장착 여부와 무관하게 옮길 수 있다 — 장착한 채로 보관함에 둘 수 있다.
+		// 보관함이 가득 차면 넣는 쪽만 막는다 — 꺼내는 쪽은 인벤토리가 넘쳐도 허용한다.
+		private void refreshStashButton(EquipmentInstance instance)
+		{
+			Inventory inventory = Account.Instance.Inventory;
+
+			view.SetStashVisible(true);
+			view.SetStashLabel(instance.inStash == true ? "인벤토리로 이동" : "보관함으로 이동");
+			view.SetStashInteractable(instance.inStash == true || inventory.StashCount < inventory.StashCapacity);
 		}
 
 		// 강화·승급 — 팝업을 닫고 제작 창을 해당 모드로 열어 이 장비를 등록해 둔다.

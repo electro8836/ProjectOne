@@ -61,6 +61,22 @@ namespace ProjectOne.UI
 		{
 			applyBonus();
 
+			// 칸 확장 상품은 보상 그룹이 없다 — 재화 상품처럼 이미지와 늘어나는 칸 수만 보여준다.
+			if (row.GoodsType == GoodsType.InventorySlot || row.GoodsType == GoodsType.StashSlot)
+			{
+				_item = default(RewardPreviewItem);
+				setItemSlotVisible(false);
+				setCurrencyVisible(true);
+
+				if (_amountText != null)
+				{
+					_amountText.text = "+" + row.GoodsValue.ToString(CultureInfo.InvariantCulture);
+				}
+
+				await _currencyIconBinder.SetAsync(row.Icon, ct);
+				return;
+			}
+
 			_preview.Clear();
 			RewardPreview.Build(row.RewardGroupID, _preview);
 

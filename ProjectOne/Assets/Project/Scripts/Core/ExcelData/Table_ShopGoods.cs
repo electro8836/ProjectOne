@@ -20,6 +20,7 @@ namespace EDT {
             public int Price { get; set; } = 0;
             public int MaxPurchaseCount { get; set; } = 0;
             public bool UseDailyReset { get; set; } = false;
+            public int GoodsValue { get; set; } = 0;
         }
 
         public const string Filename = "edt_shopgoods.bytes";
@@ -55,6 +56,7 @@ namespace EDT {
                 row.Price = reader.ReadInt32();
                 row.MaxPurchaseCount = reader.ReadInt32();
                 row.UseDailyReset = reader.ReadBoolean();
+                row.GoodsValue = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

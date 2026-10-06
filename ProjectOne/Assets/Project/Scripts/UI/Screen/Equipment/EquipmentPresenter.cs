@@ -6,6 +6,7 @@ using ProjectOne.Event;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
 using ProjectOne.Network;
+using ProjectOne.Ranking;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
 using ProjectOne.UserData;
@@ -21,6 +22,7 @@ namespace ProjectOne.UI
 		public EquipmentInstance instance;
 		public Table_Item.Row row;
 		public int count;
+		public bool equipped;	// 장착중 표시 여부 — 보관함 모드의 목록에서만 켜진다
 	}
 
 	// 장착 슬롯 렌더 데이터 — instance 가 null 이면 빈 슬롯.
@@ -65,6 +67,10 @@ namespace ProjectOne.UI
 		private readonly List<ItemSlotData> _equipBuffer = new List<ItemSlotData>();
 		private readonly List<ItemSlotData> _itemBuffer = new List<ItemSlotData>();
 		private readonly List<EquippedSlotData> _equippedData = new List<EquippedSlotData>();
+		private readonly List<ItemSlotData> _stashData = new List<ItemSlotData>();
+
+		// 보관함 모드 — 보관함 패널이 열려 있는 동안이다. 장비 팝업에 이동 버튼이 나오고 소모품은 감춘다.
+		private bool _stashMode;
 
 		private CancellationTokenSource _rebuildCts;	// rebuild 단위 취소 (연속 호출 경합 방지)
 
@@ -90,6 +96,8 @@ namespace ProjectOne.UI
 			view.OnPetClicked += onPetClicked;
 			view.OnCostumeClicked += onCostumeClicked;
 			view.OnSortClicked += onSortClicked;
+			view.OnStashClicked += onStashClicked;
+			view.OnStashCloseClicked += onStashCloseClicked;
 
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Subscribe<InventoryChangeEvent>(onInventoryChanged);
@@ -116,6 +124,8 @@ namespace ProjectOne.UI
 			view.OnPetClicked -= onPetClicked;
 			view.OnCostumeClicked -= onCostumeClicked;
 			view.OnSortClicked -= onSortClicked;
+			view.OnStashClicked -= onStashClicked;
+			view.OnStashCloseClicked -= onStashCloseClicked;
 
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Unsubscribe<InventoryChangeEvent>(onInventoryChanged);
@@ -132,6 +142,12 @@ namespace ProjectOne.UI
 			view.SetSortVisible(_currentTab != TAB_CONSUMABLE);
 			refreshLevel();
 
+			// 보관함은 항상 닫힌 채로 시작한다.
+			_stashMode = false;
+			view.SetStashVisible(false);
+			view.SetConsumableTabVisible(true);
+			view.SetNickname(MyPlayerProfile.PlayerName);
+
 			// 창을 다시 열면 반드시 한 번 그린다 — 버전이 그대로여도 이전 표시가 남아 있지 않게.
 			_lastStatVersion = -1;
 			_lastBattlePower = -1;
@@ -140,10 +156,11 @@ namespace ProjectOne.UI
 			return UniTask.CompletedTask;
 		}
 
-		// 화면 닫힘 — 장착 변경(dirty)이 있으면 서버에 1회 저장(패킷 절약).
+		// 화면 닫힘 — 장착 변경·보관함 이동(dirty)이 있으면 서버에 각 1회 저장(패킷 절약).
 		public override UniTask OnCloseAsync()
 		{
 			NetworkManager.Instance.FlushLoadoutIfDirty();
+			NetworkManager.Instance.FlushStashIfDirty();
 			return UniTask.CompletedTask;
 		}
 
@@ -194,6 +211,33 @@ namespace ProjectOne.UI
 			rebuild();
 		}
 
+		// 보관함 버튼 — 보관함 패널을 열고 보관함 모드로 들어간다.
+		// 보관함은 장비 전용이라 소모품 탭을 감추고, 소모품 탭을 보던 중이면 전체 탭으로 옮긴다.
+		private void onStashClicked()
+		{
+			_stashMode = true;
+			view.SetStashVisible(true);
+			view.SetConsumableTabVisible(false);
+
+			if (_currentTab == TAB_CONSUMABLE)
+			{
+				_currentTab = TAB_ALL;
+				view.SelectTab(TAB_ALL);
+				view.SetSortVisible(true);
+			}
+
+			rebuild();
+		}
+
+		// 보관함 닫기 — 인벤토리 모드로 돌아간다.
+		private void onStashCloseClicked()
+		{
+			_stashMode = false;
+			view.SetStashVisible(false);
+			view.SetConsumableTabVisible(true);
+			rebuild();
+		}
+
 		// 창을 닫는다. 마지막 창이면 WindowClosedEvent 가 발행되어 네비게이션 바의 탭 선택도 함께 풀린다.
 		private void onHomeClicked()
 		{
@@ -235,7 +279,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, uid, view.GetDestroyToken()).Forget();
+			UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, uid, _stashMode, view.GetDestroyToken()).Forget();
 		}
 
 		private void onEquipmentChanged(EquipmentChangeEvent e)
@@ -313,8 +357,16 @@ namespace ProjectOne.UI
 
 		private async UniTaskVoid rebuildAsync(CancellationToken ct)
 		{
+			refreshCapacity();
+
 			buildGridData();
 			await view.RenderGridAsync(_gridData, ct);
+
+			if (_stashMode == true)
+			{
+				buildStashData();
+				await view.RenderStashGridAsync(_stashData, ct);
+			}
 
 			buildEquippedData();
 			await view.RenderEquippedAsync(_equippedData, ct);
@@ -338,10 +390,11 @@ namespace ProjectOne.UI
 			if (_currentTab != TAB_CONSUMABLE)
 			{
 				collectEquipments();
-				sortEquipments();
+				sortEquipments(_equipBuffer);
 			}
 
-			if (_currentTab == TAB_ALL || _currentTab == TAB_CONSUMABLE)
+			// 보관함 모드의 전체 탭은 장비만 보여준다.
+			if ((_currentTab == TAB_ALL && _stashMode == false) || _currentTab == TAB_CONSUMABLE)
 			{
 				collectConsumables();
 				_itemBuffer.Sort(compareItem);
@@ -362,6 +415,49 @@ namespace ProjectOne.UI
 			{
 				_gridData.Add(_itemBuffer[i]);
 			}
+		}
+
+		// 보관함에 넣어 둔 장비 전체를 현재 정렬 기준으로 나열한다(분류 탭은 인벤토리 그리드에만 적용).
+		private void buildStashData()
+		{
+			IReadOnlyList<EquipmentInstance> all = Account.Instance.Inventory.GetAllEquipments();
+
+			_stashData.Clear();
+			for (int i = 0; i < all.Count; i++)
+			{
+				EquipmentInstance instance = all[i];
+				if (instance.inStash == false || instance.Equipment == null)
+				{
+					continue;
+				}
+
+				ItemSlotData data;
+				data.instance = instance;
+				data.row = instance.Item;
+				data.count = 0;
+				data.equipped = instance.IsEquipped;
+				_stashData.Add(data);
+			}
+
+			sortEquipments(_stashData);
+		}
+
+		// 인벤토리·보관함의 "보유/최대" 표시. 인벤토리는 최대를 넘길 수 있다 — 넘긴 보유 수는 빨간색으로 적는다.
+		private void refreshCapacity()
+		{
+			Inventory inventory = Account.Instance.Inventory;
+			view.RenderInventoryCapacity(formatCapacity(inventory.InventoryCount, inventory.InventoryCapacity));
+			view.RenderStashCapacity(formatCapacity(inventory.StashCount, inventory.StashCapacity));
+		}
+
+		private static string formatCapacity(int count, int capacity)
+		{
+			if (count > capacity)
+			{
+				return "<color=red>" + count.ToString() + "</color>/" + capacity.ToString();
+			}
+
+			return count.ToString() + "/" + capacity.ToString();
 		}
 
 		// 두 버퍼는 이미 등급 내림차순이다 — 등급만 비교해 하나로 합친다. 동급이면 장비가 먼저 온다.
@@ -415,8 +511,16 @@ namespace ProjectOne.UI
 					continue;
 				}
 
-				// 장착중인 장비는 위쪽 장착 칸에 이미 있다 — 그리드에 또 그리면 같은 것이 두 번 보인다.
-				if (loadout.GetSlot(equip.EquipSlotType) == instance.uid)
+				// 보관함에 넣어 둔 장비는 보관함 그리드에만 나온다.
+				if (instance.inStash == true)
+				{
+					continue;
+				}
+
+				// 인벤토리 모드에서는 장착중인 장비를 그리지 않는다 — 위쪽 장착 칸에 이미 있다.
+				// 보관함 모드에서는 장착한 장비도 옮길 수 있어야 하므로 장착중 표시와 함께 나열한다.
+				bool equipped = loadout.GetSlot(equip.EquipSlotType) == instance.uid;
+				if (equipped == true && _stashMode == false)
 				{
 					continue;
 				}
@@ -425,6 +529,7 @@ namespace ProjectOne.UI
 				data.instance = instance;
 				data.row = instance.Item;
 				data.count = 0;
+				data.equipped = equipped;
 				_equipBuffer.Add(data);
 			}
 		}
@@ -448,6 +553,7 @@ namespace ProjectOne.UI
 				data.instance = null;
 				data.row = row;
 				data.count = owned.count;
+				data.equipped = false;
 				_itemBuffer.Add(data);
 			}
 		}
@@ -478,21 +584,21 @@ namespace ProjectOne.UI
 			return false;
 		}
 
-		// 현재 정렬 기준에 맞는 비교자를 골라 장비 버퍼를 정렬한다.
-		private void sortEquipments()
+		// 현재 정렬 기준에 맞는 비교자를 골라 장비 목록을 정렬한다.
+		private void sortEquipments(List<ItemSlotData> list)
 		{
 			switch (_sortMode)
 			{
 			case SortModes.Enhance:
-				_equipBuffer.Sort(compareByEnhance);
+				list.Sort(compareByEnhance);
 				break;
 
 			case SortModes.Quality:
-				_equipBuffer.Sort(compareByQuality);
+				list.Sort(compareByQuality);
 				break;
 
 			default:
-				_equipBuffer.Sort(compareEquipment);
+				list.Sort(compareEquipment);
 				break;
 			}
 		}

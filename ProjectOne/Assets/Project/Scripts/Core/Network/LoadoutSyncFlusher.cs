@@ -41,6 +41,7 @@ namespace ProjectOne.Network
 		private static void flushAll()
 		{
 			NetworkManager.Instance.FlushLoadoutIfDirty();
+			NetworkManager.Instance.FlushStashIfDirty();
 			NetworkManager.Instance.FlushMasteryIfDirty();
 			NetworkManager.Instance.FlushAppearanceIfDirty();
 			NetworkManager.Instance.FlushQuestProgressIfDirty();

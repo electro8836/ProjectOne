@@ -179,6 +179,16 @@ namespace ProjectOne.UI
 			RewardGranter.ApplyAll(granted);
 			ShopPurchaseCounter.Increase(row);
 
+			// 칸 확장 상품은 보상 대신 최대 칸 수가 늘어난다.
+			if (row.GoodsType == GoodsType.InventorySlot)
+			{
+				Account.Instance.Inventory.AddInventoryCapacity(row.GoodsValue);
+			}
+			else if (row.GoodsType == GoodsType.StashSlot)
+			{
+				Account.Instance.Inventory.AddStashCapacity(row.GoodsValue);
+			}
+
 			if (_isDisposed == true)
 			{
 				return;

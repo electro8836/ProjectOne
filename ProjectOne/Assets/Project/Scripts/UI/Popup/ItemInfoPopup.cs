@@ -41,6 +41,10 @@ namespace ProjectOne.UI
 		[SerializeField] private UIButton _enchantButton;		// EnchantButton
 		[SerializeField] private TMP_Text _enchantButtonLabel;	// EnchantButton 라벨 (강화/승급/최대치)
 
+		// 보관함↔인벤토리 이동. 장비 화면이 보관함 모드일 때만 보인다.
+		[SerializeField] private UIButton _stashButton;			// BottomExtraButtons/StashButton
+		[SerializeField] private TMP_Text _stashButtonLabel;	// StashButton/Text
+
 		// 닫기는 ExitButton 과 Dimmed 두 경로다.
 		// 본문 영역은 ItemInfo/Bg 가 레이캐스트를 흡수하므로, Dimmed 까지 내려오는 클릭은
 		// 곧 "팝업 밖을 눌렀다"는 뜻이다.
@@ -78,6 +82,7 @@ namespace ProjectOne.UI
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action OnEquipToggleClicked;
 		public event Action OnEnchantClicked;
+		public event Action OnStashClicked;
 		public event Action OnExitClicked;
 
 		private readonly ItemInfoPresenter _presenter = new ItemInfoPresenter();
@@ -104,6 +109,7 @@ namespace ProjectOne.UI
 
 			_equipButton.OnClickEvent += onEquipClicked;
 			_enchantButton.OnClickEvent += onEnchantClicked;
+			_stashButton.OnClickEvent += onStashClicked;
 			_exitButton.OnClickEvent += onExitClicked;
 			_dimmedButton.OnClickEvent += onExitClicked;
 
@@ -116,6 +122,7 @@ namespace ProjectOne.UI
 
 			_equipButton.OnClickEvent -= onEquipClicked;
 			_enchantButton.OnClickEvent -= onEnchantClicked;
+			_stashButton.OnClickEvent -= onStashClicked;
 			_exitButton.OnClickEvent -= onExitClicked;
 			_dimmedButton.OnClickEvent -= onExitClicked;
 		}
@@ -123,9 +130,9 @@ namespace ProjectOne.UI
 		// UIManager 가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
 		//
 		// 인벤토리 경로 — 내 장비이므로 조작 버튼이 살아 있다.
-		public UniTask ShowAsync(long uid, CancellationToken ct)
+		public UniTask ShowAsync(long uid, bool stashMode, CancellationToken ct)
 		{
-			return _presenter.ShowAsync(uid, ct);
+			return _presenter.ShowAsync(uid, stashMode, ct);
 		}
 
 		// 디스플레이 경로 — 결과창·상점처럼 내 것이 아닌 목록에서 연다.
@@ -271,6 +278,21 @@ namespace ProjectOne.UI
 			_enchantButtonLabel.text = label;
 		}
 
+		public void SetStashVisible(bool visible)
+		{
+			_stashButton.gameObject.SetActive(visible);
+		}
+
+		public void SetStashInteractable(bool interactable)
+		{
+			_stashButton.interactable = interactable;
+		}
+
+		public void SetStashLabel(string label)
+		{
+			_stashButtonLabel.text = label;
+		}
+
 		// 닫힘 대기 — Presenter 의 ShowAsync 가 마지막에 await 한다.
 		public async UniTask WaitForCloseAsync(CancellationToken ct)
 		{
@@ -358,6 +380,11 @@ namespace ProjectOne.UI
 		private void onEnchantClicked()
 		{
 			if (OnEnchantClicked != null) { OnEnchantClicked.Invoke(); }
+		}
+
+		private void onStashClicked()
+		{
+			if (OnStashClicked != null) { OnStashClicked.Invoke(); }
 		}
 
 		private void onExitClicked()

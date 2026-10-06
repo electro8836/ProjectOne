@@ -87,6 +87,8 @@ namespace BackendFunction
 					return new Dungeon().DungeonClear();
 				case FunctionName.SaveLoadout:
 					return new Loadout().SaveLoadout();
+				case FunctionName.SaveStash:
+					return new StashFunctions().SaveStash();
 				case FunctionName.FieldSettle:
 					return new FieldSettlement().FieldSettle();
 				case FunctionName.FieldSessionRotate:

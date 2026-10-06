@@ -25,6 +25,12 @@ namespace ProjectOne.UserData
 
 		private long _nextUid = 1;
 
+		// 상점에서 구매해 늘어난 칸 수
+		private int _inventoryCapacityBonus;
+		private int _stashCapacityBonus;
+
+		private bool _stashDirty;	// 보관함 이동이 서버에 미반영
+
 		public Inventory(InventoryDto dto)
 		{
 			buildFromDto(dto);
@@ -185,12 +191,121 @@ namespace ProjectOne.UserData
 			}
 		}
 
+		// ── 칸 수 / 보관함 ────────────────────────────────────────────
+
+		public int InventoryCapacity
+		{
+			get { return InventoryRules.GetInventoryCapacity(_inventoryCapacityBonus); }
+		}
+
+		public int StashCapacity
+		{
+			get { return InventoryRules.GetStashCapacity(_stashCapacityBonus); }
+		}
+
+		// 인벤토리 칸을 차지하는 장비 수 — 장착 중이거나 보관함에 있는 것은 세지 않는다.
+		public int InventoryCount
+		{
+			get
+			{
+				int count = 0;
+				for (int i = 0; i < _equipments.Count; i++)
+				{
+					if (_equipments[i].IsEquipped == false && _equipments[i].inStash == false)
+					{
+						count++;
+					}
+				}
+
+				return count;
+			}
+		}
+
+		public int StashCount
+		{
+			get
+			{
+				int count = 0;
+				for (int i = 0; i < _equipments.Count; i++)
+				{
+					if (_equipments[i].inStash == true)
+					{
+						count++;
+					}
+				}
+
+				return count;
+			}
+		}
+
+		// 상점 칸 확장 구매 반영. 서버는 같은 값을 이미 저장했다.
+		public void AddInventoryCapacity(int amount)
+		{
+			_inventoryCapacityBonus += amount;
+			EventManager.Instance.Publish(new EquipmentChangeEvent(0));
+		}
+
+		public void AddStashCapacity(int amount)
+		{
+			_stashCapacityBonus += amount;
+			EventManager.Instance.Publish(new EquipmentChangeEvent(0));
+		}
+
+		// 장비를 보관함으로 넣거나 인벤토리로 꺼낸다. 가득 찬 보관함에는 넣을 수 없다.
+		// 착용 여부는 따지지 않는다 — 착용한 채로 보관함에 둘 수 있고 그대로 칸을 차지한다.
+		// 서버 저장은 장비 화면 닫기 등에서 1회 flush 된다(NetworkManager.FlushStashIfDirty).
+		public bool SetStash(long uid, bool inStash)
+		{
+			EquipmentInstance instance;
+			if (_equipIndex.TryGetValue(uid, out instance) == false || instance.inStash == inStash)
+			{
+				return false;
+			}
+
+			if (inStash == true && StashCount >= StashCapacity)
+			{
+				return false;
+			}
+
+			instance.inStash = inStash;
+			_stashDirty = true;
+			EventManager.Instance.Publish(new EquipmentChangeEvent(uid));
+			return true;
+		}
+
+		// 보관함 이동이 서버에 미반영(dirty)인지 — flush 코디네이터가 확인한다.
+		public bool IsStashDirty
+		{
+			get { return _stashDirty; }
+		}
+
+		// 서버 저장 성공 후 호출 — dirty 해제.
+		public void MarkStashSynced()
+		{
+			_stashDirty = false;
+		}
+
+		// 보관함에 있는 장비 UID 를 채운다(호출자가 버퍼를 소유).
+		public void CollectStashUids(List<long> buffer)
+		{
+			buffer.Clear();
+			for (int i = 0; i < _equipments.Count; i++)
+			{
+				if (_equipments[i].inStash == true)
+				{
+					buffer.Add(_equipments[i].uid);
+				}
+			}
+		}
+
 		// ── 직렬화 ────────────────────────────────────────────────────
 
 		public InventoryDto ToDto()
 		{
 			InventoryDto dto = new InventoryDto();
 			dto.nextEquipmentUid = _nextUid;
+			dto.inventoryCapacityBonus = _inventoryCapacityBonus;
+			dto.stashCapacityBonus = _stashCapacityBonus;
 
 			for (int i = 0; i < _items.Count; i++)
 			{
@@ -211,6 +326,7 @@ namespace ProjectOne.UserData
 				entry.level = src.level;
 				entry.quality = src.quality;
 				entry.equippedSlot = (int)src.equippedSlot;
+				entry.inStash = src.inStash;
 				dto.equipments.Add(entry);
 			}
 
@@ -226,11 +342,17 @@ namespace ProjectOne.UserData
 			_equipments.Clear();
 			_equipIndex.Clear();
 			_nextUid = 1;
+			_inventoryCapacityBonus = 0;
+			_stashCapacityBonus = 0;
+			_stashDirty = false;
 
 			if (dto == null)
 			{
 				return;
 			}
+
+			_inventoryCapacityBonus = dto.inventoryCapacityBonus;
+			_stashCapacityBonus = dto.stashCapacityBonus;
 
 			if (dto.nextEquipmentUid > 0)
 			{
@@ -275,6 +397,7 @@ namespace ProjectOne.UserData
 				instance.level = src.level > 0 ? src.level : 1;
 				instance.quality = src.quality;
 				instance.equippedSlot = (EquipSlotTypes)src.equippedSlot;
+				instance.inStash = src.inStash;
 
 				_equipments.Add(instance);
 				_equipIndex[instance.uid] = instance;

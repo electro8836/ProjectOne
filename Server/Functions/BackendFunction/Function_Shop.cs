@@ -106,6 +106,16 @@ namespace BackendFunction
 					applier.ApplyAll(rolled);
 				}
 
+				// 칸 확장 상품은 보상 대신 최대 칸 수가 늘어난다. 인벤토리는 아래에서 항상 저장된다.
+				if (goods.GoodsType == EDT.GoodsType.InventorySlot)
+				{
+					inventory.inventoryCapacityBonus += goods.GoodsValue;
+				}
+				else if (goods.GoodsType == EDT.GoodsType.StashSlot)
+				{
+					inventory.stashCapacityBonus += goods.GoodsValue;
+				}
+
 				ShopRules.Increase(shop, goods, today);
 
 				// 4. 원자 저장

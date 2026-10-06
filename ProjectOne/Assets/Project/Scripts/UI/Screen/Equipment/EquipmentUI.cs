@@ -29,6 +29,18 @@ namespace ProjectOne.UI
 		[Header("캐릭터")]
 		[SerializeField] private TMP_Text _levelText;			// Top/HeroInfo/LevelText
 		[SerializeField] private TMP_Text _battlePowerText;	// Top/HeroInfo/BattlePowerText
+		[SerializeField] private TMP_Text _nicknameText;		// Top/HeroInfo/NicknameText
+
+		[Header("인벤토리 칸 수")]
+		[SerializeField] private TMP_Text _capacityText;		// Top/InventoryCapacity/CapacityText
+
+		[Header("보관함")]
+		[SerializeField] private UIButton _stashButton;			// Top/ExtraButtons/StashButton
+		[SerializeField] private GameObject _stashRoot;			// Top/Stash
+		[SerializeField] private RectTransform _stashGridParent;	// Top/Stash/ScrollRect/Veiwport/Content/GridLayout_Items
+		[SerializeField] private TMP_Text _stashText;			// Top/Stash/Top/Frame/StashText
+		[SerializeField] private UIButton _stashCloseButton;		// Top/Stash/Top/CloseButton
+		[SerializeField] private GameObject _consumableTab;		// Tab_Consumable — 보관함 모드에서 감춘다
 
 		[Header("닫기")]
 		[SerializeField] private UIButton _homeButton;	// Top/HomeButton
@@ -71,10 +83,13 @@ namespace ProjectOne.UI
 		public event Action OnPetClicked;
 		public event Action OnCostumeClicked;
 		public event Action OnSortClicked;
+		public event Action OnStashClicked;
+		public event Action OnStashCloseClicked;
 
 		private readonly EquipmentPresenter _presenter = new EquipmentPresenter();
 
 		private readonly List<ItemSlot> _slots = new List<ItemSlot>();
+		private readonly List<ItemSlot> _stashSlots = new List<ItemSlot>();
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();	// 렌더 일괄 대기용
 
 		private void Awake()
@@ -86,6 +101,8 @@ namespace ProjectOne.UI
 			_petButton.OnClickEvent += onPetClicked;
 			_costumeButton.OnClickEvent += onCostumeClicked;
 			_sortButton.OnClickEvent += onSortClicked;
+			_stashButton.OnClickEvent += onStashClicked;
+			_stashCloseButton.OnClickEvent += onStashCloseClicked;
 
 			_presenter.Initialize(this);
 		}
@@ -110,6 +127,8 @@ namespace ProjectOne.UI
 			_petButton.OnClickEvent -= onPetClicked;
 			_costumeButton.OnClickEvent -= onCostumeClicked;
 			_sortButton.OnClickEvent -= onSortClicked;
+			_stashButton.OnClickEvent -= onStashClicked;
+			_stashCloseButton.OnClickEvent -= onStashCloseClicked;
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
@@ -137,20 +156,31 @@ namespace ProjectOne.UI
 		}
 
 		// 그리드 슬롯 렌더 — 데이터 개수만큼 슬롯을 켜 바인딩, 남는 슬롯은 비활성화(풀 재사용).
-		public async UniTask RenderGridAsync(IReadOnlyList<ItemSlotData> data, CancellationToken ct)
+		public UniTask RenderGridAsync(IReadOnlyList<ItemSlotData> data, CancellationToken ct)
+		{
+			return renderGridAsync(_slots, _gridParent, data, ct);
+		}
+
+		// 보관함 그리드 렌더 — 인벤토리 그리드와 같은 방식, 슬롯 풀만 따로 쓴다.
+		public UniTask RenderStashGridAsync(IReadOnlyList<ItemSlotData> data, CancellationToken ct)
+		{
+			return renderGridAsync(_stashSlots, _stashGridParent, data, ct);
+		}
+
+		private async UniTask renderGridAsync(List<ItemSlot> slots, RectTransform parent, IReadOnlyList<ItemSlotData> data, CancellationToken ct)
 		{
 			_bindTasks.Clear();
 			for (int i = 0; i < data.Count; i++)
 			{
-				ItemSlot slot = getOrCreateSlot(i);
+				ItemSlot slot = getOrCreateSlot(slots, parent, i);
 				slot.gameObject.SetActive(true);
 
 				_bindTasks.Add(bindSlot(slot, data[i], ct));
 			}
 
-			for (int i = data.Count; i < _slots.Count; i++)
+			for (int i = data.Count; i < slots.Count; i++)
 			{
-				_slots[i].gameObject.SetActive(false);
+				slots[i].gameObject.SetActive(false);
 			}
 
 			// 현재 탭 아이콘 전부 로드 완료를 한 번에 대기 → 캐시 히트면 즉시, 미스면 일괄 표시
@@ -211,6 +241,34 @@ namespace ProjectOne.UI
 			}
 
 			_battlePowerText.text = "전투력 " + power.ToString("N0");
+		}
+
+		public void SetNickname(string nickname)
+		{
+			_nicknameText.text = nickname;
+		}
+
+		// "12/40" — 초과분 색 태그까지 Presenter 가 만들어 넘긴다.
+		public void RenderInventoryCapacity(string text)
+		{
+			_capacityText.text = text;
+		}
+
+		public void RenderStashCapacity(string text)
+		{
+			_stashText.text = text;
+		}
+
+		// 보관함 패널을 열고 닫는다.
+		public void SetStashVisible(bool visible)
+		{
+			_stashRoot.SetActive(visible);
+		}
+
+		// 보관함은 장비 전용이라 보관함 모드에서는 소모품 탭을 감춘다.
+		public void SetConsumableTabVisible(bool visible)
+		{
+			_consumableTab.SetActive(visible);
 		}
 
 		// 현재 정렬 기준을 버튼 라벨에 표시한다.
@@ -277,6 +335,16 @@ namespace ProjectOne.UI
 			if (OnSortClicked != null) { OnSortClicked.Invoke(); }
 		}
 
+		private void onStashClicked()
+		{
+			if (OnStashClicked != null) { OnStashClicked.Invoke(); }
+		}
+
+		private void onStashCloseClicked()
+		{
+			if (OnStashCloseClicked != null) { OnStashCloseClicked.Invoke(); }
+		}
+
 		private void onSlotClicked(ItemSlot sender, long uid, int itemId)
 		{
 			if (OnSlotClicked != null) { OnSlotClicked.Invoke(uid, itemId); }
@@ -289,23 +357,23 @@ namespace ProjectOne.UI
 		{
 			if (data.instance != null)
 			{
-				// 그리드에는 미장착 장비만 들어온다 (EquipmentPresenter.collectEquipments 가 걸러낸다).
-				return slot.BindEquipmentAsync(data.instance, false, _gradeColors, ct);
+				// 장착중 표시는 보관함 모드의 목록에서만 켜진다 (EquipmentPresenter 가 정한다).
+				return slot.BindEquipmentAsync(data.instance, data.equipped, _gradeColors, ct);
 			}
 
 			return slot.BindItemAsync(data.row, data.count, _gradeColors, ct);
 		}
 
-		private ItemSlot getOrCreateSlot(int index)
+		private ItemSlot getOrCreateSlot(List<ItemSlot> slots, RectTransform parent, int index)
 		{
-			if (index < _slots.Count)
+			if (index < slots.Count)
 			{
-				return _slots[index];
+				return slots[index];
 			}
 
-			ItemSlot slot = Instantiate(_slotPrefab, _gridParent);
+			ItemSlot slot = Instantiate(_slotPrefab, parent);
 			slot.OnClicked += onSlotClicked;
-			_slots.Add(slot);
+			slots.Add(slot);
 			return slot;
 		}
 
@@ -322,8 +390,8 @@ namespace ProjectOne.UI
 			}
 
 			slotView.uid = d.instance.uid;
-			// 이 칸에 있다는 것이 곧 장착중이다.
-			await slotView.instance.BindEquipmentAsync(d.instance, true, _gradeColors, ct);
+			// 이 칸에 있다는 것이 곧 장착중이라 장착중 표시는 따로 켜지 않는다.
+			await slotView.instance.BindEquipmentAsync(d.instance, false, _gradeColors, ct);
 		}
 
 		private void clearEquippedSlot(EquippedSlotView slotView)

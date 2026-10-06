@@ -17,6 +17,9 @@ namespace ProjectOne.Items
 		// 착용 중인 슬롯. None 이면 미착용.
 		public EquipSlotTypes equippedSlot;
 
+		// 보관함에 넣어 둔 장비. 인벤토리 목록·개수에서 빠진다. 장착 여부와는 무관하다(보관함에 둔 채 장착할 수 있다).
+		public bool inStash;
+
 		public bool IsEquipped
 		{
 			get { return equippedSlot != EquipSlotTypes.None; }

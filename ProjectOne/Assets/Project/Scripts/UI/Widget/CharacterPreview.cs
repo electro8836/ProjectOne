@@ -81,11 +81,13 @@ namespace ProjectOne.UI
 				_texture = null;
 			}
 
-			if (_acquired == true)
+			// 종료 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
+			if (_acquired == true && ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(RigAddress);
-				_acquired = false;
 			}
+
+			_acquired = false;
 		}
 
 		// 입어보기 대상을 지정하고 곧바로 다시 그린다. -1 을 넘기면 그 부위는 실제 착용으로 되돌아간다.
