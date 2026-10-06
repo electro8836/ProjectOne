@@ -18,7 +18,6 @@ namespace ProjectOne.UI
 	{
 		[Header("상단")]
 		[SerializeField] private TMP_Text _levelText;			// PassLevel/LevelText
-		[SerializeField] private Slider _startSlider;			// Slider_Start — 1레벨 도달 전 0, 이후 1
 		[SerializeField] private TMP_Text _stateText;			// StateText — 패스 구매 여부
 		[SerializeField] private TMP_Text _remainTimeText;		// RemainTimeText
 		[SerializeField] private Image _passLineImage;			// ScrollRect/PassLine — 패스 구매 여부로 스프라이트가 바뀐다
@@ -157,11 +156,6 @@ namespace ProjectOne.UI
 			if (_levelText != null)
 			{
 				_levelText.text = level.ToString();
-			}
-
-			if (_startSlider != null)
-			{
-				_startSlider.value = (level >= 1) ? 1f : 0f;
 			}
 
 			if (_stateText != null)
