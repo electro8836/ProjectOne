@@ -40,6 +40,13 @@ namespace BackendFunction
 		public bool PetChanged { get; private set; }
 		public bool CostumeChanged { get; private set; }
 
+		// 켜면 유저의 자동 분해 설정을 따른다 — 드랍·던전 보상만 켠다.
+		// 상점·퀘스트·우편 등 나머지 경로의 장비는 설정과 무관하게 인벤토리로 들어간다.
+		public bool AutoDecompose { get; set; }
+
+		// 켜면 나온 장비를 조건 없이 전부 분해한다 — 인스턴스를 만들지 않고 환급 재화만 지급 목록에 싣는다.
+		public bool DecomposeAllEquipment { get; set; }
+
 		// 지급된 스택 아이템·재화 — 응답 rewards 로 내려간다.
 		public GrantedRewardDto[] Granted
 		{
@@ -79,6 +86,19 @@ namespace BackendFunction
 			// 장비는 인스턴스 단위다 — UID 는 지정값(필드 드랍)이 없으면 서버가 nextEquipmentUid 로 채번한다.
 			if (rolled.isEquipment == true)
 			{
+				// 전부 분해 — 인벤토리를 거치지 않는다. 환급은 재화 지급으로 내려가 클라가 그대로 반영한다.
+				if (DecomposeAllEquipment == true)
+				{
+					EquipmentGrowthRules.GetDecomposeRefund(rolled.itemId, rolled.grade, 1, _refundBuffer);
+					for (int i = 0; i < _refundBuffer.Count; i++)
+					{
+						addCurrency((int)_refundBuffer[i].currency, _refundBuffer[i].amount);
+						_granted.Add(makeGranted(RewardType.Currency, (int)_refundBuffer[i].currency, _refundBuffer[i].amount));
+					}
+
+					return;
+				}
+
 				EquipmentInstanceDto instance = new EquipmentInstanceDto();
 				instance.uid = (equipmentUid != 0) ? equipmentUid : _inventory.nextEquipmentUid;
 				instance.itemId = rolled.itemId;
@@ -96,7 +116,7 @@ namespace BackendFunction
 				_equipments.Add(instance);
 
 				// 자동 분해 — 인벤토리에 넣지 않고 환급 재화만 준다.
-				if (EquipmentDecomposeRules.IsAutoTarget(_inventory.decomposeSetting, rolled.grade, rolled.quality) == true)
+				if (AutoDecompose == true && EquipmentDecomposeRules.IsAutoTarget(_inventory.decomposeSetting, rolled.grade, rolled.quality) == true)
 				{
 					EquipmentGrowthRules.GetDecomposeRefund(instance.itemId, rolled.grade, instance.level, _refundBuffer);
 					for (int i = 0; i < _refundBuffer.Count; i++)

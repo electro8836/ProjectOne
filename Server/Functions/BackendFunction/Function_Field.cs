@@ -290,6 +290,7 @@ namespace BackendFunction
 
 			// 4. 처치별 검증 → 재현 → 주운 것만 지급
 			RewardApplier applier = new RewardApplier(inventory, currency);
+			applier.AutoDecompose = true;
 			List<RolledReward> rolled = new List<RolledReward>();
 			int gainedExp = 0;
 

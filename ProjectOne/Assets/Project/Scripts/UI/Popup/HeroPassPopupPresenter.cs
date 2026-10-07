@@ -130,7 +130,7 @@ namespace ProjectOne.UI
 
 			_granted.Clear();
 			RewardGranter.FromServer(data.rewards, data.equipments, _granted);
-			RewardGranter.ApplyAll(_granted);
+			RewardGranter.ApplyAll(_granted, false);
 
 			HeroPassBook book = Account.Instance.HeroPass;
 			for (int i = 0; i < _claimLevels.Count; i++)

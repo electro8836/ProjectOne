@@ -225,6 +225,12 @@ namespace ProjectOne.UserData
 			}
 		}
 
+		// 인벤토리 칸이 다 찼는가(초과 포함) — 장비가 더 들어오는 경로(던전 입장·우편 수령·장비 드랍)를 막는 기준이다.
+		public bool IsInventoryFull
+		{
+			get { return InventoryCount >= InventoryCapacity; }
+		}
+
 		public int StashCount
 		{
 			get

@@ -106,7 +106,7 @@ namespace ProjectOne.Field
 		// 지급(획득 로그) 후 팝업 — 팝업은 목록을 복사해 넘긴다(다음 처치가 버퍼를 다시 쓴다).
 		private void showRewards()
 		{
-			RewardGranter.ApplyAll(_granted);
+			RewardGranter.ApplyAll(_granted, true);
 
 			if (_granted.Count == 0 || UIManager.HasInstance == false)
 			{

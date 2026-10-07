@@ -244,7 +244,7 @@ namespace ProjectOne.Quests
 
 			_granted.Clear();
 			RewardGranter.FromServer(data.rewards, data.equipments, _granted);
-			RewardGranter.ApplyAll(_granted);
+			RewardGranter.ApplyAll(_granted, false);
 
 			// 체인은 여기서만 전진한다. NPC 등장 조건도 이 값을 본다.
 			_clearedQuestId = questId;

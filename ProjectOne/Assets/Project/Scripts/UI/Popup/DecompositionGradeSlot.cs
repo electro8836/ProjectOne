@@ -5,7 +5,7 @@ using EDT;
 
 namespace ProjectOne.UI
 {
-	// 분해 팝업의 등급 선택 1칸(UIPrefb_DecompositionGradeSlot). 등급명과 체크 표시만 그린다 —
+	// 분해 팝업의 등급 선택 1칸(UIPrefab_DecompositionGradeSlot). 등급명과 체크 표시만 그린다 —
 	// 선택 상태는 Presenter 가 들고 있다가 SetChecked 로 알려준다.
 	public class DecompositionGradeSlot : MonoBehaviour
 	{

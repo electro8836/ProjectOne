@@ -486,6 +486,11 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 인벤토리가 가득 차서 장비 드랍을 줍지 못함. 획득 시도마다 발행된다 — 획득 로그가 쿨타임을 두고 한 줄씩 찍는다.
+		public readonly struct InventoryFullEvent
+		{
+		}
+
 		// 메일 목록·열람 상태가 바뀜 (메일함이 목록을 다시 그릴 때 발행). 메인 HUD 메뉴 배지가 구독한다.
 		public readonly struct MailChangedEvent
 		{

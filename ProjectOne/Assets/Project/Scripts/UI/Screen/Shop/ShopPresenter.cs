@@ -24,7 +24,10 @@ namespace ProjectOne.UI
 
 		// 응답을 기다리는 서버 구매 상품 — 0 이면 대기 중이 아니다. 응답 전 연타를 막는다.
 		private int _pendingGoodsId;
+		private int _pendingCount;	// 그 요청으로 산 개수 — 응답 후 가격·구매 횟수를 같은 수만큼 반영한다
 		private bool _isDisposed;
+
+		private const string INVENTORY_FULL_MESSAGE = "인벤토리가 가득 차서 상자를 열 수 없습니다.";
 
 		protected override void OnInitialize()
 		{
@@ -93,7 +96,35 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			requestPurchase(row);
+			if (row.GoodsType == GoodsType.Box)
+			{
+				requestBoxOpen(row);
+				return;
+			}
+
+			requestPurchase(row, 1, false);
+		}
+
+		// ── 보물상자 ──────────────────────────────────────────────────────
+
+		// 상자는 묶음으로 연다. 자동분해를 체크했으면 보유한 만큼 전부 열고 나온 장비는 서버가 전부 분해한다.
+		// 체크하지 않았으면 장비가 인벤토리로 들어오므로 빈칸만큼만 연다.
+		private void requestBoxOpen(Table_ShopGoods.Row row)
+		{
+			bool decomposeAll = ShopBoxOpen.IsDecomposeChecked(row.ID);
+			if (decomposeAll == false && ShopBoxOpen.GetFreeInventorySlots() <= 0)
+			{
+				UIManager.Instance.ShowAlertMessage(INVENTORY_FULL_MESSAGE);
+				return;
+			}
+
+			int count = ShopBoxOpen.GetOpenCount(row, decomposeAll, false);
+			if (count <= 0)
+			{
+				return;
+			}
+
+			requestPurchase(row, count, decomposeAll);
 		}
 
 		// ── 히어로패스 ────────────────────────────────────────────────────
@@ -136,7 +167,7 @@ namespace ProjectOne.UI
 
 		// ── 일반 상품(보물상자·패키지·재화 등) ─────────────────────────────
 
-		private void requestPurchase(Table_ShopGoods.Row row)
+		private void requestPurchase(Table_ShopGoods.Row row, int count, bool decomposeAll)
 		{
 			if (_pendingGoodsId != 0)
 			{
@@ -149,14 +180,17 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			if (hasEnoughPrice(row) == false)
+			if (hasEnoughPrice(row, count) == false)
 			{
 				return;
 			}
 
 			ShopBuyRequest request = new ShopBuyRequest();
 			request.goodsId = row.ID;
+			request.count = count;
+			request.decomposeAll = decomposeAll;
 			_pendingGoodsId = row.ID;
+			_pendingCount = count;
 			NetworkManager.Instance.RequestShopBuy(request, onPurchased);
 		}
 
@@ -164,7 +198,9 @@ namespace ProjectOne.UI
 		private void onPurchased(bool success, ShopBuyResponse data, string error)
 		{
 			Table_ShopGoods.Row row = Table_ShopGoods.Get(_pendingGoodsId);
+			int count = _pendingCount;
 			_pendingGoodsId = 0;
+			_pendingCount = 0;
 
 			if (success == false || data == null || row == null)
 			{
@@ -172,12 +208,16 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			spendPrice(row);
+			spendPrice(row, count);
 
 			List<GrantedReward> granted = new List<GrantedReward>();
 			RewardGranter.FromServer(data.rewards, data.equipments, granted);
-			RewardGranter.ApplyAll(granted);
-			ShopPurchaseCounter.Increase(row);
+			RewardGranter.ApplyAll(granted, false);
+
+			for (int i = 0; i < count; i++)
+			{
+				ShopPurchaseCounter.Increase(row);
+			}
 
 			// 칸 확장 상품은 보상 대신 최대 칸 수가 늘어난다.
 			if (row.GoodsType == GoodsType.InventorySlot)
@@ -203,15 +243,17 @@ namespace ProjectOne.UI
 		}
 
 		// 요청 전 사전 검사 — 최종 판정은 서버가 한다. 무료·광고·현금 상품은 로컬에서 볼 것이 없다.
-		private static bool hasEnoughPrice(Table_ShopGoods.Row row)
+		private static bool hasEnoughPrice(Table_ShopGoods.Row row, int count)
 		{
+			int price = row.Price * count;
+
 			int itemId;
 			if (ShopRules.TryGetItemPrice(row, out itemId) == true)
 			{
 				int owned = Account.Instance.Inventory.GetCount(itemId);
-				if (owned < row.Price)
+				if (owned < price)
 				{
-					Debug.LogWarning($"[Shop] 아이템 부족 goodsId={row.ID} item={itemId} 필요={row.Price} 보유={owned}");
+					Debug.LogWarning($"[Shop] 아이템 부족 goodsId={row.ID} item={itemId} 필요={price} 보유={owned}");
 					return false;
 				}
 
@@ -222,9 +264,9 @@ namespace ProjectOne.UI
 			if (ShopRules.TryGetCurrencyPrice(row, out currency) == true)
 			{
 				int owned = CurrencyManager.Instance.GetAmount(currency);
-				if (owned < row.Price)
+				if (owned < price)
 				{
-					Debug.LogWarning($"[Shop] 재화 부족 goodsId={row.ID} currency={currency} 필요={row.Price} 보유={owned}");
+					Debug.LogWarning($"[Shop] 재화 부족 goodsId={row.ID} currency={currency} 필요={price} 보유={owned}");
 					return false;
 				}
 
@@ -241,19 +283,21 @@ namespace ProjectOne.UI
 		}
 
 		// 서버가 차감을 확정한 가격을 로컬에도 증감으로 반영한다.
-		private static void spendPrice(Table_ShopGoods.Row row)
+		private static void spendPrice(Table_ShopGoods.Row row, int count)
 		{
+			int price = row.Price * count;
+
 			int itemId;
 			if (ShopRules.TryGetItemPrice(row, out itemId) == true)
 			{
-				Account.Instance.Inventory.TrySpend(itemId, row.Price);
+				Account.Instance.Inventory.TrySpend(itemId, price);
 				return;
 			}
 
 			EDT.Currency currency;
 			if (ShopRules.TryGetCurrencyPrice(row, out currency) == true)
 			{
-				CurrencyManager.Instance.TrySpend(currency, row.Price);
+				CurrencyManager.Instance.TrySpend(currency, price);
 			}
 		}
 

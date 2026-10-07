@@ -20,6 +20,9 @@ namespace ProjectOne.UI
 	{
 		private const int MaxSlots = 10;
 
+		// 인벤토리 가득 참 안내를 다시 찍기까지의 시간(초)
+		private const float InventoryFullLogCooldown = 3f;
+
 		[SerializeField] private SystemLogSlot _slotPrefab;			// UIPrefab_SystemLogSlot
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
 
@@ -29,11 +32,14 @@ namespace ProjectOne.UI
 		// 시간이 지나 꺼진 슬롯. 다음 로그에 재사용한다.
 		private readonly Stack<SystemLogSlot> _idle = new Stack<SystemLogSlot>();
 
+		private float _nextInventoryFullLogTime;
+
 		private void Awake()
 		{
 			EventManager.Instance.Subscribe<RewardAcquiredEvent>(onRewardAcquired);
 			EventManager.Instance.Subscribe<EquipmentAutoDecomposedEvent>(onEquipmentAutoDecomposed);
 			EventManager.Instance.Subscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
+			EventManager.Instance.Subscribe<InventoryFullEvent>(onInventoryFull);
 		}
 
 		private void OnDestroy()
@@ -41,6 +47,7 @@ namespace ProjectOne.UI
 			EventManager.Instance.Unsubscribe<RewardAcquiredEvent>(onRewardAcquired);
 			EventManager.Instance.Unsubscribe<EquipmentAutoDecomposedEvent>(onEquipmentAutoDecomposed);
 			EventManager.Instance.Unsubscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
+			EventManager.Instance.Unsubscribe<InventoryFullEvent>(onInventoryFull);
 		}
 
 		// 만료 시각은 들어온 순서와 같으므로 맨 앞만 보면 된다.
@@ -89,6 +96,18 @@ namespace ProjectOne.UI
 			}
 
 			addLog($"<color=#DFE528>히어로패스 레벨 {e.Level} 달성!</color>");
+		}
+
+		// 못 주운 장비 드랍은 범위 안에 있는 동안 계속 획득을 시도한다 — 쿨타임을 두고 한 줄만 찍는다.
+		private void onInventoryFull(InventoryFullEvent e)
+		{
+			if (Time.time < _nextInventoryFullLogTime)
+			{
+				return;
+			}
+
+			_nextInventoryFullLogTime = Time.time + InventoryFullLogCooldown;
+			addLog("<color=red>인벤토리가 가득 차서 장비를 획득할 수 없습니다.</color>");
 		}
 
 		// ── 표시 ──────────────────────────────────────────────────────

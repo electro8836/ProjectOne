@@ -294,7 +294,7 @@ namespace ProjectOne.Mail
 
 				int start = _rewards.Count;
 				RewardGranter.FromServer(data.rewards, null, _rewards);
-				RewardGranter.ApplyRange(_rewards, start);
+				RewardGranter.ApplyRange(_rewards, start, false);
 				_tcs.TrySetResult(true);
 			}
 		}

@@ -15,8 +15,9 @@ namespace ProjectOne.UI
 	public class DecompositionPopup : UIScreen, IView
 	{
 		[Header("등급")]
-		// Grid 에 놓아 둔 슬롯 1칸. 이것을 원본 삼아 등급 수만큼 늘린다.
-		[SerializeField] private DecompositionGradeSlot _gradeSlotTemplate;	// Frame/Grade/.../Grid/UIPrefb_DecompositionGradeSlot
+		// 슬롯 프리펩. Grid 아래에 등급 수만큼 만든다.
+		[SerializeField] private DecompositionGradeSlot _gradeSlotTemplate;	// UIPrefab_DecompositionGradeSlot
+		[SerializeField] private Transform _gradeSlotParent;				// Frame/Grade/.../Grid
 		[SerializeField] private ItemGradeColorTable _gradeColors;			// 등급 색상 SO
 
 		[Header("품질")]
@@ -143,13 +144,12 @@ namespace ProjectOne.UI
 
 		// ── 내부 ──────────────────────────────────────────────────────────
 
-		// Normal ~ Mythic 한 칸씩. 첫 칸은 놓여 있던 원본을 그대로 쓰고 나머지는 복제한다.
+		// Normal ~ Mythic 한 칸씩 프리펩으로 만든다.
 		private void buildGradeSlots()
 		{
-			Transform parent = _gradeSlotTemplate.transform.parent;
 			for (int g = (int)ItemGradeType.Normal; g <= (int)ItemGradeType.Mythic; g++)
 			{
-				DecompositionGradeSlot slot = (_gradeSlots.Count == 0) ? _gradeSlotTemplate : Instantiate(_gradeSlotTemplate, parent);
+				DecompositionGradeSlot slot = Instantiate(_gradeSlotTemplate, _gradeSlotParent);
 				slot.Bind((ItemGradeType)g, _gradeColors);
 				slot.OnClicked += onGradeClicked;
 				_gradeSlots.Add(slot);

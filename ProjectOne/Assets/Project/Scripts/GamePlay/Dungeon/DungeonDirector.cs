@@ -67,6 +67,10 @@ namespace ProjectOne.Dungeon
 		// 지급할 때 만든 인스턴스를 그대로 넘겨야 화면과 인벤토리가 어긋나지 않는다.
 		private readonly List<EquipmentInstance> _grantedEquipments = new List<EquipmentInstance>();
 
+		// 클리어 보상 장비가 자동 분해돼 받은 환급 재화. 결과창에 장비 대신 이것이 실린다.
+		private readonly List<GrantedRewardDto> _autoDecomposeRewards = new List<GrantedRewardDto>();
+		private readonly List<CurrencyCost> _refundBuffer = new List<CurrencyCost>(1);
+
 		// 이번 단계의 남은 제한시간(초). 0 이하로 떨어지면 실패다.
 		//
 		// 제한시간은 웨이브 진행 규칙이 아니라 던전 한 판의 성격이므로 모드가 아니라 여기가 소유한다.
@@ -458,6 +462,7 @@ namespace ProjectOne.Dungeon
 			{
 				// 이전 판(다음 단계 재진입)의 지급 장비가 결과창에 섞이지 않게 비운다.
 				_grantedEquipments.Clear();
+				_autoDecomposeRewards.Clear();
 
 				// 최고 단계 갱신·퀘스트 이벤트는 서버 응답을 기다리지 않는다(서버도 같은 값으로 저장한다).
 				markVictory();
@@ -643,13 +648,15 @@ namespace ProjectOne.Dungeon
 		private DungeonClearResponse buildResultResponse(DungeonClearResponse clear)
 		{
 			DungeonClearResponse shown = buildLocalResponse(DungeonRunLedger.Instance.PickedRewards);
-			if (clear == null || clear.rewards == null || clear.rewards.Length == 0)
-			{
-				return shown;
-			}
 
 			List<GrantedRewardDto> merged = new List<GrantedRewardDto>(shown.rewards);
-			merged.AddRange(clear.rewards);
+			if (clear != null && clear.rewards != null)
+			{
+				merged.AddRange(clear.rewards);
+			}
+
+			// 클리어 보상 장비 중 자동 분해된 것은 환급 재화로 보여준다.
+			merged.AddRange(_autoDecomposeRewards);
 			shown.rewards = merged.ToArray();
 			return shown;
 		}
@@ -731,7 +738,7 @@ namespace ProjectOne.Dungeon
 				reward.currency = currency;
 				reward.count = total;
 				applied.Add(reward);
-				ProjectOne.Reward.RewardGranter.ApplyAll(applied);
+				ProjectOne.Reward.RewardGranter.ApplyAll(applied, false);
 
 				GrantedRewardDto granted = new GrantedRewardDto();
 				granted.rewardType = (int)RewardType.Currency;
@@ -900,9 +907,18 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
-			// 자동 분해 대상은 서버도 인벤토리에 넣지 않았다 — 환급 재화만 반영하고 결과 목록에서 뺀다.
-			if (ProjectOne.Upgrade.EquipmentDecompose.TryAutoDecompose(instance) == true)
+			// 자동 분해 대상은 서버도 인벤토리에 넣지 않았다 — 환급 재화를 반영하고, 결과에는 장비 대신 그 재화를 싣는다.
+			if (ProjectOne.Upgrade.EquipmentDecompose.TryAutoDecompose(instance, _refundBuffer) == true)
 			{
+				for (int i = 0; i < _refundBuffer.Count; i++)
+				{
+					GrantedRewardDto refund = new GrantedRewardDto();
+					refund.rewardType = (int)RewardType.Currency;
+					refund.itemId = (int)_refundBuffer[i].currency;
+					refund.count = _refundBuffer[i].amount;
+					_autoDecomposeRewards.Add(refund);
+				}
+
 				return;
 			}
 

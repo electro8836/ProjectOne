@@ -17,9 +17,6 @@ namespace ProjectOne.Upgrade
 	// 자동 분해만 예외다 — 획득 시점에 서버와 같은 조건으로 각자 판정한다(TryAutoDecompose).
 	public static class EquipmentDecompose
 	{
-		// 자동 분해 환급 계산용 버퍼
-		private static readonly List<CurrencyCost> _refundBuffer = new List<CurrencyCost>(1);
-
 		// 착용 중이거나 잠근 장비는 분해할 수 없다 — 먼저 해제해야 한다.
 		public static bool CanDecompose(EquipmentInstance instance)
 		{
@@ -106,7 +103,9 @@ namespace ProjectOne.Upgrade
 
 		// 갓 얻은 장비가 자동 분해 대상이면 인벤토리에 넣는 대신 환급 재화를 더하고 true.
 		// 서버(RewardApplier)가 같은 조건으로 같은 처리를 하므로 요청을 보내지 않는다.
-		public static bool TryAutoDecompose(EquipmentInstance instance)
+		// 드랍·던전 보상에만 부른다 — 상점·퀘스트·우편 등으로 얻은 장비는 자동 분해하지 않는다.
+		// 분해했으면 환급 내역이 refunds 에 남는다(호출자가 버퍼를 소유) — 결과 표시가 장비 대신 이 재화를 보여준다.
+		public static bool TryAutoDecompose(EquipmentInstance instance, List<CurrencyCost> refunds)
 		{
 			DecomposeSettingDto setting = Account.Instance.Inventory.DecomposeSetting;
 			if (EquipmentDecomposeRules.IsAutoTarget(setting, instance.grade, instance.quality) == false)
@@ -117,10 +116,10 @@ namespace ProjectOne.Upgrade
 			// 무엇이 분해됐는지 먼저 알린다 — 로그에서 환급 재화 줄보다 위에 찍힌다.
 			EventManager.Instance.Publish(new EquipmentAutoDecomposedEvent(instance.itemId, instance.grade, instance.quality));
 
-			EquipmentGrowthRules.GetDecomposeRefund(instance.itemId, instance.grade, instance.level, _refundBuffer);
-			for (int i = 0; i < _refundBuffer.Count; i++)
+			EquipmentGrowthRules.GetDecomposeRefund(instance.itemId, instance.grade, instance.level, refunds);
+			for (int i = 0; i < refunds.Count; i++)
 			{
-				addCurrency(_refundBuffer[i].currency, _refundBuffer[i].amount);
+				addCurrency(refunds[i].currency, refunds[i].amount);
 			}
 
 			return true;

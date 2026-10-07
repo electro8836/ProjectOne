@@ -53,6 +53,9 @@ namespace ProjectOne.Reward
 		// 공유 코어 추첨 결과 재사용 버퍼 — 지급은 메인 스레드 단일 경로다.
 		private static readonly List<RolledReward> _rolled = new List<RolledReward>(8);
 
+		// 자동 분해 환급 내역 재사용 버퍼
+		private static readonly List<CurrencyCost> _refunds = new List<CurrencyCost>(1);
+
 		// 그룹 하나를 굴려 즉시 지급하고 결과를 buffer 에 채운다(호출자가 버퍼를 소유).
 		// buffer 를 비우지 않고 **누적**한다 — 고유 드랍 + 지역 드랍처럼 두 그룹을 이어 굴릴 수 있다.
 		public static void Grant(int groupId, RewardContext context, List<GrantedReward> buffer)
@@ -65,7 +68,7 @@ namespace ProjectOne.Reward
 			// 이번 호출로 새로 추가된 몫만 지급한다 — 누적된 앞부분을 다시 지급하면 안 된다.
 			int start = buffer.Count;
 			Roll(groupId, context, buffer);
-			ApplyRange(buffer, start);
+			ApplyRange(buffer, start, context == RewardContext.MonsterKill || context == RewardContext.DungeonClear);
 		}
 
 		// 굴리기만 한다 — 인벤/지갑에 손대지 않는다. 지급은 ApplyAll 이 맡는다.
@@ -114,13 +117,18 @@ namespace ProjectOne.Reward
 		}
 
 		// 굴려 둔 목록을 실제로 인벤/지갑에 반영한다. 변경 이벤트는 여기서 발행된다.
-		public static void ApplyAll(List<GrantedReward> rewards)
+		// autoDecompose 는 장비에 유저의 자동 분해 설정을 적용할지다 — 드랍·던전 보상만 true 로 넘긴다.
+		// 상점·퀘스트·우편 등 나머지 경로의 장비는 설정과 무관하게 인벤토리로 들어간다(서버 RewardApplier.AutoDecompose 와 짝).
+		//
+		// **자동 분해된 장비 항목은 목록에서 환급 재화 항목으로 바뀐다** — 목록이 실제로 받은 것과 같아져,
+		// 같은 목록을 쓰는 결과창·보상 팝업이 장비 대신 재화를 보여준다.
+		public static void ApplyAll(List<GrantedReward> rewards, bool autoDecompose)
 		{
-			ApplyRange(rewards, 0);
+			ApplyRange(rewards, 0, autoDecompose);
 		}
 
 		// 목록의 startIndex 이후만 반영한다.
-		public static void ApplyRange(List<GrantedReward> rewards, int startIndex)
+		public static void ApplyRange(List<GrantedReward> rewards, int startIndex, bool autoDecompose)
 		{
 			if (rewards == null)
 			{
@@ -129,7 +137,28 @@ namespace ProjectOne.Reward
 
 			for (int i = startIndex; i < rewards.Count; i++)
 			{
-				applyOne(rewards[i]);
+				GrantedReward reward = rewards[i];
+
+				// 자동 분해 대상이면 인벤토리에 넣지 않는다 — 환급 재화와 그 획득 로그는 안에서 처리된다.
+				if (autoDecompose == true && reward.equipment != null
+					&& ProjectOne.Upgrade.EquipmentDecompose.TryAutoDecompose(reward.equipment, _refunds) == true)
+				{
+					rewards.RemoveAt(i);
+					for (int r = 0; r < _refunds.Count; r++)
+					{
+						GrantedReward refund = default(GrantedReward);
+						refund.type = RewardType.Currency;
+						refund.currency = _refunds[r].currency;
+						refund.count = _refunds[r].amount;
+						rewards.Insert(i + r, refund);
+					}
+
+					// 넣은 환급 항목은 이미 지급됐다 — 건너뛴다.
+					i += _refunds.Count - 1;
+					continue;
+				}
+
+				applyOne(reward);
 			}
 		}
 
@@ -216,12 +245,6 @@ namespace ProjectOne.Reward
 			// 장비는 인스턴스가 이미 만들어져 있다 — 넣기만 하면 된다.
 			if (granted.equipment != null)
 			{
-				// 자동 분해 대상이면 인벤토리에 넣지 않는다 — 환급 재화와 그 획득 로그는 안에서 처리된다.
-				if (ProjectOne.Upgrade.EquipmentDecompose.TryAutoDecompose(granted.equipment) == true)
-				{
-					return;
-				}
-
 				Account.Instance.Inventory.AddEquipment(granted.equipment);
 				EventManager.Instance.Publish(new RewardAcquiredEvent(granted.type, granted.itemId, EDT.Currency.None, 1, granted.equipment.grade, granted.equipment.quality, true));
 				return;

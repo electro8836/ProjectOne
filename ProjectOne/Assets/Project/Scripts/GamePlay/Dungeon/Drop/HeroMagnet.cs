@@ -62,6 +62,10 @@ namespace ProjectOne.Dungeon
 			rb.bodyType = RigidbodyType2D.Kinematic;
 			rb.simulated = true;
 
+			// 맞닿은 두 바디가 모두 잠들면 OnTriggerStay2D 가 끊긴다 — 히어로가 멈춰 있어도
+			// 범위 안의 드랍(인벤토리가 가득 차 못 줍는 장비 등)이 계속 획득을 시도하도록 깨워 둔다.
+			rb.sleepMode = RigidbodySleepMode2D.NeverSleep;
+
 			CircleCollider2D sensor = go.AddComponent<CircleCollider2D>();
 			sensor.isTrigger = true;
 

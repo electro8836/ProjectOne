@@ -139,7 +139,7 @@ namespace ProjectOne.UI
 
 			_granted.Clear();
 			RewardGranter.FromServer(data.rewards, data.equipments, _granted);
-			RewardGranter.ApplyAll(_granted);
+			RewardGranter.ApplyAll(_granted, false);
 
 			Account.Instance.DailyBonus.MarkClaimed(type, DailyBonusCatalog.GetCycleLength(type));
 

@@ -13,6 +13,9 @@ namespace ProjectOne.Shared
 		// 무제한 상품의 남은 횟수 표기값.
 		public const int UNLIMITED = -1;
 
+		// 상자를 한 번에 열 수 있는 최대 개수. 나온 장비를 전부 분해하는 오픈은 이 제한을 받지 않는다.
+		public const int BoxOpenBatchMax = 25;
+
 		// 지금까지의 구매 횟수. 일일 리셋 상품이 날을 넘겼으면 0 으로 본다.
 		public static int GetCount(ShopDto dto, Table_ShopGoods.Row row, int today)
 		{

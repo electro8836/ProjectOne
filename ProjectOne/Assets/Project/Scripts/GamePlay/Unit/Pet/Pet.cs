@@ -143,6 +143,13 @@ namespace ProjectOne.Unit
 					continue;
 				}
 
+				// 인벤토리가 가득 차 주울 수 없는 장비 드랍은 쫓지 않고 알리기만 한다 — 안내 주기는 획득 로그가 조절한다.
+				if (drop.IsPickupBlocked == true)
+				{
+					ProjectOne.Event.EventManager.Instance.Publish(new ProjectOne.Event.InventoryFullEvent());
+					continue;
+				}
+
 				float sqr = ((Vector2)drop.transform.position - petCenter).sqrMagnitude;
 				if (sqr <= _pickupRange * _pickupRange)
 				{

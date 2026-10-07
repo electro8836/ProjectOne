@@ -92,6 +92,8 @@ namespace BackendFunction
 				// 2. 던전별 정산 — 클리어 보상은 clearApplier(응답에 싣는다), 상자는 chestApplier(클라가 이미 지급)
 				RewardApplier clearApplier = new RewardApplier(inventory, currency);
 				RewardApplier chestApplier = new RewardApplier(inventory, currency);
+				clearApplier.AutoDecompose = true;
+				chestApplier.AutoDecompose = true;
 
 				string invalid;
 				switch (type)

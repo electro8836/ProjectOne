@@ -37,6 +37,7 @@ namespace ProjectOne.Shared
 		}
 
 		// 획득 즉시 분해할 장비인가. 갓 얻은 장비는 착용·잠금·보관 상태가 아니라 조건만 본다.
+		// 드랍·던전 보상에만 묻는다 — 어느 경로가 묻는지는 호출자(RewardApplier / RewardGranter)가 정한다.
 		public static bool IsAutoTarget(DecomposeSettingDto setting, ItemGradeType grade, int quality)
 		{
 			return setting != null && setting.auto == true && Matches(setting, grade, quality) == true;

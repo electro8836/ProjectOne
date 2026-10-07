@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using EDT;
+using ProjectOne.Shop;
 using ProjectOne.UserData;
 using TMPro;
 using UnityEngine;
@@ -21,6 +22,8 @@ namespace ProjectOne.UI
 		[SerializeField] private UIButton _infoButton;		// InfoButton — 확률 정보
 		[SerializeField] private RectTransform _effect;		// EffectMask/Effect — 계속 도는 빛
 		[SerializeField] private float _effectRotateDuration = 10f;	// 이펙트가 한 바퀴 도는 데 걸리는 시간(초)
+		[SerializeField] private UIButton _decomposeCheckButton;	// Decomposition/CheckButton — 자동분해 체크
+		[SerializeField] private GameObject _decomposeCheckMark;	// Decomposition/CheckButton/Image — 체크 표시
 
 		private Color _amountColor = Color.white;	// 프리펩에 설정된 원래 수량 색
 		private Tween _effectTween;
@@ -37,6 +40,11 @@ namespace ProjectOne.UI
 			if (_infoButton != null)
 			{
 				_infoButton.OnClickEvent += onInfoClicked;
+			}
+
+			if (_decomposeCheckButton != null)
+			{
+				_decomposeCheckButton.OnClickEvent += onDecomposeCheckClicked;
 			}
 		}
 
@@ -59,6 +67,11 @@ namespace ProjectOne.UI
 				_infoButton.OnClickEvent -= onInfoClicked;
 			}
 
+			if (_decomposeCheckButton != null)
+			{
+				_decomposeCheckButton.OnClickEvent -= onDecomposeCheckClicked;
+			}
+
 			base.OnDestroy();
 		}
 
@@ -72,9 +85,15 @@ namespace ProjectOne.UI
 			return UniTask.CompletedTask;
 		}
 
-		// 가격 자리를 보유 열쇠 수로 바꾼다. 베이스가 버튼 상태를 정한 뒤에 불리므로 여기서 잠근 것이 최종이다.
+		// 가격 자리를 이번에 열 상자 수로 바꾼다. 베이스가 버튼 상태를 정한 뒤에 불리므로 여기서 잠근 것이 최종이다.
 		protected override void onPurchaseLimitApplied(int remaining)
 		{
+			bool decomposeAll = ShopBoxOpen.IsDecomposeChecked(row.ID);
+			if (_decomposeCheckMark != null)
+			{
+				_decomposeCheckMark.SetActive(decomposeAll);
+			}
+
 			if (_priceText == null || row.PriceType != PriceType.Item)
 			{
 				return;
@@ -86,11 +105,14 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			int owned = getOwnedCount(itemId);
-			bool enough = owned > 0;
+			// 자동분해면 보유한 만큼 전부, 아니면 한 번에 여는 상한과 인벤토리 빈칸으로 자른 수다.
+			// 빈칸이 없으면 칸을 무시한 수를 그대로 보여준다 — 그 상태의 클릭은 가득 참 경고로 이어진다.
+			bool noSpace = decomposeAll == false && ShopBoxOpen.GetFreeInventorySlots() <= 0;
+			int openCount = ShopBoxOpen.GetOpenCount(row, decomposeAll, noSpace);
+			bool enough = getOwnedCount(itemId) >= row.Price;
 
 			// 하나도 없으면 "몇 개가 필요한지"를 빨간색으로 알린다.
-			_priceText.text = (enough ? owned : row.Price).ToString("N0", CultureInfo.InvariantCulture);
+			_priceText.text = (enough ? openCount : row.Price).ToString("N0", CultureInfo.InvariantCulture);
 			_priceText.color = enough ? _amountColor : _lackColor;
 
 			if (enough == false && _buyButton != null)
@@ -138,6 +160,18 @@ namespace ProjectOne.UI
 			{
 				_effect.DOKill();
 			}
+		}
+
+		// 자동분해 체크를 뒤집고 열 상자 수를 다시 계산한다.
+		private void onDecomposeCheckClicked()
+		{
+			if (row == null)
+			{
+				return;
+			}
+
+			ShopBoxOpen.SetDecomposeChecked(row.ID, ShopBoxOpen.IsDecomposeChecked(row.ID) == false);
+			RefreshPurchaseLimit();
 		}
 
 		// 이 상자에서 무엇이 얼마나 나오는지 확률표를 연다.

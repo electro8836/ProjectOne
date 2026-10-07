@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
+using ProjectOne.Event;
 using ProjectOne.Field;
 using ProjectOne.Unit;
 using ProjectOne.Reward;
+using ProjectOne.UserData;
 
 namespace ProjectOne.Dungeon
 {
@@ -44,6 +46,29 @@ namespace ProjectOne.Dungeon
 
 		// 펫이 같은 드랍을 흡입 목록에 두 번 넣지 않도록 공개한다.
 		public bool IsPetOwned { get { return _isPetOwned; } }
+
+		// 인벤토리가 가득 차 지금은 주울 수 없는가 — 장비를 실은 드랍만 해당한다(골드·재료는 칸을 쓰지 않는다).
+		// 이미 획득이 확정돼 끌려오는 중이면 막지 않는다. 칸이 비면 다시 주울 수 있다.
+		public bool IsPickupBlocked
+		{
+			get
+			{
+				if (_isClaimed == true || Account.Instance.Inventory.IsInventoryFull == false)
+				{
+					return false;
+				}
+
+				for (int i = 0; i < _payload.Count; i++)
+				{
+					if (_payload[i].equipment != null)
+					{
+						return true;
+					}
+				}
+
+				return false;
+			}
+		}
 
 		private void Awake()
 		{
@@ -99,6 +124,7 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
+			// 인벤토리가 가득 차도 받는다 — 던전 결과는 칸을 넘겨도 지급한다.
 			claim();
 			PlayPickupFeedback();
 			ReleaseSelf();
@@ -143,6 +169,13 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
+			// 인벤토리가 가득 찼으면 끌어오지 않고 알리기만 한다 — 안내 주기는 획득 로그가 조절한다.
+			if (IsPickupBlocked == true)
+			{
+				EventManager.Instance.Publish(new InventoryFullEvent());
+				return;
+			}
+
 			// 획득 범위에 들어온 순간이 지급 시점이다 — 끌려오는 동안 죽거나 씬이 바뀌어도 이미 받은 것이다.
 			claim();
 			pullTowards(targetCenter);
@@ -180,7 +213,16 @@ namespace ProjectOne.Dungeon
 		// 회수는 펫이 PickupByPet 으로 끝낸다(연출 목표가 도중에 바뀌지 않게).
 		protected override bool PickupOnTouch
 		{
-			get { return _isPetOwned == false; }
+			get { return _isPetOwned == false && IsPickupBlocked == false; }
+		}
+
+		// 자석 범위 없이 곧바로 부딪혔는데 주울 수 없으면 알린다.
+		protected override void OnHeroEnter(UnitBase hero)
+		{
+			if (IsPickupBlocked == true)
+			{
+				EventManager.Instance.Publish(new InventoryFullEvent());
+			}
 		}
 
 		protected override void OnPickup(UnitBase hero)
@@ -223,7 +265,7 @@ namespace ProjectOne.Dungeon
 				DungeonRunLedger.Instance.MarkChestPicked(_chestIndex, _rewardIndex);
 			}
 
-			RewardGranter.ApplyAll(_payload);
+			RewardGranter.ApplyAll(_payload, true);
 
 			// 던전 결과창 합산 — 던전 밖(필드)에서는 원장이 무시한다.
 			DungeonRunLedger.Instance.RecordPicked(_payload);

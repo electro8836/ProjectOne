@@ -140,6 +140,7 @@ namespace BackendFunction
 				RewardRoller.Roll(spawn.RewardGroupID, req.goldBonusPermille, rng, rolled, null);
 
 				RewardApplier applier = new RewardApplier(inventory, currency, pet, costume);
+				applier.AutoDecompose = true;
 				applier.ApplyAll(rolled);
 
 				// 히어로패스 활동 — 필드보스는 배치에서 빠지므로 여기서 센다.

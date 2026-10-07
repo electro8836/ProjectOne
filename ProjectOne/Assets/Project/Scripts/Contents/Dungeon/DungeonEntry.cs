@@ -3,6 +3,8 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Network;
 using ProjectOne.Shared;
+using ProjectOne.UI;
+using ProjectOne.UserData;
 
 namespace ProjectOne.Dungeon
 {
@@ -18,11 +20,20 @@ namespace ProjectOne.Dungeon
 	// 미로그인(오프라인 테스트)이면 예전처럼 로컬에서 횟수만 센다.
 	public static class DungeonEntry
 	{
+		private const string INVENTORY_FULL_MESSAGE = "인벤토리가 가득 차서 던전에 입장할 수 없습니다.";
+
 		private static UniTaskCompletionSource<DungeonEnterResult> _pending;
 
 		public static async UniTask<DungeonEnterResult> RequestAsync(EDT.Dungeon type, int stage, CancellationToken ct)
 		{
 			DungeonEnterResult result = default(DungeonEnterResult);
+
+			// 던전에서 얻는 장비를 받을 칸이 없으면 들여보내지 않는다 — 횟수 차감 전이라 입장 횟수는 그대로다.
+			if (Account.Instance.Inventory.IsInventoryFull == true)
+			{
+				UIManager.Instance.ShowAlertMessage(INVENTORY_FULL_MESSAGE);
+				return result;
+			}
 
 			if (NetworkManager.Instance.IsLoggedIn == false)
 			{

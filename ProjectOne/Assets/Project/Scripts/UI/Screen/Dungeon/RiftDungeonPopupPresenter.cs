@@ -194,7 +194,7 @@ namespace ProjectOne.UI
 		// 공용 지급 경로를 탄다 — 획득 로그(RewardAcquiredEvent)가 여기서 찍힌다.
 		private void showSweepResult()
 		{
-			RewardGranter.ApplyAll(_granted);
+			RewardGranter.ApplyAll(_granted, false);
 
 			if (_isDisposed == true)
 			{

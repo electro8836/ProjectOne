@@ -51,8 +51,22 @@ namespace BackendFunction
 					return FuncResult.Error(shopErr);
 				}
 
+				// 묶음 구매는 상자만 받는다. 장비를 전부 분해하는 오픈은 칸을 쓰지 않아 개수 상한이 없다.
+				int count = req.count > 0 ? req.count : 1;
+				bool isBox = goods.GoodsType == EDT.GoodsType.Box;
+				if (isBox == false && (count != 1 || req.decomposeAll == true))
+				{
+					return FuncResult.Error("bulk buy is box only: " + req.goodsId);
+				}
+
+				if (isBox == true && req.decomposeAll == false && count > ShopRules.BoxOpenBatchMax)
+				{
+					return FuncResult.Error("box open count over: " + count);
+				}
+
 				int today = ResetDay.FromUtc(DateTime.UtcNow);
-				if (ShopRules.GetRemaining(shop, goods, today) == 0)
+				int remaining = ShopRules.GetRemaining(shop, goods, today);
+				if (remaining != ShopRules.UNLIMITED && remaining < count)
 				{
 					return FuncResult.Error("purchase limit reached: " + req.goodsId);
 				}
@@ -85,8 +99,14 @@ namespace BackendFunction
 					return FuncResult.Error("already owned: " + collectibleId);
 				}
 
+				// 장비가 인벤토리로 들어가는 상자 오픈은 빈칸만큼만 열 수 있다(상자 1개 = 1칸).
+				if (isBox == true && req.decomposeAll == false && count > getFreeInventorySlots(inventory))
+				{
+					return FuncResult.Error("inventory full");
+				}
+
 				// 2. 가격 차감 — 메모리에서만. 아래 단계가 실패하면 저장하지 않으므로 차감도 없던 일이 된다.
-				if (trySpendPrice(goods, inventory, currency, out string priceErr) == false)
+				if (trySpendPrice(goods, count, inventory, currency, out string priceErr) == false)
 				{
 					return FuncResult.Error(priceErr);
 				}
@@ -94,16 +114,22 @@ namespace BackendFunction
 				// 3. 추첨 → 반영. 상점 보상은 골드 보너스를 받지 않는다(보너스 0‰).
 				//    보상 그룹이 없는 상품(광고 제거 등)은 구매 횟수만 남는다.
 				RewardApplier applier = new RewardApplier(inventory, currency, pet, costume);
+				applier.DecomposeAllEquipment = req.decomposeAll;
 				if (goods.RewardGroupID > 0)
 				{
+					ServerRandomSource rng = new ServerRandomSource();
 					List<RolledReward> rolled = new List<RolledReward>();
-					RewardRoller.Roll(goods.RewardGroupID, 0, new ServerRandomSource(), rolled, null);
-					if (rolled.Count == 0)
+					for (int i = 0; i < count; i++)
 					{
-						return FuncResult.Error("goods rolled nothing: " + goods.RewardGroupID);
-					}
+						rolled.Clear();
+						RewardRoller.Roll(goods.RewardGroupID, 0, rng, rolled, null);
+						if (rolled.Count == 0)
+						{
+							return FuncResult.Error("goods rolled nothing: " + goods.RewardGroupID);
+						}
 
-					applier.ApplyAll(rolled);
+						applier.ApplyAll(rolled);
+					}
 				}
 
 				// 칸 확장 상품은 보상 대신 최대 칸 수가 늘어난다. 인벤토리는 아래에서 항상 저장된다.
@@ -116,7 +142,10 @@ namespace BackendFunction
 					inventory.stashCapacityBonus += goods.GoodsValue;
 				}
 
-				ShopRules.Increase(shop, goods, today);
+				for (int i = 0; i < count; i++)
+				{
+					ShopRules.Increase(shop, goods, today);
+				}
 
 				// 4. 원자 저장
 				List<TransactionValue> tx = new List<TransactionValue>();
@@ -148,7 +177,7 @@ namespace BackendFunction
 
 				ShopBuyResponse response = new ShopBuyResponse();
 				response.success = true;
-				response.rewards = applier.Granted;
+				response.rewards = mergeGranted(applier.Granted);
 				response.equipments = applier.Equipments;
 				return FuncResult.Json(response);
 			}
@@ -158,10 +187,65 @@ namespace BackendFunction
 			}
 		}
 
-		// 가격 유형별 차감. 재화·아이템만 실제로 차감한다.
-		private static bool trySpendPrice(Table_ShopGoods.Row goods, InventoryDto inventory, CurrencyDto currency, out string err)
+		// 인벤토리 빈칸 수 — 장착 중이거나 보관함에 있는 장비는 칸을 차지하지 않는다(클라 Inventory.InventoryCount 와 같은 기준).
+		private static int getFreeInventorySlots(InventoryDto inventory)
+		{
+			int used = 0;
+			for (int i = 0; i < inventory.equipments.Count; i++)
+			{
+				EquipmentInstanceDto equipment = inventory.equipments[i];
+				if (equipment.equippedSlot == (int)EquipSlotTypes.None && equipment.inStash == false)
+				{
+					used++;
+				}
+			}
+
+			return InventoryRules.GetInventoryCapacity(inventory.inventoryCapacityBonus) - used;
+		}
+
+		// 같은 종류의 지급분을 한 줄로 합친다 — 묶음 오픈의 결과가 상자 수만큼 늘어지지 않게 한다.
+		private static GrantedRewardDto[] mergeGranted(GrantedRewardDto[] granted)
+		{
+			List<GrantedRewardDto> merged = new List<GrantedRewardDto>();
+			for (int i = 0; i < granted.Length; i++)
+			{
+				GrantedRewardDto source = granted[i];
+				GrantedRewardDto target = null;
+				for (int j = 0; j < merged.Count; j++)
+				{
+					if (merged[j].rewardType == source.rewardType && merged[j].itemId == source.itemId && merged[j].isBonus == source.isBonus)
+					{
+						target = merged[j];
+						break;
+					}
+				}
+
+				if (target == null)
+				{
+					merged.Add(source);
+				}
+				else
+				{
+					target.count += source.count;
+				}
+			}
+
+			return merged.ToArray();
+		}
+
+		// 가격 유형별 차감. 재화·아이템만 실제로 차감한다. count 는 한 번에 사는 개수다.
+		private static bool trySpendPrice(Table_ShopGoods.Row goods, int count, InventoryDto inventory, CurrencyDto currency, out string err)
 		{
 			err = null;
+
+			// 곱셈이 넘치면 음수 가격이 되어 차감이 거꾸로 돈다.
+			if (goods.Price > 0 && count > int.MaxValue / goods.Price)
+			{
+				err = "count too large: " + count;
+				return false;
+			}
+
+			int price = goods.Price * count;
 
 			switch (goods.PriceType)
 			{
@@ -174,7 +258,7 @@ namespace BackendFunction
 						return false;
 					}
 
-					if (InventoryUtil.TrySpendItem(inventory, itemId, goods.Price) == false)
+					if (InventoryUtil.TrySpendItem(inventory, itemId, price) == false)
 					{
 						err = "not enough item: " + itemId;
 						return false;
@@ -194,7 +278,7 @@ namespace BackendFunction
 
 					CurrencyCost cost = new CurrencyCost();
 					cost.currency = priceCurrency;
-					cost.amount = goods.Price;
+					cost.amount = price;
 					List<CurrencyCost> costs = new List<CurrencyCost>();
 					costs.Add(cost);
 
