@@ -23,6 +23,8 @@ namespace ProjectOne.Network
 		private bool _loadoutFlushing;
 		private bool _stashFlushing;
 		private readonly List<long> _stashUidBuffer = new List<long>();
+		private bool _lockFlushing;
+		private readonly List<long> _lockUidBuffer = new List<long>();
 		private bool _appearanceFlushing;
 		private bool _questProgressFlushing;
 
@@ -252,6 +254,48 @@ namespace ProjectOne.Network
 			}
 		}
 
+		// ── 잠금 flush 코디네이터 ─────────────────────────────────────────
+
+		// dirty(미저장 잠금 변경)면 잠근 장비 UID 전체를 1회 전송한다(화면 닫기·앱 일시정지/종료·분해 직전 트리거).
+		public void FlushLockIfDirty()
+		{
+			if (IsLoggedIn == false || _lockFlushing == true)
+			{
+				return;
+			}
+
+			Inventory inventory = Account.Instance.Inventory;
+			if (inventory.IsLockDirty == false)
+			{
+				return;
+			}
+
+			// 필드에서 주운 장비를 잠갔을 수 있다 — 배치를 먼저 보내 서버 인벤토리에 넣어 둔다.
+			FlushFieldBatch();
+
+			inventory.CollectLockedUids(_lockUidBuffer);
+
+			SaveEquipmentLockRequest request = new SaveEquipmentLockRequest();
+			request.lockedUids = _lockUidBuffer.ToArray();
+
+			_lockFlushing = true;
+			_caller.Invoke<SaveEquipmentLockRequest, SaveEquipmentLockResponse>(FunctionName.SaveEquipmentLock, request, onLockFlushed, false);
+		}
+
+		// flush 응답 — 성공 시 dirty 해제, 실패 시 dirty 유지(다음 트리거에서 재시도).
+		private void onLockFlushed(bool success, SaveEquipmentLockResponse data, string error)
+		{
+			_lockFlushing = false;
+			if (success == true)
+			{
+				Account.Instance.Inventory.MarkLockSynced();
+			}
+			else
+			{
+				Debug.LogWarning($"[NetworkManager] 잠금 저장 실패 — dirty 유지: {error}");
+			}
+		}
+
 		// ── 마스터리 ──────────────────────────────────────────────────────
 
 		// 바뀐 스킬트리의 최종 상태를 저장한다(마스터리 화면 닫기·앱 일시정지/종료 트리거).
@@ -451,6 +495,51 @@ namespace ProjectOne.Network
 
 			FlushFieldBatch();
 			_caller.Invoke<EquipmentTransferRequest, EquipmentGrowthResponse>(FunctionName.EquipmentTransfer, request, callback);
+		}
+
+		// 분해 — 서버가 장비를 없애고 주 재화 일부를 돌려준다.
+		// 서버는 저장된 착용·보관 상태로 판정하므로, 아직 보내지 않은 장착·보관함 변경을 앞에 보낸다(SendQueue 순서).
+		public void RequestEquipmentDecompose(EquipmentDecomposeRequest request, ResponseCallback<EquipmentDecomposeResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			FlushLoadoutIfDirty();
+			FlushStashIfDirty();
+			FlushLockIfDirty();
+			_caller.Invoke<EquipmentDecomposeRequest, EquipmentDecomposeResponse>(FunctionName.EquipmentDecompose, request, callback);
+		}
+
+		// 일괄 분해 — 서버가 장비마다 착용·잠금을 다시 확인하므로 단일 분해와 같은 것을 앞에 보낸다.
+		public void RequestEquipmentDecomposeAll(EquipmentDecomposeAllRequest request, ResponseCallback<EquipmentDecomposeAllResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			FlushLoadoutIfDirty();
+			FlushStashIfDirty();
+			FlushLockIfDirty();
+			_caller.Invoke<EquipmentDecomposeAllRequest, EquipmentDecomposeAllResponse>(FunctionName.EquipmentDecomposeAll, request, callback);
+		}
+
+		// 분해 조건 저장 — 서버가 이후 지급부터 이 조건으로 자동 분해를 판정한다.
+		// 조건을 바꾸기 전의 처치는 옛 조건으로 정산돼야 하므로 처치 배치를 앞에 보낸다(SendQueue 순서).
+		// 분해 팝업을 닫을 때의 백그라운드 저장이라 딤을 띄우지 않는다.
+		public void RequestSaveDecomposeSetting(SaveDecomposeSettingRequest request, ResponseCallback<SaveDecomposeSettingResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<SaveDecomposeSettingRequest, SaveDecomposeSettingResponse>(FunctionName.SaveDecomposeSetting, request, callback, false);
 		}
 
 		// ── 펫·외형 ───────────────────────────────────────────────────────

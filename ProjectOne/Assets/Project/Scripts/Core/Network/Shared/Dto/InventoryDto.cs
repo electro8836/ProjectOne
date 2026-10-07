@@ -20,9 +20,20 @@ namespace ProjectOne.Shared
 		public int itemId;
 		public int grade;			// ItemGradeType
 		public int level = 1;
-		public int quality;
+		public int quality;			// 0.1% 단위 (EquipmentQuality)
 		public int equippedSlot;	// EquipSlotTypes (0 = 미착용)
 		public bool inStash;		// 보관함에 넣어 둔 장비 — 인벤토리 개수에서 빠진다
+		public bool locked;			// 잠근 장비 — 분해되지 않는다
+	}
+
+	// 일괄·자동 분해 조건. 등급은 여러 개를 고를 수 있어 비트로 둔다(비트 번호 = ItemGradeType 값).
+	[System.Serializable]
+	public class DecomposeSettingDto
+	{
+		public int gradeMask;
+		public bool useQuality;		// 켜면 품질이 quality 이하인 장비만 대상이다
+		public int quality;			// 0.1% 단위, 0 ~ EquipmentQuality.Max
+		public bool auto;			// 획득 시 같은 조건으로 자동 분해
 	}
 
 	// 인벤토리 직렬화 DTO — 서버-클라 공유 영속 스키마. 클라는 Inventory 로 변환해 사용한다.
@@ -38,5 +49,8 @@ namespace ProjectOne.Shared
 		// 상점에서 구매해 늘어난 칸 수. 최대 칸 수는 InventoryRules 가 기본값에 더해 구한다.
 		public int inventoryCapacityBonus;
 		public int stashCapacityBonus;
+
+		// 분해 조건. 서버가 지급할 때 자동 분해 판정에 쓴다.
+		public DecomposeSettingDto decomposeSetting = new DecomposeSettingDto();
 	}
 }

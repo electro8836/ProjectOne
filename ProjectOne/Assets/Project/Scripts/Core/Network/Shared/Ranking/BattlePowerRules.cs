@@ -152,7 +152,7 @@ namespace ProjectOne.Shared
 				}
 
 				// 해금 옵션 — 현재 등급 이하 전부 누적.
-				float t = instance.quality / 100f;
+				float t = EquipmentQuality.ToRate(instance.quality);
 				for (int g = (int)ItemGradeType.Normal; g <= instance.grade; g++)
 				{
 					Table_EquipOption.Row row = getEquipOption(equipment.EquipOptionGroupID, g);

@@ -10,6 +10,8 @@ namespace EDT {
             public int ID { get; set; } = 0;
             public EquipSlotTypes EquipmentType { get; set; } = EquipSlotTypes.None;
             public ItemEnhanceTier EnhanceTier { get; set; } = ItemEnhanceTier.None;
+            public Currency ReqMainCurrency { get; set; } = Currency.None;
+            public int ReqMainCost { get; set; } = 0;
             public Currency ReqCurrency_1 { get; set; } = Currency.None;
             public int ReqCost_1 { get; set; } = 0;
             public Currency ReqCurrency_2 { get; set; } = Currency.None;
@@ -39,6 +41,8 @@ namespace EDT {
                 row.ID = reader.ReadInt32();
                 row.EquipmentType = (EquipSlotTypes)reader.ReadInt32();
                 row.EnhanceTier = (ItemEnhanceTier)reader.ReadInt32();
+                row.ReqMainCurrency = (Currency)reader.ReadInt32();
+                row.ReqMainCost = reader.ReadInt32();
                 row.ReqCurrency_1 = (Currency)reader.ReadInt32();
                 row.ReqCost_1 = reader.ReadInt32();
                 row.ReqCurrency_2 = (Currency)reader.ReadInt32();

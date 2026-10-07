@@ -47,6 +47,8 @@ namespace ProjectOne.UI
 			view.OnEquipToggleClicked += onEquipToggleClicked;
 			view.OnEnchantClicked += onEnchantClicked;
 			view.OnStashClicked += onStashClicked;
+			view.OnDecompositionClicked += onDecompositionClicked;
+			view.OnLockClicked += onLockClicked;
 			view.OnExitClicked += onExitClicked;
 		}
 
@@ -55,6 +57,8 @@ namespace ProjectOne.UI
 			view.OnEquipToggleClicked -= onEquipToggleClicked;
 			view.OnEnchantClicked -= onEnchantClicked;
 			view.OnStashClicked -= onStashClicked;
+			view.OnDecompositionClicked -= onDecompositionClicked;
+			view.OnLockClicked -= onLockClicked;
 			view.OnExitClicked -= onExitClicked;
 		}
 
@@ -80,6 +84,8 @@ namespace ProjectOne.UI
 		{
 			// 프리펩 기본 상태와 무관하게, 조건이 맞을 때만 아래에서 켠다.
 			view.SetStashVisible(false);
+			view.SetDecompositionVisible(false);
+			view.SetLockVisible(false);
 
 			Table_Item.Row row = (instance != null) ? instance.Item : null;
 			if (instance == null || row == null)
@@ -108,6 +114,12 @@ namespace ProjectOne.UI
 			if (readOnly == false)
 			{
 				refreshEnchantButton(instance);
+
+				// 잠금·분해 버튼은 버튼 묶음 밖에 있어 내 장비일 때만 따로 켠다.
+				// 착용 중이거나 잠근 장비는 분해할 수 없어 분해 버튼을 감춘다.
+				view.SetLockVisible(true);
+				view.SetLocked(instance.locked);
+				view.SetDecompositionVisible(EquipmentDecompose.CanDecompose(instance));
 			}
 
 			buildBasicOptions(instance, equip);
@@ -155,6 +167,54 @@ namespace ProjectOne.UI
 			}
 
 			inventory.SetStash(_uid, instance.inStash == false);
+			view.CloseFromInput();
+		}
+
+		// 잠금 토글 — 팝업을 닫지 않고 버튼 색·슬롯 표시·분해 버튼만 갱신한다.
+		// 서버 저장은 장비 화면을 닫을 때 한 번에 된다(NetworkManager.FlushLockIfDirty).
+		private void onLockClicked()
+		{
+			Inventory inventory = Account.Instance.Inventory;
+			EquipmentInstance instance = inventory.GetEquipment(_uid);
+			if (instance == null)
+			{
+				return;
+			}
+
+			inventory.SetLock(_uid, instance.locked == false);
+			view.SetLocked(instance.locked);
+			view.SetDecompositionVisible(EquipmentDecompose.CanDecompose(instance));
+		}
+
+		private void onDecompositionClicked()
+		{
+			decomposeAsync(view.GetDestroyToken()).Forget();
+		}
+
+		// 장비가 사라져 되돌릴 수 없으므로 한 번 더 확인받는다.
+		private async UniTaskVoid decomposeAsync(CancellationToken ct)
+		{
+			CommonPopupData data;
+			data.title = "분해";
+			data.desc = "아이템분해시 소모한 등급과 강화에 따라 일부 재화를 얻을 수 있습니다.";
+			data.button1Text = "취소";
+			data.button2Text = "분해";
+
+			// 취소·닫기·Dim 은 확인 팝업만 닫는다.
+			(bool cancelled, CommonPopupResult result) = await UIManager.Instance.ShowCommonPopupAsync(data, ct).SuppressCancellationThrow();
+			if (cancelled == true || result != CommonPopupResult.Button2)
+			{
+				return;
+			}
+
+			// 확인 팝업이 떠 있는 사이 상태가 바뀌었을 수 있어 다시 본다.
+			if (EquipmentDecompose.CanDecompose(Account.Instance.Inventory.GetEquipment(_uid)) == false)
+			{
+				return;
+			}
+
+			// 결과(획득 재화)는 시스템 로그가 보여준다 — 응답을 기다리지 않고 이 팝업도 닫는다.
+			EquipmentDecompose.Request(_uid);
 			view.CloseFromInput();
 		}
 
@@ -320,7 +380,7 @@ namespace ProjectOne.UI
 				if (row != null && row.UnlockOpt_ID != Option.None && StatOptionText.TryGetStatDetail(row.UnlockOpt_ID, out detail) == true)
 				{
 					// 품질이 구간 어디에 있느냐로 최종값이 정해진다 (아이템 설계 5장).
-					float value = row.UnlockOpt_MinVal + (row.UnlockOpt_MaxVal - row.UnlockOpt_MinVal) * (instance.quality / 100f);
+					float value = row.UnlockOpt_MinVal + (row.UnlockOpt_MaxVal - row.UnlockOpt_MinVal) * ProjectOne.Shared.EquipmentQuality.ToRate(instance.quality);
 
 					line.hasOption = true;
 					line.text = StatOptionText.FormatStat(detail, value, line.unlocked == false);

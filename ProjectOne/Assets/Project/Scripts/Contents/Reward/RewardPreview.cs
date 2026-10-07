@@ -25,8 +25,8 @@ namespace ProjectOne.Reward
 	// 없으면 아래 대표값으로 보여준다.
 	public static class RewardPreview
 	{
-		// 미지정 행에 쓸 대표 수치.
-		public const int DEFAULT_QUALITY = 50;
+		// 미지정 행에 쓸 대표 수치 — 50.0%.
+		public const int DEFAULT_QUALITY = 50 * EquipmentQuality.Scale;
 
 		// buffer 는 비우지 않고 누적한다 (RewardGranter 와 같은 관례).
 		public static void Build(int groupId, List<RewardPreviewItem> buffer)
@@ -92,7 +92,8 @@ namespace ProjectOne.Reward
 		{
 			if (row.FixedGrade != ItemGradeType.None)
 			{
-				return EquipmentFactory.CreateExact(itemId, row.FixedGrade, row.FixedQuality);
+				// 테이블의 FixedQuality 는 정수 퍼센트다 (RewardRoller 와 같은 변환).
+				return EquipmentFactory.CreateExact(itemId, row.FixedGrade, row.FixedQuality * EquipmentQuality.Scale);
 			}
 
 			// 확정값이 없으면 최소 보장 등급(Item.Grade)에 대표 품질을 얹어 보여준다.

@@ -30,6 +30,10 @@ namespace ProjectOne.UserData
 		private int _stashCapacityBonus;
 
 		private bool _stashDirty;	// 보관함 이동이 서버에 미반영
+		private bool _lockDirty;	// 잠금 변경이 서버에 미반영
+
+		// 일괄·자동 분해 조건. 서버에도 같은 값이 저장돼 있다(SaveDecomposeSetting).
+		private DecomposeSettingDto _decomposeSetting = new DecomposeSettingDto();
 
 		public Inventory(InventoryDto dto)
 		{
@@ -298,6 +302,58 @@ namespace ProjectOne.UserData
 			}
 		}
 
+		// ── 잠금 / 분해 조건 ──────────────────────────────────────────
+
+		// 장비를 잠그거나 푼다. 서버 저장은 장비 화면 닫기 등에서 1회 flush 된다(NetworkManager.FlushLockIfDirty).
+		public bool SetLock(long uid, bool locked)
+		{
+			EquipmentInstance instance;
+			if (_equipIndex.TryGetValue(uid, out instance) == false || instance.locked == locked)
+			{
+				return false;
+			}
+
+			instance.locked = locked;
+			_lockDirty = true;
+			EventManager.Instance.Publish(new EquipmentChangeEvent(uid));
+			return true;
+		}
+
+		public bool IsLockDirty
+		{
+			get { return _lockDirty; }
+		}
+
+		// 서버 저장 성공 후 호출 — dirty 해제.
+		public void MarkLockSynced()
+		{
+			_lockDirty = false;
+		}
+
+		// 잠근 장비 UID 를 채운다(호출자가 버퍼를 소유).
+		public void CollectLockedUids(List<long> buffer)
+		{
+			buffer.Clear();
+			for (int i = 0; i < _equipments.Count; i++)
+			{
+				if (_equipments[i].locked == true)
+				{
+					buffer.Add(_equipments[i].uid);
+				}
+			}
+		}
+
+		// 현재 분해 조건. 바꿀 때는 새 값을 만들어 SetDecomposeSetting 으로 넣는다.
+		public DecomposeSettingDto DecomposeSetting
+		{
+			get { return _decomposeSetting; }
+		}
+
+		public void SetDecomposeSetting(DecomposeSettingDto setting)
+		{
+			_decomposeSetting = setting;
+		}
+
 		// ── 직렬화 ────────────────────────────────────────────────────
 
 		public InventoryDto ToDto()
@@ -306,6 +362,7 @@ namespace ProjectOne.UserData
 			dto.nextEquipmentUid = _nextUid;
 			dto.inventoryCapacityBonus = _inventoryCapacityBonus;
 			dto.stashCapacityBonus = _stashCapacityBonus;
+			dto.decomposeSetting = _decomposeSetting;
 
 			for (int i = 0; i < _items.Count; i++)
 			{
@@ -327,6 +384,7 @@ namespace ProjectOne.UserData
 				entry.quality = src.quality;
 				entry.equippedSlot = (int)src.equippedSlot;
 				entry.inStash = src.inStash;
+				entry.locked = src.locked;
 				dto.equipments.Add(entry);
 			}
 
@@ -345,6 +403,8 @@ namespace ProjectOne.UserData
 			_inventoryCapacityBonus = 0;
 			_stashCapacityBonus = 0;
 			_stashDirty = false;
+			_lockDirty = false;
+			_decomposeSetting = new DecomposeSettingDto();
 
 			if (dto == null)
 			{
@@ -353,6 +413,11 @@ namespace ProjectOne.UserData
 
 			_inventoryCapacityBonus = dto.inventoryCapacityBonus;
 			_stashCapacityBonus = dto.stashCapacityBonus;
+
+			if (dto.decomposeSetting != null)
+			{
+				_decomposeSetting = dto.decomposeSetting;
+			}
 
 			if (dto.nextEquipmentUid > 0)
 			{
@@ -398,6 +463,7 @@ namespace ProjectOne.UserData
 				instance.quality = src.quality;
 				instance.equippedSlot = (EquipSlotTypes)src.equippedSlot;
 				instance.inStash = src.inStash;
+				instance.locked = src.locked;
 
 				_equipments.Add(instance);
 				_equipIndex[instance.uid] = instance;

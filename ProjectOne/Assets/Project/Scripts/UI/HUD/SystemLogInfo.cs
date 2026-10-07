@@ -8,7 +8,8 @@ namespace ProjectOne.UI
 	// 획득 로그 목록 — 보상이 인벤/지갑에 들어올 때마다 한 줄씩 쌓는다.
 	//
 	// BuffInfo · MapInfo 와 같은 결의 자율 HUD 위젯이다(MVP 를 쓰지 않는다).
-	//   장비   : 획득 <color=등급색>이름</color>(품질)
+	//   장비   : 획득 <color=등급색>이름</color>(품질%)
+	//   자동분해 : 자동분해 <color=등급색>이름</color>(품질%)   (환급 재화는 다음 줄에 따로)
 	//   스택   : 획득 <color=등급색>이름</color> x수량   (1개면 수량 생략)
 	//   재화   : 획득 수량 <color=재화색>이름</color>
 	//
@@ -31,12 +32,14 @@ namespace ProjectOne.UI
 		private void Awake()
 		{
 			EventManager.Instance.Subscribe<RewardAcquiredEvent>(onRewardAcquired);
+			EventManager.Instance.Subscribe<EquipmentAutoDecomposedEvent>(onEquipmentAutoDecomposed);
 			EventManager.Instance.Subscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
 		}
 
 		private void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<RewardAcquiredEvent>(onRewardAcquired);
+			EventManager.Instance.Unsubscribe<EquipmentAutoDecomposedEvent>(onEquipmentAutoDecomposed);
 			EventManager.Instance.Unsubscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
 		}
 
@@ -62,6 +65,19 @@ namespace ProjectOne.UI
 			}
 
 			addLog(text);
+		}
+
+		// 자동 분해된 장비. 환급 재화는 뒤이어 오는 획득 이벤트가 따로 한 줄을 찍는다.
+		private void onEquipmentAutoDecomposed(EquipmentAutoDecomposedEvent e)
+		{
+			Table_Item.Row row = Table_Item.Get(e.ItemId);
+			if (row == null)
+			{
+				Debug.LogError($"[SystemLogInfo] Table_Item.Get({e.ItemId}) == null");
+				return;
+			}
+
+			addLog("자동분해 " + formatEquipment(row, e.Grade, e.Quality));
 		}
 
 		// 한 번에 여러 레벨이 올라도 최종 레벨로 한 줄만 찍는다. 획득 로그와 구분되게 노란색으로 찍는다.
@@ -135,13 +151,12 @@ namespace ProjectOne.UI
 			}
 
 			// 장비 등급은 인스턴스가, 스택 아이템 등급은 Item 테이블이 갖는다.
-			ItemGradeType grade = (e.IsEquipment == true) ? e.Grade : row.Grade;
-			string name = "<color=#" + getGradeColorHex(grade) + ">" + row.Name + "</color>";
-
 			if (e.IsEquipment == true)
 			{
-				return "획득 " + name + "(" + e.Quality.ToString() + ")";
+				return "획득 " + formatEquipment(row, e.Grade, e.Quality);
 			}
+
+			string name = formatName(row, row.Grade);
 
 			if (e.Count > 1)
 			{
@@ -149,6 +164,17 @@ namespace ProjectOne.UI
 			}
 
 			return "획득 " + name;
+		}
+
+		// <color=등급색>이름</color>(78.2%)
+		private string formatEquipment(Table_Item.Row row, ItemGradeType grade, int quality)
+		{
+			return formatName(row, grade) + "(" + ProjectOne.Shared.EquipmentQuality.Format(quality) + "%)";
+		}
+
+		private string formatName(Table_Item.Row row, ItemGradeType grade)
+		{
+			return "<color=#" + getGradeColorHex(grade) + ">" + row.Name + "</color>";
 		}
 
 		private string getGradeColorHex(ItemGradeType grade)

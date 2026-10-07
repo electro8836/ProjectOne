@@ -42,6 +42,9 @@ namespace ProjectOne.UI
 		[SerializeField] private UIButton _stashCloseButton;		// Top/Stash/Top/CloseButton
 		[SerializeField] private GameObject _consumableTab;		// Tab_Consumable — 보관함 모드에서 감춘다
 
+		[Header("일괄 분해")]
+		[SerializeField] private UIButton _decompositionButton;	// DecompositionButton
+
 		[Header("닫기")]
 		[SerializeField] private UIButton _homeButton;	// Top/HomeButton
 
@@ -85,6 +88,7 @@ namespace ProjectOne.UI
 		public event Action OnSortClicked;
 		public event Action OnStashClicked;
 		public event Action OnStashCloseClicked;
+		public event Action OnDecompositionClicked;
 
 		private readonly EquipmentPresenter _presenter = new EquipmentPresenter();
 
@@ -103,6 +107,7 @@ namespace ProjectOne.UI
 			_sortButton.OnClickEvent += onSortClicked;
 			_stashButton.OnClickEvent += onStashClicked;
 			_stashCloseButton.OnClickEvent += onStashCloseClicked;
+			_decompositionButton.OnClickEvent += onDecompositionClicked;
 
 			_presenter.Initialize(this);
 		}
@@ -129,6 +134,7 @@ namespace ProjectOne.UI
 			_sortButton.OnClickEvent -= onSortClicked;
 			_stashButton.OnClickEvent -= onStashClicked;
 			_stashCloseButton.OnClickEvent -= onStashCloseClicked;
+			_decompositionButton.OnClickEvent -= onDecompositionClicked;
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
@@ -343,6 +349,11 @@ namespace ProjectOne.UI
 		private void onStashCloseClicked()
 		{
 			if (OnStashCloseClicked != null) { OnStashCloseClicked.Invoke(); }
+		}
+
+		private void onDecompositionClicked()
+		{
+			if (OnDecompositionClicked != null) { OnDecompositionClicked.Invoke(); }
 		}
 
 		private void onSlotClicked(ItemSlot sender, long uid, int itemId)

@@ -900,6 +900,12 @@ namespace ProjectOne.Dungeon
 				return;
 			}
 
+			// 자동 분해 대상은 서버도 인벤토리에 넣지 않았다 — 환급 재화만 반영하고 결과 목록에서 뺀다.
+			if (ProjectOne.Upgrade.EquipmentDecompose.TryAutoDecompose(instance) == true)
+			{
+				return;
+			}
+
 			Account.Instance.Inventory.AddEquipment(instance);
 			_grantedEquipments.Add(instance);
 		}

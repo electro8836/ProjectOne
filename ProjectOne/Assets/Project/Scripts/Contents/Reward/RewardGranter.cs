@@ -216,6 +216,12 @@ namespace ProjectOne.Reward
 			// 장비는 인스턴스가 이미 만들어져 있다 — 넣기만 하면 된다.
 			if (granted.equipment != null)
 			{
+				// 자동 분해 대상이면 인벤토리에 넣지 않는다 — 환급 재화와 그 획득 로그는 안에서 처리된다.
+				if (ProjectOne.Upgrade.EquipmentDecompose.TryAutoDecompose(granted.equipment) == true)
+				{
+					return;
+				}
+
 				Account.Instance.Inventory.AddEquipment(granted.equipment);
 				EventManager.Instance.Publish(new RewardAcquiredEvent(granted.type, granted.itemId, EDT.Currency.None, 1, granted.equipment.grade, granted.equipment.quality, true));
 				return;

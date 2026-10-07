@@ -21,6 +21,10 @@ namespace ProjectOne.UI
 		// 미해금 등급 줄의 색 — 수치만이 아니라 문구·범위를 포함한 줄 전체가 이 색이 된다.
 		private static readonly Color LockedColor = new Color(0.42745098f, 0.42745098f, 0.42745098f, 1f);	// #6D6D6D
 
+		// 잠금 버튼 색 — 잠금 / 해제
+		private static readonly Color LockOnColor = new Color32(0x2D, 0x9D, 0x32, 0xFF);
+		private static readonly Color LockOffColor = new Color32(0x52, 0x52, 0x52, 0xFF);
+
 		[Header("정보 텍스트")]
 		[SerializeField] private TMP_Text _nameText;		// NameText
 		[SerializeField] private TMP_Text _gradeText;		// GradeText
@@ -44,6 +48,13 @@ namespace ProjectOne.UI
 		// 보관함↔인벤토리 이동. 장비 화면이 보관함 모드일 때만 보인다.
 		[SerializeField] private UIButton _stashButton;			// BottomExtraButtons/StashButton
 		[SerializeField] private TMP_Text _stashButtonLabel;	// StashButton/Text
+
+		// 분해. 버튼 묶음 밖에 있어 디스플레이로 열 때 따로 감춘다.
+		[SerializeField] private UIButton _decompositionButton;	// DecompositionButton
+
+		// 잠금 토글. 분해 버튼 옆에 있고, 잠금 여부를 버튼 색으로 보여준다.
+		[SerializeField] private UIButton _lockButton;				// LockButton
+		[SerializeField] private Graphic _lockButtonGraphic;		// LockButton 의 Image
 
 		// 닫기는 ExitButton 과 Dimmed 두 경로다.
 		// 본문 영역은 ItemInfo/Bg 가 레이캐스트를 흡수하므로, Dimmed 까지 내려오는 클릭은
@@ -83,6 +94,8 @@ namespace ProjectOne.UI
 		public event Action OnEquipToggleClicked;
 		public event Action OnEnchantClicked;
 		public event Action OnStashClicked;
+		public event Action OnDecompositionClicked;
+		public event Action OnLockClicked;
 		public event Action OnExitClicked;
 
 		private readonly ItemInfoPresenter _presenter = new ItemInfoPresenter();
@@ -110,6 +123,8 @@ namespace ProjectOne.UI
 			_equipButton.OnClickEvent += onEquipClicked;
 			_enchantButton.OnClickEvent += onEnchantClicked;
 			_stashButton.OnClickEvent += onStashClicked;
+			_decompositionButton.OnClickEvent += onDecompositionClicked;
+			_lockButton.OnClickEvent += onLockClicked;
 			_exitButton.OnClickEvent += onExitClicked;
 			_dimmedButton.OnClickEvent += onExitClicked;
 
@@ -123,8 +138,15 @@ namespace ProjectOne.UI
 			_equipButton.OnClickEvent -= onEquipClicked;
 			_enchantButton.OnClickEvent -= onEnchantClicked;
 			_stashButton.OnClickEvent -= onStashClicked;
+			_decompositionButton.OnClickEvent -= onDecompositionClicked;
+			_lockButton.OnClickEvent -= onLockClicked;
 			_exitButton.OnClickEvent -= onExitClicked;
 			_dimmedButton.OnClickEvent -= onExitClicked;
+		}
+
+		public CancellationToken GetDestroyToken()
+		{
+			return this.GetCancellationTokenOnDestroy();
 		}
 
 		// UIManager 가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
@@ -173,7 +195,7 @@ namespace ProjectOne.UI
 			_nameText.text = row.Name;
 			_gradeText.text = ItemGradeNames.Get(grade);
 			_levelText.text = "레벨: " + level + "/" + maxLevel;
-			_qualityText.text = "품질 : " + quality + "%";
+			_qualityText.text = "품질 : " + ProjectOne.Shared.EquipmentQuality.Format(quality) + "%";
 			_descText.text = row.Desc;
 		}
 
@@ -293,6 +315,27 @@ namespace ProjectOne.UI
 			_stashButtonLabel.text = label;
 		}
 
+		public void SetDecompositionVisible(bool visible)
+		{
+			_decompositionButton.gameObject.SetActive(visible);
+		}
+
+		public void SetLockVisible(bool visible)
+		{
+			_lockButton.gameObject.SetActive(visible);
+		}
+
+		// 잠금 여부를 버튼 색과 아이템 슬롯의 잠금 표시에 함께 반영한다.
+		public void SetLocked(bool locked)
+		{
+			_lockButtonGraphic.color = locked ? LockOnColor : LockOffColor;
+
+			if (_itemSlot != null)
+			{
+				_itemSlot.SetLocked(locked);
+			}
+		}
+
 		// 닫힘 대기 — Presenter 의 ShowAsync 가 마지막에 await 한다.
 		public async UniTask WaitForCloseAsync(CancellationToken ct)
 		{
@@ -385,6 +428,16 @@ namespace ProjectOne.UI
 		private void onStashClicked()
 		{
 			if (OnStashClicked != null) { OnStashClicked.Invoke(); }
+		}
+
+		private void onDecompositionClicked()
+		{
+			if (OnDecompositionClicked != null) { OnDecompositionClicked.Invoke(); }
+		}
+
+		private void onLockClicked()
+		{
+			if (OnLockClicked != null) { OnLockClicked.Invoke(); }
 		}
 
 		private void onExitClicked()

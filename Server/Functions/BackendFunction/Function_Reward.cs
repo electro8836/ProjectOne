@@ -20,6 +20,9 @@ namespace BackendFunction
 		private readonly List<GrantedRewardDto> _granted = new List<GrantedRewardDto>();
 		private readonly List<EquipmentInstanceDto> _equipments = new List<EquipmentInstanceDto>();
 
+		// 자동 분해 환급 계산용 버퍼
+		private readonly List<CurrencyCost> _refundBuffer = new List<CurrencyCost>(1);
+
 		public RewardApplier(InventoryDto inventory, CurrencyDto currency)
 			: this(inventory, currency, null, null)
 		{
@@ -89,8 +92,22 @@ namespace BackendFunction
 					_inventory.nextEquipmentUid++;
 				}
 
-				_inventory.equipments.Add(instance);
+				// 응답에는 그대로 싣는다 — 클라가 같은 조건으로 판정해 자동 분해분을 재화로 반영한다(RewardGranter).
 				_equipments.Add(instance);
+
+				// 자동 분해 — 인벤토리에 넣지 않고 환급 재화만 준다.
+				if (EquipmentDecomposeRules.IsAutoTarget(_inventory.decomposeSetting, rolled.grade, rolled.quality) == true)
+				{
+					EquipmentGrowthRules.GetDecomposeRefund(instance.itemId, rolled.grade, instance.level, _refundBuffer);
+					for (int i = 0; i < _refundBuffer.Count; i++)
+					{
+						addCurrency((int)_refundBuffer[i].currency, _refundBuffer[i].amount);
+					}
+
+					return;
+				}
+
+				_inventory.equipments.Add(instance);
 				return;
 			}
 

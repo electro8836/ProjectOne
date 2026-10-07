@@ -74,8 +74,8 @@ namespace ProjectOne.Shared
 			return EquipmentGradeRollResult.Success;
 		}
 
-		// 구간을 먼저 뽑고, 구간 안에서 균등 분포로 정수를 뽑는다 (설계 3.9).
-		// EquipQuality 가중치가 없으면 false 와 함께 품질 1 을 돌려준다.
+		// 구간을 먼저 뽑고, 구간 안에서 균등 분포로 0.1% 단위 값을 뽑는다 (설계 3.9, 단위는 EquipmentQuality).
+		// EquipQuality 가중치가 없으면 false 와 함께 품질 1.0% 를 돌려준다.
 		public static bool TryRollQuality(IRandomSource rng, out int quality)
 		{
 			_qualityWeights.Clear();
@@ -92,14 +92,13 @@ namespace ProjectOne.Shared
 			int index = WeightedPick.PickIndex(_qualityWeights, rng);
 			if (index < 0)
 			{
-				quality = 1;
+				quality = EquipmentQuality.Scale;
 				return false;
 			}
 
-			// Mathf.RoundToInt 와 같은 은행원 반올림(System.Math.Round 기본값).
 			Table_EquipQuality.Row row = _qualityRows[index];
-			int min = (int)System.Math.Round(row.MinValue);
-			int max = (int)System.Math.Round(row.MaxValue);
+			int min = EquipmentQuality.FromPercent(row.MinValue);
+			int max = EquipmentQuality.FromPercent(row.MaxValue);
 			if (max < min)
 			{
 				max = min;

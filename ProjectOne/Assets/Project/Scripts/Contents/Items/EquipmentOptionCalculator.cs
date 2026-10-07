@@ -6,7 +6,7 @@ namespace ProjectOne.Items
 	// 장비 인스턴스 하나가 공급하는 옵션 목록을 계산한다 (아이템 설계 5장).
 	//
 	//   기본 옵션 Opt1~4 : Val + Step × Level
-	//   해금 옵션        : MinVal + (MaxVal - MinVal) × (Quality / 100)
+	//   해금 옵션        : MinVal + (MaxVal - MinVal) × 품질 비율(EquipmentQuality.ToRate)
 	//
 	// 해금 옵션은 **현재 등급 이하의 모든 등급 행**이 누적된다. Normal 에는 해금 옵션이 없다.
 	// Val 은 0레벨 기준값이다 — 캐릭터 스탯(1레벨 기준)과 규칙이 반대다 (설계 5.1 주석).
@@ -88,7 +88,7 @@ namespace ProjectOne.Items
 
 		private static void addUnlock(List<Resolved> buffer, Table_EquipOption.Row row, int quality)
 		{
-			float t = quality / 100f;
+			float t = ProjectOne.Shared.EquipmentQuality.ToRate(quality);
 
 			Resolved r;
 			r.option = row.UnlockOpt_ID;

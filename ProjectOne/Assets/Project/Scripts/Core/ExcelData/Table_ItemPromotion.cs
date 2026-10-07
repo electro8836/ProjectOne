@@ -11,11 +11,12 @@ namespace EDT {
             public EquipSlotTypes EquipmentType { get; set; } = EquipSlotTypes.None;
             public ItemGradeType FromGrade { get; set; } = ItemGradeType.None;
             public ItemGradeType ToGrade { get; set; } = ItemGradeType.None;
+            public Currency ReqMainCurrency { get; set; } = Currency.None;
+            public int ReqMainCost { get; set; } = 0;
             public Currency ReqCurrency_1 { get; set; } = Currency.None;
             public int ReqCost_1 { get; set; } = 0;
             public Currency ReqCurrency_2 { get; set; } = Currency.None;
             public int ReqCost_2 { get; set; } = 0;
-            public int ReqGoldCount { get; set; } = 0;
         }
 
         public const string Filename = "edt_itempromotion.bytes";
@@ -42,11 +43,12 @@ namespace EDT {
                 row.EquipmentType = (EquipSlotTypes)reader.ReadInt32();
                 row.FromGrade = (ItemGradeType)reader.ReadInt32();
                 row.ToGrade = (ItemGradeType)reader.ReadInt32();
+                row.ReqMainCurrency = (Currency)reader.ReadInt32();
+                row.ReqMainCost = reader.ReadInt32();
                 row.ReqCurrency_1 = (Currency)reader.ReadInt32();
                 row.ReqCost_1 = reader.ReadInt32();
                 row.ReqCurrency_2 = (Currency)reader.ReadInt32();
                 row.ReqCost_2 = reader.ReadInt32();
-                row.ReqGoldCount = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

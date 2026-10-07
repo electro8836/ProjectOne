@@ -31,10 +31,8 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _levelText;		// LevelText — 장비 전용
 		[SerializeField] private TMP_Text _countText;		// CountText — 스택 아이템 전용
 		[SerializeField] private TMP_Text _equipText;		// EquipText — 장착중 표시
+		[SerializeField] private GameObject _lock;			// Lock — 잠금 표시, 장비 전용
 		[SerializeField] private Slider _qualitySlider;	// QualitySlider — 장비 전용
-
-		// 장비 품질(quality)의 최대치. 옵션 계산이 quality/100 을 쓰므로 여기서도 같은 축을 쓴다.
-		private const float QualityMax = 100f;
 
 		// 현재 로드한 아이콘 주소 (Acquire/Release 짝 맞춤용)
 		private string _iconAddress;
@@ -62,6 +60,7 @@ namespace ProjectOne.UI
 
 			applyGradeColor(colors, instance.grade);
 			SetEquipped(equipped);
+			SetLocked(instance.locked);
 
 			_levelText.gameObject.SetActive(true);
 			_levelText.text = "Lv." + instance.level;
@@ -71,7 +70,7 @@ namespace ProjectOne.UI
 			if (_qualitySlider != null)
 			{
 				_qualitySlider.gameObject.SetActive(true);
-				_qualitySlider.value = instance.quality / QualityMax;
+				_qualitySlider.value = ProjectOne.Shared.EquipmentQuality.ToRate(instance.quality);
 			}
 
 			Table_Item.Row row = instance.Item;
@@ -89,8 +88,9 @@ namespace ProjectOne.UI
 			applyGradeColor(colors, (row != null) ? row.Grade : ItemGradeType.None);
 			applyTypeIcon(row);
 
-			// 스택 아이템은 장착 개념이 없다. 프리펩 기본값이 활성이라 끄지 않으면 소모품에도 "장착중" 이 뜬다.
+			// 스택 아이템은 장착·잠금 개념이 없다. 프리펩 기본값이 활성이라 끄지 않으면 소모품에도 "장착중" 이 뜬다.
 			SetEquipped(false);
+			SetLocked(false);
 
 			_levelText.gameObject.SetActive(false);
 
@@ -121,6 +121,7 @@ namespace ProjectOne.UI
 			_typeBg.gameObject.SetActive(false);
 			_levelText.gameObject.SetActive(false);
 			SetEquipped(false);
+			SetLocked(false);
 
 			if (_qualitySlider != null)
 			{
@@ -140,6 +141,15 @@ namespace ProjectOne.UI
 			if (_equipText != null)
 			{
 				_equipText.gameObject.SetActive(equipped);
+			}
+		}
+
+		// 잠금 표시를 켜고 끈다. Bind 없이 상태만 뒤집을 때도 쓴다(팝업의 잠금 토글).
+		public void SetLocked(bool locked)
+		{
+			if (_lock != null)
+			{
+				_lock.SetActive(locked);
 			}
 		}
 

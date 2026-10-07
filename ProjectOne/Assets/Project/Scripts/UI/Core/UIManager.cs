@@ -1146,6 +1146,7 @@ namespace ProjectOne.UI
 		private const string MAIL_BOX_POPUP_ADDRESS = "UIPrefab_MailBoxPopup";
 		private const string MAIL_SLOT_POPUP_ADDRESS = "UIPrefab_MailSlotPopup";
 		private const string NICKNAME_POPUP_ADDRESS = "UIPrefab_NicknamePopup";
+		private const string DECOMPOSITION_POPUP_ADDRESS = "UIPrefab_DecompositionPopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -1899,6 +1900,39 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(PLAYER_INFO_POPUP_ADDRESS);
+			}
+		}
+
+		// 일괄 분해 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 확인 팝업(공용 팝업)은 별도 CTS 라 이 팝업 위에 떠도 이 팝업이 닫히지 않는다.
+		public async UniTask ShowDecompositionPopupAsync(CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(DECOMPOSITION_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			DecompositionPopup popup = go.GetComponent<DecompositionPopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_DecompositionPopup 루트에 DecompositionPopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(DECOMPOSITION_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(DECOMPOSITION_POPUP_ADDRESS);
 			}
 		}
 

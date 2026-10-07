@@ -113,10 +113,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 8162063080007370613}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 60}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 160.39499, y: -30}
+  m_SizeDelta: {x: 149.21, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4484699299700042196
 CanvasRenderer:
@@ -503,7 +503,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1016, y: 0}
+  m_SizeDelta: {x: 1016, y: 175}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &6067084532973085664
 MonoBehaviour:
@@ -1391,6 +1391,7 @@ MonoBehaviour:
   _stashText: {fileID: 7584421072284220249}
   _stashCloseButton: {fileID: 1457983596262370222}
   _consumableTab: {fileID: 8770035374634829321}
+  _decompositionButton: {fileID: 729947976988548191}
   _homeButton: {fileID: 542553127817719866}
   _statButton: {fileID: 3313860778051814623}
   _currencyButton: {fileID: 3495279638800423289}
@@ -3043,10 +3044,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 8162063080007370613}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 50}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 58.289993, y: -30}
+  m_SizeDelta: {x: 55, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6858754866656264148
 CanvasRenderer:
@@ -7169,10 +7170,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 4107400571466684389}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 508, y: -25}
+  m_SizeDelta: {x: 1016, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &8770815192382483056
 MonoBehaviour:
@@ -7389,7 +7390,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7692649591888961537
 RectTransform:
   m_ObjectHideFlags: 0

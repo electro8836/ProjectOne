@@ -33,6 +33,8 @@ namespace BackendFunction
 				case FunctionName.DungeonRevive:
 				case FunctionName.EquipmentPromote:
 				case FunctionName.EquipmentTransfer:
+				case FunctionName.EquipmentDecompose:
+				case FunctionName.EquipmentDecomposeAll:
 				case FunctionName.PetPromote:
 				case FunctionName.DailyBonusClaim:
 				case FunctionName.HeroPassClaim:

@@ -29,7 +29,7 @@ namespace ProjectOne.Boot
 			public int itemId;
 			public ItemGradeType grade;
 			public int level;
-			public int quality;
+			public int quality;		// 0.1% 단위 (782 = 78.2%)
 		}
 
 		// 보유 스택 아이템 1종 — 소모품·재료. 장비는 인스턴스라 DevSlot 이 따로 담당한다.

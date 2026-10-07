@@ -31,7 +31,7 @@ namespace ProjectOne.Shared
 		NotEnough,		// 재화 부족 — 보유량은 호출자가 판정한다(이 규칙은 내지 않는다)
 	}
 
-	// 장비 성장(강화·승급·전이) 규칙 중 테이블만 보고 판단하는 부분 (아이템 설계 6장). 클라·서버 공용.
+	// 장비 성장(강화·승급·전이)·분해 규칙 중 테이블만 보고 판단하는 부분 (아이템 설계 6장). 클라·서버 공용.
 	//
 	// 클라는 버튼 상태·비용 표시에 쓰고, 서버는 같은 규칙으로 요청을 검증한 뒤 차감·변경한다.
 	// 확률이 없는 결정적 규칙이라 양쪽 결과가 항상 같다.
@@ -44,6 +44,9 @@ namespace ProjectOne.Shared
 	// ItemEnhance 는 (EquipmentType, EnhanceTier), ItemPromotion 은 (EquipmentType, FromGrade), ItemTransfer 는 (EquipmentType, Grade).
 	public static class EquipmentGrowthRules
 	{
+		// 분해 시 돌려주는 주 재화 비율
+		public const float DecomposeRefundRate = 0.8f;
+
 		private static Dictionary<long, Table_ItemEnhance.Row> _enhances;
 		private static Dictionary<long, Table_ItemPromotion.Row> _promotions;
 		private static Dictionary<long, Table_ItemTransfer.Row> _transfers;
@@ -105,6 +108,7 @@ namespace ProjectOne.Shared
 				return;
 			}
 
+			addCost(buffer, cost.ReqMainCurrency, cost.ReqMainCost);
 			addCost(buffer, cost.ReqCurrency_1, cost.ReqCost_1);
 			addCost(buffer, cost.ReqCurrency_2, cost.ReqCost_2);
 		}
@@ -150,7 +154,7 @@ namespace ProjectOne.Shared
 			return PromoteBlock.None;
 		}
 
-		// 승급은 1회성이라 배율이 없다. 골드는 전용 컬럼(ReqGoldCount)으로 따로 붙는다.
+		// 승급은 1회성이라 배율이 없다.
 		public static void GetPromoteCost(int itemId, ItemGradeType grade, List<CurrencyCost> buffer)
 		{
 			buffer.Clear();
@@ -167,9 +171,72 @@ namespace ProjectOne.Shared
 				return;
 			}
 
+			addCost(buffer, cost.ReqMainCurrency, cost.ReqMainCost);
 			addCost(buffer, cost.ReqCurrency_1, cost.ReqCost_1);
 			addCost(buffer, cost.ReqCurrency_2, cost.ReqCost_2);
-			addCost(buffer, EDT.Currency.Gold, cost.ReqGoldCount);
+		}
+
+		// ── 분해 ──────────────────────────────────────────────────────
+		//
+		// 장비를 없애고, 그 등급·강화에 드는 주 재화(ReqMainCurrency)의 일부를 돌려준다.
+		// 실제로 쓴 내역을 저장하지 않으므로 현재 상태만 보고 계산한다 — 높은 등급으로 주운 장비도 그 등급만큼 받는다.
+		//   강화 : 레벨 1 ~ 현재 레벨 각각이 속한 티어의 ReqMainCost 합
+		//   승급 : Normal 부터 현재 등급까지 거친 승급 행의 ReqMainCost 합
+
+		// 분해 환급량을 buffer 에 채운다 (재화별 합계 × DecomposeRefundRate, 소수점 버림). 돌려줄 것이 없으면 비운다.
+		public static void GetDecomposeRefund(int itemId, ItemGradeType grade, int level, List<CurrencyCost> buffer)
+		{
+			buffer.Clear();
+
+			Table_Equipment.Row equipment = Table_Equipment.Get(itemId);
+			if (equipment == null)
+			{
+				return;
+			}
+
+			ensureBuilt();
+
+			for (int lv = 1; lv <= level; lv++)
+			{
+				Table_ItemEnhanceTier.Row tier = getTierByLevel(lv);
+				if (tier == null)
+				{
+					break;
+				}
+
+				Table_ItemEnhance.Row enhance;
+				if (_enhances.TryGetValue(slotKey(equipment.EquipSlotType, (int)tier.ID), out enhance) == true)
+				{
+					sumCost(buffer, enhance.ReqMainCurrency, enhance.ReqMainCost);
+				}
+			}
+
+			// 승급 행을 Normal 부터 따라 올라간다. 등급 수를 넘겨 돌지 않도록 횟수를 묶어 둔다.
+			ItemGradeType current = ItemGradeType.Normal;
+			for (int i = 0; i < _promotions.Count && (int)current < (int)grade; i++)
+			{
+				Table_ItemPromotion.Row promotion = getPromotion(equipment.EquipSlotType, current);
+				if (promotion == null || promotion.ToGrade == ItemGradeType.None)
+				{
+					break;
+				}
+
+				sumCost(buffer, promotion.ReqMainCurrency, promotion.ReqMainCost);
+				current = promotion.ToGrade;
+			}
+
+			for (int i = buffer.Count - 1; i >= 0; i--)
+			{
+				CurrencyCost refund = buffer[i];
+				refund.amount = (int)(refund.amount * DecomposeRefundRate);
+				if (refund.amount <= 0)
+				{
+					buffer.RemoveAt(i);
+					continue;
+				}
+
+				buffer[i] = refund;
+			}
 		}
 
 		// ── 전이 ──────────────────────────────────────────────────────
@@ -288,6 +355,28 @@ namespace ProjectOne.Shared
 			cost.currency = currency;
 			cost.amount = amount;
 			buffer.Add(cost);
+		}
+
+		// 같은 재화는 한 항목으로 합친다 (분해 환급 합산용).
+		private static void sumCost(List<CurrencyCost> buffer, EDT.Currency currency, int amount)
+		{
+			if (currency == EDT.Currency.None || amount <= 0)
+			{
+				return;
+			}
+
+			for (int i = 0; i < buffer.Count; i++)
+			{
+				if (buffer[i].currency == currency)
+				{
+					CurrencyCost total = buffer[i];
+					total.amount += amount;
+					buffer[i] = total;
+					return;
+				}
+			}
+
+			addCost(buffer, currency, amount);
 		}
 
 		// 테이블 로드 후 처음 쓸 때 만든다.

@@ -471,6 +471,21 @@ namespace ProjectOne.Event
 				}
 		}
 
+		// 갓 얻은 장비가 자동 분해됨 (인벤토리에 들어가지 않는다). 환급 재화의 RewardAcquiredEvent 보다 먼저 발행된다.
+		public readonly struct EquipmentAutoDecomposedEvent
+		{
+				public readonly int ItemId;
+				public readonly ItemGradeType Grade;
+				public readonly int Quality;
+
+				public EquipmentAutoDecomposedEvent(int itemId, ItemGradeType grade, int quality)
+				{
+						this.ItemId = itemId;
+						this.Grade = grade;
+						this.Quality = quality;
+				}
+		}
+
 		// 메일 목록·열람 상태가 바뀜 (메일함이 목록을 다시 그릴 때 발행). 메인 HUD 메뉴 배지가 구독한다.
 		public readonly struct MailChangedEvent
 		{

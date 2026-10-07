@@ -133,7 +133,7 @@ namespace BackendFunction
 	public static class CurrencyUtil
 	{
 		// 전부 충분할 때만 차감하고 true — 부분 차감이 남지 않도록 검사를 먼저 끝낸다.
-		// 같은 재화가 두 번 나올 수 있어(승급의 ReqCurrency + ReqGoldCount) 재화별 합계로 검사한다.
+		// 같은 재화가 두 번 나올 수 있어(ReqMainCurrency 와 ReqCurrency_1·2 가 같은 재화일 때) 재화별 합계로 검사한다.
 		public static bool TrySpendAll(CurrencyDto currency, List<CurrencyCost> costs)
 		{
 			for (int i = 0; i < costs.Count; i++)
@@ -160,6 +160,23 @@ namespace BackendFunction
 			}
 
 			return true;
+		}
+
+		// 재화를 더한다 (분해 환급). 아직 가진 적 없는 재화면 항목을 새로 만든다.
+		public static void AddAll(CurrencyDto currency, List<CurrencyCost> gains)
+		{
+			for (int i = 0; i < gains.Count; i++)
+			{
+				CurrencyAmountDto owned = find(currency, (int)gains[i].currency);
+				if (owned == null)
+				{
+					owned = new CurrencyAmountDto();
+					owned.currencyId = (int)gains[i].currency;
+					currency.amounts.Add(owned);
+				}
+
+				owned.amount += gains[i].amount;
+			}
 		}
 
 		// 1회분 비용을 재화별 합계에 더한다 — 묶음 강화의 차감 합계(응답 spent).

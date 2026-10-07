@@ -42,6 +42,7 @@ namespace ProjectOne.Network
 		{
 			NetworkManager.Instance.FlushLoadoutIfDirty();
 			NetworkManager.Instance.FlushStashIfDirty();
+			NetworkManager.Instance.FlushLockIfDirty();
 			NetworkManager.Instance.FlushMasteryIfDirty();
 			NetworkManager.Instance.FlushAppearanceIfDirty();
 			NetworkManager.Instance.FlushQuestProgressIfDirty();

@@ -36,4 +36,58 @@ namespace ProjectOne.Shared
 		public EquipmentInstanceDto[] equipments;
 		public CurrencyAmountDto[] spent;
 	}
+
+	// 분해 — 장비를 없애고 주 재화 일부를 돌려받는다. 착용 중인 장비는 서버가 거절한다.
+	[System.Serializable]
+	public class EquipmentDecomposeRequest
+	{
+		public long uid;
+	}
+
+	// 재화는 성장 응답과 같은 이유로 절대값이 아닌 증가량만 준다.
+	[System.Serializable]
+	public class EquipmentDecomposeResponse : ServerResponse
+	{
+		public long uid;
+		public CurrencyAmountDto[] gained;
+	}
+
+	// 일괄 분해 — 클라가 조건으로 고른 장비들. 서버는 하나씩 다시 확인해 착용·잠금 장비를 건너뛴다.
+	[System.Serializable]
+	public class EquipmentDecomposeAllRequest
+	{
+		public long[] uids;
+	}
+
+	// uids 는 실제로 분해된 장비다 — 요청보다 적을 수 있다.
+	[System.Serializable]
+	public class EquipmentDecomposeAllResponse : ServerResponse
+	{
+		public long[] uids;
+		public CurrencyAmountDto[] gained;
+	}
+
+	// 잠금 저장 요청 — 잠근 장비 UID 전체(최종 상태)를 싣는다. 보관함 저장(SaveStashRequest)과 같은 방식이다.
+	[System.Serializable]
+	public class SaveEquipmentLockRequest
+	{
+		public long[] lockedUids;
+	}
+
+	[System.Serializable]
+	public class SaveEquipmentLockResponse : ServerResponse
+	{
+	}
+
+	// 분해 조건 저장 — 서버가 지급할 때 이 조건으로 자동 분해를 판정한다.
+	[System.Serializable]
+	public class SaveDecomposeSettingRequest
+	{
+		public DecomposeSettingDto setting;
+	}
+
+	[System.Serializable]
+	public class SaveDecomposeSettingResponse : ServerResponse
+	{
+	}
 }

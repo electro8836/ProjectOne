@@ -98,6 +98,7 @@ namespace ProjectOne.UI
 			view.OnSortClicked += onSortClicked;
 			view.OnStashClicked += onStashClicked;
 			view.OnStashCloseClicked += onStashCloseClicked;
+			view.OnDecompositionClicked += onDecompositionClicked;
 
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Subscribe<InventoryChangeEvent>(onInventoryChanged);
@@ -126,6 +127,7 @@ namespace ProjectOne.UI
 			view.OnSortClicked -= onSortClicked;
 			view.OnStashClicked -= onStashClicked;
 			view.OnStashCloseClicked -= onStashCloseClicked;
+			view.OnDecompositionClicked -= onDecompositionClicked;
 
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Unsubscribe<InventoryChangeEvent>(onInventoryChanged);
@@ -161,6 +163,7 @@ namespace ProjectOne.UI
 		{
 			NetworkManager.Instance.FlushLoadoutIfDirty();
 			NetworkManager.Instance.FlushStashIfDirty();
+			NetworkManager.Instance.FlushLockIfDirty();
 			return UniTask.CompletedTask;
 		}
 
@@ -236,6 +239,12 @@ namespace ProjectOne.UI
 			view.SetStashVisible(false);
 			view.SetConsumableTabVisible(true);
 			rebuild();
+		}
+
+		// 분해 버튼 — 조건을 골라 한 번에 분해하는 팝업을 상위 캔버스에 연다.
+		private void onDecompositionClicked()
+		{
+			UIManager.Instance.ShowDecompositionPopupAsync(view.GetDestroyToken()).Forget();
 		}
 
 		// 창을 닫는다. 마지막 창이면 WindowClosedEvent 가 발행되어 네비게이션 바의 탭 선택도 함께 풀린다.

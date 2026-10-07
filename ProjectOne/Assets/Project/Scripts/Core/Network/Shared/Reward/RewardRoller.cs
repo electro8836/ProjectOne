@@ -156,7 +156,8 @@ namespace ProjectOne.Shared
 				if (row.FixedGrade != ItemGradeType.None)
 				{
 					rolled.grade = row.FixedGrade;
-					rolled.quality = row.FixedQuality;
+					// 테이블의 FixedQuality 는 정수 퍼센트다.
+					rolled.quality = row.FixedQuality * EquipmentQuality.Scale;
 					buffer.Add(rolled);
 					continue;
 				}
@@ -171,7 +172,7 @@ namespace ProjectOne.Shared
 
 				if (EquipmentRoll.TryRollQuality(rng, out rolled.quality) == false && log != null)
 				{
-					log(false, "[EquipmentFactory] EquipQuality 가중치가 없어 품질 1 로 대체합니다.");
+					log(false, "[EquipmentFactory] EquipQuality 가중치가 없어 품질 1.0% 로 대체합니다.");
 				}
 
 				buffer.Add(rolled);

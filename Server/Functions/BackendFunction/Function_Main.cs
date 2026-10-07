@@ -125,6 +125,14 @@ namespace BackendFunction
 					return new EquipmentFunctions().EquipmentPromote();
 				case FunctionName.EquipmentTransfer:
 					return new EquipmentFunctions().EquipmentTransfer();
+				case FunctionName.EquipmentDecompose:
+					return new EquipmentFunctions().EquipmentDecompose();
+				case FunctionName.EquipmentDecomposeAll:
+					return new EquipmentFunctions().EquipmentDecomposeAll();
+				case FunctionName.SaveEquipmentLock:
+					return new EquipmentFunctions().SaveEquipmentLock();
+				case FunctionName.SaveDecomposeSetting:
+					return new EquipmentFunctions().SaveDecomposeSetting();
 				case FunctionName.PetEnhance:
 					return new PetFunctions().PetEnhance();
 				case FunctionName.PetPromote:
