@@ -22,7 +22,8 @@ namespace ProjectOne.UI
 		// 화면 좌우 끝에서 최소한 띄울 여백
 		[SerializeField] private float _screenPadding = 8f;
 
-		public async UniTask ShowAsync(string text, RectTransform anchor, CancellationToken ct)
+		// fixedOffset — 주면 앵커 높이로 계산하지 않고 "앵커 기준점 + 이 값(캔버스 단위)" 에 팝업 중심을 둔다.
+		public async UniTask ShowAsync(string text, RectTransform anchor, CancellationToken ct, Vector2? fixedOffset = null)
 		{
 			if (_text != null)
 			{
@@ -33,14 +34,14 @@ namespace ProjectOne.UI
 			// 이번 프레임에 막 생성됐으므로 강제로 한 번 돌린다.
 			Canvas.ForceUpdateCanvases();
 
-			place(anchor);
+			place(anchor, fixedOffset);
 
 			await UniTask.Delay(System.TimeSpan.FromSeconds(_visibleSeconds), cancellationToken: ct);
 		}
 
 		// 앵커(누른 슬롯) 위에 배치하고, 좌우로 잘리면 화면 안으로 밀어 넣는다.
 		// **위쪽은 넘어가도 그대로 둔다** — 맨 윗줄 슬롯은 위로 삐져나가는 것이 정상이다.
-		private void place(RectTransform anchor)
+		private void place(RectTransform anchor, Vector2? fixedOffset)
 		{
 			RectTransform self = this.transform as RectTransform;
 			RectTransform parent = this.transform.parent as RectTransform;
@@ -50,7 +51,15 @@ namespace ProjectOne.UI
 			}
 
 			Vector2 screen = worldToScreen(anchor, anchor.position);
-			screen.y += anchor.rect.height + _anchorGap;
+			if (fixedOffset.HasValue == true)
+			{
+				// 캔버스 단위 → 화면 픽셀. 해상도에 따라 캔버스 배율이 달라진다.
+				screen += Vector2.Scale(fixedOffset.Value, anchor.lossyScale);
+			}
+			else
+			{
+				screen.y += anchor.rect.height + _anchorGap;
+			}
 
 			Canvas canvas = parent.GetComponentInParent<Canvas>();
 			Camera camera = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? canvas.worldCamera : null;

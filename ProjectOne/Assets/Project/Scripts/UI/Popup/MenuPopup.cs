@@ -11,7 +11,7 @@ namespace ProjectOne.UI
 		None = 0,
 		Mail,
 		Quit,
-		Setting
+		Account
 	}
 
 	// 메인 HUD 의 MenuButton 으로 여는 메뉴 팝업. UIManager.ShowMenuPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
@@ -23,6 +23,7 @@ namespace ProjectOne.UI
 
 		[Header("메뉴")]
 		[SerializeField] private UIButton _buttonSetting;
+		[SerializeField] private UIButton _buttonAccount;
 		[SerializeField] private UIButton _buttonMail;
 		[SerializeField] private GameObject _mailBadge;	// Button_Mail/Badge — 미확인 메일이 있으면 켠다
 		[SerializeField] private UIButton _buttonAfk;
@@ -40,6 +41,7 @@ namespace ProjectOne.UI
 			_dimButton.OnClickEvent += onCloseClicked;
 
 			_buttonSetting.OnClickEvent += onSettingClicked;
+			_buttonAccount.OnClickEvent += onAccountClicked;
 			_buttonMail.OnClickEvent += onMailClicked;
 			_buttonAfk.OnClickEvent += onAfkClicked;
 			_buttonQuit.OnClickEvent += onQuitClicked;
@@ -50,6 +52,7 @@ namespace ProjectOne.UI
 			_dimButton.OnClickEvent -= onCloseClicked;
 
 			_buttonSetting.OnClickEvent -= onSettingClicked;
+			_buttonAccount.OnClickEvent -= onAccountClicked;
 			_buttonMail.OnClickEvent -= onMailClicked;
 			_buttonAfk.OnClickEvent -= onAfkClicked;
 			_buttonQuit.OnClickEvent -= onQuitClicked;
@@ -95,10 +98,16 @@ namespace ProjectOne.UI
 			Close();
 		}
 
+		private void onAccountClicked()
+		{
+			_result = MenuPopupResult.Account;
+			Close();
+		}
+
+		// 정식 기능 연결 전까지의 임시 처리다. 기능이 준비되면 교체한다.
 		private void onSettingClicked()
 		{
-			_result = MenuPopupResult.Setting;
-			Close();
+			Debug.Log("[MenuPopup] 설정 기능 준비 중");
 		}
 
 		// 정식 기능 연결 전까지의 임시 처리다. 기능이 준비되면 교체한다.

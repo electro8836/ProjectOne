@@ -105,10 +105,9 @@ namespace ProjectOne.UI
 			{
 				await confirmQuitAsync(ct);
 			}
-			else if (result == MenuPopupResult.Setting)
+			else if (result == MenuPopupResult.Account)
 			{
-				// 설정 팝업이 생기기 전까지는 닉네임 변경 팝업을 바로 연다.
-				await UIManager.Instance.ShowNicknamePopupAsync(ct);
+				await UIManager.Instance.ShowAccountPopupAsync(ct);
 			}
 		}
 

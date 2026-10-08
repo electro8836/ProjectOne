@@ -40,6 +40,9 @@ namespace ProjectOne.Network
 		// 실패도 "결정된 상태"이므로 흐름은 진행시키고, 서버 데이터 없이 도는 것은 각 상태가 감당한다.
 		public bool LoginAttempted { get; private set; }
 
+		// 계정 UUID 보관값 — GetGamerId 참고.
+		private string _gamerId = string.Empty;
+
 		private NetworkManager() { }
 
 		// 뒤끝 SDK 초기화(1회, 멱등) — TheBackendSettings 의 키로 로컬 초기화(네트워크 아님).
@@ -106,6 +109,39 @@ namespace ProjectOne.Network
 		{
 			IsLoggedIn = false;
 			LoginAttempted = false;
+			_gamerId = string.Empty;
+		}
+
+		// 계정 UUID(gamerId). SDK 가 프로퍼티로 주지 않아 유저 정보를 한 번 조회해 보관한다.
+		// 비로그인이거나 조회에 실패하면 빈 문자열 — 실패는 보관하지 않으므로 다음 호출에 다시 조회한다.
+		public string GetGamerId()
+		{
+			if (IsLoggedIn == false)
+			{
+				return string.Empty;
+			}
+
+			if (string.IsNullOrEmpty(_gamerId) == false)
+			{
+				return _gamerId;
+			}
+
+			BackendReturnObject bro = Backend.BMember.GetUserInfo();
+			if (bro.IsSuccess() == false)
+			{
+				Debug.LogWarning($"[Backnd] 유저 정보 조회 실패: {bro.GetMessage()}");
+				return string.Empty;
+			}
+
+			LitJson.JsonData row = bro.GetReturnValuetoJSON()["row"];
+			if (row == null || row.ContainsKey("gamerId") == false || row["gamerId"] == null)
+			{
+				Debug.LogWarning("[Backnd] 유저 정보에 gamerId 가 없다.");
+				return string.Empty;
+			}
+
+			_gamerId = row["gamerId"].ToString();
+			return _gamerId;
 		}
 
 		// 로그인 타입 → 핸들러. (Apple/Facebook 은 핸들러 추가 시 case 만 늘린다.)

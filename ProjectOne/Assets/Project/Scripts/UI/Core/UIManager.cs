@@ -103,6 +103,9 @@ namespace ProjectOne.UI
 		private CancellationTokenSource _mailBoxCts;
 		private CancellationTokenSource _mailSlotCts;
 
+		// 계정 팝업도 전용이다 — 위에 뜨는 닉네임 변경 팝업이 _popupCts 를 취소한다.
+		private CancellationTokenSource _accountPopupCts;
+
 		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
 		private GameObject _networkBlocker;
 		// 딤 표시 여부 — 요청 즉시 alpha 0 으로 입력만 막고, 지연 뒤 alpha 1 로 보인다.
@@ -450,6 +453,7 @@ namespace ProjectOne.UI
 			cancelPopup(ref _riftPopupCts);
 			cancelPopup(ref _mailBoxCts);
 			cancelPopup(ref _mailSlotCts);
+			cancelPopup(ref _accountPopupCts);
 
 			releaseMainHud();
 			ReleaseDungeonHud();
@@ -1147,6 +1151,7 @@ namespace ProjectOne.UI
 		private const string MAIL_SLOT_POPUP_ADDRESS = "UIPrefab_MailSlotPopup";
 		private const string NICKNAME_POPUP_ADDRESS = "UIPrefab_NicknamePopup";
 		private const string DECOMPOSITION_POPUP_ADDRESS = "UIPrefab_DecompositionPopup";
+		private const string ACCOUNT_POPUP_ADDRESS = "UIPrefab_AccountPopup";
 
 
 		// 펫 강화 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
@@ -1275,6 +1280,38 @@ namespace ProjectOne.UI
 			if (ResourceManager.HasInstance)
 			{
 				ResourceManager.Instance.Release(NICKNAME_POPUP_ADDRESS);
+			}
+		}
+
+		// 계정 팝업을 _popupCanvas 에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_accountPopupCts 참고).
+		public async UniTask ShowAccountPopupAsync(CancellationToken ct)
+		{
+			_accountPopupCts?.Cancel();
+			_accountPopupCts?.Dispose();
+			_accountPopupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(ACCOUNT_POPUP_ADDRESS, _accountPopupCts.Token);
+			if (prefab == null)
+			{
+				return;
+			}
+
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			AccountPopup popup = go.GetComponent<AccountPopup>();
+			if (popup == null)
+			{
+				Debug.LogError("[UIManager] UIPrefab_AccountPopup 루트에 AccountPopup 이 붙어 있지 않다.");
+				Destroy(go);
+				ResourceManager.Instance.Release(ACCOUNT_POPUP_ADDRESS);
+				return;
+			}
+
+			await popup.ShowAsync(_accountPopupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(ACCOUNT_POPUP_ADDRESS);
 			}
 		}
 
@@ -1476,7 +1513,7 @@ namespace ProjectOne.UI
 		//
 		// 주소를 호출부에서 받지 않는다 — 툴팁 프리팹은 하나뿐이라 주소가 흩어지면 같이 틀어진다.
 		// _popupCts 를 공유하므로 다른 슬롯을 연달아 누르면 이전 툴팁이 취소되고 새것이 뜬다.
-		public async UniTask ShowSimplePopupAsync(string text, RectTransform anchor, CancellationToken ct)
+		public async UniTask ShowSimplePopupAsync(string text, RectTransform anchor, CancellationToken ct, Vector2? fixedOffset = null)
 		{
 			_popupCts?.Cancel();
 			_popupCts?.Dispose();
@@ -1498,7 +1535,7 @@ namespace ProjectOne.UI
 			}
 
 			// 표시 시간이 다 차기 전에 다른 팝업이 열리면 취소된다 — 그때도 정리는 해야 한다.
-			await popup.ShowAsync(text, anchor, _popupCts.Token).SuppressCancellationThrow();
+			await popup.ShowAsync(text, anchor, _popupCts.Token, fixedOffset).SuppressCancellationThrow();
 
 			if (go != null)
 			{

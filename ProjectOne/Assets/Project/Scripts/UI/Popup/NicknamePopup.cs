@@ -31,6 +31,7 @@ namespace ProjectOne.UI
 		[Header("변경")]
 		[SerializeField] private UIButton _changeButton;	// Frame/BottomButtons/Button_Change
 		[SerializeField] private TMP_Text _costText;		// Button_Change/Group/CostText
+		[SerializeField] private GameObject _costIcon;	// Button_Change/Group/Icon — 무료일 때는 숨긴다
 
 		private UniTaskCompletionSource _tcs;
 		private Coroutine _errorRoutine;
@@ -99,12 +100,14 @@ namespace ProjectOne.UI
 			int cost = NicknameRules.GetCost(MyPlayerProfile.NicknameChangeCount);
 			if (cost <= 0)
 			{
-				_costText.text = "무료";
+				_costText.text = "최초 무료";
+				_costIcon.SetActive(false);
 				_changeButton.interactable = true;
 				return;
 			}
 
 			_costText.text = cost.ToString();
+			_costIcon.SetActive(true);
 			_changeButton.interactable = (CurrencyManager.Instance.GetAmount(NicknameRules.CostCurrency) >= cost);
 		}
 
