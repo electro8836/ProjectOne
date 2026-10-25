@@ -17,6 +17,10 @@ namespace ProjectOne.Town
 	// NPC 배치가 씬 마커를 필요로 하므로 마을 맵이 MapManager 를 거쳐야 마커를 찾을 수 있다.
 	public sealed class TownDirector : MonoBehaviour
 	{
+		private const string DummyPrefabAddress = "Prefab_Dummy";
+
+		private const string DummyMarkerPath = "SpawnPoints/Dummy";
+
 		private static TownDirector _instance;
 
 		private NpcSpawner _npcSpawner;
@@ -87,15 +91,17 @@ namespace ProjectOne.Town
 			_npcSpawner.Refresh(ct);
 
 			await spawnHeroAsync(ct);
+
+			await spawnDummyAsync(ct);
 		}
 
-		// 마을 히어로 — 전투가 없으므로 자동전투 두뇌를 붙이지 않는다(조작만).
+		// 마을 히어로 — 자동전투 두뇌를 붙인다. 마을의 적은 데미지 측정용 더미뿐이라 더미 근처에서만 싸운다.
 		// 마을 귀환은 전체 회복 지점이다 (기반테이블 5.3).
 		private async UniTask spawnHeroAsync(CancellationToken ct)
 		{
 			Vector3 spawnPos = MapManager.Instance.GetAnchorPosition(_townMapId);
 
-			_hero = await UnitFactory.Instance.CreateHeroAsync(spawnPos, Faction.Player, false, ct);
+			_hero = await UnitFactory.Instance.CreateHeroAsync(spawnPos, Faction.Player, true, ct);
 			if (_hero == null)
 			{
 				// UnitFactory 가 이미 원인을 로그로 남긴다(주소 미입력 / 프리팹에 Hero 컴포넌트 없음 등).
@@ -106,6 +112,20 @@ namespace ProjectOne.Town
 			{
 				_hero.Vitals.FullHeal();
 			}
+		}
+
+		// 데미지 측정용 더미 — 마을 맵의 SpawnPoints/Dummy 자리에 띄운다.
+		// 마을을 나갈 때 ClearGameplayUnits 가 지우므로 들어올 때마다 새로 만든다.
+		private async UniTask spawnDummyAsync(CancellationToken ct)
+		{
+			Transform marker = MapManager.Instance.FindInMap(_townMapId, DummyMarkerPath);
+			if (marker == null)
+			{
+				Debug.LogWarning($"[TownDirector] 마을 맵 {_townMapId} 에 더미 마커({DummyMarkerPath})가 없습니다 — 더미를 건너뜁니다.");
+				return;
+			}
+
+			await UnitFactory.Instance.CreateDummyAsync(DummyPrefabAddress, marker.position, ct);
 		}
 
 		// 마을은 하나뿐이다. 여러 개면 첫 번째를 쓰고 경고한다.

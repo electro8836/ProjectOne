@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 4445923044609372121}
   - component: {fileID: 3333162594359003612}
   - component: {fileID: 3639318870893065597}
-  - component: {fileID: 808565177358224556}
+  - component: {fileID: 2779739938171131194}
   m_Layer: 0
   m_Name: Prefab_Dummy
   m_TagString: Untagged
@@ -30,7 +30,7 @@ Transform:
   m_GameObject: {fileID: 1933195873675855602}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.36, y: 0.638, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -137,7 +137,7 @@ MonoBehaviour:
   _flashPeak: 0.8
   _flashDuration: 0.08
   _flashInterval: 0.12
---- !u!114 &808565177358224556
+--- !u!114 &2779739938171131194
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -146,9 +146,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1933195873675855602}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d1b96756a7f6eb140bcbd555daad3bb5, type: 3}
+  m_Script: {fileID: 11500000, guid: 9b5c35f02d24f3a478cf22ac93bf05c4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.Monster
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Unit.TrainingDummy
   _faction: 2
 --- !u!1 &3850169666910198778
 GameObject:
@@ -174,7 +174,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3850169666910198778}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: 0.008726557, z: -0, w: 0.9999619}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

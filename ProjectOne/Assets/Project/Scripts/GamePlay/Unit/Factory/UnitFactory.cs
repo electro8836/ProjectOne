@@ -107,6 +107,31 @@ namespace ProjectOne.Unit
 			return monster;
 		}
 
+		// 마을 데미지 측정용 더미 — 풀·몬스터 테이블 없이 프리팹을 바로 띄운다.
+		// 스탯은 전부 0 이다(방어·회피 없이 원래 데미지를 보기 위해). 정리는 UnitManager.ClearAll 이 한다.
+		public async UniTask<TrainingDummy> CreateDummyAsync(string prefabAddress, Vector3 pos, CancellationToken ct = default(CancellationToken))
+		{
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(prefabAddress, ct);
+			if (prefab == null)
+			{
+				Debug.LogError("[UnitFactory] 더미 프리팹 로드 실패: " + prefabAddress);
+				return null;
+			}
+
+			GameObject instance = Object.Instantiate<GameObject>(prefab, pos, Quaternion.identity, UnitManager.Instance.GetRoot(UnitType.Monster));
+			TrainingDummy dummy = instance.GetComponent<TrainingDummy>();
+			if (dummy == null)
+			{
+				Debug.LogError("[UnitFactory] 프리팹에 TrainingDummy 컴포넌트 없음: " + prefabAddress);
+				Object.Destroy(instance);
+				return null;
+			}
+
+			ComposeBase(dummy, 0, 1, StatContainerFactory.ForMonster(0, 1), Faction.Enemy);
+			instance.name = $"Dummy_{dummy.GetID()}";
+			return dummy;
+		}
+
 		// 풀에서 꺼낸 몬스터의 레벨을 확정하고 스탯을 다시 만든다.
 		// 같은 몬스터라도 스폰마다 레벨이 다를 수 있어(MonsterSpawn.Level / DungeonStage.MonsterLevel)
 		// 풀 생성 시점의 1레벨 스탯을 그대로 쓸 수 없다.

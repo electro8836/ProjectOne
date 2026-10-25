@@ -493,6 +493,18 @@ namespace ProjectOne.Map
 		}
 
 		// 히어로 시작/부활 지점. 마커가 없으면 그리드 중심으로 폴백한다.
+		// 맵 프리팹 루트 기준 경로로 오브젝트를 찾는다 — 전용 마커 컴포넌트가 없는 배치점(마을 더미 등)용.
+		public Transform FindInMap(int mapId, string path)
+		{
+			Entry entry;
+			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.instance == null)
+			{
+				return null;
+			}
+
+			return entry.instance.transform.Find(path);
+		}
+
 		public Vector3 GetAnchorPosition(int mapId)
 		{
 			Entry entry;
