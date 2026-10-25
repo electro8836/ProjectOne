@@ -1,4 +1,5 @@
 ﻿using EDT;
+using UnityEngine;
 using ProjectOne.Avatar;
 using ProjectOne.Costumes;
 using ProjectOne.Items;
@@ -39,8 +40,8 @@ namespace ProjectOne.Unit
 			// 바디가 먼저다 — 몸 27파츠를 완전히 지정한다.
 			avatar.ApplyBodySet(ResolveBodySet());
 
-			// 무기가 나중이다 — 코스튬 무기가 장비 무기를 덮어쓴다.
-			avatar.ApplyWeaponSet(ResolveWeaponSet());
+			// 무기는 코스튬 무기가 장비 무기보다 우선이다.
+			avatar.ApplyWeaponModel(ResolveWeaponModel());
 		}
 
 		public void RemoveFrom(Hero hero)
@@ -74,9 +75,9 @@ namespace ProjectOne.Unit
 			return AvatarCatalog.GetBodySet(row.SetAddress);
 		}
 
-		// 손에 보일 무기. 코스튬 무기가 우선이고, 없거나 직업이 안 맞으면 장비 무기다.
-		// 둘 다 없으면 null — 양손이 비워진다.
-		public static AvatarWeaponSet ResolveWeaponSet()
+		// 보일 무기 스프라이트. 코스튬 무기가 우선이고, 없거나 직업이 안 맞으면 장비 무기다.
+		// 둘 다 없으면 null — 무기가 감춰진다.
+		public static Sprite ResolveWeaponModel()
 		{
 			Loadout loadout = Account.Instance.Loadout;
 			if (loadout == null)
@@ -87,17 +88,17 @@ namespace ProjectOne.Unit
 			CostumeBook book = Account.Instance.Costume;
 			int costumeId = (book != null) ? book.EquippedWeaponId : 0;
 
-			return ResolveWeaponSet(costumeId, loadout.GetEquipped(EquipSlotTypes.Weapon));
+			return ResolveWeaponModel(costumeId, loadout.GetEquipped(EquipSlotTypes.Weapon));
 		}
 
 		// 위와 같되 코스튬 무기 ID 와 장비 무기를 직접 받는다 — 내 Account 가 아닌 외형용.
-		public static AvatarWeaponSet ResolveWeaponSet(int costumeId, EquipmentInstance weapon)
+		public static Sprite ResolveWeaponModel(int costumeId, EquipmentInstance weapon)
 		{
 			// 직업 제한은 표시 시점에 본다 — 안 맞는 무기를 든 동안만 장비 무기가 보이고,
 			// 맞는 무기로 갈아끼우면 코스튬이 다시 나타난다(착용 상태는 유지된다).
 			if (CostumeCatalog.CanShowWeapon(costumeId, GetWeaponType(weapon)) == true)
 			{
-				return AvatarCatalog.GetWeaponSet(CostumeCatalog.Get(costumeId).SetAddress);
+				return AvatarCatalog.GetWeaponModel(CostumeCatalog.Get(costumeId).SetAddress);
 			}
 
 			if (weapon == null)
@@ -111,7 +112,7 @@ namespace ProjectOne.Unit
 				return null;
 			}
 
-			return AvatarCatalog.GetWeaponSet(row.WeaponSetAddress);
+			return AvatarCatalog.GetWeaponModel(row.Model);
 		}
 
 		// 장비 무기의 종류. 미착용이면 None (Loadout.EquippedWeaponType 과 같은 규칙).

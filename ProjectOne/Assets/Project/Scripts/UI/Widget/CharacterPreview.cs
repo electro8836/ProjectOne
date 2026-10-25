@@ -20,8 +20,9 @@ namespace ProjectOne.UI
 		private const string RigAddress = "Prefab_HeroPreview";
 
 		// RawImage 의 RectTransform 비율에 맞춘 크기. 어긋나면 캐릭터가 가로로 늘어난다.
-		private const int TextureWidth = 512;
-		private const int TextureHeight = 495;
+		// 사용처(장비·코스튬·플레이어 정보)가 전부 정사각형이고 가장 큰 칸이 600x600 이다.
+		private const int TextureWidth = 600;
+		private const int TextureHeight = 600;
 
 		// 더미를 세울 월드 좌표. 메인 카메라 시야 밖이어야 인게임 화면에 찍히지 않는다.
 		// 맵은 +X/+Y 로 뻗어 나가므로 1사분면 좌표는 필드에서 맵을 옮겨 다니다 보면 시야에 걸린다 — -Y 로 내린다.

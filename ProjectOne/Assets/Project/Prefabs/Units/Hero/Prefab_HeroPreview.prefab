@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 540278818190646982}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.020540908, y: 0.42831886, z: -10}
+  m_LocalPosition: {x: 0, y: 0.55, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -67,7 +67,7 @@ Camera:
   far clip plane: 100
   field of view: 60
   orthographic: 1
-  orthographic size: 0.61173224
+  orthographic size: 1.1
   m_Depth: -50
   m_CullingMask:
     serializedVersion: 2
@@ -91,6 +91,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 16694555692216229, guid: 58bd756976780db47a02689d29f203d6, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 35375195366637598, guid: 58bd756976780db47a02689d29f203d6, type: 3}
       propertyPath: m_Layer
       value: 10
@@ -100,6 +104,10 @@ PrefabInstance:
       value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 315959034943152517, guid: 58bd756976780db47a02689d29f203d6, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 378884879514884213, guid: 58bd756976780db47a02689d29f203d6, type: 3}
       propertyPath: m_Layer
       value: 10
       objectReference: {fileID: 0}
@@ -299,6 +307,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 5682017415324998148, guid: 58bd756976780db47a02689d29f203d6, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 5703739162579165961, guid: 58bd756976780db47a02689d29f203d6, type: 3}
       propertyPath: m_Layer
       value: 10
@@ -416,6 +428,10 @@ PrefabInstance:
       value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8072930850117096925, guid: 58bd756976780db47a02689d29f203d6, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 8285854522411125294, guid: 58bd756976780db47a02689d29f203d6, type: 3}
       propertyPath: m_Layer
       value: 10
       objectReference: {fileID: 0}

@@ -86,7 +86,7 @@ namespace ProjectOne.UI
 
 			_avatar.ResetAll();
 			_avatar.ApplyBodySet(resolveBodySet());
-			_avatar.ApplyWeaponSet(resolveWeaponSet());
+			_avatar.ApplyWeaponModel(resolveWeaponModel());
 		}
 
 		private AvatarBodySet resolveBodySet()
@@ -119,32 +119,32 @@ namespace ProjectOne.UI
 		// 여기서만 인게임 규칙과 일부러 어긋난다 — CostumeCatalog.CanShowWeapon 의 직업 제한을 보지 않는다.
 		// 입어보기는 "지금 들 수 있는가"가 아니라 "이 코스튬이 어떻게 생겼는가"를 보여 주는 기능이라,
 		// 제한에 걸려 아무 변화도 없으면 버튼이 고장난 것처럼 보인다.
-		private AvatarWeaponSet resolveWeaponSet()
+		private Sprite resolveWeaponModel()
 		{
 			if (_previewWeaponId < 0)
 			{
-				return resolveWornWeaponSet();
+				return resolveWornWeaponModel();
 			}
 
 			Table_Costume.Row row = CostumeCatalog.Get(_previewWeaponId);
 			if (row == null || row.CostumeType != CostumeType.Weapon)
 			{
 				// 벗어보기 — 장비 무기가 다시 보이도록 실제 착용 규칙으로 돌아간다.
-				return resolveWornWeaponSet();
+				return resolveWornWeaponModel();
 			}
 
-			return AvatarCatalog.GetWeaponSet(row.SetAddress);
+			return AvatarCatalog.GetWeaponModel(row.SetAddress);
 		}
 
 		// 실제 착용 규칙의 무기 — 외형 모드면 넘겨받은 착용, 아니면 내 Account.
-		private AvatarWeaponSet resolveWornWeaponSet()
+		private Sprite resolveWornWeaponModel()
 		{
 			if (_useExternal == true)
 			{
-				return HeroAvatarAspect.ResolveWeaponSet(_externalWeaponCostumeId, _externalWeapon);
+				return HeroAvatarAspect.ResolveWeaponModel(_externalWeaponCostumeId, _externalWeapon);
 			}
 
-			return HeroAvatarAspect.ResolveWeaponSet();
+			return HeroAvatarAspect.ResolveWeaponModel();
 		}
 
 		// 무기별 오버라이드 컨트롤러. AC_Root 의 IDLE 클립도 AOC 가 갈아끼우는 대상이라,

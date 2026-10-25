@@ -52,10 +52,10 @@ namespace EDT {
 
     public enum WeaponType {
         None,
-        DualBlades,
-        RuneSword,
-        CrossBow,
-        DualPistols,
+        GreatSword,
+        Blade,
+        Pistol,
+        Rifle,
     }
 
     public enum ItemMainCategory {
@@ -246,6 +246,7 @@ namespace EDT {
         Instant,
         Casting,
         OnHit,
+        OnSwingHit,
         OnCombo,
         OnCrit,
         OnDamaged,
@@ -371,7 +372,7 @@ namespace EDT {
         BUFF_CombatRune,
         BUFF_Invincible,
         BUFF_BreakStun,
-        BUFF_DualBlades_AtkSpeedUp,
+        BUFF_GreatSword_AtkSpeedUp,
     }
 
     public enum ItemEnhanceTier {
@@ -410,10 +411,10 @@ namespace EDT {
 
     public enum WeaponMastery {
         None,
-        Mastery_DualBlades,
-        Mastery_RuneSword,
-        Mastery_CrossBow,
-        Mastery_DualPistols,
+        Mastery_GreatSword,
+        Mastery_Blade,
+        Mastery_Pistol,
+        Mastery_Rifle,
     }
 
     public enum SkillPoint {
@@ -457,15 +458,15 @@ namespace EDT {
         OPT_PICKUP_RANGE_ADD,
         OPT_GOLD_DROP_BONUS_ADD,
         OPT_DAMAGE_TAKEN_AMP_ADD,
-        OPT_LEARN_DualBlades_Active_01,
-        OPT_DMG_DualBlades_Active_01,
-        OPT_APPEND_DualBlades_AtkSpeedBuff,
-        OPT_ATKSPEED_DualBlades_Buff,
+        OPT_LEARN_GreatSword_Active_01,
+        OPT_DMG_GreatSword_Active_01,
+        OPT_APPEND_GreatSword_AtkSpeedBuff,
+        OPT_ATKSPEED_GreatSword_Buff,
     }
 
     public enum Projectile {
         None,
-        PJT_CrossBow_Bolt,
+        PJT_Pistol_Bullet,
         PJT_Monster_Arrow,
     }
 
@@ -481,41 +482,43 @@ namespace EDT {
 
     public enum Skill {
         None,
-        Skill_DualBlades_Attack,
-        Skill_DualBlades_Active_01,
-        Skill_DualBlades_Active_02,
-        Skill_DualBlades_Passive_01,
-        Skill_RuneSword_Attack,
-        Skill_RuneSword_Active_01,
-        Skill_RuneSword_Passive_01,
-        Skill_CrossBow_Attack,
-        Skill_CrossBow_Active_01,
-        Skill_CrossBow_Passive_01,
-        Skill_DualPistols_Attack,
-        Skill_DualPistols_Active_01,
-        Skill_DualPistols_Passive_01,
+        Skill_GreatSword_Attack_01,
+        Skill_GreatSword_Active_01,
+        Skill_GreatSword_Active_02,
+        Skill_GreatSword_Passive_01,
+        Skill_Blade_Attack,
+        Skill_Blade_Active_01,
+        Skill_Blade_Passive_01,
+        Skill_Pistol_Attack,
+        Skill_Pistol_Active_01,
+        Skill_Pistol_Passive_01,
+        Skill_Rifle_Attack,
+        Skill_Rifle_Active_01,
+        Skill_Rifle_Passive_01,
         Skill_Monster_MeleeAttack_01,
         Skill_Monster_RangeAttack_01,
         Skill_Monster_CastAttack_01,
         Skill_Monster_OrcGeneral_Active_01,
         Skill_Monster_Boss_Doom_01,
         Skill_SummonSpark_Attack,
-        Skill_DualBlades_Passive_02,
+        Skill_GreatSword_Passive_02,
         Skill_Rift_Burst,
         Skill_Rift_Bind,
         Skill_Rift_Storm,
         Skill_Rift_Spirit,
         Skill_Rift_Collapse,
         Skill_Monster_Boss_MeleeAttack_01,
+        Skill_GreatSword_Attack_02,
+        Skill_GreatSword_Attack_03,
     }
 
     public enum SkillEffect {
         None,
-        SE_DualBlades_Attack_Damage,
-        SE_RuneSword_Attack_Damage,
-        SE_CrossBow_Attack_Projectile,
-        SE_CrossBow_Attack_Damage,
-        SE_DualPistol_Attack_Damage,
+        SE_GreatSword_Attack_01_Damage,
+        SE_Blade_Attack_Damage,
+        SE_Pistol_Attack_Projectile,
+        SE_Pistol_Attack_Damage,
+        SE_Rifle_Attack_Damage,
         SE_Monster_MeleeAttack_Damage,
         SE_Monster_RangeAttack_Projectile,
         SE_Monster_RangeAttack_Damage,
@@ -525,16 +528,16 @@ namespace EDT {
         SE_Monster_Break_Stun_Buff,
         SE_Boss_Break_DamageTakenUp_Buff,
         SE_Debuff_DamageTakenUp_StatChange,
-        SE_DualBlades_Active_01_Damage,
-        SE_DualBlades_Active_02_Damage,
+        SE_GreatSword_Active_01_Damage,
+        SE_GreatSword_Active_02_Damage,
         SE_BuffRune_AtkUp,
         SE_BuffRune_DefUp,
         SE_Monster_OrcGeneral_Active_01_Damage,
         SE_Boss_Doom_Damage,
         SE_SummonSpark_Attack_Damage,
-        SE_DualBlades_Passive_02_Summon,
-        SE_DualBlades_AtkSpeedUp_StatChange,
-        SE_DualBlades_Active_01_AtkSpeedBuff,
+        SE_GreatSword_Passive_02_Summon,
+        SE_GreatSword_AtkSpeedUp_StatChange,
+        SE_GreatSword_Active_01_AtkSpeedBuff,
         SE_Rift_Burst_Damage,
         SE_Rift_Bind_Stun,
         SE_Rift_Bind_Damage,
@@ -542,13 +545,15 @@ namespace EDT {
         SE_Rift_Spirit_Summon,
         SE_Rift_Collapse_Damage,
         SE_Ruins_Hazard_Damage,
+        SE_GreatSword_Attack_02_Damage,
+        SE_GreatSword_Attack_03_Damage,
     }
 
     public enum SkillModifier {
         None,
-        SKM_DualBlades_Active_01_Ratio,
-        SKM_DualBlades_Active_01_AppendAtkSpeedBuff,
-        SKM_DualBlades_AtkSpeedBuff_Ratio,
+        SKM_GreatSword_Active_01_Ratio,
+        SKM_GreatSword_Active_01_AppendAtkSpeedBuff,
+        SKM_GreatSword_AtkSpeedBuff_Ratio,
     }
 
     public enum Stat {

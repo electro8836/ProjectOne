@@ -5,6 +5,7 @@ using EDT;
 using ProjectOne.Shared;
 using UnityEngine;
 using ProjectOne.Resources;
+using ProjectOne.Unit;
 
 namespace ProjectOne.Mastery
 {

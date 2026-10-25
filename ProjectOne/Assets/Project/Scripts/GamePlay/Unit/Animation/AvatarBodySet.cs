@@ -4,8 +4,7 @@ namespace ProjectOne.Unit
 {
 	// 바디 코스튬 한 벌의 외형. 몸 전체를 완전히 지정한다 — **비워 둔 필드는 그 파츠를 감춘다.**
 	//
-	// 무기(WeaponL/WeaponR)는 여기 없다. 장비 무기와 코스튬 무기가 AvatarWeaponSet 으로 담당하고,
-	// 무기셋이 바디셋보다 나중에 적용되어 손에 든 것을 결정한다.
+	// 무기(WeaponL/WeaponR)는 여기 없다. 무기는 손이 아니라 WeaponAim 의 Model 에 그린다(HeroAvatar.ApplyWeaponModel).
 	// 그림자(Shadow)도 없다 — 코스튬과 무관하게 프리팹 스프라이트를 그대로 쓴다.
 	//
 	// 새 코스튬은 기본 코스튬 세트를 복제해 바꿀 부분만 고치는 것이 편하다 —
@@ -17,7 +16,7 @@ namespace ProjectOne.Unit
 	public class AvatarBodySet : ScriptableObject
 	{
 		// 손 — 방패는 아직 장비가 아니라 바디셋이 들고 있다.
-		// 방패가 장비가 되면 AvatarWeaponSet 을 4슬롯으로 늘리고 여기서 빼야 한다.
+		// 방패가 장비가 되면 여기서 빼야 한다.
 		[SerializeField] private Sprite _shieldL;
 		[SerializeField] private Sprite _shieldR;
 
@@ -100,7 +99,7 @@ namespace ProjectOne.Unit
 		}
 
 		// 이 세트가 관할하는 파츠인가 — 관할 밖은 바디셋 적용에서 건너뛴다.
-		// 무기 2파츠는 무기셋이 결정하고, 그림자는 코스튬과 무관하게 항상 고정이다.
+		// 무기 2파츠는 무기 모델로 대체되어 쓰지 않고, 그림자는 코스튬과 무관하게 항상 고정이다.
 		public static bool Covers(AvatarPart part)
 		{
 			switch (part)

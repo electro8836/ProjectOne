@@ -22,6 +22,9 @@ namespace ProjectOne.Unit
 
 		[SerializeField] private PartBinding[] _bindings = new PartBinding[0];
 
+		// 무기 모델(WeaponAim/Motion/Model). 무기는 손 파츠가 아니라 여기에 그린다.
+		[SerializeField] private SpriteRenderer _weaponModel;
+
 		// 렌더러와 프리팹 원본 스프라이트를 함께 들고 있는다.
 		// 원본이 있어야 장비를 벗었을 때 되돌릴 수 있다 — 무기는 원본이 비어 있어 그대로 사라지고,
 		// 상의 같은 기본 파츠는 코스튬을 벗으면 원래 옷으로 돌아온다.
@@ -90,16 +93,20 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		// 무기 세트 — 손에 든 것을 결정한다. 장비 무기든 코스튬 무기든 이 경로다.
-		// null 이면 양손을 비운다(무기 미장착).
-		public void ApplyWeaponSet(AvatarWeaponSet set)
+		// 무기 외형 — 장비 무기든 코스튬 무기든 이 경로다. null 이면 무기를 감춘다(무기 미장착).
+		public void ApplyWeaponModel(Sprite sprite)
 		{
-			SetPart(AvatarPart.WeaponL, (set != null) ? set.Left : null);
-			SetPart(AvatarPart.WeaponR, (set != null) ? set.Right : null);
+			if (_weaponModel == null)
+			{
+				Debug.LogError($"[HeroAvatar] 무기 모델 렌더러가 비어 있습니다 ({this.name})");
+				return;
+			}
+
+			_weaponModel.sprite = sprite;
 		}
 
 		// 바디 세트 — 몸 전체를 완전히 지정한다. 세트가 비워 둔 파츠는 감춘다.
-		// 관할 밖(무기 2파츠·그림자)은 건너뛴다 — 무기는 무기셋이, 그림자는 프리팹이 결정한다.
+		// 관할 밖(무기 2파츠·그림자)은 건너뛴다 — 무기는 무기 모델이, 그림자는 프리팹이 결정한다.
 		public void ApplyBodySet(AvatarBodySet set)
 		{
 			if (set == null)

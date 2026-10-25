@@ -89,7 +89,7 @@ namespace ProjectOne.Flow
 				return;
 			}
 
-			// 2-2) 무기 외형(파츠 세트) 프리로드 — 장비 교체 경로가 동기라 미리 잡아 둔다
+			// 2-2) 바디 코스튬(파츠 세트) 프리로드 — 장비 교체 경로가 동기라 미리 잡아 둔다
 			cancelled = await AvatarCatalog.PreloadAsync(ct).SuppressCancellationThrow();
 			if (cancelled)
 			{

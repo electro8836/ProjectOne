@@ -14,7 +14,8 @@ namespace ProjectOne.Unit
 
 		private SpriteRenderer _spriteRenderer;
 
-		// UnitRoot 에 붙은 정렬 그룹. 유닛 간 앞뒤는 이 값으로만 제어한다.
+		// 자식 중 첫 정렬 그룹(보통 UnitRoot, 무기를 분리한 히어로는 Body). 유닛 간 앞뒤는 이 값으로만 제어한다.
+		// 무기 그룹(WeaponAim)은 HeroWeapon 이 이 값을 기준으로 따로 맞춘다 — Body 가 WeaponAim 보다 앞 순서여야 한다.
 		private SortingGroup _sortingGroup;
 
 		private MaterialPropertyBlock _mpb;
@@ -106,6 +107,19 @@ namespace ProjectOne.Unit
 
 		private static readonly int HashAttack = Animator.StringToHash("Attack");
 
+		// 히어로 컨트롤러(AC_Hero)의 Weapon 레이어 전용 — 몸 레이어와 트리거를 나눠 한쪽이 소비해 다른 쪽이 놓치는 일을 막는다.
+		// 이름 규칙은 "Weapon" + AnimName 이다(Attack → WeaponAttack, Attack1 → WeaponAttack1 …). 콤보 무기는 Attack1~3, 그 외 무기는 Attack.
+		private static readonly int HashWeaponAttack = Animator.StringToHash("WeaponAttack");
+
+		private static readonly int HashWeaponAttack1 = Animator.StringToHash("WeaponAttack1");
+
+		private static readonly int HashWeaponAttack2 = Animator.StringToHash("WeaponAttack2");
+
+		private static readonly int HashWeaponAttack3 = Animator.StringToHash("WeaponAttack3");
+
+		// AnimName → 무기 레이어 트리거 해시. 문자열 결합은 이름당 처음 한 번만 한다.
+		private static readonly Dictionary<string, int> _weaponTriggerHashes = new Dictionary<string, int>();
+
 		private static readonly int HashSkill = Animator.StringToHash("Skill");
 
 		private static readonly int HashHit = Animator.StringToHash("Hit");
@@ -123,6 +137,9 @@ namespace ProjectOne.Unit
 		private static readonly int HashAttackSpeedMul = Animator.StringToHash("AttackSpeedMod");
 
 		private static readonly int HashMoveSpeedMul = Animator.StringToHash("MoveSpeedMod");
+
+		// AC_Hero Weapon 레이어 공격 상태의 배속 — 시전마다 SkillExecutor 가 AnimLength ÷ 공격 주기로 넣는다
+		private static readonly int HashWeaponAttackSpeedMul = Animator.StringToHash("WeaponAttackSpeedMod");
 
 		private void Awake()
 		{
@@ -269,6 +286,11 @@ namespace ProjectOne.Unit
 			{
 				_animator.SetTrigger(HashAttack);
 			}
+
+			if (hasParameter(HashWeaponAttack) == true)
+			{
+				_animator.SetTrigger(HashWeaponAttack);
+			}
 		}
 
 		public void PlaySkill()
@@ -291,6 +313,48 @@ namespace ProjectOne.Unit
 			{
 				_animator.SetTrigger(hash);
 			}
+
+			// 무기 레이어가 있는 컨트롤러면 같은 모션의 무기 트리거도 건다 — 없으면 hasParameter 에서 걸러진다.
+			int weaponHash = getWeaponTriggerHash(motionName);
+			if (hasParameter(weaponHash) == true)
+			{
+				_animator.SetTrigger(weaponHash);
+			}
+		}
+
+		private static int getWeaponTriggerHash(string motionName)
+		{
+			int hash;
+			if (_weaponTriggerHashes.TryGetValue(motionName, out hash) == false)
+			{
+				hash = Animator.StringToHash("Weapon" + motionName);
+				_weaponTriggerHashes.Add(motionName, hash);
+			}
+
+			return hash;
+		}
+
+		private void resetWeaponTriggers()
+		{
+			if (hasParameter(HashWeaponAttack) == true)
+			{
+				_animator.ResetTrigger(HashWeaponAttack);
+			}
+
+			if (hasParameter(HashWeaponAttack1) == true)
+			{
+				_animator.ResetTrigger(HashWeaponAttack1);
+			}
+
+			if (hasParameter(HashWeaponAttack2) == true)
+			{
+				_animator.ResetTrigger(HashWeaponAttack2);
+			}
+
+			if (hasParameter(HashWeaponAttack3) == true)
+			{
+				_animator.ResetTrigger(HashWeaponAttack3);
+			}
 		}
 
 		// 캐스팅(시전) 지속 상태 설정 — 시작 시 true, 발동/취소/사망 시 false
@@ -309,6 +373,15 @@ namespace ProjectOne.Unit
 			{
 				_lastAttackSpeedMul = num;
 				_animator.SetFloat(HashAttackSpeedMul, num);
+			}
+		}
+
+		// 무기 공격 클립 배속. 시전마다 바뀌므로 캐시 없이 바로 쓴다(시전당 1회).
+		public void SetWeaponAttackSpeed(float speed)
+		{
+			if (hasParameter(HashWeaponAttackSpeedMul) == true)
+			{
+				_animator.SetFloat(HashWeaponAttackSpeedMul, Mathf.Clamp(speed, _minMotionMul, _maxMotionMul));
 			}
 		}
 
@@ -371,6 +444,8 @@ namespace ProjectOne.Unit
 			{
 				_animator.ResetTrigger(HashAttack);
 			}
+
+			resetWeaponTriggers();
 
 			if (hasParameter(HashSkill) == true)
 			{
@@ -516,6 +591,8 @@ namespace ProjectOne.Unit
 				_animator.ResetTrigger(HashSkill);
 				_animator.ResetTrigger(HashHit);
 				_animator.ResetTrigger(HashHDead);
+				resetWeaponTriggers();
+
 				if (hasParameter(HashIsCasting) == true)
 				{
 					_animator.SetBool(HashIsCasting, false);

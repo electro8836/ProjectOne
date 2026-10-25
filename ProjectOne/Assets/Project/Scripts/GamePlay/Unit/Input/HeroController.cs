@@ -62,6 +62,13 @@ namespace ProjectOne.Unit
 			}
 
 			Vector2 move = _input.MoveInput;
+
+			// [테스트] 조이스틱 입력이 없으면 WASD 로 이동
+			if (move.sqrMagnitude < 0.01f)
+			{
+				move = readTestKeyboardMove();
+			}
+
 			if (move.sqrMagnitude < 0.01f)
 			{
 				_mover.Stop();
@@ -69,6 +76,39 @@ namespace ProjectOne.Unit
 			}
 
 			_mover.Move(move, _hero.MoveSpeed);
+		}
+
+		// [테스트] WASD 방향 — 대각선은 길이 1 로 맞춘다
+		Vector2 readTestKeyboardMove()
+		{
+			Keyboard keyboard = Keyboard.current;
+			if (keyboard == null)
+			{
+				return Vector2.zero;
+			}
+
+			Vector2 move = Vector2.zero;
+			if (keyboard.dKey.isPressed == true)
+			{
+				move.x += 1f;
+			}
+
+			if (keyboard.aKey.isPressed == true)
+			{
+				move.x -= 1f;
+			}
+
+			if (keyboard.wKey.isPressed == true)
+			{
+				move.y += 1f;
+			}
+
+			if (keyboard.sKey.isPressed == true)
+			{
+				move.y -= 1f;
+			}
+
+			return move.normalized;
 		}
 	}
 }

@@ -47,7 +47,7 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			registerSkill(hero, mastery.NormalAttackSkill);
+			registerNormalAttack(hero, mastery.NormalAttackSkill);
 			registerDevSkills(hero, mastery);
 			applyTree(hero, book, mastery);
 		}
@@ -268,6 +268,30 @@ namespace ProjectOne.Unit
 			}
 
 			hero.SkillContainer.Register(skill, Source);
+		}
+
+		// 평타와 그 콤보 단계(ComboNext 사슬)를 순서대로 등록한다 — 진입 평타가 먼저여야 1단으로 판정된다.
+		// 잘못된 데이터로 사슬이 고리를 이루면 무한 반복하므로 단계 수를 제한한다.
+		private void registerNormalAttack(Hero hero, EDT.Skill skill)
+		{
+			const int MaxComboSteps = 8;
+			EDT.Skill current = skill;
+			for (int i = 0; i < MaxComboSteps && current != EDT.Skill.None; i++)
+			{
+				registerSkill(hero, current);
+
+				Table_Skill.Row row = Table_Skill.Get(current);
+				if (row == null)
+				{
+					break;
+				}
+
+				current = row.ComboNext;
+				if (current == skill)
+				{
+					break;
+				}
+			}
 		}
 	}
 }

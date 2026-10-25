@@ -294,6 +294,16 @@ namespace ProjectOne.Skill
 				return;
 			}
 
+			// 무기 레이어(히어로)는 클립을 AnimLength 기준으로 만들고 공격 주기에 맞춰 늘이고 줄인다 —
+			// 쿨타임 1초에 AnimLength 1초면 1배속, 쿨타임 0.5초면 2배속. 쿨타임이 바뀌어도 클립을 다시 만들 필요가 없다.
+			// 몸·몬스터는 지금처럼 공속 배속(AttackSpeedMod)을 쓴다 — 무기 레이어가 없는 컨트롤러면 파라미터가 없어 무시된다.
+			float weaponSpeed = useSpeed;
+			if (row.Cooldown > 0f && row.AnimLength > 0f)
+			{
+				weaponSpeed = row.AnimLength / (row.Cooldown / useSpeed);
+			}
+
+			anim.SetWeaponAttackSpeed(weaponSpeed);
 			anim.PlayMotion(row.AnimName);
 		}
 	}
