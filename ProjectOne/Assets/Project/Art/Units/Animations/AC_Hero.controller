@@ -824,6 +824,33 @@ AnimatorController:
     m_IKPass: 0
     m_SyncedLayerAffectsTiming: 0
     m_Controller: {fileID: 9100000}
+  - serializedVersion: 5
+    m_Name: UpperBody
+    m_StateMachine: {fileID: 0}
+    m_Mask: {fileID: 31900000, guid: 0af325d145126b340a65f10a3a6f4721, type: 2}
+    m_Motions:
+    - serializedVersion: 2
+      m_State: {fileID: 7195894281106202056}
+      m_Motion: {fileID: 7400000, guid: 72db5c8cbffcc584b8652c4a9f772cb4, type: 2}
+    - serializedVersion: 2
+      m_State: {fileID: 2314974477140657980}
+      m_Motion: {fileID: 7400000, guid: 7d557535266eabb44a7c08a7e496952c, type: 2}
+    - serializedVersion: 2
+      m_State: {fileID: 8529664453405795606}
+      m_Motion: {fileID: 7400000, guid: c992ddf7abd0245459d6c621c6794537, type: 2}
+    - serializedVersion: 2
+      m_State: {fileID: -719037470668535230}
+      m_Motion: {fileID: 7400000, guid: 73a0b184849a1544bab46999e8b0a5e5, type: 2}
+    - serializedVersion: 2
+      m_State: {fileID: 6232132559638264322}
+      m_Motion: {fileID: 7400000, guid: 72db5c8cbffcc584b8652c4a9f772cb4, type: 2}
+    m_Behaviours: []
+    m_BlendingMode: 1
+    m_SyncedLayerIndex: 1
+    m_DefaultWeight: 1
+    m_IKPass: 0
+    m_SyncedLayerAffectsTiming: 0
+    m_Controller: {fileID: 9100000}
   m_EvaluateTransitionsOnStart: 0
 --- !u!1101 &83082392019630406
 AnimatorStateTransition:
