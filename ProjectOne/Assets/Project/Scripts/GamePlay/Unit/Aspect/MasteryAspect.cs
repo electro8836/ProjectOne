@@ -122,7 +122,7 @@ namespace ProjectOne.Unit
 			return weapon != null ? weapon.Equipment : null;
 		}
 
-		// 전 마스터리의 레벨 보너스를 합산한다. 양손검을 키우면 석궁을 들어도 그 공격력이 유지된다.
+		// 전 마스터리의 레벨 보너스를 합산한다. 대검을 키우면 수리검을 들어도 그 공격력이 유지된다.
 		private void applyLevelBonuses(Hero hero, MasteryBook book)
 		{
 			Dictionary<WeaponMastery, Table_WeaponMastery.Row> all = MasteryCatalog.All();

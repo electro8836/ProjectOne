@@ -54,7 +54,7 @@ namespace EDT {
         None,
         GreatSword,
         Blade,
-        Pistol,
+        Shuriken,
         Rifle,
     }
 
@@ -413,7 +413,7 @@ namespace EDT {
         None,
         Mastery_GreatSword,
         Mastery_Blade,
-        Mastery_Pistol,
+        Mastery_Shuriken,
         Mastery_Rifle,
     }
 
@@ -466,7 +466,7 @@ namespace EDT {
 
     public enum Projectile {
         None,
-        PJT_Pistol_Bullet,
+        PJT_Shuriken_Bullet,
         PJT_Monster_Arrow,
     }
 
@@ -489,9 +489,9 @@ namespace EDT {
         Skill_Blade_Attack,
         Skill_Blade_Active_01,
         Skill_Blade_Passive_01,
-        Skill_Pistol_Attack,
-        Skill_Pistol_Active_01,
-        Skill_Pistol_Passive_01,
+        Skill_Shuriken_Attack,
+        Skill_Shuriken_Active_01,
+        Skill_Shuriken_Passive_01,
         Skill_Rifle_Attack,
         Skill_Rifle_Active_01,
         Skill_Rifle_Passive_01,
@@ -514,8 +514,8 @@ namespace EDT {
         None,
         SE_GreatSword_Attack_Damage,
         SE_Blade_Attack_Damage,
-        SE_Pistol_Attack_Projectile,
-        SE_Pistol_Attack_Damage,
+        SE_Shuriken_Attack_Projectile,
+        SE_Shuriken_Attack_Damage,
         SE_Rifle_Attack_Damage,
         SE_Monster_MeleeAttack_Damage,
         SE_Monster_RangeAttack_Projectile,

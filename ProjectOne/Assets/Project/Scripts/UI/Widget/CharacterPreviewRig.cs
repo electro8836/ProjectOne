@@ -148,7 +148,7 @@ namespace ProjectOne.UI
 		}
 
 		// 무기별 오버라이드 컨트롤러. AC_Root 의 IDLE 클립도 AOC 가 갈아끼우는 대상이라,
-		// 이 교체가 없으면 석궁을 들어도 맨손 IDLE 포즈가 나온다.
+		// 이 교체가 없으면 수리검을 들어도 맨손 IDLE 포즈가 나온다.
 		private void applyAnimController()
 		{
 			if (_animator == null)
