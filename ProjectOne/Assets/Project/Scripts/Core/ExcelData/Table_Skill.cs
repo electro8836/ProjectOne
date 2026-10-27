@@ -28,9 +28,7 @@ namespace EDT {
             public float SkillVFXOffset { get; set; } = 0f;
             public string SkillSFX { get; set; } = string.Empty;
             public float BreakDamage { get; set; } = 0f;
-            public Skill ComboNext { get; set; } = Skill.None;
-            public float ComboOpen { get; set; } = 0f;
-            public float ComboClose { get; set; } = 0f;
+            public int ComboSteps { get; set; } = 0;
         }
 
         public const string Filename = "edt_skill.bytes";
@@ -74,9 +72,7 @@ namespace EDT {
                 row.SkillVFXOffset = reader.ReadSingle();
                 row.SkillSFX = reader.ReadString();
                 row.BreakDamage = reader.ReadSingle();
-                row.ComboNext = (Skill)reader.ReadInt32();
-                row.ComboOpen = reader.ReadSingle();
-                row.ComboClose = reader.ReadSingle();
+                row.ComboSteps = reader.ReadInt32();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

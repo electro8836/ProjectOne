@@ -156,25 +156,27 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			Table_WeaponMastery.Row mastery;
+			// 애니메이터는 무기 행이 갖는다 — 외형 모드면 넘겨받은 무기, 아니면 내 착용 무기.
+			EquipmentInstance weapon;
 			if (_useExternal == true)
 			{
-				mastery = MasteryCatalog.GetByWeaponType(HeroAvatarAspect.GetWeaponType(_externalWeapon));
+				weapon = _externalWeapon;
 			}
 			else
 			{
-				MasteryBook book = Account.Instance.Mastery;
-				mastery = (book != null) ? book.CurrentMastery : null;
+				Loadout loadout = Account.Instance.Loadout;
+				weapon = (loadout != null) ? loadout.GetEquipped(EquipSlotTypes.Weapon) : null;
 			}
 
-			if (mastery == null)
+			Table_Equipment.Row row = (weapon != null) ? weapon.Equipment : null;
+			if (row == null || row.WeaponType == WeaponType.None)
 			{
 				// 무기 미착용 — 기본 컨트롤러로 되돌린다.
 				_animator.runtimeAnimatorController = _baseController;
 				return;
 			}
 
-			RuntimeAnimatorController controller = MasteryCatalog.GetAnimController(mastery.AnimControllerName);
+			RuntimeAnimatorController controller = MasteryCatalog.GetAnimController(row.AnimControllerName);
 			if (controller == null)
 			{
 				// 이름이 비었거나 프리로드 누락 — GetAnimController 가 이미 로그를 남겼다.

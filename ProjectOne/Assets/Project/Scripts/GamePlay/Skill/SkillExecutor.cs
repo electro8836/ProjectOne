@@ -304,6 +304,7 @@ namespace ProjectOne.Skill
 			}
 
 			anim.SetWeaponAttackSpeed(weaponSpeed);
+			anim.SetComboSteps(row.ComboSteps);
 			anim.PlayMotion(row.AnimName);
 		}
 	}

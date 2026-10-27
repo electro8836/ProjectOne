@@ -57,7 +57,7 @@
 
 | 소유자 | 등록할 곳 |
 |---|---|
-| 무기 — 평타 | `Mastery.xlsx` `#WeaponMastery.NormalAttackSkill` |
+| 무기 — 평타 | `Equipment.xlsx` `#Equipment.NormalAttackSkill` (무기 행) |
 | 무기 — 액티브·패시브 | `Option.xlsx` `#Option` 에 `OptionType=SkillGrant`, `OptionTarget=스킬 ID` 행을 만든다 → `Mastery.xlsx` `#SkillTreeNode.Option` 에 연결한다 |
 | 몬스터 | `Monster.xlsx` `#MonsterSkillSet.SkillID` — 스킬셋 그룹마다 Normal 스킬이 1개 필요하다 |
 | 보스 | `Monster.xlsx` `#BossMonsterPhase.PhaseSkillID` 또는 `#MonsterSkillSet` |

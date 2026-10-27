@@ -12,10 +12,8 @@ namespace EDT {
             public string Icon { get; set; } = string.Empty;
             public WeaponType WeaponType { get; set; } = WeaponType.None;
             public WeaponRangeType RangeType { get; set; } = WeaponRangeType.None;
-            public string AnimControllerName { get; set; } = string.Empty;
             public Option LevelBonusOption { get; set; } = Option.None;
             public float LevelBonusPerLevel { get; set; } = 0f;
-            public Skill NormalAttackSkill { get; set; } = Skill.None;
             public int MaxRow { get; set; } = 0;
             public int MaxColumn { get; set; } = 0;
             public int SkillTreeNodeGroupID { get; set; } = 0;
@@ -47,10 +45,8 @@ namespace EDT {
                 row.Icon = reader.ReadString();
                 row.WeaponType = (WeaponType)reader.ReadInt32();
                 row.RangeType = (WeaponRangeType)reader.ReadInt32();
-                row.AnimControllerName = reader.ReadString();
                 row.LevelBonusOption = (Option)reader.ReadInt32();
                 row.LevelBonusPerLevel = reader.ReadSingle();
-                row.NormalAttackSkill = (Skill)reader.ReadInt32();
                 row.MaxRow = reader.ReadInt32();
                 row.MaxColumn = reader.ReadInt32();
                 row.SkillTreeNodeGroupID = reader.ReadInt32();

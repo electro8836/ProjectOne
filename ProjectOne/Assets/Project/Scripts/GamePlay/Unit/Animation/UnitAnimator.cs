@@ -101,6 +101,8 @@ namespace ProjectOne.Unit
 
 		private float _lastAttackSpeedMul = 1f;
 
+		private int _lastComboSteps = int.MinValue;
+
 		private float _lastMoveSpeedMul = 1f;
 
 		private static readonly int HashIsMoving = Animator.StringToHash("IsMoving");
@@ -108,14 +110,12 @@ namespace ProjectOne.Unit
 		private static readonly int HashAttack = Animator.StringToHash("Attack");
 
 		// 히어로 컨트롤러(AC_Hero)의 Weapon 레이어 전용 — 몸 레이어와 트리거를 나눠 한쪽이 소비해 다른 쪽이 놓치는 일을 막는다.
-		// 이름 규칙은 "Weapon" + AnimName 이다(Attack → WeaponAttack, Attack1 → WeaponAttack1 …). 콤보 무기는 Attack1~3, 그 외 무기는 Attack.
+		// 이름 규칙은 "Weapon" + AnimName 이다(Attack → WeaponAttack).
 		private static readonly int HashWeaponAttack = Animator.StringToHash("WeaponAttack");
 
-		private static readonly int HashWeaponAttack1 = Animator.StringToHash("WeaponAttack1");
-
-		private static readonly int HashWeaponAttack2 = Animator.StringToHash("WeaponAttack2");
-
-		private static readonly int HashWeaponAttack3 = Animator.StringToHash("WeaponAttack3");
+		// 평타 콤보 동작 수(Skill.ComboSteps) — 몇 번째 타인지는 Weapon 레이어 상태 사슬이 정한다.
+		// 칼 유지 시간(공격 클립이 주기보다 긴 꼬리) 안에 다음 공격이 오면 다음 타, 아니면 Idle 로 돌아간다.
+		private static readonly int HashComboSteps = Animator.StringToHash("ComboSteps");
 
 		// AnimName → 무기 레이어 트리거 해시. 문자열 결합은 이름당 처음 한 번만 한다.
 		private static readonly Dictionary<string, int> _weaponTriggerHashes = new Dictionary<string, int>();
@@ -340,21 +340,6 @@ namespace ProjectOne.Unit
 			{
 				_animator.ResetTrigger(HashWeaponAttack);
 			}
-
-			if (hasParameter(HashWeaponAttack1) == true)
-			{
-				_animator.ResetTrigger(HashWeaponAttack1);
-			}
-
-			if (hasParameter(HashWeaponAttack2) == true)
-			{
-				_animator.ResetTrigger(HashWeaponAttack2);
-			}
-
-			if (hasParameter(HashWeaponAttack3) == true)
-			{
-				_animator.ResetTrigger(HashWeaponAttack3);
-			}
 		}
 
 		// 캐스팅(시전) 지속 상태 설정 — 시작 시 true, 발동/취소/사망 시 false
@@ -383,6 +368,18 @@ namespace ProjectOne.Unit
 			{
 				_animator.SetFloat(HashWeaponAttackSpeedMul, Mathf.Clamp(speed, _minMotionMul, _maxMotionMul));
 			}
+		}
+
+		// 평타 콤보 동작 수. 무기(평타)가 바뀌지 않는 한 같은 값이라 바뀔 때만 쓴다.
+		public void SetComboSteps(int steps)
+		{
+			if (steps == _lastComboSteps || hasParameter(HashComboSteps) == false)
+			{
+				return;
+			}
+
+			_lastComboSteps = steps;
+			_animator.SetInteger(HashComboSteps, steps);
 		}
 
 		// ratio 는 기본 이속 대비 현재 이속(기본 이속이면 1). 절대 속도가 아니다.
@@ -482,6 +479,7 @@ namespace ProjectOne.Unit
 
 			// 스로틀 캐시도 버린다 — 같은 값이 다시 들어올 때 걸러지지 않게 한다.
 			_lastAttackSpeedMul = float.NaN;
+			_lastComboSteps = int.MinValue;
 			_lastMoveSpeedMul = float.NaN;
 
 			// 이전 생의 플래시가 남아 반짝인 채로 스폰되지 않게 한다.
@@ -603,6 +601,7 @@ namespace ProjectOne.Unit
 				// 컨트롤러 교체는 애니메이터를 리바인드해 Float 파라미터를 기본값으로 되돌린다.
 				// 스로틀 캐시도 함께 버려야 같은 값이 다시 들어올 때 걸러지지 않는다.
 				_lastAttackSpeedMul = float.NaN;
+				_lastComboSteps = int.MinValue;
 				_lastMoveSpeedMul = float.NaN;
 			}
 		}

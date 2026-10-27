@@ -75,15 +75,6 @@ namespace ProjectOne.Skill
 		int _comboCount;
 		public int ComboCount => _comboCount;
 
-		// 평타 콤보 진행 — 다음에 낼 단계, 입력을 받기 시작할 때까지 남은 시간, 콤보가 끊길 때까지 남은 시간.
-		// 끊기면 다음 평타는 다시 1단(진입 평타)이다. 위의 적중 카운터와는 별개다.
-		EDT.Skill _comboNextSkill = EDT.Skill.None;
-		float _comboOpenRemaining;
-		float _comboRemaining;
-
-		// 열림 이후 쿨타임이 끝나기 전에 들어온 평타 입력 — 쿨타임이 끝나는 틱에 낸다(선입력)
-		bool _comboQueued;
-
 		// 캐스팅(시전) 진행 중 여부
 		bool _isCasting;
 		public bool IsCasting => _isCasting;
@@ -270,58 +261,7 @@ namespace ProjectOne.Skill
 			// SkillEffectApplier 가 NotifyNormalAttackHit 으로 알린다.
 
 			rt.StartCooldown(useSpeed);
-
-			if (rt.IsNormal == true)
-			{
-				advanceCombo(rt, useSpeed);
-			}
-
 			return true;
-		}
-
-		// 평타 콤보를 한 단계 넘긴다. 다음 단계(끝이면 1단)도 같은 주기로 쿨타임을 걸어 둔다 —
-		// 단계마다 다른 스킬이라, 걸지 않으면 동작이 끝나자마자 다음 단계가 쿨타임을 무시하고 나간다.
-		void advanceCombo(SkillRuntime cast, float useSpeed)
-		{
-			SkillRuntime next;
-			if (cast.ComboNext == EDT.Skill.None || _byId.TryGetValue(cast.ComboNext, out next) == false)
-			{
-				_comboNextSkill = EDT.Skill.None;
-				_byId.TryGetValue(getComboEntry(), out next);
-			}
-			else
-			{
-				_comboNextSkill = cast.ComboNext;
-			}
-
-			if (next != null && next != cast)
-			{
-				next.StartCooldown(useSpeed);
-			}
-
-			// 열림·끊김 시각은 주기에 대한 비율이다 — 무기 클립도 주기에 맞춘 배속으로 재생되므로 끊기는 순간 무기도 Idle 로 돌아간다.
-			// 값이 없으면 주기 끝에 열리고 바로 끊긴다(콤보 없는 평타).
-			float cycle = cast.GetCycleTime(useSpeed);
-			_comboOpenRemaining = (cast.ComboOpen > 0f) ? cycle * cast.ComboOpen : cycle;
-			_comboRemaining = (cast.ComboClose > 0f) ? cycle * cast.ComboClose : cycle;
-			_comboQueued = false;
-		}
-
-		// 입력 한 번(키를 누른 순간)으로 평타를 요청한다. 바로 낼 수 있으면 내고,
-		// 콤보가 열려 있는데 쿨타임이 남았으면 기억해 뒀다가 쿨타임이 끝나는 틱에 낸다. 열리기 전 입력은 버린다.
-		public bool RequestBasicAttack()
-		{
-			if (TryCast(GetBasicAttack()) == true)
-			{
-				return true;
-			}
-
-			if (_comboRemaining > 0f && _comboOpenRemaining <= 0f)
-			{
-				_comboQueued = true;
-			}
-
-			return false;
 		}
 
 		// 직접 눌러 시전할 수 있는 방식인가 — 조건 발동형과 상시형은 제외한다.
@@ -391,20 +331,8 @@ namespace ProjectOne.Skill
 			return rt.Source == "Special";
 		}
 
-		// 지금 낼 평타 — 콤보가 이어지는 중이면 다음 단계, 아니면 1단(진입 평타).
+		// 보유 스킬 중 평타 — 배열 순서가 아니라 SkillCategory 로 판정한다 (설계 3장·몬스터 3장)
 		public EDT.Skill GetBasicAttack()
-		{
-			if (_comboNextSkill != EDT.Skill.None && _comboRemaining > 0f && _byId.ContainsKey(_comboNextSkill) == true)
-			{
-				return _comboNextSkill;
-			}
-
-			return getComboEntry();
-		}
-
-		// 보유 스킬 중 첫 평타 — 배열 순서가 아니라 SkillCategory 로 판정한다 (설계 3장·몬스터 3장).
-		// 콤보 2·3단도 평타지만 진입 평타 뒤에 등록되므로(MasteryAspect) 첫 평타가 곧 1단이다.
-		EDT.Skill getComboEntry()
 		{
 			for (int i = 0; i < _ordered.Count; i++)
 			{
@@ -483,22 +411,6 @@ namespace ProjectOne.Skill
 				}
 			}
 
-			// 이어 치지 않고 시간이 지나면 콤보를 1단으로 되돌린다
-			if (_comboOpenRemaining > 0f)
-			{
-				_comboOpenRemaining -= dt;
-			}
-
-			if (_comboRemaining > 0f)
-			{
-				_comboRemaining -= dt;
-				if (_comboRemaining <= 0f)
-				{
-					_comboNextSkill = EDT.Skill.None;
-					_comboQueued = false;
-				}
-			}
-
 			// 활성 코드 스킬 진행 — 자체 종료 조건 충족 시 OnEnd 후 슬롯 비움
 			if (_activeBehavior != null && _activeBehavior.Tick(dt) == true)
 			{
@@ -508,12 +420,6 @@ namespace ProjectOne.Skill
 			for (int i = 0; i < _ordered.Count; i++)
 			{
 				_ordered[i].Tick(dt);
-			}
-
-			// 선입력 — 쿨타임이 풀린 틱에 바로 낸다. 실패하면(동작 중 등) 다음 틱에 다시 본다.
-			if (_comboQueued == true && TryCast(GetBasicAttack()) == true)
-			{
-				_comboQueued = false;
 			}
 
 			tickAuras(dt);

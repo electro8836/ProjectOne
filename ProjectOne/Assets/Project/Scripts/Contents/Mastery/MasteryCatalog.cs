@@ -37,7 +37,7 @@ namespace ProjectOne.Mastery
 		private static readonly Dictionary<int, List<Table_SkillTreeNode.Row>> _nextNodes =
 			new Dictionary<int, List<Table_SkillTreeNode.Row>>();
 
-		// AnimControllerName → 무기별 애니메이터 오버라이드.
+		// Equipment.AnimControllerName → 무기별 애니메이터 오버라이드.
 		// 무기 교체 경로(Loadout.reapplyHero)가 완전 동기라 부트에서 미리 잡아 두고 동기로 꺼내 쓴다.
 		private static readonly Dictionary<string, RuntimeAnimatorController> _animControllers =
 			new Dictionary<string, RuntimeAnimatorController>();
@@ -79,6 +79,7 @@ namespace ProjectOne.Mastery
 			_masteryExp.Clear();
 
 			buildMasteries();
+			checkWeaponAttacks();
 			buildNodes();
 			buildExpCurves();
 
@@ -113,16 +114,16 @@ namespace ProjectOne.Mastery
 
 		// ── 애니메이터 오버라이드 ─────────────────────────────────────
 
-		// 마스터리 테이블이 참조하는 AnimControllerName 을 전부 미리 로드한다.
+		// 무기(Equipment)가 참조하는 AnimControllerName 을 전부 미리 로드한다.
 		// Build() 이후에 호출해야 한다 — 주소 목록을 테이블에서 뽑는다.
 		//
-		// 해제하지 않는다. 세션 내내 필요한 자산이고 종류도 무기 계열 수만큼뿐이다.
+		// 해제하지 않는다. 세션 내내 필요한 자산이고 여러 무기가 같은 주소를 공유해 종류가 적다.
 		public static async UniTask PreloadAnimControllersAsync(CancellationToken ct = default(CancellationToken))
 		{
 			_animControllers.Clear();
 
-			Dictionary<WeaponMastery, Table_WeaponMastery.Row> all = Table_WeaponMastery.All();
-			Dictionary<WeaponMastery, Table_WeaponMastery.Row>.Enumerator e = all.GetEnumerator();
+			Dictionary<int, Table_Equipment.Row> all = Table_Equipment.All();
+			Dictionary<int, Table_Equipment.Row>.Enumerator e = all.GetEnumerator();
 			while (e.MoveNext() == true)
 			{
 				string address = e.Current.Value.AnimControllerName;
@@ -263,12 +264,32 @@ namespace ProjectOne.Mastery
 					continue;
 				}
 
-				if (row.NormalAttackSkill == EDT.Skill.None)
+				_byWeaponType[row.WeaponType] = row;
+			}
+		}
+
+		// 평타·애니메이터는 무기 행이 갖는다 — 무기마다 평타 판정과 모션이 다를 수 있다.
+		private static void checkWeaponAttacks()
+		{
+			Dictionary<int, Table_Equipment.Row> all = Table_Equipment.All();
+			Dictionary<int, Table_Equipment.Row>.Enumerator e = all.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				Table_Equipment.Row row = e.Current.Value;
+				if (row.WeaponType == WeaponType.None)
 				{
-					Debug.LogWarning($"[MasteryCatalog] 기본공격이 없는 마스터리입니다: {row.ID}");
+					continue;
 				}
 
-				_byWeaponType[row.WeaponType] = row;
+				if (row.NormalAttackSkill == EDT.Skill.None)
+				{
+					Debug.LogWarning($"[MasteryCatalog] 기본공격이 없는 무기입니다: {row.ID}");
+				}
+
+				if (string.IsNullOrEmpty(row.AnimControllerName) == true)
+				{
+					Debug.LogWarning($"[MasteryCatalog] 애니메이터 오버라이드가 없는 무기입니다: {row.ID}");
+				}
 			}
 		}
 

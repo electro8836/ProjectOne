@@ -17,11 +17,6 @@ namespace ProjectOne.Skill
 		public SkillCastingTypes CastingType { get; private set; }
 		public float CastingParam { get; private set; }	// 의미는 CastingType 이 결정 (설계 2.2)
 		public float AnimLength { get; private set; }	// 클립 실제 길이(공속 1.0 기준)
-		public EDT.Skill ComboNext { get; private set; }	// 평타 콤보의 다음 단계. None 이면 콤보 끝(다음은 1단)
-		// 콤보 입력을 받기 시작하는 지점과 콤보가 끊기는 지점 — 공격 주기에 대한 비율(1 = 주기 끝).
-		// 무기 클립은 AnimLength 를 주기에 맞춰 늘이고 줄이므로(SkillExecutor) 비율이면 쿨타임·공속이 바뀌어도 클립과 맞는다.
-		public float ComboOpen { get; private set; }
-		public float ComboClose { get; private set; }
 
 		// 평타 여부 — 구 IsBasicAttack 컬럼이 사라져 SkillCategory 로 판정한다.
 		public bool IsNormal
@@ -58,9 +53,6 @@ namespace ProjectOne.Skill
 			CastingType = row.CastingType;
 			CastingParam = row.CastingParam;
 			AnimLength = row.AnimLength;
-			ComboNext = row.ComboNext;
-			ComboOpen = row.ComboOpen;
-			ComboClose = row.ComboClose;
 		}
 
 		public bool IsOnCooldown

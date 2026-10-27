@@ -482,7 +482,7 @@ namespace EDT {
 
     public enum Skill {
         None,
-        Skill_GreatSword_Attack_01,
+        Skill_GreatSword_Attack,
         Skill_GreatSword_Active_01,
         Skill_GreatSword_Active_02,
         Skill_GreatSword_Passive_01,
@@ -508,13 +508,11 @@ namespace EDT {
         Skill_Rift_Spirit,
         Skill_Rift_Collapse,
         Skill_Monster_Boss_MeleeAttack_01,
-        Skill_GreatSword_Attack_02,
-        Skill_GreatSword_Attack_03,
     }
 
     public enum SkillEffect {
         None,
-        SE_GreatSword_Attack_01_Damage,
+        SE_GreatSword_Attack_Damage,
         SE_Blade_Attack_Damage,
         SE_Pistol_Attack_Projectile,
         SE_Pistol_Attack_Damage,
@@ -545,8 +543,6 @@ namespace EDT {
         SE_Rift_Spirit_Summon,
         SE_Rift_Collapse_Damage,
         SE_Ruins_Hazard_Damage,
-        SE_GreatSword_Attack_02_Damage,
-        SE_GreatSword_Attack_03_Damage,
     }
 
     public enum SkillModifier {

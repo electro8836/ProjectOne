@@ -75,7 +75,7 @@
 
 - `NN` 은 같은 접두를 가진 기존 ID·대기 목록의 가장 큰 번호 + 1 이다. 두 자리로 쓴다. 없으면 `01` 이다.
 - 무기 Normal 인데 `Skill_{W}_Attack` 이 이미 있으면 이렇게 안내한 뒤, S4 에서 직접 입력만 제시한다.
-  - "평타는 무기당 1개다(`WeaponMastery.NormalAttackSkill`). 이미 있다."
+  - "평타는 무기당 1개다(`Equipment.NormalAttackSkill`). 이미 있다."
 - 소환물 하위 문답(M8/M9)에서 들어왔다면 소유자는 4 로 고정하고 S3 을 묻지 않는다.
   - 소환물 이름은 Summon ID 에서 `_` 를 뺀 값으로 제안한다. 예: `Summon_Spark` → `SummonSpark`.
   - 동작만 입력받는다.

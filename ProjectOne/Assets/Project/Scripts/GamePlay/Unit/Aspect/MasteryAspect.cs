@@ -12,7 +12,7 @@ namespace ProjectOne.Unit
 	// 세 가지를 공급한다.
 	//   1. LevelBonusOption   전 마스터리 합산. **무기와 무관하게 항상 적용된다** (설계 4.4)
 	//   2. 스킬 트리 Stat 옵션 현재 마스터리의 투자 노드만. 무기를 바꾸면 통째로 교체된다
-	//   3. 보유 스킬          NormalAttackSkill + 트리에서 SkillGrant 로 습득한 것
+	//   3. 보유 스킬          장착 무기의 NormalAttackSkill + 트리에서 SkillGrant 로 습득한 것
 	//
 	// 무기를 착용하지 않으면 2·3 이 전부 사라지고 1만 남는다 (설계 4.3).
 	// Modifier 타입 옵션은 스탯 식에 들어가지 않고 SkillResolver 가 가져간다.
@@ -37,17 +37,19 @@ namespace ProjectOne.Unit
 			applyTotalLevelBonuses(hero, book);
 
 			Table_WeaponMastery.Row mastery = book.CurrentMastery;
+			Table_Equipment.Row weapon = getEquippedWeapon();
 
 			// 애니메이터 오버라이드는 조기 반환 앞에서 끝낸다 — 무기를 벗은 경우도 되돌려야 한다.
-			applyAnimController(hero, mastery);
+			applyAnimController(hero, mastery, weapon);
 
-			if (mastery == null)
+			if (mastery == null || weapon == null)
 			{
 				// 무기 미착용 — 기본공격도 트리도 없다. 공격 자체가 불가능하다 (설계 4.3).
 				return;
 			}
 
-			registerNormalAttack(hero, mastery.NormalAttackSkill);
+			// 평타는 무기가 갖는다 — 같은 마스터리라도 무기마다 평타 판정이 다를 수 있다.
+			registerSkill(hero, weapon.NormalAttackSkill);
 			registerDevSkills(hero, mastery);
 			applyTree(hero, book, mastery);
 		}
@@ -82,7 +84,7 @@ namespace ProjectOne.Unit
 		//
 		// 되돌리기를 RemoveFrom 이 아니라 여기서 하는 이유 — Reapply 는 RemoveFrom → ApplyTo 를
 		// 연달아 부르므로, 양쪽에서 건드리면 한 사이클에 컨트롤러가 두 번 바뀌고 트리거 리셋도 중복된다.
-		private void applyAnimController(Hero hero, Table_WeaponMastery.Row mastery)
+		private void applyAnimController(Hero hero, Table_WeaponMastery.Row mastery, Table_Equipment.Row weapon)
 		{
 			UnitAnimator animator = hero.GetComponent<UnitAnimator>();
 			if (animator == null)
@@ -90,13 +92,13 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			if (mastery == null)
+			if (mastery == null || weapon == null)
 			{
 				animator.RestoreBaseController();
 				return;
 			}
 
-			RuntimeAnimatorController controller = MasteryCatalog.GetAnimController(mastery.AnimControllerName);
+			RuntimeAnimatorController controller = MasteryCatalog.GetAnimController(weapon.AnimControllerName);
 			if (controller == null)
 			{
 				// 이름이 비었거나 프리로드 누락 — GetAnimController 가 이미 로그를 남겼다.
@@ -105,6 +107,19 @@ namespace ProjectOne.Unit
 			}
 
 			animator.SetController(controller);
+		}
+
+		// 장착 무기의 장비 행. 미착용이면 null.
+		private Table_Equipment.Row getEquippedWeapon()
+		{
+			Loadout loadout = Account.Instance.Loadout;
+			if (loadout == null)
+			{
+				return null;
+			}
+
+			EquipmentInstance weapon = loadout.GetEquipped(EquipSlotTypes.Weapon);
+			return weapon != null ? weapon.Equipment : null;
 		}
 
 		// 전 마스터리의 레벨 보너스를 합산한다. 양손검을 키우면 석궁을 들어도 그 공격력이 유지된다.
@@ -268,30 +283,6 @@ namespace ProjectOne.Unit
 			}
 
 			hero.SkillContainer.Register(skill, Source);
-		}
-
-		// 평타와 그 콤보 단계(ComboNext 사슬)를 순서대로 등록한다 — 진입 평타가 먼저여야 1단으로 판정된다.
-		// 잘못된 데이터로 사슬이 고리를 이루면 무한 반복하므로 단계 수를 제한한다.
-		private void registerNormalAttack(Hero hero, EDT.Skill skill)
-		{
-			const int MaxComboSteps = 8;
-			EDT.Skill current = skill;
-			for (int i = 0; i < MaxComboSteps && current != EDT.Skill.None; i++)
-			{
-				registerSkill(hero, current);
-
-				Table_Skill.Row row = Table_Skill.Get(current);
-				if (row == null)
-				{
-					break;
-				}
-
-				current = row.ComboNext;
-				if (current == skill)
-				{
-					break;
-				}
-			}
 		}
 	}
 }

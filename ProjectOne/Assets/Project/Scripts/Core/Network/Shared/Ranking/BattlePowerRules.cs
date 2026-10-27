@@ -207,7 +207,13 @@ namespace ProjectOne.Shared
 				return;
 			}
 
-			addSkill(skills, current.NormalAttackSkill);
+			// 평타는 무기가 갖는다 — 같은 마스터리라도 무기마다 다르다.
+			Table_Equipment.Row weaponRow = Table_Equipment.Get(weapon.itemId);
+			if (weaponRow != null)
+			{
+				addSkill(skills, weaponRow.NormalAttackSkill);
+			}
+
 			if (current.Dev_SkillIDs != null)
 			{
 				for (int i = 0; i < current.Dev_SkillIDs.Length; i++)
