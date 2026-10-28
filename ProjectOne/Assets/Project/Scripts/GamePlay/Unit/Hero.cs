@@ -39,7 +39,7 @@ namespace ProjectOne.Unit
 
 			if (_weapon != null && _mover != null && IsDead == false)
 			{
-				_weapon.Tick(_mover.Facing);
+				_weapon.Tick(_mover.Facing, dt);
 			}
 
 			// 정렬은 사망 후에도 몸과 함께 따라가야 하므로 생존과 무관하게 맞춘다

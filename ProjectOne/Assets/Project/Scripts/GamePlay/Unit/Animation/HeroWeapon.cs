@@ -5,15 +5,30 @@ namespace ProjectOne.Unit
 {
 	// 히어로 무기 조준·배치. 손에 달지 않고 손이 있을 자리(WeaponAim)에 두고 facing 방향으로 돌린다.
 	//
-	// 계층 역할: WeaponAim(중심·조준 회전, 이 컴포넌트) → Motion(AC_Hero Weapon 레이어) → Model(무기 스프라이트, HeroAvatar)
-	// Motion 의 조준각별 Idle 자세는 블렌드 트리가 AimAngle 파라미터로 고른다. 이 컴포넌트는 그 값을 넘기기만 한다.
+	// 계층 역할: WeaponAim(중심·조준 회전, 이 컴포넌트 / 위치 = 흔들림, WeaponSway 레이어)
+	//   → Offset(조준각별 위치, WeaponOffset 레이어) → Motion(자세·공격 모션, Weapon 레이어) → Model(무기 스프라이트, HeroAvatar)
+	// 조준각별 오프셋·공격 모션은 블렌드 트리가 AimAngle 파라미터로 고른다. 이 컴포넌트는 그 값을 넘기기만 한다.
 	// 공격 중에도 WeaponAim 은 조준각을 유지한다 — 같은 공격 모션이 바라보는 방향으로 나간다.
-	// WeaponAim·Model 은 애니메이션 클립이 키를 잡으면 안 된다 — Weapon 레이어 마스크도 Motion 만 연다.
+	// WeaponAim 회전은 클립이 키를 잡으면 안 된다(이 컴포넌트가 쓴다). 위치는 흔들림 레이어만 쓰고 공격 중엔 0 이라
+	// 공격 판정·궤적(SlashFX) 기준점이 콜라이더 중심과 어긋나지 않는다.
 	//
 	// Hero.ManualTick 이 base(UnitAnimator 좌우 반전) 직후 Tick 을 부른다. 반전 결과를 읽어야 각이 맞는다.
 	public class HeroWeapon : MonoBehaviour
 	{
 		private static readonly int HashAimAngle = Animator.StringToHash("AimAngle");
+
+		// AC_Hero Weapon 레이어 공격 상태(WEAPON_ATTACK·_2·_3)의 태그
+		private static readonly int HashAttackTag = Animator.StringToHash("Attack");
+
+		// 공격 중이면 WeaponOffset 레이어가 이동 중에도 정지 오프셋을 쓴다 — 공격 클립이 정지 오프셋 기준이라
+		private static readonly int HashWeaponAttacking = Animator.StringToHash("WeaponAttacking");
+
+		private const string WeaponLayerName = "Weapon";
+
+		private const string SwayLayerName = "WeaponSway";
+
+		// 조준각이 이보다 아래(+)면 몸 뒤에 그린다 — 정렬 힌트가 0(각도 규칙)일 때만
+		private const float BackAngle = 45f;
 
 		// 좌우반전 루트(UnitRoot). 같은 오브젝트의 Animator 를 쓴다.
 		[SerializeField] private Transform _flipRoot;
@@ -35,8 +50,27 @@ namespace ProjectOne.Unit
 
 		private UnitAnimator _unitAnimator;
 
-		// 앞뒤 판정 — 공격 클립이 Model 의 sortingOrder 를 몸 앞(30)·뒤(-99)로 키를 잡는다
+		// 흔들림이 공격 뒤 다시 살아나는 시간(초) — 공격 종료 전이(0.1초)와 맞춘다. 공격 시작 땐 즉시 끈다.
+		[SerializeField] private float _swayRecoverTime = 0.1f;
+
+		// 앞뒤 판정 — 클립이 Model 의 sortingOrder 를 정렬 힌트로 키를 잡는다.
+		// 양수 = 무조건 몸 앞, 음수 = 무조건 몸 뒤, 0 = 조준각 규칙(BackAngle 아래면 뒤)
 		private SpriteRenderer _modelRenderer;
+
+		private int _weaponLayer = -1;
+
+		private int _swayLayer = -1;
+
+		// 마지막으로 쓴 흔들림 레이어 가중치. 바뀔 때만 쓴다(NaN = 다시 써야 함).
+		private float _swayWeight = float.NaN;
+
+		private bool _hasAttackingParam;
+
+		// 마지막으로 보낸 공격 여부. 바뀔 때만 쓴다.
+		private bool _isAttacking;
+
+		// 컨트롤러 교체 직후 — 값이 같아도 한 번은 다시 보낸다
+		private bool _attackStateDirty = true;
 
 		private int _lastWeaponOrder = int.MinValue;
 
@@ -74,7 +108,7 @@ namespace ProjectOne.Unit
 		// 그 사이 facing 이 몸 뒤쪽을 가리켜도 무기는 정면 기준 같은 높이를 유지하다가 반전과 함께 넘어간다.
 		// (예전처럼 ±90도로 자르면 지연 구간에 무기가 수직 위/아래로 튀었다가 돌아온다.)
 		// 반전이 제때 끝난 상태에서는 -facing.x * 스케일부호 와 |facing.x| 가 같으므로 결과도 같다.
-		public void Tick(Vector2 facing)
+		public void Tick(Vector2 facing, float dt)
 		{
 			if (_weaponAim == null || _flipRoot == null)
 			{
@@ -82,6 +116,7 @@ namespace ProjectOne.Unit
 			}
 
 			refreshController();
+			updateAttackState(dt);
 
 			if (facing.sqrMagnitude < 1E-06f)
 			{
@@ -127,7 +162,22 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			bool front = _modelRenderer.sortingOrder >= 0;
+			int hint = _modelRenderer.sortingOrder;
+			bool front;
+			if (hint > 0)
+			{
+				front = true;
+			}
+			else if (hint < 0)
+			{
+				front = false;
+			}
+			else
+			{
+				// 조준각을 아직 못 받았으면(NaN) 앞으로 둔다
+				front = (_lastAngle > BackAngle) == false;
+			}
+
 			int order = front ? body + _frontSortOffset : body - 1;
 
 			// sortingOrder 는 int16 이다 — 맵 끝에서 더한 값이 넘치지 않게 자른다
@@ -159,14 +209,81 @@ namespace ProjectOne.Unit
 			_lastAngle = float.NaN;
 			_hasAimParam = false;
 
+			// 컨트롤러 교체는 레이어 가중치도 기본값으로 되돌린다 — 다시 쓰게 한다
+			_weaponLayer = _animator.GetLayerIndex(WeaponLayerName);
+			_swayLayer = _animator.GetLayerIndex(SwayLayerName);
+			_swayWeight = float.NaN;
+			_attackStateDirty = true;
+			_hasAttackingParam = false;
+
 			AnimatorControllerParameter[] parameters = _animator.parameters;
 			for (int i = 0; i < parameters.Length; i++)
 			{
 				if (parameters[i].nameHash == HashAimAngle)
 				{
 					_hasAimParam = true;
-					break;
 				}
+				else if (parameters[i].nameHash == HashWeaponAttacking)
+				{
+					_hasAttackingParam = true;
+				}
+			}
+		}
+
+		// 공격 여부를 Weapon 레이어 상태에서 읽어 흔들림·오프셋 레이어에 알린다.
+		// 전이 중이면 넘어가는 상태 기준 — 공격 종료 전이가 시작되면 바로 되살리기 시작한다.
+		// 흔들림은 끌 때 즉시(공격 준비자세에 섞이지 않게), 켤 때 _swayRecoverTime 동안 올린다.
+		private void updateAttackState(float dt)
+		{
+			if (_weaponLayer < 0)
+			{
+				return;
+			}
+
+			AnimatorStateInfo state;
+			if (_animator.IsInTransition(_weaponLayer) == true)
+			{
+				state = _animator.GetNextAnimatorStateInfo(_weaponLayer);
+			}
+			else
+			{
+				state = _animator.GetCurrentAnimatorStateInfo(_weaponLayer);
+			}
+
+			bool attacking = state.tagHash == HashAttackTag;
+			bool started = false;
+			if (attacking != _isAttacking || _attackStateDirty == true)
+			{
+				started = attacking == true && _isAttacking == false;
+				_isAttacking = attacking;
+				_attackStateDirty = false;
+				if (_hasAttackingParam == true)
+				{
+					_animator.SetBool(HashWeaponAttacking, attacking);
+				}
+			}
+
+			if (_swayLayer >= 0)
+			{
+				float target = attacking ? 0f : 1f;
+				float weight = target;
+				if (float.IsNaN(_swayWeight) == false && target > _swayWeight && _swayRecoverTime > 0f)
+				{
+					weight = Mathf.MoveTowards(_swayWeight, target, dt / _swayRecoverTime);
+				}
+
+				if (weight != _swayWeight)
+				{
+					_swayWeight = weight;
+					_animator.SetLayerWeight(_swayLayer, weight);
+				}
+			}
+
+			// 이 Tick 은 Animator 평가 뒤라 그대로 두면 공격 첫 프레임이 흔들림·이동 오프셋을 단 채 그려진다.
+			// 공격이 시작된 프레임에만 0초로 한 번 더 평가해 맞춘다.
+			if (started == true)
+			{
+				_animator.Update(0f);
 			}
 		}
 

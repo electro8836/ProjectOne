@@ -180,6 +180,12 @@ namespace ProjectOne.Dev
 
 		private void onTableLoadFailed(Exception e)
 		{
+			// 로드 중 플레이를 끄면(OnDestroy 토큰 취소) 오는 정상 종료 — 로그 대상이 아니다
+			if (e is OperationCanceledException)
+			{
+				return;
+			}
+
 			Debug.LogException(e);
 		}
 
