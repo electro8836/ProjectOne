@@ -10,7 +10,7 @@ namespace ProjectOne.Unit
 	// 조준각별 오프셋·공격 모션은 블렌드 트리가 AimAngle 파라미터로 고른다. 이 컴포넌트는 그 값을 넘기기만 한다.
 	// 공격 중에도 WeaponAim 은 조준각을 유지한다 — 같은 공격 모션이 바라보는 방향으로 나간다.
 	// WeaponAim 회전은 클립이 키를 잡으면 안 된다(이 컴포넌트가 쓴다). 위치는 흔들림 레이어만 쓰고 공격 중엔 0 이라
-	// 공격 판정·궤적(SlashFX) 기준점이 콜라이더 중심과 어긋나지 않는다.
+	// 공격 판정·무기 FX(WeaponFX) 기준점이 콜라이더 중심과 어긋나지 않는다.
 	//
 	// Hero.ManualTick 이 base(UnitAnimator 좌우 반전) 직후 Tick 을 부른다. 반전 결과를 읽어야 각이 맞는다.
 	public class HeroWeapon : MonoBehaviour
@@ -20,8 +20,8 @@ namespace ProjectOne.Unit
 		// AC_Hero Weapon 레이어 공격 상태(WEAPON_ATTACK·_2·_3)의 태그
 		private static readonly int HashAttackTag = Animator.StringToHash("Attack");
 
-		// 공격 중이면 WeaponOffset 레이어가 이동 중에도 정지 오프셋을 쓴다 — 공격 클립이 정지 오프셋 기준이라
-		private static readonly int HashWeaponAttacking = Animator.StringToHash("WeaponAttacking");
+		// 총 공격 클립이 1 로 키를 잡는다 — 이 동안 무기 FX(총구 섬광)를 총구에 둔다. 도검은 0(조준 중심)
+		private static readonly int HashWeaponMuzzle = Animator.StringToHash("WeaponMuzzle");
 
 		private const string WeaponLayerName = "Weapon";
 
@@ -40,8 +40,11 @@ namespace ProjectOne.Unit
 
 		// 무기 정렬 그룹(WeaponAim). 몸(Body) 그룹과 나눠, 몸 순서를 기준으로 앞뒤만 따로 정한다 —
 		// 몸 앞 구간이면 칼이 닿는 거리 안의 아래쪽(더 가까운) 몬스터보다도 위에 그린다.
-	// 궤적(SlashFX)은 자체 그룹(sortAtRoot, Effect 레이어)으로 이 그룹을 벗어나 몬스터·지형지물보다 항상 위에 그린다.
+	// 무기 FX(WeaponFX — 도검 궤적·총구 섬광)는 자체 그룹(sortAtRoot, Effect 레이어)으로 이 그룹을 벗어나 몬스터·지형지물보다 항상 위에 그린다.
 		[SerializeField] private SortingGroup _weaponGroup;
+
+		// 무기 FX(WeaponAim/WeaponFX). 총이면 공격 중 총구 위치로 옮긴다.
+		[SerializeField] private Transform _weaponFx;
 
 		// 몸 앞 구간에서 몸 순서에 더하는 값 — 공격 사거리(2) × UnitAnimator 정렬 정밀도(1000)
 		[SerializeField] private int _frontSortOffset = 2000;
@@ -64,13 +67,18 @@ namespace ProjectOne.Unit
 		// 마지막으로 쓴 흔들림 레이어 가중치. 바뀔 때만 쓴다(NaN = 다시 써야 함).
 		private float _swayWeight = float.NaN;
 
-		private bool _hasAttackingParam;
-
-		// 마지막으로 보낸 공격 여부. 바뀔 때만 쓴다.
+		// 지난 프레임의 공격 여부 — 공격이 시작된 프레임을 알아낸다
 		private bool _isAttacking;
 
-		// 컨트롤러 교체 직후 — 값이 같아도 한 번은 다시 보낸다
-		private bool _attackStateDirty = true;
+		private bool _hasMuzzleParam;
+
+		// 총구 캐시 — 무기 스프라이트가 바뀔 때만 다시 구한다(Model 로컬 좌표)
+		private Sprite _muzzleSprite;
+
+		private Vector3 _muzzleLocal;
+
+		// 무기 FX 를 총구로 옮겨 둔 상태 — 끝나면 조준 중심(0)으로 한 번만 되돌린다
+		private bool _fxAtMuzzle;
 
 		private int _lastWeaponOrder = int.MinValue;
 
@@ -116,7 +124,8 @@ namespace ProjectOne.Unit
 			}
 
 			refreshController();
-			updateAttackState(dt);
+			updateSway(dt);
+			updateWeaponFx();
 
 			if (facing.sqrMagnitude < 1E-06f)
 			{
@@ -151,13 +160,24 @@ namespace ProjectOne.Unit
 		// 몸 뒤면 몸 바로 아래(-1), 몸 앞이면 사거리만큼 앞. 바뀔 때만 쓴다.
 		public void SyncSorting()
 		{
-			if (_weaponGroup == null || _unitAnimator == null || _modelRenderer == null)
+			if (_unitAnimator == null)
 			{
 				return;
 			}
 
 			int body = _unitAnimator.SortingOrder;
 			if (body == int.MinValue)
+			{
+				return;
+			}
+
+			SyncSorting(body);
+		}
+
+		// 몸 순서를 직접 받는 판 — UnitAnimator 가 없는 캐릭터 프리뷰가 고정 몸 순서로 부른다.
+		public void SyncSorting(int body)
+		{
+			if (_weaponGroup == null || _modelRenderer == null)
 			{
 				return;
 			}
@@ -213,8 +233,8 @@ namespace ProjectOne.Unit
 			_weaponLayer = _animator.GetLayerIndex(WeaponLayerName);
 			_swayLayer = _animator.GetLayerIndex(SwayLayerName);
 			_swayWeight = float.NaN;
-			_attackStateDirty = true;
-			_hasAttackingParam = false;
+			_isAttacking = false;
+			_hasMuzzleParam = false;
 
 			AnimatorControllerParameter[] parameters = _animator.parameters;
 			for (int i = 0; i < parameters.Length; i++)
@@ -223,17 +243,18 @@ namespace ProjectOne.Unit
 				{
 					_hasAimParam = true;
 				}
-				else if (parameters[i].nameHash == HashWeaponAttacking)
+				else if (parameters[i].nameHash == HashWeaponMuzzle)
 				{
-					_hasAttackingParam = true;
+					_hasMuzzleParam = true;
 				}
 			}
 		}
 
-		// 공격 여부를 Weapon 레이어 상태에서 읽어 흔들림·오프셋 레이어에 알린다.
+		// 공격 중이면 흔들림을 끈다. 공격 여부는 Weapon 레이어 상태 태그로 판단하고,
 		// 전이 중이면 넘어가는 상태 기준 — 공격 종료 전이가 시작되면 바로 되살리기 시작한다.
-		// 흔들림은 끌 때 즉시(공격 준비자세에 섞이지 않게), 켤 때 _swayRecoverTime 동안 올린다.
-		private void updateAttackState(float dt)
+		// 끌 때는 즉시(공격 준비자세에 섞이지 않게), 켤 때는 _swayRecoverTime 동안 올린다.
+		// 오프셋(WeaponOffset 레이어)은 이동 여부로만 바뀐다 — 공격과 무관하다.
+		private void updateSway(float dt)
 		{
 			if (_weaponLayer < 0)
 			{
@@ -251,17 +272,8 @@ namespace ProjectOne.Unit
 			}
 
 			bool attacking = state.tagHash == HashAttackTag;
-			bool started = false;
-			if (attacking != _isAttacking || _attackStateDirty == true)
-			{
-				started = attacking == true && _isAttacking == false;
-				_isAttacking = attacking;
-				_attackStateDirty = false;
-				if (_hasAttackingParam == true)
-				{
-					_animator.SetBool(HashWeaponAttacking, attacking);
-				}
-			}
+			bool started = attacking == true && _isAttacking == false;
+			_isAttacking = attacking;
 
 			if (_swayLayer >= 0)
 			{
@@ -279,12 +291,70 @@ namespace ProjectOne.Unit
 				}
 			}
 
-			// 이 Tick 은 Animator 평가 뒤라 그대로 두면 공격 첫 프레임이 흔들림·이동 오프셋을 단 채 그려진다.
+			// 이 Tick 은 Animator 평가 뒤라 그대로 두면 공격 첫 프레임이 흔들림을 단 채 그려진다.
 			// 공격이 시작된 프레임에만 0초로 한 번 더 평가해 맞춘다.
 			if (started == true)
 			{
 				_animator.Update(0f);
 			}
+		}
+
+		// 총 공격 중이면 무기 FX 를 총구에 붙인다. 반동으로 총이 움직여도 섬광이 총구를 따라간다.
+		// 클립이 WeaponFX 위치를 키로 잡지 않으므로(애니메이터가 덮어쓰지 않음) 여기서 쓴 값이 그대로 그려진다.
+		private void updateWeaponFx()
+		{
+			if (_weaponFx == null || _weaponModel == null)
+			{
+				return;
+			}
+
+			bool muzzle = _hasMuzzleParam == true && _isAttacking == true && _animator.GetFloat(HashWeaponMuzzle) > 0.5f;
+			if (muzzle == true && refreshMuzzle() == true)
+			{
+				_weaponFx.position = _weaponModel.TransformPoint(_muzzleLocal);
+				_fxAtMuzzle = true;
+				return;
+			}
+
+			if (_fxAtMuzzle == true)
+			{
+				_weaponFx.localPosition = Vector3.zero;
+				_fxAtMuzzle = false;
+			}
+		}
+
+		// 무기 스프라이트가 바뀌었으면 총구를 다시 구한다. 스프라이트가 없으면 false.
+		// 무기 이미지 규칙: 총구가 위(맨 위 픽셀), 총열 중심이 캔버스 가로 가운데.
+		// 가로는 캔버스 가운데를 쓴다 — 맨 위 줄은 가늠쇠 등이 붙어 있어 그 가운데가 총열 중심이 아니다.
+		// 세로는 외곽선(타이트 메시) 꼭짓점의 가장 위다.
+		private bool refreshMuzzle()
+		{
+			Sprite sprite = _modelRenderer.sprite;
+			if (sprite == null)
+			{
+				_muzzleSprite = null;
+				return false;
+			}
+
+			if (sprite == _muzzleSprite)
+			{
+				return true;
+			}
+
+			_muzzleSprite = sprite;
+			Vector2[] vertices = sprite.vertices;
+			float top = float.MinValue;
+			for (int i = 0; i < vertices.Length; i++)
+			{
+				if (vertices[i].y > top)
+				{
+					top = vertices[i].y;
+				}
+			}
+
+			float centerX = (sprite.rect.width * 0.5f - sprite.pivot.x) / sprite.pixelsPerUnit;
+			_muzzleLocal = new Vector3(centerX, top, 0f);
+			return true;
 		}
 
 		// 플레이 중 인스펙터를 고치면 같은 각에서도 다시 반영되게 캐시를 버린다.

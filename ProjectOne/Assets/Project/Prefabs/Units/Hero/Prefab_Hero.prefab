@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 4519959295892669949}
   - component: {fileID: 8692463418665224854}
   m_Layer: 0
-  m_Name: SlashFX
+  m_Name: WeaponFX
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3015,7 +3015,9 @@ MonoBehaviour:
   _weaponAim: {fileID: 3813772426216212110}
   _weaponModel: {fileID: 2242379362046911752}
   _weaponGroup: {fileID: 2875784927547980929}
+  _weaponFx: {fileID: 6466678308597132207}
   _frontSortOffset: 2000
+  _swayRecoverTime: 0.1
 --- !u!1 &5988490947328669645
 GameObject:
   m_ObjectHideFlags: 0

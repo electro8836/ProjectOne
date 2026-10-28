@@ -154,6 +154,9 @@ namespace ProjectOne.UI
 			_lastStatVersion = -1;
 			_lastBattlePower = -1;
 
+			// 첫 Tick(View Update)을 기다리면 열린 첫 프레임에 프리펩의 임시 문구가 보인다 — 여기서 바로 그린다.
+			Tick();
+
 			rebuild();
 			return UniTask.CompletedTask;
 		}

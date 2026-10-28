@@ -21,6 +21,12 @@ namespace ProjectOne.UI
 		[SerializeField] private Animator _animator;
 		[SerializeField] private Camera _camera;
 
+		// 무기 앞뒤 정렬 — 인게임은 Hero 가 매 프레임 맞추지만 프리뷰엔 Hero 가 없어 여기서 맞춘다.
+		private HeroWeapon _weapon;
+
+		// 프리뷰 몸(Body) 정렬 그룹의 고정 순서
+		private const int PreviewBodyOrder = 0;
+
 		// 프리팹에 직렬화된 기본 컨트롤러(AOC_Hero_Default). 무기를 벗으면 여기로 돌아온다.
 		private RuntimeAnimatorController _baseController;
 
@@ -44,6 +50,17 @@ namespace ProjectOne.UI
 			if (_animator != null)
 			{
 				_baseController = _animator.runtimeAnimatorController;
+			}
+
+			_weapon = this.GetComponent<HeroWeapon>();
+		}
+
+		// 무기 클립이 정렬 힌트(Model sortingOrder)를 키로 잡으므로 애니메이터 평가 뒤에 맞춘다. 값이 바뀔 때만 쓴다.
+		private void LateUpdate()
+		{
+			if (_weapon != null)
+			{
+				_weapon.SyncSorting(PreviewBodyOrder);
 			}
 		}
 
@@ -69,6 +86,18 @@ namespace ProjectOne.UI
 		{
 			applyAvatar();
 			applyAnimController();
+
+			// 컨트롤러를 바꾸면 리바인드로 무기가 기본 자세(스프라이트 원본 방향 = 위)가 된다 — 이 프레임 애니메이터 평가가
+			// 이미 지났으면 창을 연 첫 프레임이 그 자세로 찍힌다. 0초로 바로 평가하고 정렬도 맞춘다.
+			if (_animator != null && _animator.isActiveAndEnabled == true)
+			{
+				_animator.Update(0f);
+			}
+
+			if (_weapon != null)
+			{
+				_weapon.SyncSorting(PreviewBodyOrder);
+			}
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────

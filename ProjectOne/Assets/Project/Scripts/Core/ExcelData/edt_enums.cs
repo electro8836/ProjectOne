@@ -468,6 +468,7 @@ namespace EDT {
         None,
         PJT_Shuriken_Bullet,
         PJT_Monster_Arrow,
+        PJT_Rifle_Bullet,
     }
 
     public enum ShopCategory {
@@ -543,6 +544,7 @@ namespace EDT {
         SE_Rift_Spirit_Summon,
         SE_Rift_Collapse_Damage,
         SE_Ruins_Hazard_Damage,
+        SE_Rifle_Attack_Projectile,
     }
 
     public enum SkillModifier {
