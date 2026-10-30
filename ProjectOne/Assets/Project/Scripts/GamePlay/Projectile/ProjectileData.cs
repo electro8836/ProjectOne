@@ -18,6 +18,7 @@ namespace ProjectOne.Projectile
 		public float hitRadius;       // 임팩트 AoE 반경 (0=단일 타겟, >0=원형 범위 적용)
 		public float speedRate;       // 프리팹 속도에 곱할 배율 (0 이하면 1로 취급)
 		public int pierce;            // 추가 관통 수. 총 적중 = pierce + 1 (0=첫 적중에 소멸)
+		public int bounce;            // 유도 발사체 튕김 수 — 적중 후 가까운 다음 적으로 다시 날아간다 (0=튕기지 않음)
 
 		public string expireVFX;      // 소멸(수명/사거리 만료) 시 출력 VFX 주소 (없으면 빈 문자열)
 		public string expireSFX;      // 소멸(수명/사거리 만료) 시 출력 SFX 주소 (없으면 빈 문자열)

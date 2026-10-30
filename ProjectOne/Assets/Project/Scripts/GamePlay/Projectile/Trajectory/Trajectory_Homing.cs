@@ -34,6 +34,20 @@ namespace ProjectOne.Projectile
 			_lastTargetPos = (_target != null) ? (Vector2)_target.HitCenter : Vector2.zero;
 		}
 
+		// 튕김 — 새 타겟으로 바꾸고 진행 방향을 바로 그쪽으로 꺾는다(선회 반경 때문에 가까운 대상을 지나치지 않게).
+		public void Retarget(UnitBase target, Vector2 from)
+		{
+			_target = target;
+			_isTargetLost = false;
+			_lastTargetPos = target.HitCenter;
+
+			Vector2 toTarget = _lastTargetPos - from;
+			if (toTarget.sqrMagnitude > 1E-06f)
+			{
+				_direction = toTarget.normalized;
+			}
+		}
+
 		public override float Tick(float deltaTime, ref Vector3 position, out Vector2 facing)
 		{
 			Vector2 current = new Vector2(position.x, position.y);

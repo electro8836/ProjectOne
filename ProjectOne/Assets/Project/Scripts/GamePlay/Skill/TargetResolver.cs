@@ -134,6 +134,44 @@ namespace ProjectOne.Skill
 			}
 		}
 
+		// 지점 기준 반경 안에서 가장 가까운 적 하나 — 발사체 튕김용. exclude 에 든 유닛(이미 맞은 대상)은 건너뛴다.
+		public static UnitBase FindNearestEnemy(UnitBase caster, Vector2 center, float range, List<UnitBase> exclude)
+		{
+			if (caster == null)
+			{
+				return null;
+			}
+
+			IReadOnlyList<UnitBase> all = UnitManager.Instance.All;
+			UnitBase best = null;
+			float bestSqr = float.MaxValue;
+			for (int i = 0; i < all.Count; i++)
+			{
+				UnitBase unit = all[i];
+				if (unit == null || unit.IsDead == true || passesApplyTarget(SkillApplyTarget.Enemy, caster, unit) == false)
+				{
+					continue;
+				}
+
+				if (exclude != null && exclude.Contains(unit) == true)
+				{
+					continue;
+				}
+
+				float sqr = (unit.HitCenter - center).sqrMagnitude;
+				float reach = range + unit.Radius;
+				if (sqr > reach * reach || sqr >= bestSqr)
+				{
+					continue;
+				}
+
+				best = unit;
+				bestSqr = sqr;
+			}
+
+			return best;
+		}
+
 		// 유닛 하나가 ApplyTarget 진영 조건을 통과하는가.
 		//
 		// Enemy 는 같은 진영을 걸러내므로 시전자가 자동으로 빠진다.

@@ -19,6 +19,8 @@ namespace ProjectOne.Projectile
 		[SerializeField] private float _maxDistance = 0f;   // 0이면 거리 제한 없음
 		// 스프라이트가 향하는 기준축(도): +X=0, +Y(위쪽)=90. 이동 방향으로 회전할 때 이 값만큼 보정한다.
 		[SerializeField] private float _spriteForwardAngle = 90f;
+		// 튕김(유도 전용) — 적중 지점에서 다음 대상을 찾는 반경. 횟수는 테이블(Bounce), 거리는 발사체 종류마다 고정.
+		[SerializeField] private float _bounceRange = 1f;
 
 		private PoolBase<Projectile> _ownerPool;
 		private ProjectileData _data;
@@ -28,6 +30,9 @@ namespace ProjectOne.Projectile
 		private float _traveledDistance;
 		// 적중 누적 수 — _data.pierce 를 넘어서면 소멸한다
 		private int _hitCount;
+		// 남은 튕김 수와 이미 맞힌 대상 — 같은 대상으로 되돌아가지 않게 한다
+		private int _bounceLeft;
+		private readonly List<UnitBase> _bouncedUnits = new List<UnitBase>(4);
 
 		// 이동 방식 위임 — Awake 에서 GetComponent 로 캐시. 궤적별 전용 분기를 위해 Homing/Parabolic 캐스팅도 캐시.
 		private ITrajectory _trajectory;
@@ -143,16 +148,13 @@ namespace ProjectOne.Projectile
 					return;
 				}
 
-				// 적중 — 범위공격(hitRadius>0)이면 적중 위치 원형 범위에, 아니면 적중 대상 단일에 효과 적용
-				if (_data.hitRadius > 0f)
+				applyHit(unit);
+
+				// 유도는 타겟만 맞힌다 — 튕김이 남았으면 가까운 다음 적으로 갈아타고, 없으면 소멸한다(관통 미사용).
+				if (_homing != null)
 				{
-					SkillEffectApplier.ApplyAtPosition(_data.hitEffect, _data.caster, _data.skillId, transform.position, _data.hitRadius);
-				}
-				else
-				{
-					_hitBuffer.Clear();
-					_hitBuffer.Add(unit);
-					SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer, 0);
+					bounceOrRelease(unit);
+					return;
 				}
 
 				// 관통 — pierce 만큼 더 뚫고 지나간다. 0이면 첫 적중에 소멸한다.
@@ -169,6 +171,53 @@ namespace ProjectOne.Projectile
 			// 발사체는 _lifeTime/_maxDistance 로 정리. (벽 차단이 필요하면 발사체 전용 레이어로 후속 처리)
 		}
 
+		// 적중 — 범위공격(hitRadius>0)이면 적중 위치 원형 범위에, 아니면 적중 대상 단일에 효과 적용
+		private void applyHit(UnitBase unit)
+		{
+			if (_data.hitRadius > 0f)
+			{
+				SkillEffectApplier.ApplyAtPosition(_data.hitEffect, _data.caster, _data.skillId, transform.position, _data.hitRadius);
+				return;
+			}
+
+			_hitBuffer.Clear();
+			_hitBuffer.Add(unit);
+			SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer, 0);
+		}
+
+		// 맞힌 대상 기준 _bounceRange 안의 가장 가까운 적으로 튕긴다. 대상이 없거나 횟수가 다 됐으면 소멸.
+		// 다음 대상과 이미 겹쳐 있으면 충돌(진입) 이벤트가 오지 않으므로 그 자리에서 바로 적중시킨다.
+		private void bounceOrRelease(UnitBase hitUnit)
+		{
+			UnitBase from = hitUnit;
+			while (true)
+			{
+				_bouncedUnits.Add(from);
+				UnitBase next = null;
+				if (_bounceLeft > 0)
+				{
+					next = TargetResolver.FindNearestEnemy(_data.caster, from.HitCenter, _bounceRange, _bouncedUnits);
+				}
+
+				if (next == null)
+				{
+					returnToPool("hit");
+					return;
+				}
+
+				_bounceLeft--;
+				Vector2 pos = transform.position;
+				if ((next.HitCenter - pos).sqrMagnitude > next.Radius * next.Radius)
+				{
+					_homing.Retarget(next, pos);
+					return;
+				}
+
+				applyHit(next);
+				from = next;
+			}
+		}
+
 		// PoolBase 의 Spawn()이 GetFromPool() → Initialize() → OnActivate() 순서로 호출
 		public void Initialize(ProjectileData data, PoolBase<Projectile> pool)
 		{
@@ -177,6 +226,8 @@ namespace ProjectOne.Projectile
 			_isReleased = false;
 			_traveledDistance = 0f;
 			_hitCount = 0;
+			_bounceLeft = data.bounce;
+			_bouncedUnits.Clear();
 			transform.position = data.startPos;
 
 			// 이동 방식 초기화 — 회전은 Update 에서 궤적이 제공하는 facing 으로 매 프레임 갱신
@@ -206,6 +257,7 @@ namespace ProjectOne.Projectile
 			}
 
 			_data = default;
+			_bouncedUnits.Clear();
 		}
 
 		private void returnToPool(string reason)

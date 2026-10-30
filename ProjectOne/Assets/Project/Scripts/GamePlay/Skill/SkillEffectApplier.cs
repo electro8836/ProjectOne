@@ -93,7 +93,9 @@ namespace ProjectOne.Skill
 						succeeded = applyStatChange(row, caster, targets, buffOwner, valueScale);
 						break;
 					case SkillEffectTypes.Projectile:
-						succeeded = applyProjectile(row, caster, skillId, targets);
+						// 발사체는 언제나 시전자 자리에서 나가고(EffectOrigin=Caster), 조준·유도 대상은 스킬이 탐색한 적이다.
+						// 해석된 목록(Caster 면 시전자 자신)을 넘기면 유도탄이 시전자를 쫓아간다.
+						succeeded = applyProjectile(row, caster, skillId, scanned);
 						break;
 					case SkillEffectTypes.Summon:
 						succeeded = applySummon(row, caster, targets);
@@ -700,6 +702,7 @@ namespace ProjectOne.Skill
 			data.hitRadius = projectile.ExplodeRadius;
 			data.speedRate = (p.SpeedRate > 0f) ? p.SpeedRate : 1f;
 			data.pierce = projectile.Pierce;
+			data.bounce = projectile.Bounce;
 
 			ProjectileManager.Instance.Launch(projectile.PrefabPath, data);
 		}
@@ -713,7 +716,7 @@ namespace ProjectOne.Skill
 
 			for (int i = 0; i < targets.Count; i++)
 			{
-				if (targets[i] != null && targets[i].IsDead == false)
+				if (targets[i] != null && targets[i].IsDead == false && targets[i].IsTargetable == true)
 				{
 					return targets[i];
 				}

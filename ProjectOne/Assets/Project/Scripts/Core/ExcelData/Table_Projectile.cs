@@ -10,6 +10,7 @@ namespace EDT {
             public Projectile ID { get; set; } = Projectile.None;
             public string PrefabPath { get; set; } = string.Empty;
             public int Pierce { get; set; } = 0;
+            public int Bounce { get; set; } = 0;
             public float ExplodeRadius { get; set; } = 0f;
             public SkillEffect HitEffectID_1 { get; set; } = SkillEffect.None;
             public SkillEffect HitEffectID_2 { get; set; } = SkillEffect.None;
@@ -38,6 +39,7 @@ namespace EDT {
                 row.ID = (Projectile)reader.ReadInt32();
                 row.PrefabPath = reader.ReadString();
                 row.Pierce = reader.ReadInt32();
+                row.Bounce = reader.ReadInt32();
                 row.ExplodeRadius = reader.ReadSingle();
                 row.HitEffectID_1 = (SkillEffect)reader.ReadInt32();
                 row.HitEffectID_2 = (SkillEffect)reader.ReadInt32();
