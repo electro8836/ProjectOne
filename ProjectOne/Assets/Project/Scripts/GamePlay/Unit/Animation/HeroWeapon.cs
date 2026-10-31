@@ -31,6 +31,9 @@ namespace ProjectOne.Unit
 		// 공격 클립이 키를 잡는다 — 1 이면 위쪽(BackAngle 이상)으로 공격할 때 무기 FX 를 무기 위·몸 아래에 그린다(태도)
 		private static readonly int HashWeaponFxBehindUp = Animator.StringToHash("WeaponFxBehindUp");
 
+		// 무기 클립이 키를 잡는다 — 0 보다 크면 각도 규칙의 몸 뒤 기준각을 BackAngle 대신 이 값으로 쓴다(태도 Idle 75)
+		private static readonly int HashWeaponBackAngle = Animator.StringToHash("WeaponBackAngle");
+
 		private const string WeaponLayerName = "Weapon";
 
 		private const string OffsetLayerName = "WeaponOffset";
@@ -66,6 +69,8 @@ namespace ProjectOne.Unit
 
 		private bool _hasFxBehindParam;
 
+		private bool _hasBackAngleParam;
+
 		// 이번 공격의 무기 FX 를 몸 뒤에 그리는지 — 공격이 시작될 때의 조준각으로 정해 그 공격 동안 고정한다(45도 근처 깜빡임 방지)
 		private bool _fxBehind;
 
@@ -87,7 +92,7 @@ namespace ProjectOne.Unit
 		[SerializeField] private float _swayRecoverTime = 0.1f;
 
 		// 앞뒤 판정 — 클립이 Model 의 sortingOrder 를 정렬 힌트로 키를 잡는다.
-		// 양수 = 무조건 몸 앞, 음수 = 무조건 몸 뒤, 0 = 조준각 규칙(BackAngle 아래면 뒤)
+		// 양수 = 무조건 몸 앞, 음수 = 무조건 몸 뒤, 0 = 조준각 규칙(BackAngle — 클립이 WeaponBackAngle 을 잡으면 그 값 — 아래면 뒤)
 		private SpriteRenderer _modelRenderer;
 
 		private int _weaponLayer = -1;
@@ -250,8 +255,18 @@ namespace ProjectOne.Unit
 			}
 			else
 			{
+				float backAngle = BackAngle;
+				if (_hasBackAngleParam == true)
+				{
+					float clipAngle = _animator.GetFloat(HashWeaponBackAngle);
+					if (clipAngle > 0f)
+					{
+						backAngle = clipAngle;
+					}
+				}
+
 				// 조준각을 아직 못 받았으면(NaN) 앞으로 둔다
-				front = (_lastAngle > BackAngle) == false;
+				front = (_lastAngle > backAngle) == false;
 			}
 
 			// 몸 뒤는 몸 - 2 — 몸 - 1 은 몸 뒤 모드의 무기 FX 자리(무기 위·몸 아래)
@@ -363,6 +378,7 @@ namespace ProjectOne.Unit
 			_hasMuzzleParam = false;
 			_hasOffsetOffParam = false;
 			_hasFxBehindParam = false;
+			_hasBackAngleParam = false;
 
 			AnimatorControllerParameter[] parameters = _animator.parameters;
 			for (int i = 0; i < parameters.Length; i++)
@@ -382,6 +398,10 @@ namespace ProjectOne.Unit
 				else if (parameters[i].nameHash == HashWeaponFxBehindUp)
 				{
 					_hasFxBehindParam = true;
+				}
+				else if (parameters[i].nameHash == HashWeaponBackAngle)
+				{
+					_hasBackAngleParam = true;
 				}
 			}
 		}
