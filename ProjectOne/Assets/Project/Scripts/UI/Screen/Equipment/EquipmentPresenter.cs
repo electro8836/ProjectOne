@@ -4,7 +4,6 @@ using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
 using ProjectOne.Items;
-using ProjectOne.Mastery;
 using ProjectOne.Network;
 using ProjectOne.Ranking;
 using ProjectOne.Unit;
@@ -322,13 +321,10 @@ namespace ProjectOne.UI
 
 		// ── 렌더 ──────────────────────────────────────────────────────────
 
-		// 캐릭터 레벨과 장착 무기의 마스터리 레벨. 둘 다 Account 만 보므로 이벤트 발행 순서와 무관하다.
+		// 대표 레벨 = 장착 무기의 마스터리 레벨. Account 만 보므로 이벤트 발행 순서와 무관하다.
 		private void refreshLevel()
 		{
-			MasteryProgress progress = Account.Instance.Mastery.CurrentProgress;
-			int masteryLevel = (progress != null) ? progress.Level : 0;
-
-			view.RenderLevel(Account.Instance.Loadout.Level, masteryLevel);
+			view.RenderLevel(Account.Instance.Mastery.RepresentativeLevel);
 		}
 
 		// 살아있는 히어로. 장비창은 마을에서 주로 열리지만 MainHUD 의 화면 열기 버튼으로

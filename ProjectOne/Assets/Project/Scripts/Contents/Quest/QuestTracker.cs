@@ -26,6 +26,7 @@ namespace ProjectOne.Quests
 
 			EventManager.Instance.Subscribe<MonsterKillEvent>(onMonsterKill);
 			EventManager.Instance.Subscribe<CharacterChangeEvent>(onCharacterChanged);
+			EventManager.Instance.Subscribe<PetChangeEvent>(onPetChanged);
 			EventManager.Instance.Subscribe<DungeonStageClearedEvent>(onDungeonStageCleared);
 		}
 
@@ -33,6 +34,7 @@ namespace ProjectOne.Quests
 		{
 			EventManager.Instance.Unsubscribe<MonsterKillEvent>(onMonsterKill);
 			EventManager.Instance.Unsubscribe<CharacterChangeEvent>(onCharacterChanged);
+			EventManager.Instance.Unsubscribe<PetChangeEvent>(onPetChanged);
 			EventManager.Instance.Unsubscribe<DungeonStageClearedEvent>(onDungeonStageCleared);
 
 			base.OnDestroy();
@@ -113,8 +115,15 @@ namespace ProjectOne.Quests
 			CheckCompletable();
 		}
 
-		// 레벨업 — ReachLevel 목표가 풀린다. 전용 이벤트가 없어 이 알림으로 재평가한다.
+		// 영구 능력치 변경(장착·강화·마스터리) — ReachBattlePower 목표가 풀릴 수 있어 재평가한다.
 		private void onCharacterChanged(CharacterChangeEvent e)
+		{
+			CheckCompletable();
+			publishActive();
+		}
+
+		// 펫 보유 효과는 Loadout 을 거치지 않고 다시 굽는다 — 전투력이 바뀌므로 같은 재평가를 한다.
+		private void onPetChanged(PetChangeEvent e)
 		{
 			CheckCompletable();
 			publishActive();

@@ -83,14 +83,16 @@ namespace ProjectOne.Combat
 
 			damage *= 1f + bonus;
 
-			// [5] 방어 감쇄 — 제산식. K 의 기준은 공격자 레벨이다.
+			// [5] 방어 감쇄 — 제산식. K 의 기준은 전투에 낀 몬스터의 레벨이다 (스킬 설계 10.3).
+			// 몬스터가 때리면 그 몬스터, 히어로·소환물이 때리면 맞는 몬스터 — 플레이어 쪽에는 레벨이 없다.
 			float effectiveDef = t.GetStat(Stat.Stat_Def) * (1f - a.GetStat(Stat.Stat_DefPen));
 			if (effectiveDef < 0f)
 			{
 				effectiveDef = 0f;
 			}
 
-			float k = 50f + attacker.Level * 20f;
+			int monsterLevel = (attacker.GetUnitType() == UnitType.Monster) ? attacker.Level : target.Level;
+			float k = 50f + monsterLevel * 20f;
 			float reduction = effectiveDef / (effectiveDef + k);
 			damage *= 1f - reduction;
 

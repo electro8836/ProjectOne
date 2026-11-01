@@ -123,11 +123,9 @@ namespace BackendFunction
 					return FuncResult.Error(costumeErr);
 				}
 
-				// 3. 경험치 — 캐릭터와 장착 무기 마스터리에 같은 값(마스터리 설계 5.2). 무기가 없으면 마스터리 적립만 건너뛴다.
-				int levelKeyBefore = RankOps.LevelKey(loadout, mastery);
+				// 3. 경험치 — 장착 무기 마스터리에 적립한다(마스터리 설계 5.2). 무기가 없으면 적립하지 않는다.
+				int levelKeyBefore = RankOps.LevelKey(mastery);
 				int exp = MonsterExp.Calc(req.monsterId, req.level, req.expBonusPermille);
-				loadout.exp += exp;
-				loadout.level = MasteryRules.CharacterLevelFromExp(loadout.exp);
 				if (exp > 0 && MasteryFunctions.OwnsWeaponFor(inventory, req.masteryId) == true)
 				{
 					MasteryRules.AddExp(mastery, (WeaponMastery)req.masteryId, exp);
@@ -149,7 +147,6 @@ namespace BackendFunction
 				// 5. 원자 저장
 				List<TransactionValue> tx = new List<TransactionValue>();
 				tx.Add(TransactionValue.SetUpdate("USER_FIELD", new Where(), DungeonProgressOps.ToParam(field)));
-				tx.Add(TransactionValue.SetUpdate("USER_LOADOUT", new Where(), DungeonProgressOps.ToParam(loadout)));
 				tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), DungeonProgressOps.ToParam(inventory)));
 				tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), DungeonProgressOps.ToParam(currency)));
 				tx.Add(TransactionValue.SetUpdate("USER_MASTERY", new Where(), DungeonProgressOps.ToParam(mastery)));
@@ -172,14 +169,14 @@ namespace BackendFunction
 				}
 
 				// 레벨이 올랐거나 펫을 얻었으면 전투력이 바뀐다.
-				if (applier.PetChanged == true || RankOps.LevelKey(loadout, mastery) != levelKeyBefore)
+				if (applier.PetChanged == true || RankOps.LevelKey(mastery) != levelKeyBefore)
 				{
 					RankOps.Refresh(loadout, inventory, mastery, pet, costume);
 				}
 
 				FieldBossKillResponse response = new FieldBossKillResponse();
 				response.success = true;
-				response.exp = loadout.exp;
+				response.mastery = mastery;
 				response.rewards = applier.Granted;
 				response.equipments = applier.Equipments;
 				response.kill = kill;

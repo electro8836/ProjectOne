@@ -19,7 +19,7 @@ namespace ProjectOne.Unit.Stats
 	//   화이트리스트는 HeroAspectRegistry 에 등록된 Aspect 의 SourceKey 다 — 새 영구 컨텐츠가
 	//   Aspect 로 들어오면 자동 포함되고, 버프는 Aspect 가 아니므로 자동 제외된다.
 	//
-	//   Percent 스탯은 **Lv1 기본값 초과분만** 점수화한다. Lv1 캐릭터가 이미 AtkSpeed 1.5 ·
+	//   Percent 스탯은 **기본값 초과분만** 점수화한다. 아무 장비 없는 캐릭터가 이미 AtkSpeed 1.5 ·
 	//   CritDamage 1.5 를 갖고 있어서, 절대값으로 재면 전투력의 대부분이 "아무것도 안 한 기본값"에서
 	//   나오고 성장 체감이 뭉개진다. Flat 스탯(Atk/MaxHp 등)은 절대값이 곱셈 주축이므로 차감하지 않는다.
 	//
@@ -35,7 +35,7 @@ namespace ProjectOne.Unit.Stats
 	// 부트 순서: TableBootLoader.LoadAllAsync → StatCatalog.Build() → OptionCatalog.Build() → Build()
 	public static class BattlePowerCalculator
 	{
-		// Percent 스탯의 Lv1 기본값. 여기 없는 스탯은 차감하지 않는다.
+		// Percent 스탯의 기본값. 여기 없는 스탯은 차감하지 않는다.
 		private static readonly Dictionary<Stat, float> _baselines = new Dictionary<Stat, float>();
 
 		// 영구 출처 화이트리스트 버퍼 — Calculate 마다 Registry 에서 다시 채운다(장비 Aspect 추가 등 반영).
@@ -77,7 +77,7 @@ namespace ProjectOne.Unit.Stats
 					continue;
 				}
 
-				// PerLevel 성장분은 일부러 뺀다 — 기준선이 레벨과 같이 오르면 레벨업이 전투력에 안 잡힌다.
+				// 아무것도 안 한 기본값이 점수를 차지하지 않게 뺀다.
 				_baselines[part.Group] = row.BaseValue;
 			}
 

@@ -10,7 +10,6 @@ namespace EDT {
             public int ID { get; set; } = 0;
             public StatDetail StatDetailID { get; set; } = StatDetail.None;
             public float BaseValue { get; set; } = 0f;
-            public float PerLevel { get; set; } = 0f;
         }
 
         public const string Filename = "edt_characterstat.bytes";
@@ -36,7 +35,6 @@ namespace EDT {
                 row.ID = reader.ReadInt32();
                 row.StatDetailID = (StatDetail)reader.ReadInt32();
                 row.BaseValue = reader.ReadSingle();
-                row.PerLevel = reader.ReadSingle();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

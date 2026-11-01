@@ -6,11 +6,11 @@ using ProjectOne.Event;
 
 namespace ProjectOne.UI
 {
-	// 히어로·마스터리 레벨업 알림. 레벨업 이벤트를 직접 구독한다.
+	// 마스터리 레벨업 알림. 레벨업 이벤트를 직접 구독한다. 캐릭터 레벨은 없다.
 	//
 	// 새 레벨업이 오면 떠 있던 것을 지우고 바로 새로 띄운다.
-	// 단 **같은 프레임**에 온 것은 뒤에 대기시킨다 — 경험치 한 번에 히어로와 마스터리가 함께 오르면
-	// 히어로 메시지가 한 프레임 만에 덮여 보이지 않기 때문이다(Account.AddExp 가 히어로 → 마스터리 순으로 발행).
+	// 단 **같은 프레임**에 온 것은 뒤에 대기시킨다 — 서버 권위값 반영으로 여러 마스터리가 한 번에 오르면
+	// 앞 메시지가 한 프레임 만에 덮여 보이지 않기 때문이다.
 	//
 	// **루트는 끄지 않고 CanvasGroup 알파로 숨긴다.** 루트를 끄면 코루틴이 멈추고 구독도 무의미해진다.
 	public class LevelUpMessage : MonoBehaviour
@@ -28,7 +28,6 @@ namespace ProjectOne.UI
 
 		private const float PopStartScale = 0.5f;
 
-		private const string HeroDesc = "히어로 능력이 강화되었습니다!";
 		private const string MasteryDesc = "숙련도 능력이 강화되었습니다!";
 
 		// 표시 1회분 문구
@@ -44,7 +43,7 @@ namespace ProjectOne.UI
 		// 현재 표시를 시작한 프레임 — 같은 프레임에 온 요청을 대기시키는 기준이다.
 		private int _shownFrame = -1;
 
-		// 같은 프레임에 온 뒤 순번. 한 칸이면 충분하다(히어로 + 마스터리 두 종류뿐).
+		// 같은 프레임에 온 뒤 순번. 한 칸만 둔다.
 		private bool _hasPending;
 		private Entry _pending;
 
@@ -52,23 +51,12 @@ namespace ProjectOne.UI
 		{
 			_canvasGroup.alpha = 0f;
 
-			EventManager.Instance.Subscribe<HeroLevelUpEvent>(onHeroLevelUp);
 			EventManager.Instance.Subscribe<MasteryLevelUpEvent>(onMasteryLevelUp);
 		}
 
 		private void OnDestroy()
 		{
-			EventManager.Instance.Unsubscribe<HeroLevelUpEvent>(onHeroLevelUp);
 			EventManager.Instance.Unsubscribe<MasteryLevelUpEvent>(onMasteryLevelUp);
-		}
-
-		private void onHeroLevelUp(HeroLevelUpEvent evt)
-		{
-			Entry entry = new Entry();
-			entry.levelUp = "히어로 레벨업!";
-			entry.level = evt.Level;
-			entry.desc = HeroDesc;
-			request(entry);
 		}
 
 		private void onMasteryLevelUp(MasteryLevelUpEvent evt)

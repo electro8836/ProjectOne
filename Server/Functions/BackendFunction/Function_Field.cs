@@ -78,7 +78,7 @@ namespace BackendFunction
 						return FuncResult.Error(result.message);
 
 					case SettleStatus.Nothing:
-						return succeed(field.nextKillIndex, -1);
+						return succeed(field.nextKillIndex);
 
 					case SettleStatus.Discarded:
 					{
@@ -107,7 +107,7 @@ namespace BackendFunction
 					RankOps.Refresh(null, null, null, null, null);
 				}
 
-				return succeed(field.nextKillIndex, result.exp);
+				return succeed(field.nextKillIndex);
 			}
 			catch (Exception ex)
 			{
@@ -180,7 +180,6 @@ namespace BackendFunction
 				FieldRotateResponse response = new FieldRotateResponse();
 				response.success = true;
 				response.error = (result.status == SettleStatus.Discarded) ? "rejected: " + result.message : null;
-				response.exp = result.exp;
 				response.field = field;
 				return FuncResult.Json(response);
 			}
@@ -206,9 +205,8 @@ namespace BackendFunction
 
 			public readonly SettleStatus status;
 			public readonly string message;
-			public int exp = -1;
 
-			// 캐릭터·마스터리 레벨이 올랐다 — 저장 뒤 랭킹을 갱신한다.
+			// 마스터리 레벨이 올랐다 — 저장 뒤 랭킹을 갱신한다.
 			public bool leveledUp;
 			public readonly List<TransactionValue> dataTx = new List<TransactionValue>();
 
@@ -261,11 +259,6 @@ namespace BackendFunction
 			}
 
 			// 3. 유저 데이터 로드
-			if (MyData.Load("USER_LOADOUT", out LoadoutDto loadout, out string loadoutErr) == false)
-			{
-				return new SettleResult(SettleStatus.Error, loadoutErr);
-			}
-
 			if (MyData.Load("USER_INVENTORY", out InventoryDto inventory, out string invErr) == false)
 			{
 				return new SettleResult(SettleStatus.Error, invErr);
@@ -286,13 +279,12 @@ namespace BackendFunction
 				return new SettleResult(SettleStatus.Error, heroPassErr);
 			}
 
-			int levelKeyBefore = RankOps.LevelKey(loadout, mastery);
+			int levelKeyBefore = RankOps.LevelKey(mastery);
 
 			// 4. 처치별 검증 → 재현 → 주운 것만 지급
 			RewardApplier applier = new RewardApplier(inventory, currency);
 			applier.AutoDecompose = true;
 			List<RolledReward> rolled = new List<RolledReward>();
-			int gainedExp = 0;
 
 			// 마스터리별 경험치 — 처치 시점의 장착 무기 마스터리에 같은 값이 들어간다(마스터리 설계 5.2).
 			Dictionary<int, int> masteryExp = new Dictionary<int, int>();
@@ -334,7 +326,6 @@ namespace BackendFunction
 				}
 
 				int exp = MonsterExp.Calc(kill.monsterId, kill.level, kill.expBonusPermille);
-				gainedExp += exp;
 
 				if (kill.masteryId != 0 && exp > 0)
 				{
@@ -360,15 +351,11 @@ namespace BackendFunction
 				HeroPassOps.CountKill(heroPass, kills[i].monsterId);
 			}
 
-			loadout.exp += gainedExp;
-			loadout.level = MasteryRules.CharacterLevelFromExp(loadout.exp);
 			field.nextKillIndex = kills[kills.Count - 1].killIndex + 1;
 			field.lastSettleUnixMs = nowMs;
 
 			SettleResult result = new SettleResult(SettleStatus.Settled, null);
-			result.exp = loadout.exp;
-			result.leveledUp = RankOps.LevelKey(loadout, mastery) != levelKeyBefore;
-			result.dataTx.Add(TransactionValue.SetUpdate("USER_LOADOUT", new Where(), toParam(loadout)));
+			result.leveledUp = RankOps.LevelKey(mastery) != levelKeyBefore;
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), toParam(inventory)));
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), toParam(currency)));
 			result.dataTx.Add(TransactionValue.SetUpdate("USER_MASTERY", new Where(), toParam(mastery)));
@@ -506,12 +493,11 @@ namespace BackendFunction
 			return FuncResult.Json(response);
 		}
 
-		private static Stream succeed(int nextKillIndex, int exp)
+		private static Stream succeed(int nextKillIndex)
 		{
 			FieldSettleResponse response = new FieldSettleResponse();
 			response.success = true;
 			response.nextKillIndex = nextKillIndex;
-			response.exp = exp;
 			return FuncResult.Json(response);
 		}
 

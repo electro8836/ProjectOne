@@ -3,7 +3,6 @@ using System.Globalization;
 using EDT;
 using UnityEngine;
 using ProjectOne.Items;
-using ProjectOne.Mastery;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
 
@@ -87,12 +86,12 @@ namespace ProjectOne.Skill
 			addEffectCopy(resolved, source.EffectID_01);
 			addEffectCopy(resolved, source.EffectID_02);
 
-			// [3][4] 는 ensureCollected() 가 이미 마쳤다 — 트리 옵션과 장비 모디파이어가 _collected 에 있다.
+			// [3] 은 ensureCollected() 가 이미 마쳤다 — 장비 모디파이어가 _collected 에 있다.
 
-			// [5] Append — 수치 연산보다 먼저. 새로 붙은 효과에도 Effect 모디파이어가 닿아야 한다.
+			// [4] Append — 수치 연산보다 먼저. 새로 붙은 효과에도 Effect 모디파이어가 닿아야 한다.
 			applyAppend(resolved);
 
-			// [6][7] Set → Add → Ratio
+			// [5][6] Set → Add → Ratio
 			applyOperator(resolved, ModifierOperator.Set);
 			applyAccumulated(resolved);
 
@@ -140,7 +139,7 @@ namespace ProjectOne.Skill
 			return EDT.Skill.None;
 		}
 
-		// [5] ParamKey=EffectID / Operator=Append — 효과 리스트에 추가한다.
+		// [4] ParamKey=EffectID / Operator=Append — 효과 리스트에 추가한다.
 		// 같은 효과가 두 번 Append 되면 누적된다(수치 옵션과 같은 규칙, 설계 9.3).
 		private void applyAppend(ResolvedSkill resolved)
 		{
@@ -163,7 +162,7 @@ namespace ProjectOne.Skill
 			}
 		}
 
-		// [6] Set — 마지막 값이 이긴다. 여러 개가 충돌하면 결과가 비결정적이므로 데이터로 피한다.
+		// [5] Set — 마지막 값이 이긴다. 여러 개가 충돌하면 결과가 비결정적이므로 데이터로 피한다.
 		private void applyOperator(ResolvedSkill resolved, ModifierOperator op)
 		{
 			for (int i = 0; i < _collected.Count; i++)
@@ -178,7 +177,7 @@ namespace ProjectOne.Skill
 			}
 		}
 
-		// [6][7] Add 전부 합산 → Ratio 전부 합산 → (Base + ΣAdd) × (1 + ΣRatio)
+		// [5][6] Add 전부 합산 → Ratio 전부 합산 → (Base + ΣAdd) × (1 + ΣRatio)
 		//
 		// 대상 자리마다 따로 누적해야 하므로 자리별로 합을 모은 뒤 한 번에 쓴다.
 		private void applyAccumulated(ResolvedSkill resolved)
@@ -427,7 +426,7 @@ namespace ProjectOne.Skill
 			}
 		}
 
-		// ── 모디파이어 수집 ([3][4]) ──────────────────────────────────
+		// ── 모디파이어 수집 ([3]) ──────────────────────────────────
 
 		private void ensureCollected()
 		{
@@ -437,43 +436,11 @@ namespace ProjectOne.Skill
 			}
 
 			_collected.Clear();
-			collectFromSkillTree();
 			collectFromEquipment();
 			_collectedDirty = false;
 		}
 
-		// [3] 현재 마스터리의 투자 노드. 다른 마스터리의 트리는 참여하지 않는다.
-		private void collectFromSkillTree()
-		{
-			MasteryBook book = Account.Instance.Mastery;
-			Table_WeaponMastery.Row mastery = book.CurrentMastery;
-			if (mastery == null)
-			{
-				return;		// 무기 미착용 — 트리가 없다 (설계 4.3)
-			}
-
-			MasteryProgress progress = book.Find(mastery.ID);
-			if (progress == null)
-			{
-				return;
-			}
-
-			IReadOnlyList<Table_SkillTreeNode.Row> nodes = MasteryCatalog.GetNodes(mastery.SkillTreeNodeGroupID);
-			for (int i = 0; i < nodes.Count; i++)
-			{
-				Table_SkillTreeNode.Row node = nodes[i];
-				int level = progress.GetNodeLevel(node.ID);
-				if (level <= 0)
-				{
-					continue;
-				}
-
-				add(node.Option, MasteryProgress.GetNodeValue(node, level));
-				add(node.Option_02, MasteryProgress.GetNodeValue02(node, level));
-			}
-		}
-
-		// [4] 장비. 부착처의 Value 를 그대로 쓴다.
+		// [3] 장비. 부착처의 Value 를 그대로 쓴다. 모디파이어의 출처는 장비뿐이다 (스킬 설계 11.1).
 		// WeaponMastery.LevelBonusOption 은 Stat 전용이라 여기 들어오지 않는다 (설계 11.1 주석).
 		private void collectFromEquipment()
 		{

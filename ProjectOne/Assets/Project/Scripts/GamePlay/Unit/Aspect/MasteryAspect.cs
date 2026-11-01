@@ -3,19 +3,19 @@ using EDT;
 using UnityEngine;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
+using ProjectOne.Shared;
 using ProjectOne.UserData;
 
 namespace ProjectOne.Unit
 {
 	// 무기 마스터리를 Hero 에 적용/제거하는 Aspect (마스터리 설계 8.3 의 [2][3] 계층).
 	//
-	// 세 가지를 공급한다.
-	//   1. LevelBonusOption   전 마스터리 합산. **무기와 무관하게 항상 적용된다** (설계 4.4)
-	//   2. 스킬 트리 Stat 옵션 현재 마스터리의 투자 노드만. 무기를 바꾸면 통째로 교체된다
-	//   3. 보유 스킬          장착 무기의 NormalAttackSkill + 트리에서 SkillGrant 로 습득한 것
+	// 두 가지를 공급한다.
+	//   1. LevelBonusOption   전 마스터리 합산. **무기와 무관하게 항상 적용된다** (설계 4.5)
+	//   2. 보유 스킬          장착 무기의 NormalAttackSkill + 현재 마스터리의 슬롯 4칸 (설계 7.1)
 	//
-	// 무기를 착용하지 않으면 2·3 이 전부 사라지고 1만 남는다 (설계 4.3).
-	// Modifier 타입 옵션은 스탯 식에 들어가지 않고 SkillResolver 가 가져간다.
+	// 무기를 착용하지 않으면 2 가 전부 사라지고 1만 남는다 (설계 4.4).
+	// 스킬 위력은 고정이다 — 마스터리는 스킬을 변형하지 않는다 (설계 6.4).
 	public sealed class MasteryAspect : IHeroAspect
 	{
 		const string Source = "Mastery";
@@ -44,14 +44,14 @@ namespace ProjectOne.Unit
 
 			if (mastery == null || weapon == null)
 			{
-				// 무기 미착용 — 기본공격도 트리도 없다. 공격 자체가 불가능하다 (설계 4.3).
+				// 무기 미착용 — 기본공격도 스킬도 없다. 공격 자체가 불가능하다 (설계 4.4).
 				return;
 			}
 
 			// 평타는 무기가 갖는다 — 같은 마스터리라도 무기마다 평타 판정이 다를 수 있다.
 			registerSkill(hero, weapon.NormalAttackSkill);
 			registerDevSkills(hero, mastery);
-			applyTree(hero, book, mastery);
+			registerSlots(hero, book, mastery);
 		}
 
 		public void RemoveFrom(Hero hero)
@@ -172,8 +172,9 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		// 현재 마스터리의 투자 노드. 다른 마스터리의 트리는 참여하지 않는다 (설계 8.3 [3]).
-		private void applyTree(Hero hero, MasteryBook book, Table_WeaponMastery.Row mastery)
+		// 현재 마스터리의 슬롯 4칸에 낀 스킬만 등록한다. 해금했어도 슬롯 밖이면 작동하지 않는다 (설계 7.1).
+		// 저장 데이터가 어긋나 잠긴 스킬이 끼워져 있으면 등록하지 않는다 — 서버 검증과 같은 기준이다.
+		private void registerSlots(Hero hero, MasteryBook book, Table_WeaponMastery.Row mastery)
 		{
 			MasteryProgress progress = book.Find(mastery.ID);
 			if (progress == null)
@@ -181,50 +182,21 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			IReadOnlyList<Table_SkillTreeNode.Row> nodes = MasteryCatalog.GetNodes(mastery.SkillTreeNodeGroupID);
-			for (int i = 0; i < nodes.Count; i++)
+			for (int i = 0; i < MasteryRules.SlotCount; i++)
 			{
-				Table_SkillTreeNode.Row node = nodes[i];
-				int level = progress.GetNodeLevel(node.ID);
-				if (level <= 0)
+				EDT.Skill skill = progress.GetSlot(i);
+				if (skill == EDT.Skill.None)
 				{
 					continue;
 				}
 
-				applyNode(hero, node, node.Option, MasteryProgress.GetNodeValue(node, level));
-				applyNode(hero, node, node.Option_02, MasteryProgress.GetNodeValue02(node, level));
-			}
-		}
+				if (progress.IsUnlocked(skill) == false)
+				{
+					Debug.LogWarning($"[MasteryAspect] 잠긴 스킬이 슬롯에 있습니다 — 등록하지 않음: {mastery.ID} slot:{i} {skill}");
+					continue;
+				}
 
-		// 노드는 옵션 슬롯을 두 개 갖는다. 비어 있는 슬롯은 대부분의 노드가 해당하므로 조용히 넘긴다.
-		private void applyNode(Hero hero, Table_SkillTreeNode.Row node, Option option, float value)
-		{
-			if (option == Option.None)
-			{
-				return;
-			}
-
-			OptionCatalog.Entry entry;
-			if (OptionCatalog.TryGet(option, out entry) == false)
-			{
-				Debug.LogWarning($"[MasteryAspect] 정의되지 않은 옵션 — node:{node.ID} option:{option}");
-				return;
-			}
-
-			switch (entry.type)
-			{
-				case OptionTypes.Stat:
-					hero.Stats.AddModifier(entry.statDetail, value, Source);
-					break;
-
-				case OptionTypes.SkillGrant:
-					registerSkill(hero, entry.skill);
-					break;
-
-				case OptionTypes.SkillLevel:
-				case OptionTypes.Modifier:
-					// 스킬 레벨·변형은 SkillResolver 가 가져간다 — 스탯 식에 들어가지 않는다.
-					break;
+				registerSkill(hero, skill);
 			}
 		}
 
@@ -254,7 +226,7 @@ namespace ProjectOne.Unit
 
 		// ── 개발용 (제거 예정) ────────────────────────────────────────
 		//
-		// 스킬 트리로 습득하기 전에 스킬을 굴려 보기 위한 임시 통로다.
+		// 해금하기 전에 스킬을 굴려 보기 위한 임시 통로다.
 		// Table_WeaponMastery.Dev_SkillIDs 를 그대로 보유 스킬로 등록한다.
 		//
 		// 걷어낼 때 지울 것 — 이 메서드, ApplyTo 의 호출 한 줄, Mastery.xlsx 의 Dev_SkillIDs 컬럼.

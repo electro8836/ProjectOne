@@ -16,11 +16,6 @@ namespace ProjectOne.UI
 		public string iconAddress;
 		public string name;
 		public int level;
-		public int availablePoint;	// 아직 쓰지 않은 포인트
-		public int levelPointTotal;	// 레벨로 얻은 포인트 총합 — min(레벨, 레벨 상한)
-		public int levelPointMax;	// 레벨로 얻을 수 있는 최대 포인트 (SkillPoint_Level.MaxPoint)
-		public int itemPointUsed;	// 이 마스터리에 사용한 지식의 서 포인트
-		public int itemPointMax;	// 지식의 서로 얻을 수 있는 최대 포인트 (SkillPoint_Item.MaxPoint)
 		public float expRatio;		// 현재 레벨 구간의 진행률 0~1
 		public bool isMaxLevel;
 	}
@@ -46,29 +41,19 @@ namespace ProjectOne.UI
 		public bool isActive;	// 착용 무기의 마스터리
 	}
 
-	// 스킬 트리 보드의 칸 1개 렌더 데이터. nodeId 가 0 이면 노드가 없는 빈 칸이다.
-	public struct TraitSlotData
-	{
-		public int nodeId;
-		public string iconAddress;
-		public int level;
-		public int maxLevel;
-		public bool hasPrev;	// PrevNodeID > 0 — 선행 노드로 이어지는 연결선
-		public bool invested;	// 1포인트라도 투자했는가
-	}
-
 	// 마스터리 화면 Presenter — 어떤 페이지를 보여줄지와 현재 마스터리 조회를 담당한다.
 	//
 	// 무기를 끼지 않으면 활성 마스터리가 없다(MasteryBook.CurrentMastery 가 null). 그때는 현재 마스터리 탭을
 	// 잠그고 전체 탭으로 시작한다 — 빈 화면을 보여주는 대신 아예 못 들어가게 한다.
+	//
+	// 스킬 해금 목록·슬롯 4칸 UI 는 새로 구성한다 — 조작 API 는 MasteryBook(TrySetSlot / GetSlotBlock),
+	// 목록은 MasteryCatalog.GetSkills, 저장은 창을 닫을 때 FlushMasteryIfDirty 가 묶어 보낸다.
 	//
 	public sealed class MasteryPresenter : Presenter<MasteryUI>
 	{
 		// 탭 인덱스 — 프리펩 TabButtonGrid 의 Hierarchy 순서와 일대일로 맞춘다.
 		private const int TAB_CURRENT = 0;
 		private const int TAB_ALL = 1;
-
-		private const string TRAIT_POPUP_ADDRESS = "UIPrefab_MasteryTraitPopup";
 
 		private int _currentTab = TAB_CURRENT;
 
@@ -82,15 +67,10 @@ namespace ProjectOne.UI
 		private readonly List<Table_WeaponMastery.Row> _masteryRows = new List<Table_WeaponMastery.Row>();
 		private readonly List<MasteryInfoSlotData> _slotData = new List<MasteryInfoSlotData>();
 
-		// 스킬 트리 렌더 버퍼 — MaxRow × MaxColumn 를 평탄하게 담는다.
-		private readonly List<TraitSlotData> _traitData = new List<TraitSlotData>();
-
 		protected override void OnInitialize()
 		{
 			view.OnTabSelected += onTabSelected;
 			view.OnHomeClicked += onHomeClicked;
-			view.OnResetClicked += onResetClicked;
-			view.OnTraitSlotClicked += onTraitSlotClicked;
 
 			EventManager.Instance.Subscribe<MasteryChangeEvent>(onMasteryChanged);
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
@@ -107,8 +87,6 @@ namespace ProjectOne.UI
 
 			view.OnTabSelected -= onTabSelected;
 			view.OnHomeClicked -= onHomeClicked;
-			view.OnResetClicked -= onResetClicked;
-			view.OnTraitSlotClicked -= onTraitSlotClicked;
 
 			EventManager.Instance.Unsubscribe<MasteryChangeEvent>(onMasteryChanged);
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
@@ -120,7 +98,7 @@ namespace ProjectOne.UI
 			return UniTask.CompletedTask;
 		}
 
-		// 창을 닫을 때 바뀐 스킬트리를 서버에 저장한다 — 클릭마다 보내지 않고 여기서 한 번에 묶는다.
+		// 창을 닫을 때 바뀐 스킬 슬롯을 서버에 저장한다 — 조작마다 보내지 않고 여기서 한 번에 묶는다.
 		public override UniTask OnCloseAsync()
 		{
 			NetworkManager.Instance.FlushMasteryIfDirty();
@@ -158,48 +136,6 @@ namespace ProjectOne.UI
 		private void onHomeClicked()
 		{
 			UIManager.Instance.CloseWindowAsync().Forget();
-		}
-
-		// 초기화는 되돌릴 수 없는 조작이라 확인을 받는다. 설계상 무료·무제한이지만(설계 6.5)
-		// 오터치 한 번에 찍어둔 것이 전부 날아간다.
-		private void onResetClicked()
-		{
-			confirmResetAsync().Forget();
-		}
-
-		private async UniTask confirmResetAsync()
-		{
-			CommonPopupData data;
-			data.title = "마스터리 초기화";
-			data.desc = "마스터리를 초기화 하시겠습니까?";
-			data.button1Text = "아니오";
-			data.button2Text = "예";
-
-			// 취소가 그대로 던져지면 Forget 이 관측하지 못해 파이널라이저 스레드에서 터진다.
-			(bool cancelled, CommonPopupResult result) = await UIManager.Instance
-				.ShowCommonPopupAsync(data, view.GetDestroyToken()).SuppressCancellationThrow();
-
-			if (cancelled == true || result != CommonPopupResult.Button2)
-			{
-				return;
-			}
-
-			// 팝업을 띄운 사이 무기가 바뀌었을 수 있다 — 대상 마스터리를 다시 읽는다.
-			Table_WeaponMastery.Row mastery = Account.Instance.Mastery.CurrentMastery;
-			if (mastery == null)
-			{
-				return;
-			}
-
-			// ResetTree 가 MasteryChangeEvent 를 발행하므로 화면 갱신은 onMasteryChanged 가 맡는다.
-			Account.Instance.Mastery.ResetTree(mastery.ID);
-		}
-
-		// 노드 상세와 포인트 투자/회수는 팝업이 맡는다. 팝업은 창보다 상위 캔버스에 뜬다.
-		private void onTraitSlotClicked(int nodeId)
-		{
-			UIManager.Instance.ShowMasteryTraitPopupAsync(
-				TRAIT_POPUP_ADDRESS, nodeId, view.BuildPopupAnchor(), view.GetDestroyToken()).Forget();
 		}
 
 		private void onMasteryChanged(MasteryChangeEvent e)
@@ -245,27 +181,16 @@ namespace ProjectOne.UI
 
 			_renderCts = CancellationTokenSource.CreateLinkedTokenSource(view.GetDestroyToken());
 			view.RenderCurrentAsync(buildInfo(row, progress), _renderCts.Token).Forget();
-
-			buildTraitData(row, progress);
-			view.RenderSkillTreeAsync(_traitData, row.MaxRow, row.MaxColumn, _renderCts.Token).Forget();
-
-			view.SetResetInteractable(progress.TotalInvested > 0);
 		}
 
 		private MasteryInfoData buildInfo(Table_WeaponMastery.Row row, MasteryProgress progress)
 		{
 			int level = progress.Level;
-			int levelCap = MasteryCatalog.GetMaxPoint(SkillPoint.SkillPoint_Level);
 
 			MasteryInfoData data;
 			data.iconAddress = row.Icon;
 			data.name = row.Name;
 			data.level = level;
-			data.availablePoint = progress.GetAvailablePoints(Account.Instance.Mastery.AchievementPoint);
-			data.levelPointTotal = (levelCap > 0 && level > levelCap) ? levelCap : level;
-			data.levelPointMax = levelCap;
-			data.itemPointUsed = progress.ItemPointUsed;
-			data.itemPointMax = MasteryCatalog.GetMaxPoint(SkillPoint.SkillPoint_Item);
 			data.isMaxLevel = level >= MasteryCatalog.MasteryMaxLevel;
 
 			if (data.isMaxLevel == true)
@@ -282,53 +207,6 @@ namespace ProjectOne.UI
 			data.expRatio = span > 0 ? (float)(progress.TotalExp - cur) / span : 0f;
 
 			return data;
-		}
-
-		// ── 스킬 트리 ─────────────────────────────────────────────────────
-
-		// 보드는 MaxRow × MaxColumn 격자로 고정이다 — 먼저 빈 칸으로 채운 뒤 노드를 좌표에 꽂는다.
-		// 좌표는 1부터 시작한다 (테이블 기준).
-		private void buildTraitData(Table_WeaponMastery.Row mastery, MasteryProgress progress)
-		{
-			int rows = mastery.MaxRow;
-			int columns = mastery.MaxColumn;
-
-			_traitData.Clear();
-			if (rows <= 0 || columns <= 0)
-			{
-				return;
-			}
-
-			for (int i = 0; i < rows * columns; i++)
-			{
-				_traitData.Add(default(TraitSlotData));
-			}
-
-			IReadOnlyList<Table_SkillTreeNode.Row> nodes = MasteryCatalog.GetNodes(mastery.SkillTreeNodeGroupID);
-			for (int i = 0; i < nodes.Count; i++)
-			{
-				Table_SkillTreeNode.Row node = nodes[i];
-				int r = node.NodePos_Row - 1;
-				int c = node.NodePos_Column - 1;
-
-				// 조용히 버리면 테이블 오타가 "노드 하나가 안 보인다"로만 드러난다.
-				if (r < 0 || r >= rows || c < 0 || c >= columns)
-				{
-					Debug.LogError($"[Mastery] 노드 좌표가 보드를 벗어났습니다 — node:{node.ID} pos:({node.NodePos_Row},{node.NodePos_Column}) board:{rows}x{columns}");
-					continue;
-				}
-
-				int level = progress.GetNodeLevel(node.ID);
-
-				TraitSlotData data;
-				data.nodeId = node.ID;
-				data.iconAddress = node.Icon;
-				data.level = level;
-				data.maxLevel = node.MaxLevel;
-				data.hasPrev = node.PrevNodeID > 0;
-				data.invested = level > 0;
-				_traitData[r * columns + c] = data;
-			}
 		}
 
 		// ── 전체 마스터리 ─────────────────────────────────────────────────

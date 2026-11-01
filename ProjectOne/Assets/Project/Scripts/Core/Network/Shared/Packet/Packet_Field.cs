@@ -32,7 +32,7 @@ namespace ProjectOne.Shared
 	[System.Serializable]
 	public class FieldBossKillResponse : ServerResponse
 	{
-		public int exp;							// 정산 후 누적 경험치(서버값)
+		public MasteryDto mastery;				// 정산 후 마스터리 상태(서버값) — 경험치 권위값
 		public GrantedRewardDto[] rewards;
 		public EquipmentInstanceDto[] equipments;
 		public FieldBossKillDto kill;			// 저장된 처치 기록 — 리스폰 판정에 반영한다
@@ -53,11 +53,10 @@ namespace ProjectOne.Shared
 		public FieldKillDto[] kills;
 	}
 
-	// 정산이 폐기돼도 success 이고 새 field 가 온다(error 에 폐기 사유). exp 는 정산이 없었으면 -1.
+	// 정산이 폐기돼도 success 이고 새 field 가 온다(error 에 폐기 사유).
 	[System.Serializable]
 	public class FieldRotateResponse : ServerResponse
 	{
-		public int exp;
 		public FieldSessionDto field;
 	}
 
@@ -66,6 +65,5 @@ namespace ProjectOne.Shared
 	public class FieldSettleResponse : ServerResponse
 	{
 		public int nextKillIndex;
-		public int exp;		// 정산 후 누적 경험치(서버값)
 	}
 }

@@ -22,7 +22,7 @@ namespace EDT {
 
     public enum ConsumeEffect {
         None,
-        SkillPoint,
+        Reserved,
     }
 
     public enum CostumeType {
@@ -75,7 +75,6 @@ namespace EDT {
         Crafting,
         Enhance,
         Usable,
-        SkillBook,
         Costume,
         Pet,
     }
@@ -123,13 +122,6 @@ namespace EDT {
         None,
         Melee,
         Ranged,
-    }
-
-    public enum SkillPointSourceType {
-        None,
-        MasteryLevel,
-        Item,
-        Achievement,
     }
 
     public enum MonsterType {
@@ -202,7 +194,7 @@ namespace EDT {
         MonsterKill,
         BossKill,
         DungeonClear,
-        ReachLevel,
+        ReachBattlePower,
         EliteKill,
     }
 
@@ -415,13 +407,6 @@ namespace EDT {
         Mastery_Blade,
         Mastery_Shuriken,
         Mastery_Rifle,
-    }
-
-    public enum SkillPoint {
-        None,
-        SkillPoint_Level,
-        SkillPoint_Item,
-        SkillPoint_Achievement,
     }
 
     public enum Option {
@@ -656,7 +641,6 @@ namespace EDT {
         TableBattlePower_Option,
         TableBuff,
         TableCharacterStat,
-        TableCharacterLevelExp,
         TableConsumable,
         TableCostume,
         TableItemEnhance,
@@ -682,10 +666,9 @@ namespace EDT {
         TableRuinsCorePhase,
         TableRuinsHazard,
         TableWeaponMastery,
-        TableSkillTreeNode,
-        TableSkillPoint,
         TableMasteryLevelExp,
         TableMasteryLevelBonus,
+        TableMasterySkill,
         TableMonster,
         TableMonsterStat,
         TableMonsterSpawn,

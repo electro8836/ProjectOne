@@ -4,6 +4,7 @@ using UnityEngine;
 using ProjectOne.Dungeon;
 using ProjectOne.Event;
 using ProjectOne.Network;
+using ProjectOne.Ranking;
 using ProjectOne.Reward;
 using ProjectOne.Shared;
 using ProjectOne.UserData;
@@ -17,7 +18,7 @@ namespace ProjectOne.Quests
 	// - ID 오름차순이 곧 진행 순서다. 이전 퀘스트를 클리어해야 다음 퀘스트가 열린다.
 	//
 	// 목표 판정은 counter 를 쌓는 MonsterKill / EliteKill / BossKill 만 상태를 갖고,
-	// DungeonClear / ReachLevel 은 조건 충족형이라 매번 재평가한다 — 그래야 이미 조건을
+	// DungeonClear / ReachBattlePower 는 조건 충족형이라 매번 재평가한다 — 그래야 이미 조건을
 	// 만족한 채로 퀘스트가 열려도 즉시 달성된다.
 	public sealed class QuestBook
 	{
@@ -109,8 +110,8 @@ namespace ProjectOne.Quests
 				case QuestTargetType.DungeonClear:
 					return DungeonProgress.GetHighestStage(baked.dungeon) >= baked.dungeonStage;
 
-				case QuestTargetType.ReachLevel:
-					return Account.Instance.Loadout.Level >= baked.reachLevel;
+				case QuestTargetType.ReachBattlePower:
+					return MyPlayerProfile.BestBattlePower >= baked.reachBattlePower;
 			}
 
 			return false;
@@ -125,14 +126,14 @@ namespace ProjectOne.Quests
 				case QuestTargetType.EliteKill:
 					return baked.killCount;
 
-				case QuestTargetType.ReachLevel:
-					return baked.reachLevel;
+				case QuestTargetType.ReachBattlePower:
+					return baked.reachBattlePower;
 			}
 
 			return 1;
 		}
 
-		// 진행도 분자. ReachLevel 만 카운터가 아니라 현재 레벨을 쓴다 — 목표를 넘겨도 분모에서 멈춘다.
+		// 진행도 분자. ReachBattlePower 는 카운터가 아니라 최고 전투력을 쓴다 — 목표를 넘겨도 분모에서 멈춘다.
 		public int GetCurrentCount(QuestCatalog.BakedQuest baked)
 		{
 			switch (baked.row.QuestTargetType)
@@ -145,8 +146,8 @@ namespace ProjectOne.Quests
 				case QuestTargetType.DungeonClear:
 					return IsObjectiveMet(baked.row.ID) ? 1 : 0;
 
-				case QuestTargetType.ReachLevel:
-					return Mathf.Min(Account.Instance.Loadout.Level, baked.reachLevel);
+				case QuestTargetType.ReachBattlePower:
+					return Mathf.Min(MyPlayerProfile.BestBattlePower, baked.reachBattlePower);
 			}
 
 			return 0;

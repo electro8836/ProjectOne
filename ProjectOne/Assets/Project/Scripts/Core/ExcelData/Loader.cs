@@ -106,17 +106,6 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - CharacterLevelExp
-            {
-                CurrentFile = Table_CharacterLevelExp.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_CharacterLevelExp._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
             #region Table - Consumable
             {
                 CurrentFile = Table_Consumable.Filename;
@@ -392,28 +381,6 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - SkillTreeNode
-            {
-                CurrentFile = Table_SkillTreeNode.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillTreeNode._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
-            #region Table - SkillPoint
-            {
-                CurrentFile = Table_SkillPoint.Filename;
-                reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_SkillPoint._parser ) == false ) {
-                    return false;
-                }
-                if( callback != null ) { callback( CurrentFile ); }
-            }
-            #endregion
-
             #region Table - MasteryLevelExp
             {
                 CurrentFile = Table_MasteryLevelExp.Filename;
@@ -430,6 +397,17 @@ namespace EDT {
                 CurrentFile = Table_MasteryLevelBonus.Filename;
                 reader = open_file_functor( CurrentFile );
                 if( Load( reader, Table_MasteryLevelBonus._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - MasterySkill
+            {
+                CurrentFile = Table_MasterySkill.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_MasterySkill._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

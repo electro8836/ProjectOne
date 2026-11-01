@@ -11,7 +11,6 @@ using ProjectOne.Skill;
 using ProjectOne.Buff;
 using ProjectOne.Dungeon;
 using ProjectOne.Unit.AI;
-using ProjectOne.UserData;
 using ProjectOne.Monsters;
 
 namespace ProjectOne.Unit
@@ -266,12 +265,10 @@ namespace ProjectOne.Unit
 			RefreshSkillIndicator(unit);
 		}
 
-		// 히어로 구성 — 캐릭터 레벨 기준 기본 스탯 + 자동전투 두뇌(옵션).
+		// 히어로 구성 — 고정 기본 스탯 + 자동전투 두뇌(옵션). 캐릭터 레벨은 없다.
 		private void ComposeHero(UnitBase unit, Faction faction, bool autoControl)
 		{
-			// 캐릭터 레벨은 스폰 시 확정 (실시간 반영 아님)
-			int level = Account.Instance.Loadout.Level;
-			ComposeBase(unit, 0, level, StatContainerFactory.ForCharacter(level), faction);
+			ComposeBase(unit, 0, 1, StatContainerFactory.ForCharacter(), faction);
 
 			// 보유 스킬(평타 + 트리 습득분)은 MasteryAspect 가 등록한다.
 			// Aspect 는 CreateHeroAsync 의 ApplyAll 에서 돌기 때문에 여기서는 아무것도 하지 않는다.

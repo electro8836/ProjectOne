@@ -83,7 +83,7 @@ namespace BackendFunction
 					return FuncResult.Error(heroPassErr);
 				}
 
-				int levelKeyBefore = RankOps.LevelKey(loadout, mastery);
+				int levelKeyBefore = RankOps.LevelKey(mastery);
 
 				EDT.Dungeon type = (EDT.Dungeon)req.dungeonType;
 				DungeonEntryDto entry = DungeonProgressOps.GetEntry(progress, type);
@@ -99,7 +99,7 @@ namespace BackendFunction
 				switch (type)
 				{
 					case EDT.Dungeon.Gold:
-						invalid = settleGold(req, entry, loadout, inventory, mastery, clearApplier);
+						invalid = settleGold(req, entry, inventory, mastery, clearApplier);
 						break;
 					case EDT.Dungeon.Rift:
 						invalid = settleRift(req, run, entry, clearApplier);
@@ -136,7 +136,6 @@ namespace BackendFunction
 				// 3. 원자 저장
 				List<TransactionValue> tx = new List<TransactionValue>();
 				tx.Add(TransactionValue.SetUpdate("USER_DUNGEON", new Where(), DungeonProgressOps.ToParam(progress)));
-				tx.Add(TransactionValue.SetUpdate("USER_LOADOUT", new Where(), DungeonProgressOps.ToParam(loadout)));
 				tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), DungeonProgressOps.ToParam(inventory)));
 				tx.Add(TransactionValue.SetUpdate("USER_CURRENCY", new Where(), DungeonProgressOps.ToParam(currency)));
 				tx.Add(TransactionValue.SetUpdate("USER_MASTERY", new Where(), DungeonProgressOps.ToParam(mastery)));
@@ -148,14 +147,14 @@ namespace BackendFunction
 					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
 				}
 
-				if (RankOps.LevelKey(loadout, mastery) != levelKeyBefore)
+				if (RankOps.LevelKey(mastery) != levelKeyBefore)
 				{
 					RankOps.Refresh(loadout, inventory, mastery, null, null);
 				}
 
 				DungeonClearResponse response = new DungeonClearResponse();
 				response.success = true;
-				response.exp = loadout.exp;
+				response.mastery = mastery;
 				response.rewards = clearApplier.Granted;
 				response.equipments = clearApplier.Equipments;
 				response.entry = entry;
@@ -169,9 +168,9 @@ namespace BackendFunction
 
 		// ── 던전별 ────────────────────────────────────────────────────
 
-		// 골드 — 클리어 경험치(장착 무기 마스터리에도 같은 값, 마스터리 설계 5.2) + 보상 그룹. 상자 없음.
+		// 골드 — 클리어 경험치(장착 무기 마스터리에 적립, 마스터리 설계 5.2) + 보상 그룹. 상자 없음.
 		// 마스터리는 그 무기를 실제로 가졌을 때만 적립한다 — 못 찾으면 클리어는 그대로 두고 적립만 건너뛴다.
-		private static string settleGold(DungeonClearRequest req, DungeonEntryDto entry, LoadoutDto loadout,
+		private static string settleGold(DungeonClearRequest req, DungeonEntryDto entry,
 			InventoryDto inventory, MasteryDto mastery, RewardApplier clearApplier)
 		{
 			if (req.cleared == false)
@@ -185,8 +184,6 @@ namespace BackendFunction
 				return "invalid stage: " + req.stage;
 			}
 
-			loadout.exp += stage.RewardExp;
-			loadout.level = MasteryRules.CharacterLevelFromExp(loadout.exp);
 			if (MasteryFunctions.OwnsWeaponFor(inventory, req.masteryId) == true)
 			{
 				MasteryRules.AddExp(mastery, (WeaponMastery)req.masteryId, stage.RewardExp);

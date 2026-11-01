@@ -12,10 +12,9 @@ namespace ProjectOne.Mastery
 	// 무기 마스터리 정적 조회 캐시.
 	//
 	// 런타임 조회 키가 테이블 기본 키와 다른 것들을 인덱싱한다.
-	//   WeaponType   → WeaponMastery   무기를 끼면 이 역참조로 마스터리가 결정된다 (설계 1.5)
-	//   GroupID      → 트리 노드 목록   보드 하나를 통째로 순회해야 한다
-	//   PrevNodeID   → 후속 노드 목록   선행 노드 해금 판정의 역방향
-	//   누적 경험치   → 레벨            MasteryLevelExp 는 누적값이라 이분 탐색이 가능하다
+	//   WeaponType     → WeaponMastery   무기를 끼면 이 역참조로 마스터리가 결정된다 (설계 1.5)
+	//   WeaponMastery  → 스킬 8개        해금 레벨 오름차순 (설계 6.2)
+	//   누적 경험치     → 레벨            MasteryLevelExp 는 누적값이라 이분 탐색이 가능하다
 	//
 	// StatCatalog / OptionCatalog 와 동일 패턴 — BootState 가 테이블 로드 직후 Build() 를 호출한다.
 	// OptionCatalog 이후여야 한다(LevelBonusOption 해석에 의존).
@@ -25,17 +24,9 @@ namespace ProjectOne.Mastery
 		private static readonly Dictionary<WeaponType, Table_WeaponMastery.Row> _byWeaponType =
 			new Dictionary<WeaponType, Table_WeaponMastery.Row>();
 
-		// SkillTreeNodeGroupID → 그 보드의 노드 전부
-		private static readonly Dictionary<int, List<Table_SkillTreeNode.Row>> _nodesByGroup =
-			new Dictionary<int, List<Table_SkillTreeNode.Row>>();
-
-		// NodeID → 노드 (PrevNodeID 추적용)
-		private static readonly Dictionary<int, Table_SkillTreeNode.Row> _nodeById =
-			new Dictionary<int, Table_SkillTreeNode.Row>();
-
-		// PrevNodeID → 그 노드를 선행으로 삼는 후속 노드들. 포인트 회수 가능 판정의 역방향 조회다.
-		private static readonly Dictionary<int, List<Table_SkillTreeNode.Row>> _nextNodes =
-			new Dictionary<int, List<Table_SkillTreeNode.Row>>();
+		// WeaponMastery → 그 마스터리의 스킬. 해금 레벨 오름차순 — 해금 목록 표시 순서다.
+		private static readonly Dictionary<WeaponMastery, List<Table_MasterySkill.Row>> _skillsByMastery =
+			new Dictionary<WeaponMastery, List<Table_MasterySkill.Row>>();
 
 		// Equipment.AnimControllerName → 무기별 애니메이터 오버라이드.
 		// 무기 교체 경로(Loadout.reapplyHero)가 완전 동기라 부트에서 미리 잡아 두고 동기로 꺼내 쓴다.
@@ -58,12 +49,6 @@ namespace ProjectOne.Mastery
 			get { return _masteryExp.Count > 0 ? _masteryExp[_masteryExp.Count - 1].ID : 1; }
 		}
 
-		// 캐릭터 만렙 — 서버와 같은 곡선을 쓰므로 공유 규칙에 위임한다.
-		public static int CharacterMaxLevel
-		{
-			get { return MasteryRules.CharacterMaxLevel; }
-		}
-
 		// 전 마스터리 레벨 합의 상한 — MasteryBook.TotalLevel 과 같은 범위(전 마스터리)를 센다.
 		public static int TotalMasteryMaxLevel
 		{
@@ -73,18 +58,16 @@ namespace ProjectOne.Mastery
 		public static void Build()
 		{
 			_byWeaponType.Clear();
-			_nodesByGroup.Clear();
-			_nodeById.Clear();
-			_nextNodes.Clear();
+			_skillsByMastery.Clear();
 			_masteryExp.Clear();
 
 			buildMasteries();
 			checkWeaponAttacks();
-			buildNodes();
 			buildExpCurves();
+			buildSkills();
 
 			_built = true;
-			Debug.Log($"[MasteryCatalog] 구축 완료 — 마스터리:{_byWeaponType.Count} 트리그룹:{_nodesByGroup.Count} 노드:{_nodeById.Count} 마스터리레벨:{_masteryExp.Count}");
+			Debug.Log($"[MasteryCatalog] 구축 완료 — 마스터리:{_byWeaponType.Count} 스킬마스터리:{_skillsByMastery.Count} 마스터리레벨:{_masteryExp.Count}");
 		}
 
 		// ── 마스터리 조회 ─────────────────────────────────────────────
@@ -165,39 +148,35 @@ namespace ProjectOne.Mastery
 			return controller;
 		}
 
-		// ── 스킬 트리 조회 ────────────────────────────────────────────
+		// ── 스킬 해금 조회 ────────────────────────────────────────────
 
-		// 보드 하나의 노드 전부. 데이터가 없으면 빈 목록(널 아님).
-		public static IReadOnlyList<Table_SkillTreeNode.Row> GetNodes(int groupId)
+		// 그 마스터리의 스킬 전부(해금 레벨 오름차순). 데이터가 없으면 빈 목록(널 아님).
+		public static IReadOnlyList<Table_MasterySkill.Row> GetSkills(WeaponMastery id)
 		{
-			List<Table_SkillTreeNode.Row> list;
-			if (_nodesByGroup.TryGetValue(groupId, out list) == true)
+			List<Table_MasterySkill.Row> list;
+			if (_skillsByMastery.TryGetValue(id, out list) == true)
 			{
 				return list;
 			}
 
-			return _emptyNodes;
+			return _emptySkills;
 		}
 
-		private static readonly List<Table_SkillTreeNode.Row> _emptyNodes = new List<Table_SkillTreeNode.Row>();
+		private static readonly List<Table_MasterySkill.Row> _emptySkills = new List<Table_MasterySkill.Row>();
 
-		public static Table_SkillTreeNode.Row GetNode(int nodeId)
+		// 그 마스터리에서 스킬이 해금되는 레벨. 그 마스터리의 스킬이 아니면 0.
+		public static int GetUnlockLevel(WeaponMastery id, EDT.Skill skill)
 		{
-			Table_SkillTreeNode.Row row;
-			_nodeById.TryGetValue(nodeId, out row);
-			return row;
-		}
-
-		// 이 노드를 선행으로 삼는 노드 전부. 없으면 빈 목록(널 아님).
-		public static IReadOnlyList<Table_SkillTreeNode.Row> GetNextNodes(int prevNodeId)
-		{
-			List<Table_SkillTreeNode.Row> list;
-			if (_nextNodes.TryGetValue(prevNodeId, out list) == true)
+			IReadOnlyList<Table_MasterySkill.Row> skills = GetSkills(id);
+			for (int i = 0; i < skills.Count; i++)
 			{
-				return list;
+				if (skills[i].SkillID == skill)
+				{
+					return skills[i].UnlockLevel;
+				}
 			}
 
-			return _emptyNodes;
+			return 0;
 		}
 
 		// ── 경험치 곡선 ───────────────────────────────────────────────
@@ -209,32 +188,11 @@ namespace ProjectOne.Mastery
 			return MasteryRules.LevelFromExp(totalExp);
 		}
 
-		public static int GetCharacterLevel(int totalExp)
-		{
-			return MasteryRules.CharacterLevelFromExp(totalExp);
-		}
-
 		// 해당 레벨에 도달하기 위한 누적 경험치. 테이블에 없으면 0.
 		public static int GetMasteryTotalExp(int level)
 		{
 			Table_MasteryLevelExp.Row row = Table_MasteryLevelExp.Get(level);
 			return row != null ? row.TotalExperience : 0;
-		}
-
-		// 위와 같되 캐릭터 커브. 테이블에 없으면 0(만렙 초과).
-		public static int GetCharacterTotalExp(int level)
-		{
-			Table_CharacterLevelExp.Row row = Table_CharacterLevelExp.Get(level);
-			return row != null ? row.TotalExperience : 0;
-		}
-
-		// ── 스킬포인트 상한 ───────────────────────────────────────────
-
-		// 해당 출처로 얻을 수 있는 최대 포인트. 행이 없으면 0(획득 불가).
-		public static int GetMaxPoint(SkillPoint source)
-		{
-			Table_SkillPoint.Row row = Table_SkillPoint.Get(source);
-			return row != null ? row.MaxPoint : 0;
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
@@ -293,60 +251,88 @@ namespace ProjectOne.Mastery
 			}
 		}
 
-		private static void buildNodes()
+		// 마스터리별 스킬 목록 + 데이터 검증 (설계 9장 No.5~10).
+		private static void buildSkills()
 		{
-			Dictionary<int, Table_SkillTreeNode.Row> all = Table_SkillTreeNode.All();
-			Dictionary<int, Table_SkillTreeNode.Row>.Enumerator e = all.GetEnumerator();
+			int maxLevel = MasteryMaxLevel;
+
+			Dictionary<int, Table_MasterySkill.Row> all = Table_MasterySkill.All();
+			Dictionary<int, Table_MasterySkill.Row>.Enumerator e = all.GetEnumerator();
 			while (e.MoveNext() == true)
 			{
-				Table_SkillTreeNode.Row row = e.Current.Value;
-				if (row.GroupID <= 0)
+				Table_MasterySkill.Row row = e.Current.Value;
+				if (row.WeaponMastery == WeaponMastery.None || Table_WeaponMastery.Get(row.WeaponMastery) == null)
 				{
-					Debug.LogWarning($"[MasteryCatalog] 소속 보드가 없는 트리 노드입니다: {row.ID}");
+					Debug.LogError($"[MasteryCatalog] MasterySkill {row.ID} 의 마스터리가 없습니다: {row.WeaponMastery}");
 					continue;
 				}
 
-				List<Table_SkillTreeNode.Row> list;
-				if (_nodesByGroup.TryGetValue(row.GroupID, out list) == false)
+				Table_Skill.Row skill = Table_Skill.Get(row.SkillID);
+				if (skill == null)
 				{
-					list = new List<Table_SkillTreeNode.Row>();
-					_nodesByGroup.Add(row.GroupID, list);
+					Debug.LogError($"[MasteryCatalog] MasterySkill {row.ID} 의 스킬이 없습니다: {row.SkillID}");
+					continue;
+				}
+
+				if (skill.SkillCategory == SkillCategoryTypes.Normal)
+				{
+					Debug.LogError($"[MasteryCatalog] 평타는 MasterySkill 에 넣지 않습니다(슬롯 밖이다): {row.ID} {row.SkillID}");
+					continue;
+				}
+
+				if (row.UnlockLevel < 1 || row.UnlockLevel > maxLevel)
+				{
+					Debug.LogError($"[MasteryCatalog] MasterySkill {row.ID} 의 해금 레벨 {row.UnlockLevel} 이 1~{maxLevel} 밖입니다 — 영영 해금되지 않습니다.");
+					continue;
+				}
+
+				List<Table_MasterySkill.Row> list;
+				if (_skillsByMastery.TryGetValue(row.WeaponMastery, out list) == false)
+				{
+					list = new List<Table_MasterySkill.Row>();
+					_skillsByMastery.Add(row.WeaponMastery, list);
+				}
+
+				if (containsSkill(list, row.SkillID) == true)
+				{
+					Debug.LogError($"[MasteryCatalog] {row.WeaponMastery} 에 같은 스킬이 두 번 있습니다: {row.SkillID}");
+					continue;
 				}
 
 				list.Add(row);
-				_nodeById[row.ID] = row;
-
-				if (row.PrevNodeID > 0)
-				{
-					List<Table_SkillTreeNode.Row> next;
-					if (_nextNodes.TryGetValue(row.PrevNodeID, out next) == false)
-					{
-						next = new List<Table_SkillTreeNode.Row>();
-						_nextNodes.Add(row.PrevNodeID, next);
-					}
-
-					next.Add(row);
-				}
 			}
 
-			// 보드 순회 순서를 좌표로 고정한다 — UI 배치와 누적 계산의 재현성 확보.
-			Dictionary<int, List<Table_SkillTreeNode.Row>>.Enumerator ge = _nodesByGroup.GetEnumerator();
-			while (ge.MoveNext() == true)
+			Dictionary<WeaponMastery, List<Table_MasterySkill.Row>>.Enumerator se = _skillsByMastery.GetEnumerator();
+			while (se.MoveNext() == true)
 			{
-				ge.Current.Value.Sort(compareNodePos);
+				List<Table_MasterySkill.Row> list = se.Current.Value;
+				list.Sort(compareUnlock);
+
+				if (list.Count > 0 && list[0].UnlockLevel != 1)
+				{
+					Debug.LogWarning($"[MasteryCatalog] {se.Current.Key} 에 1레벨 스킬이 없습니다 — 첫 무기 장착 시 슬롯이 빕니다.");
+				}
 			}
 		}
 
-		private static int compareNodePos(Table_SkillTreeNode.Row a, Table_SkillTreeNode.Row b)
+		private static bool containsSkill(List<Table_MasterySkill.Row> list, EDT.Skill skill)
 		{
-			if (a.NodePos_Row != b.NodePos_Row)
+			for (int i = 0; i < list.Count; i++)
 			{
-				return a.NodePos_Row.CompareTo(b.NodePos_Row);
+				if (list[i].SkillID == skill)
+				{
+					return true;
+				}
 			}
 
-			if (a.NodePos_Column != b.NodePos_Column)
+			return false;
+		}
+
+		private static int compareUnlock(Table_MasterySkill.Row a, Table_MasterySkill.Row b)
+		{
+			if (a.UnlockLevel != b.UnlockLevel)
 			{
-				return a.NodePos_Column.CompareTo(b.NodePos_Column);
+				return a.UnlockLevel.CompareTo(b.UnlockLevel);
 			}
 
 			return a.ID.CompareTo(b.ID);

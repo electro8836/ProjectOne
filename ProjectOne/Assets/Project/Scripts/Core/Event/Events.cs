@@ -255,7 +255,7 @@ namespace ProjectOne.Event
 				}
 		}
 
-		// 캐릭터 변경 알림 (레벨업/경험치 변경). 캐릭터 정보 UI 등에서 구독.
+		// 캐릭터 영구 능력치 변경 알림 (장착·강화·마스터리 레벨업·슬롯 변경). 전투력 기준 판정 등에서 구독.
 		public readonly struct CharacterChangeEvent
 		{
 		}
@@ -298,14 +298,14 @@ namespace ProjectOne.Event
 				}
 		}
 
-		// 히어로 레벨업 알림. 한 번에 여러 레벨이 올라도 최종 레벨로 1회만 발행한다.
-		public readonly struct HeroLevelUpEvent
+		// 마스터리 경험치 변경 알림 (적립·서버 권위값 반영). 레벨이 안 바뀌어도 발행한다 — 경험치 게이지용.
+		public readonly struct MasteryExpChangeEvent
 		{
-			public readonly int Level;
+			public readonly WeaponMastery Mastery;
 
-			public HeroLevelUpEvent(int level)
+			public MasteryExpChangeEvent(WeaponMastery mastery)
 			{
-				this.Level = level;
+				this.Mastery = mastery;
 			}
 		}
 

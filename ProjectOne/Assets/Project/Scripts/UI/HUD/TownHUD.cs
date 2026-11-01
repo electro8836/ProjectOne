@@ -31,6 +31,7 @@ namespace ProjectOne.UI
 			_tabGroup.OnTabChanged += onTabChanged;
 			EventManager.Instance.Subscribe<WindowClosedEvent>(onOverlayClosed);
 			EventManager.Instance.Subscribe<CharacterChangeEvent>(onCharacterChanged);
+			EventManager.Instance.Subscribe<MasteryExpChangeEvent>(onMasteryExpChanged);
 
 			Debug.Log("마을 HUD 로드");
 		}
@@ -45,6 +46,7 @@ namespace ProjectOne.UI
 			_tabGroup.OnTabChanged -= onTabChanged;
 			EventManager.Instance.Unsubscribe<WindowClosedEvent>(onOverlayClosed);
 			EventManager.Instance.Unsubscribe<CharacterChangeEvent>(onCharacterChanged);
+			EventManager.Instance.Unsubscribe<MasteryExpChangeEvent>(onMasteryExpChanged);
 		}
 
 		private void onTabChanged(int index)
@@ -71,19 +73,34 @@ namespace ProjectOne.UI
 			_tabGroup.ClearSelection();
 		}
 
-		// 레벨업/경험치 변동 시 중앙 캐릭터 정보를 다시 그린다.
+		// 무기 교체 등 영구 능력치 변경 — 대표 레벨의 기준 마스터리가 바뀔 수 있다.
 		private void onCharacterChanged(CharacterChangeEvent e)
 		{
 			refreshSelectedCharacter();
 		}
 
-		// 캐릭터의 레벨/경험치 비율을 갱신한다.
+		// 경험치 적립·레벨업.
+		private void onMasteryExpChanged(MasteryExpChangeEvent e)
+		{
+			refreshSelectedCharacter();
+		}
+
+		// 대표 레벨(장착 무기의 숙련도)과 그 경험치 비율을 갱신한다 (마스터리 설계 3.3).
 		// 캐릭터가 하나뿐이라 이름·아이콘은 테이블에서 오지 않는다(프리팹 기본값 사용).
 		private void refreshSelectedCharacter()
 		{
-			Loadout loadout = Account.Instance.Loadout;
-			int level = loadout.Level;
-			int exp = loadout.Exp;
+			MasteryProgress progress = Account.Instance.Mastery.CurrentProgress;
+			if (progress == null)
+			{
+				// 무기 미착용 — 경험치가 쌓일 마스터리가 없다.
+				_levelText.text = string.Empty;
+				_expText.text = string.Empty;
+				_expSlider.value = 0f;
+				return;
+			}
+
+			int level = progress.Level;
+			int exp = progress.TotalExp;
 
 			_levelText.text = level.ToString();
 
@@ -107,7 +124,7 @@ namespace ProjectOne.UI
 		// 해당 레벨 도달에 필요한 누적 경험치. 없으면 0(최대 레벨 초과).
 		private static int totalExpFor(int level)
 		{
-			return MasteryCatalog.GetCharacterTotalExp(level);
+			return MasteryCatalog.GetMasteryTotalExp(level);
 		}
 	}
 }

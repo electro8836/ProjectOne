@@ -76,8 +76,8 @@ namespace ProjectOne.Field
 				MonsterRespawnClock.Instance.SetBossKilled(data.kill.fieldId, data.kill.spawnId, data.kill.resetDay);
 			}
 
-			// 캐릭터는 서버 권위값, 마스터리는 증가분만 적립된다. 아직 서버에 올라가지 않은 필드 처치 경험치를 더한다.
-			Account.Instance.SetExpAuthoritative(data.exp + FieldKillLedger.Instance.UnsettledExp);
+			// 마스터리 경험치는 서버 권위값으로 맞춘다(미정산 필드 처치분은 Account 가 더한다).
+			Account.Instance.SetMasteryAuthoritative(data.mastery);
 
 			_granted.Clear();
 			RewardGranter.FromServer(data.rewards, data.equipments, _granted);

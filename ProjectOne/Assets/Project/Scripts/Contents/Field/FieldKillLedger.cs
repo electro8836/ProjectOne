@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using EDT;
 using UnityEngine;
 using ProjectOne.Shared;
 using ProjectOne.Utils;
@@ -65,19 +66,25 @@ namespace ProjectOne.Field
 			get { return _nextKillIndex; }
 		}
 
-		// 아직 서버에 반영되지 않은 처치 경험치 합 — 서버 권위 경험치로 덮을 때 더해 줘야 줄어들지 않는다.
-		public int UnsettledExp
+		// 아직 서버에 반영되지 않은 처치 경험치를 마스터리별로 합한다 — 서버 권위 경험치로 덮을 때 더해 줘야 줄어들지 않는다.
+		// 처치 시점에 무기를 들지 않았던 처치(masteryId 0)는 어디에도 적립되지 않으므로 뺀다.
+		public Dictionary<WeaponMastery, int> UnsettledExpByMastery()
 		{
-			get
+			Dictionary<WeaponMastery, int> sums = new Dictionary<WeaponMastery, int>();
+			for (int i = 0; i < _kills.Count; i++)
 			{
-				int sum = 0;
-				for (int i = 0; i < _kills.Count; i++)
+				WeaponMastery id = (WeaponMastery)_kills[i].dto.masteryId;
+				if (id == WeaponMastery.None)
 				{
-					sum += _kills[i].exp;
+					continue;
 				}
 
-				return sum;
+				int sum;
+				sums.TryGetValue(id, out sum);
+				sums[id] = sum + _kills[i].exp;
 			}
+
+			return sums;
 		}
 
 		// 로그인 직후 서버 세션으로 시작한다. 이전 세션의 미전송 처치는 버린다(서버도 새 세션이다).

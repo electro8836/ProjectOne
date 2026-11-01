@@ -14,9 +14,6 @@ namespace EDT {
             public WeaponRangeType RangeType { get; set; } = WeaponRangeType.None;
             public Option LevelBonusOption { get; set; } = Option.None;
             public float LevelBonusPerLevel { get; set; } = 0f;
-            public int MaxRow { get; set; } = 0;
-            public int MaxColumn { get; set; } = 0;
-            public int SkillTreeNodeGroupID { get; set; } = 0;
             public Skill[] Dev_SkillIDs { get; set; } = Array.Empty<Skill>();
         }
 
@@ -47,9 +44,6 @@ namespace EDT {
                 row.RangeType = (WeaponRangeType)reader.ReadInt32();
                 row.LevelBonusOption = (Option)reader.ReadInt32();
                 row.LevelBonusPerLevel = reader.ReadSingle();
-                row.MaxRow = reader.ReadInt32();
-                row.MaxColumn = reader.ReadInt32();
-                row.SkillTreeNodeGroupID = reader.ReadInt32();
                 { int _n = reader.ReadInt32(); row.Dev_SkillIDs = new Skill[_n]; for(int _i=0;_i<_n;_i++) row.Dev_SkillIDs[_i] = (Skill)reader.ReadInt32(); }
                 _all.Add( row.ID, row );
             } catch( Exception e ) {

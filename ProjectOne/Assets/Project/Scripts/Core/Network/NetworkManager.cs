@@ -334,8 +334,8 @@ namespace ProjectOne.Network
 
 		// ── 마스터리 ──────────────────────────────────────────────────────
 
-		// 바뀐 스킬트리의 최종 상태를 저장한다(마스터리 화면 닫기·앱 일시정지/종료 트리거).
-		// 서버는 서버 경험치 기준으로 가용 포인트를 검증한다 — 아직 올라가지 않은 필드 경험치로 찍었을 수 있어 배치를 먼저 보낸다.
+		// 바뀐 스킬 슬롯의 최종 상태를 저장한다(마스터리 화면 닫기·앱 일시정지/종료 트리거).
+		// 서버는 서버 경험치 기준으로 해금을 검증한다 — 아직 올라가지 않은 필드 경험치로 해금했을 수 있어 배치를 먼저 보낸다.
 		public void FlushMasteryIfDirty()
 		{
 			if (IsLoggedIn == false || _masteryInFlight != null)
@@ -344,54 +344,29 @@ namespace ProjectOne.Network
 			}
 
 			MasteryBook book = Account.Instance.Mastery;
-			if (book.IsTreeDirty == false)
+			if (book.IsSlotDirty == false)
 			{
 				return;
 			}
 
 			FlushFieldBatch();
 
-			SaveMasteryTreeRequest request = new SaveMasteryTreeRequest();
-			request.trees = book.TakeDirtyTrees();
-			_masteryInFlight = request.trees;
-			_caller.Invoke<SaveMasteryTreeRequest, SaveMasteryTreeResponse>(FunctionName.SaveMasteryTree, request, onMasteryFlushed, false);
+			SaveMasterySlotsRequest request = new SaveMasterySlotsRequest();
+			request.masteries = book.TakeDirtySlots();
+			_masteryInFlight = request.masteries;
+			_caller.Invoke<SaveMasterySlotsRequest, SaveMasterySlotsResponse>(FunctionName.SaveMasterySlots, request, onMasteryFlushed, false);
 		}
 
-		// 실패하면(포인트 부족 등) 다시 dirty 로 표시해 다음 트리거에 재전송한다 — 필드 경험치가 정산되면 통과한다.
-		private void onMasteryFlushed(bool success, SaveMasteryTreeResponse data, string error)
+		// 실패하면(해금 미달 등) 다시 dirty 로 표시해 다음 트리거에 재전송한다 — 필드 경험치가 정산되면 통과한다.
+		private void onMasteryFlushed(bool success, SaveMasterySlotsResponse data, string error)
 		{
 			if (success == false)
 			{
-				Debug.LogWarning($"[NetworkManager] 스킬트리 저장 실패 — 다음에 재전송: {error}");
-				Account.Instance.Mastery.RestoreDirtyTrees(_masteryInFlight);
+				Debug.LogWarning($"[NetworkManager] 스킬 슬롯 저장 실패 — 다음에 재전송: {error}");
+				Account.Instance.Mastery.RestoreDirtySlots(_masteryInFlight);
 			}
 
 			_masteryInFlight = null;
-		}
-
-		// 지식의 서 사용 — 로컬에서 이미 차감·적용했다. 서버가 같은 차감·포인트 증가를 저장한다.
-		public void RequestUseSkillPointItem(int itemId, WeaponMastery target)
-		{
-			if (IsLoggedIn == false)
-			{
-				return;
-			}
-
-			// 필드에서 주운 책일 수 있다 — 배치를 먼저 보내 서버 인벤토리에 넣어 둔다.
-			FlushFieldBatch();
-
-			UseSkillPointItemRequest request = new UseSkillPointItemRequest();
-			request.itemId = itemId;
-			request.masteryId = (int)target;
-			_caller.Invoke<UseSkillPointItemRequest, UseSkillPointItemResponse>(FunctionName.UseSkillPointItem, request, onSkillPointItemUsed, false);
-		}
-
-		private void onSkillPointItemUsed(bool success, UseSkillPointItemResponse data, string error)
-		{
-			if (success == false)
-			{
-				Debug.LogWarning($"[NetworkManager] 지식의 서 서버 반영 실패 — 다음 로그인에 서버값으로 정리된다: {error}");
-			}
 		}
 
 		// 스택 아이템 차감(파괴) — 로컬은 이미 뺐다. 묶음 전송은 ItemSpendSender 가 한다(딤 없음).

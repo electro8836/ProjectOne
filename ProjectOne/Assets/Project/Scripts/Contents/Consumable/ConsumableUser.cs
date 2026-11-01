@@ -1,8 +1,5 @@
-using EDT;
 using UnityEngine;
 using ProjectOne.Event;
-using ProjectOne.Mastery;
-using ProjectOne.Network;
 using ProjectOne.UserData;
 
 namespace ProjectOne.Consumables
@@ -12,19 +9,16 @@ namespace ProjectOne.Consumables
 		Success = 0,
 		NoData,			// Consumable 행이 없거나 파라미터 해석 실패
 		NotOwned,		// 인벤토리에 없다
-		NoTarget,		// 지식의 서를 줄 대상이 없다 (무기 미착용)
-		Failed			// 효과 자체가 실패 (스킬포인트 상한 등)
+		Failed			// 효과 자체가 실패 (상한 등)
 	}
 
 	// 소모품 사용의 단일 진입점. UI 버튼은 Use() 하나만 부르면 된다.
 	//
 	// 순서가 중요하다 — 효과를 먼저 굴리고 성공했을 때만 차감한다.
-	// 지식의 서가 상한에 막혔는데 아이템이 사라지면 복구할 방법이 없다.
+	// 효과가 상한에 막혔는데 아이템이 사라지면 복구할 방법이 없다.
 	public static class ConsumableUser
 	{
-		// pointTarget 은 ConsumeEffect.SkillPoint 전용이다. 대상 마스터리는 테이블이 아니라
-		// 열려 있는 스킬 트리 화면이 정한다 (설계 5.3). None 이면 현재 장착 무기로 폴백한다.
-		public static ConsumableUseResult Use(int itemId, WeaponMastery pointTarget = WeaponMastery.None)
+		public static ConsumableUseResult Use(int itemId)
 		{
 			ConsumableCatalog.BakedConsumable baked = ConsumableCatalog.Get(itemId);
 			if (baked == null || baked.isValid == false)
@@ -38,7 +32,7 @@ namespace ProjectOne.Consumables
 				return finish(itemId, ConsumableUseResult.NotOwned);
 			}
 
-			ConsumableUseResult result = apply(baked, pointTarget);
+			ConsumableUseResult result = apply(baked);
 			if (result != ConsumableUseResult.Success)
 			{
 				// 효과가 실패하면 차감도 없다.
@@ -46,66 +40,22 @@ namespace ProjectOne.Consumables
 			}
 
 			Account.Instance.Inventory.TrySpend(itemId, 1);
-
-			// 지식의 서는 영속 상태(아이템 수·포인트)를 바꾼다 — 서버가 같은 차감·증가를 저장한다.
-			if (baked.effect == ConsumeEffect.SkillPoint)
-			{
-				NetworkManager.Instance.RequestUseSkillPointItem(itemId, resolvePointTarget(pointTarget));
-			}
-
 			return finish(itemId, ConsumableUseResult.Success);
 		}
 
 		// ── 타입별 실행 ───────────────────────────────────────────────
 
-		private static ConsumableUseResult apply(ConsumableCatalog.BakedConsumable baked, WeaponMastery pointTarget)
+		// 현재 정의된 효과가 없다 — 효과를 추가할 때 분기와 서버 반영 요청을 함께 넣는다 (소모품 설계 5·8장).
+		private static ConsumableUseResult apply(ConsumableCatalog.BakedConsumable baked)
 		{
 			switch (baked.effect)
 			{
-				case ConsumeEffect.SkillPoint:
-					return applySkillPoint(baked, pointTarget);
+				default:
+					return ConsumableUseResult.NoData;
 			}
-
-			return ConsumableUseResult.NoData;
-		}
-
-		// 상한(SkillPoint_Item.MaxPoint)은 런타임 카운터가 막는다 (설계 5.3).
-		private static ConsumableUseResult applySkillPoint(ConsumableCatalog.BakedConsumable baked, WeaponMastery pointTarget)
-		{
-			MasteryBook book = Account.Instance.Mastery;
-			if (book == null)
-			{
-				return ConsumableUseResult.Failed;
-			}
-
-			WeaponMastery target = resolvePointTarget(pointTarget);
-			if (target == WeaponMastery.None)
-			{
-				// 무기를 안 들었으면 포인트를 줄 트리가 없다.
-				return ConsumableUseResult.NoTarget;
-			}
-
-			if (book.TryUseItemPoint(target, baked.pointAmount) == false)
-			{
-				return ConsumableUseResult.Failed;
-			}
-
-			return ConsumableUseResult.Success;
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
-
-		// 지식의 서 대상 — 지정이 없으면 현재 장착 무기의 마스터리. 무기 미착용이면 None.
-		private static WeaponMastery resolvePointTarget(WeaponMastery pointTarget)
-		{
-			if (pointTarget != WeaponMastery.None)
-			{
-				return pointTarget;
-			}
-
-			Table_WeaponMastery.Row current = Account.Instance.Mastery.CurrentMastery;
-			return (current != null) ? current.ID : WeaponMastery.None;
-		}
 
 		private static ConsumableUseResult finish(int itemId, ConsumableUseResult result)
 		{

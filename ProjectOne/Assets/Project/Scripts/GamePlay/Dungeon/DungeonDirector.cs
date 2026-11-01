@@ -15,7 +15,7 @@ using ProjectOne.Audio;
 using ProjectOne.Utils;
 using ProjectOne.UserData;
 using ProjectOne.Network;
-using ProjectOne.Field;
+using ProjectOne.Mastery;
 using ProjectOne.Shared;
 using ProjectOne.Summons;
 
@@ -320,8 +320,7 @@ namespace ProjectOne.Dungeon
 		private void startStage()
 		{
 			// 결과창의 "이번 판 획득 경험치"는 이 스냅샷과의 차이다 — 누적 집계 경로가 따로 없다.
-			// Loadout.Exp 는 늘기만 하고 줄지 않는다(ApplyLevelup 은 아직 호출부가 없다).
-			// 레벨업이 붙어 경험치를 되돌리게 되면 이 뺄셈을 다시 봐야 한다.
+			// 장착 무기 마스터리의 누적 경험치는 늘기만 하고 줄지 않는다.
 			_expAtStageStart = currentExp();
 
 			_hasTimeLimit = _dungeon.TimeLimit > 0;
@@ -578,10 +577,11 @@ namespace ProjectOne.Dungeon
 			return next;
 		}
 
-		// 계정 누적 경험치. Account 는 순수 C# 싱글톤이고 Loadout 은 생성자에서 채워지므로 가드가 없다.
+		// 장착 무기 마스터리의 누적 경험치. 무기 미착용이면 0 — 경험치가 쌓이지 않는다.
 		private static int currentExp()
 		{
-			return Account.Instance.Loadout.Exp;
+			MasteryProgress progress = Account.Instance.Mastery.CurrentProgress;
+			return (progress != null) ? progress.TotalExp : 0;
 		}
 
 		// ── 승리 처리 ─────────────────────────────────────────────────
@@ -852,9 +852,8 @@ namespace ProjectOne.Dungeon
 			// 최고 단계 — 서버 정산값으로 맞춘다.
 			DungeonProgress.ApplyEntry(resp.entry);
 
-			// 캐릭터는 서버 권위값, 마스터리는 증가분만 적립된다 (마스터리 설계 5.2).
-			// 아직 서버에 올라가지 않은 필드 처치 경험치를 더한다 — 빼면 그만큼 경험치가 줄어든다.
-			Account.Instance.SetExpAuthoritative(resp.exp + FieldKillLedger.Instance.UnsettledExp);
+			// 마스터리 경험치는 서버 권위값으로 맞춘다 (마스터리 설계 5.2). 미정산 필드 처치분은 Account 가 더한다.
+			Account.Instance.SetMasteryAuthoritative(resp.mastery);
 
 			// 장비는 서버가 UID·등급·품질까지 확정해 인스턴스로 내려준다 — 그대로 넣는다.
 			if (resp.equipments != null)

@@ -11,7 +11,7 @@ using ProjectOne.UserData;
 
 namespace ProjectOne.UI
 {
-	// 내 히어로 정보 패널 — 체력 / 레벨 / 전투력.
+	// 내 히어로 정보 패널 — 체력 / 레벨(장착 무기의 숙련도) / 전투력. 캐릭터 레벨은 없다.
 	//
 	// BossUI 와 같은 결의 자율 컴포넌트다(MVP 를 쓰지 않는다). MainHud 는 화면(UIScreen)이라
 	// Presenter 를 두지만, 이쪽은 HUD 위젯이라 자기 이벤트를 직접 구독한다.
@@ -33,11 +33,10 @@ namespace ProjectOne.UI
 		[SerializeField] private TMP_Text _battlePowerText;
 
 		[Header("경험치")]
-		[SerializeField] private Slider _heroExpSlider;
 		[SerializeField] private Slider _masteryExpSlider;
 
 		private Action<UnitSpawnedEvent> _onUnitSpawned;
-		private Action<CharacterChangeEvent> _onCharacterChanged;
+		private Action<MasteryExpChangeEvent> _onMasteryExpChanged;
 		private Action<MasteryChangeEvent> _onMasteryChanged;
 		private Action<PresetChangeEvent> _onPresetChanged;
 
@@ -47,9 +46,7 @@ namespace ProjectOne.UI
 		// 마지막으로 그린 값 — 변화가 있을 때만 대입한다.
 		private float _lastHp = -1f;
 		private float _lastMaxHp = -1f;
-		private int _lastLevel = -1;
 		private int _lastMasteryLevel = -1;
-		private float _lastHeroExpRatio = -1f;
 		private float _lastMasteryExpRatio = -1f;
 
 		// 전투력은 전용 이벤트가 없어 스탯 버전으로 감지한다 (게임플레이 쪽 UnitBase.tickHpNotify 와 같은 방식).
@@ -61,12 +58,12 @@ namespace ProjectOne.UI
 		private void Awake()
 		{
 			_onUnitSpawned = onUnitSpawned;
-			_onCharacterChanged = onCharacterChanged;
+			_onMasteryExpChanged = onMasteryExpChanged;
 			_onMasteryChanged = onMasteryChanged;
 			_onPresetChanged = onPresetChanged;
 
 			EventManager.Instance.Subscribe<UnitSpawnedEvent>(_onUnitSpawned);
-			EventManager.Instance.Subscribe<CharacterChangeEvent>(_onCharacterChanged);
+			EventManager.Instance.Subscribe<MasteryExpChangeEvent>(_onMasteryExpChanged);
 			EventManager.Instance.Subscribe<MasteryChangeEvent>(_onMasteryChanged);
 			EventManager.Instance.Subscribe<PresetChangeEvent>(_onPresetChanged);
 
@@ -77,7 +74,7 @@ namespace ProjectOne.UI
 		private void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<UnitSpawnedEvent>(_onUnitSpawned);
-			EventManager.Instance.Unsubscribe<CharacterChangeEvent>(_onCharacterChanged);
+			EventManager.Instance.Unsubscribe<MasteryExpChangeEvent>(_onMasteryExpChanged);
 			EventManager.Instance.Unsubscribe<MasteryChangeEvent>(_onMasteryChanged);
 			EventManager.Instance.Unsubscribe<PresetChangeEvent>(_onPresetChanged);
 
@@ -142,7 +139,7 @@ namespace ProjectOne.UI
 
 		// ── 레벨 ──────────────────────────────────────────────────────
 
-		// 히어로레벨(마스터리레벨) 형식. 무기를 착용하지 않았으면 마스터리가 없어 괄호를 생략한다.
+		// 대표 레벨 = 장착 무기의 숙련도 레벨 (마스터리 설계 3.3). 무기를 착용하지 않았으면 비운다.
 		private void refreshLevel()
 		{
 			if (_levelText == null)
@@ -150,50 +147,22 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			int level = Account.Instance.Loadout.Level;
-
-			MasteryProgress progress = Account.Instance.Mastery.CurrentProgress;
-			int masteryLevel = (progress != null) ? progress.Level : 0;
-
-			if (level == _lastLevel && masteryLevel == _lastMasteryLevel)
+			int masteryLevel = Account.Instance.Mastery.RepresentativeLevel;
+			if (masteryLevel == _lastMasteryLevel)
 			{
 				return;
 			}
 
-			_lastLevel = level;
 			_lastMasteryLevel = masteryLevel;
-
-			if (masteryLevel > 0)
-			{
-				_levelText.text = level.ToString() + "(" + masteryLevel.ToString() + ")";
-			}
-			else
-			{
-				_levelText.text = level.ToString();
-			}
+			_levelText.text = (masteryLevel > 0) ? masteryLevel.ToString() : string.Empty;
 		}
 
 		// ── 경험치 ────────────────────────────────────────────────────
 
-		// 두 게이지는 각자의 커브를 본다 — 같은 경험치를 먹어도 요구량과 만렙이 달라 따로 움직인다.
 		// refreshLevel 에 합치지 않는 이유 — 그쪽은 레벨이 같으면 조기 리턴하는데
 		// 경험치는 레벨이 안 바뀌어도 계속 오른다.
 		private void refreshExp()
 		{
-			if (_heroExpSlider != null)
-			{
-				int level = Account.Instance.Loadout.Level;
-				float ratio = bandRatio(Account.Instance.Loadout.Exp,
-					MasteryCatalog.GetCharacterTotalExp(level),
-					MasteryCatalog.GetCharacterTotalExp(level + 1));
-
-				if (Mathf.Approximately(_lastHeroExpRatio, ratio) == false)
-				{
-					_lastHeroExpRatio = ratio;
-					_heroExpSlider.value = ratio;
-				}
-			}
-
 			if (_masteryExpSlider == null)
 			{
 				return;
@@ -299,15 +268,14 @@ namespace ProjectOne.UI
 			refreshExp();
 		}
 
-		// 레벨업·경험치 적립이 함께 타는 통지다. 마스터리 레벨업은 전용 이벤트가 없고
-		// 경험치가 항상 Account.AddExp 를 지나므로 이쪽으로 같이 들어온다.
-		private void onCharacterChanged(CharacterChangeEvent e)
+		// 경험치 적립·서버 권위값 반영. 레벨업도 이 통지를 거친다.
+		private void onMasteryExpChanged(MasteryExpChangeEvent e)
 		{
 			refreshLevel();
 			refreshExp();
 		}
 
-		// 스킬 트리 투자·환불·초기화. 마스터리 레벨은 경험치 파생이라 이 신호로는 바뀌지 않지만,
+		// 슬롯 변경. 마스터리 레벨은 경험치 파생이라 이 신호로는 바뀌지 않지만,
 		// "마스터리 상태가 변했다"는 의미의 신호라 함께 본다 — 값이 같으면 게이트에서 걸러진다.
 		private void onMasteryChanged(MasteryChangeEvent e)
 		{
@@ -316,7 +284,7 @@ namespace ProjectOne.UI
 		}
 
 		// 장비 슬롯 변경 — **무기 교체가 마스터리 대상을 통째로 갈아치우는 유일한 경로다**
-		// (Loadout.setSlotValue). 이걸 놓치면 무기를 장착해도 괄호 안 레벨이 영영 0으로 남는다.
+		// (Loadout.setSlotValue). 이걸 놓치면 무기를 장착해도 레벨이 영영 비어 있다.
 		// 무기 외 슬롯도 이 신호를 쏘지만 값이 같으면 게이트에서 걸러진다.
 		private void onPresetChanged(PresetChangeEvent e)
 		{

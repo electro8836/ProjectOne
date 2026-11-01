@@ -122,7 +122,7 @@ namespace ProjectOne.UI
 			refresh();
 		}
 
-		// ReachLevel 목표는 전용 이벤트가 없다 — 레벨/경험치 알림으로 재평가한다.
+		// ReachBattlePower 목표는 전용 이벤트가 없다 — 영구 능력치 변경 알림으로 재평가한다.
 		private void onCharacterChanged(CharacterChangeEvent e)
 		{
 			refresh();

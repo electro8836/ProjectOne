@@ -26,9 +26,6 @@ namespace ProjectOne.UI
 		[SerializeField] private Image _masteryIcon;		// Info/Frame/MasteryIcon
 		[SerializeField] private TMP_Text _masteryName;	// Info/MasteryName
 		[SerializeField] private TMP_Text _masteryLevel;	// Info/MasteryLevel
-		[SerializeField] private TMP_Text _masteryPoint;	// Info/MasteryPointGroup/MastertyLevelPoint/Group/PointText — 레벨 포인트
-		[SerializeField] private TMP_Text _skillbookPointText;	// Info/MasteryPointGroup/SkillbookPoint/Group/PointText — 지식의 서
-		[SerializeField] private TMP_Text _pointInfoText;	// Info/MasteryPointInfo — 미사용 포인트가 있을 때만 보인다
 		[SerializeField] private Slider _expSlider;		// Info/ExpInfo
 		[SerializeField] private TMP_Text _expText;		// Info/ExpInfo/ExpText
 
@@ -43,45 +40,26 @@ namespace ProjectOne.UI
 		[SerializeField] private MasteryInfoSlot _masteryInfoSlotPrefab;	// UIPrefab_MastertyInfoSlot
 		[SerializeField] private RectTransform _masteryListParent;		// AllMastery/MasteryList/Viewport/Content/Grid
 
-		[Header("스킬 트리")]
-		[SerializeField] private RectTransform _traitLinePrefab;	// UIPrefab_TraitLineSlot
-		[SerializeField] private TraitSlot _traitSlotPrefab;		// UIPrefab_TraitSlot
-		[SerializeField] private RectTransform _skillTreeParent;	// CurrentMastery/SkillTree/Viewport/Content/Gird
-		[SerializeField] private ScrollRect _skillTreeScroll;		// CurrentMastery/SkillTree — 노드 팝업이 스크롤을 밀 때 쓴다
-
 		[Header("닫기")]
 		[SerializeField] private UIButton _homeButton;		// Top/HomeButton
-
-		[Header("트리 조작")]
-		[SerializeField] private UIButton _resetButton;	// CurrentMastery/Info/ButtonGroup/Button_Reset
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action<int> OnTabSelected;
 		public event Action OnHomeClicked;
-		public event Action OnResetClicked;
-		public event Action<int> OnTraitSlotClicked;	// 트리 노드 ID
 
 		private readonly MasteryPresenter _presenter = new MasteryPresenter();
 
 		// 마스터리 목록 슬롯 풀 — 탭을 오갈 때마다 새로 찍지 않고 재사용한다.
 		private readonly List<MasteryInfoSlot> _slots = new List<MasteryInfoSlot>();
-
-		// 스킬 트리 풀 — 줄 단위로 둔다. 마스터리마다 MaxColumn 이 달라 평탄 인덱스는 재사용 시 어긋난다.
-		private readonly List<RectTransform> _traitLines = new List<RectTransform>();
-		private readonly List<List<TraitSlot>> _traitSlots = new List<List<TraitSlot>>();
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();
 
 		// 현재 로드한 아이콘 주소 (Acquire/Release 짝 맞춤용)
 		private string _iconAddress;
 
-		// 마지막으로 누른 노드 칸 — 팝업을 그 옆에 띄우기 위한 위치 기준이다.
-		private TraitSlot _lastClickedSlot;
-
 		private void Awake()
 		{
 			_tabGroup.OnTabChanged += onTabChanged;
 			_homeButton.OnClickEvent += onHomeClicked;
-			_resetButton.OnClickEvent += onResetClicked;
 
 			_presenter.Initialize(this);
 		}
@@ -92,17 +70,6 @@ namespace ProjectOne.UI
 
 			_tabGroup.OnTabChanged -= onTabChanged;
 			_homeButton.OnClickEvent -= onHomeClicked;
-			_resetButton.OnClickEvent -= onResetClicked;
-
-			// 슬롯은 자식이라 함께 파괴되지만, 연결한 쪽이 끊는다.
-			for (int r = 0; r < _traitSlots.Count; r++)
-			{
-				List<TraitSlot> line = _traitSlots[r];
-				for (int c = 0; c < line.Count; c++)
-				{
-					line[c].OnClicked -= onTraitSlotClicked;
-				}
-			}
 
 			releaseIcon();
 		}
@@ -120,22 +87,6 @@ namespace ProjectOne.UI
 			return this.GetCancellationTokenOnDestroy();
 		}
 
-		// 마지막으로 누른 노드 칸의 위치 기준. 노드 팝업이 배치·스크롤 보정에 쓴다.
-		public TraitPopupAnchor BuildPopupAnchor()
-		{
-			if (_lastClickedSlot == null)
-			{
-				return null;
-			}
-
-			TraitPopupAnchor anchor = new TraitPopupAnchor();
-			anchor.nodeRect = (RectTransform)_lastClickedSlot.transform;
-			anchor.treeScroll = _skillTreeScroll;
-			anchor.treeViewport = (_skillTreeScroll != null) ? _skillTreeScroll.viewport : null;
-
-			return anchor;
-		}
-
 		// 탭만 선택(OnTabChanged 를 발행하지 않음 — 초기 표시용).
 		public void SelectTab(int index)
 		{
@@ -146,12 +97,6 @@ namespace ProjectOne.UI
 		public void SetCurrentTabLocked(bool locked)
 		{
 			_currentTabButton.SetState(locked ? TabState.Locked : TabState.Unselected);
-		}
-
-		// 초기화 버튼 잠금. 찍은 것이 없으면 되돌릴 것도 없다.
-		public void SetResetInteractable(bool value)
-		{
-			_resetButton.interactable = value;
 		}
 
 		// 두 페이지는 배타다 — 한쪽을 켜면 반대쪽은 꺼진다.
@@ -166,17 +111,6 @@ namespace ProjectOne.UI
 		{
 			_masteryName.text = data.name;
 			_masteryLevel.text = $"레벨 {data.level}";
-			_masteryPoint.text = $"{data.levelPointTotal}/{data.levelPointMax}";
-			_skillbookPointText.text = $"{data.itemPointUsed}/{data.itemPointMax}";
-
-			bool hasUnused = data.availablePoint > 0;
-			_pointInfoText.gameObject.SetActive(hasUnused);
-			if (hasUnused == true)
-			{
-				_pointInfoText.text = $"사용하지 않은 마스터리 포인트가 <color=green>{data.availablePoint}</color>개 있습니다.";
-			}
-
-
 			_expSlider.value = data.expRatio;
 			_expText.text = data.isMaxLevel ? "MAX" : $"{data.expRatio * 100f:F2}%";
 
@@ -215,46 +149,6 @@ namespace ProjectOne.UI
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
 		}
 
-		// 스킬 트리 보드 렌더 — data 는 rows × columns 를 평탄하게 담은 것이다(빈 칸은 nodeId 0).
-		public async UniTask RenderSkillTreeAsync(IReadOnlyList<TraitSlotData> data, int rows, int columns, CancellationToken ct)
-		{
-			_bindTasks.Clear();
-
-			for (int r = 0; r < rows; r++)
-			{
-				RectTransform line = getOrCreateLine(r);
-				line.gameObject.SetActive(true);
-
-				List<TraitSlot> slots = _traitSlots[r];
-				for (int c = 0; c < columns; c++)
-				{
-					TraitSlot slot = getOrCreateTraitSlot(r, c);
-					slot.gameObject.SetActive(true);
-
-					TraitSlotData cell = data[r * columns + c];
-					if (cell.nodeId == 0)
-					{
-						slot.SetEmpty();
-						continue;
-					}
-
-					_bindTasks.Add(slot.BindAsync(cell, ct));
-				}
-
-				for (int c = columns; c < slots.Count; c++)
-				{
-					slots[c].gameObject.SetActive(false);
-				}
-			}
-
-			for (int r = rows; r < _traitLines.Count; r++)
-			{
-				_traitLines[r].gameObject.SetActive(false);
-			}
-
-			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
-		}
-
 		// ── 내부: 입력 → 이벤트 ────────────────────────────────────────────
 
 		private void onTabChanged(int index)
@@ -265,18 +159,6 @@ namespace ProjectOne.UI
 		private void onHomeClicked()
 		{
 			if (OnHomeClicked != null) { OnHomeClicked.Invoke(); }
-		}
-
-		private void onResetClicked()
-		{
-			if (OnResetClicked != null) { OnResetClicked.Invoke(); }
-		}
-
-		private void onTraitSlotClicked(TraitSlot slot)
-		{
-			_lastClickedSlot = slot;
-
-			if (OnTraitSlotClicked != null) { OnTraitSlotClicked.Invoke(slot.NodeId); }
 		}
 
 		// ── 내부: 슬롯 풀 ──────────────────────────────────────────────────
@@ -290,33 +172,6 @@ namespace ProjectOne.UI
 
 			MasteryInfoSlot slot = Instantiate(_masteryInfoSlotPrefab, _masteryListParent);
 			_slots.Add(slot);
-			return slot;
-		}
-
-		private RectTransform getOrCreateLine(int row)
-		{
-			if (row < _traitLines.Count)
-			{
-				return _traitLines[row];
-			}
-
-			RectTransform line = Instantiate(_traitLinePrefab, _skillTreeParent);
-			_traitLines.Add(line);
-			_traitSlots.Add(new List<TraitSlot>());
-			return line;
-		}
-
-		private TraitSlot getOrCreateTraitSlot(int row, int column)
-		{
-			List<TraitSlot> slots = _traitSlots[row];
-			if (column < slots.Count)
-			{
-				return slots[column];
-			}
-
-			TraitSlot slot = Instantiate(_traitSlotPrefab, _traitLines[row]);
-			slot.OnClicked += onTraitSlotClicked;
-			slots.Add(slot);
 			return slot;
 		}
 

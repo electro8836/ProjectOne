@@ -92,10 +92,11 @@ namespace BackendFunction
 			}
 		}
 
-		// 캐릭터 레벨과 마스터리 레벨 합을 한 값으로 — 경험치를 주는 펑션이 앞뒤를 비교해 레벨이 올랐을 때만 갱신한다.
-		public static int LevelKey(LoadoutDto loadout, MasteryDto mastery)
+		// 마스터리 레벨 합 — 경험치를 주는 펑션이 앞뒤를 비교해 레벨이 올랐을 때만 갱신한다.
+		// 대표 레벨(장착 무기 마스터리)이 오르면 합도 반드시 오르므로 이 값 하나로 충분하다. 캐릭터 레벨은 없다.
+		public static int LevelKey(MasteryDto mastery)
 		{
-			return loadout.level * 100000 + BattlePowerRules.TotalMasteryLevel(mastery);
+			return BattlePowerRules.TotalMasteryLevel(mastery);
 		}
 
 		public static bool ResolveLeaderboardUuid(string title, out string uuid, out string err)
@@ -139,6 +140,43 @@ namespace BackendFunction
 			}
 
 			return (int)parsed;
+		}
+
+		// 최고 전투력 — 저장된 랭킹 점수와 지금 저장 데이터로 계산한 전투력 중 큰 쪽.
+		// 클라(MyPlayerProfile.BestBattlePower)도 "서버 기록과 현재값 중 큰 쪽"을 쓰므로, 아직 점수가 갱신되지 않은
+		// 상승분 때문에 클라가 달성한 퀘스트를 서버가 거절하지 않게 한다.
+		public static bool TryGetBestBattlePower(out int best, out string err)
+		{
+			best = 0;
+
+			if (MyData.Load("USER_LOADOUT", out LoadoutDto loadout, out err) == false
+				|| MyData.Load("USER_INVENTORY", out InventoryDto inventory, out err) == false
+				|| MyData.Load("USER_MASTERY", out MasteryDto mastery, out err) == false
+				|| MyData.Load("USER_PET", out PetDto pet, out err) == false)
+			{
+				return false;
+			}
+
+			best = BattlePowerRules.Calculate(loadout, inventory, mastery, pet);
+
+			var getResult = Backend.GameData.GetMyData(RankTable, new Where());
+			if (!getResult.IsSuccess())
+			{
+				err = RankTable + " Get Failed: " + getResult.GetErrorCode();
+				return false;
+			}
+
+			JsonData rows = getResult.FlattenRows();
+			if (rows.Count > 0 && rows[0].ContainsKey(BattlePowerColumn) == true)
+			{
+				int stored = ParseInt(rows[0][BattlePowerColumn].ToString());
+				if (stored > best)
+				{
+					best = stored;
+				}
+			}
+
+			return true;
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
@@ -243,7 +281,7 @@ namespace BackendFunction
 		private static PlayerProfileDto buildProfile(int battlePower, int bestBattlePower, LoadoutDto loadout, InventoryDto inventory, MasteryDto mastery, CostumeDto costume)
 		{
 			PlayerProfileDto profile = new PlayerProfileDto();
-			profile.level = loadout.level;
+			profile.level = BattlePowerRules.RepresentativeLevel(loadout, inventory, mastery);
 			profile.masteryLevel = BattlePowerRules.TotalMasteryLevel(mastery);
 			profile.battlePower = battlePower;
 			profile.bestBattlePower = bestBattlePower;

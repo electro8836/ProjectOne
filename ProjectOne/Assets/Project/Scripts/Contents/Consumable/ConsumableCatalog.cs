@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Globalization;
 using EDT;
 using UnityEngine;
 
@@ -9,7 +7,7 @@ namespace ProjectOne.Consumables
 	// 소모품 정적 조회 캐시 + 데이터 정합성 검증.
 	//
 	// 소모품은 단발성만 둔다 — 지속 버프·회복·상자형은 넣지 않는다(밸런스·공수 대비 단점).
-	// 지금은 지식의 서(SkillPoint)뿐이고, 효과는 마스터리 시스템에 위임한다.
+	// 현재 정의된 효과가 없다 — 첫 소모품 효과를 추가할 때 bake / validateParams / ConsumableUser.apply 에 분기를 넣는다.
 	//
 	// EffectParam_1/2 는 자유 형식 문자열이라 사용할 때마다 파싱하지 않고 Build 시점에 굽는다.
 	// RewardCatalog 와 동일 패턴 — BootState 가 테이블 로드 직후 Build() 를 호출한다.
@@ -20,10 +18,6 @@ namespace ProjectOne.Consumables
 		{
 			public int itemId;
 			public ConsumeEffect effect;
-
-			// ConsumeEffect.SkillPoint
-			public EDT.SkillPoint pointSource;
-			public int pointAmount;
 
 			// 파싱에 실패한 행은 사용 대상에서 제외한다. 경고는 Build 가 이미 냈다.
 			public bool isValid;
@@ -88,57 +82,15 @@ namespace ProjectOne.Consumables
 			baked.effect = row.ConsumeEffect;
 			baked.isValid = true;
 
+			// 아직 처리할 효과 종류가 없다 — 모든 행이 사용 대상에서 빠진다.
 			switch (row.ConsumeEffect)
 			{
-				case ConsumeEffect.SkillPoint:
-					baked.pointSource = parseEnum<EDT.SkillPoint>(row.EffectParam_1);
-					baked.pointAmount = parseInt(row.EffectParam_2, 1);
-					if (baked.pointAmount <= 0)
-					{
-						baked.pointAmount = 1;
-					}
-
-					baked.isValid = baked.pointSource != EDT.SkillPoint.None;
-					break;
-
 				default:
 					baked.isValid = false;
 					break;
 			}
 
 			return baked;
-		}
-
-		private static T parseEnum<T>(string text) where T : struct
-		{
-			if (string.IsNullOrEmpty(text) == true)
-			{
-				return default(T);
-			}
-
-			T value;
-			if (Enum.TryParse<T>(text.Trim(), false, out value) == true)
-			{
-				return value;
-			}
-
-			return default(T);
-		}
-
-		private static int parseInt(string text, int fallback)
-		{
-			if (string.IsNullOrEmpty(text) == true)
-			{
-				return fallback;
-			}
-
-			int value;
-			if (int.TryParse(text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out value) == true)
-			{
-				return value;
-			}
-
-			return fallback;
 		}
 
 		// ── 검증 ──────────────────────────────────────────────────────
@@ -202,31 +154,12 @@ namespace ProjectOne.Consumables
 		{
 			int issues = 0;
 
+			// 효과별 검증은 효과를 추가할 때 함께 넣는다 (소모품 설계 9장).
 			switch (baked.effect)
 			{
-				case ConsumeEffect.SkillPoint:
-					if (baked.pointSource == EDT.SkillPoint.None)
-					{
-						Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 EffectParam_1 이 SkillPoint 로 해석되지 않습니다.");
-						issues++;
-						break;
-					}
-
-					Table_SkillPoint.Row point = Table_SkillPoint.Get(baked.pointSource);
-					if (point == null)
-					{
-						Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 {baked.pointSource} 이 SkillPoint 테이블에 없습니다.");
-						issues++;
-						break;
-					}
-
-					// SourceType=Item 인 출처만 지목할 수 있다 (설계 5.3).
-					if (point.SourceType != SkillPointSourceType.Item)
-					{
-						Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 가 지목한 {baked.pointSource} 의 SourceType 이 {point.SourceType} 입니다 — Item 이어야 합니다.");
-						issues++;
-					}
-
+				default:
+					Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 ConsumeEffect {baked.effect} 를 처리하는 코드가 없습니다.");
+					issues++;
 					break;
 			}
 

@@ -26,8 +26,8 @@ namespace ProjectOne.Quests
 			public EDT.Dungeon dungeon;
 			public int dungeonStage;
 
-			// ReachLevel
-			public int reachLevel;
+			// ReachBattlePower — 최고 전투력 기준
+			public int reachBattlePower;
 
 			// 파싱에 실패한 퀘스트는 진행 대상에서 제외한다. 경고는 Build 가 이미 냈다.
 			public bool isValid;
@@ -168,7 +168,7 @@ namespace ProjectOne.Quests
 			baked.killCount = target.killCount;
 			baked.dungeon = target.dungeon;
 			baked.dungeonStage = target.dungeonStage;
-			baked.reachLevel = target.reachLevel;
+			baked.reachBattlePower = target.reachBattlePower;
 			baked.isValid = isValid;
 			return baked;
 		}

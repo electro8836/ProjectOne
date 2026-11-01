@@ -11,7 +11,7 @@ namespace ProjectOne.UI
 	// 소모품 정보 팝업 Presenter — 보유 수량 조회와 선택 수량 계산을 담당한다.
 	// 대상은 장비처럼 인스턴스 UID 가 아니라 **아이템 ID** 다. 소모품은 스택이라 인스턴스가 없다.
 	//
-	// 사용은 ConsumableUser 가 1개씩(지식의 서 — 서버 반영은 UseSkillPointItem), 파괴는 선택 수량만큼 한다.
+	// 사용은 ConsumableUser 가 1개씩, 파괴는 선택 수량만큼 한다.
 	// 파괴는 로컬에서 먼저 빼고 서버 차감은 ItemSpendSender 가 백그라운드로 보낸다.
 	public sealed class ConsumableInfoPresenter : Presenter<ConsumableInfoPopup>
 	{

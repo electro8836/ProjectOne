@@ -217,16 +217,17 @@ namespace BackendFunction
 				return true;
 			}
 
-			if (target.type == QuestTargetType.ReachLevel)
+			// 최고 전투력 기준 — 현재 전투력이 떨어져도 달성은 취소되지 않는다 (퀘스트 설계 3.3).
+			if (target.type == QuestTargetType.ReachBattlePower)
 			{
-				if (MyData.Load("USER_LOADOUT", out LoadoutDto loadout, out err) == false)
+				if (RankOps.TryGetBestBattlePower(out int best, out err) == false)
 				{
 					return false;
 				}
 
-				if (loadout.level < target.reachLevel)
+				if (best < target.reachBattlePower)
 				{
-					err = "level objective not met: " + loadout.level + "/" + target.reachLevel;
+					err = "battle power objective not met: " + best + "/" + target.reachBattlePower;
 					return false;
 				}
 

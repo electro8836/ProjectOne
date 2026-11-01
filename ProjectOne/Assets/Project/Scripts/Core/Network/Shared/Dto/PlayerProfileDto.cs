@@ -7,7 +7,7 @@ namespace ProjectOne.Shared
 	[System.Serializable]
 	public class PlayerProfileDto
 	{
-		public int level;				// 캐릭터 레벨(마스터리 제외)
+		public int level;				// 장착 무기의 마스터리 레벨(대표 레벨, 무기 미착용이면 0)
 		public int masteryLevel;		// 전 마스터리 레벨 합
 		public int battlePower;			// 현재 전투력(서버 계산)
 		public int bestBattlePower;		// 최고 전투력 — 랭킹 점수와 같다

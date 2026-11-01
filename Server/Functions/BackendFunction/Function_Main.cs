@@ -93,10 +93,8 @@ namespace BackendFunction
 					return new FieldSettlement().FieldSettle();
 				case FunctionName.FieldSessionRotate:
 					return new FieldSettlement().FieldSessionRotate();
-				case FunctionName.SaveMasteryTree:
-					return new MasteryFunctions().SaveMasteryTree();
-				case FunctionName.UseSkillPointItem:
-					return new MasteryFunctions().UseSkillPointItem();
+				case FunctionName.SaveMasterySlots:
+					return new MasteryFunctions().SaveMasterySlots();
 				case FunctionName.ShopBuy:
 					return new ShopFunctions().ShopBuy();
 				case FunctionName.DungeonEnter:

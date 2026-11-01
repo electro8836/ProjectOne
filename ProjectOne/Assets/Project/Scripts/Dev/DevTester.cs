@@ -94,9 +94,6 @@ namespace ProjectOne.Boot
 		[Header("사용안함 — 체크 시 서버/로컬 데이터 사용")]
 		[SerializeField] private bool _disabled;
 
-		[Header("캐릭터")]
-		[SerializeField] private int _characterLevel = 1;
-
 		[Header("장착 슬롯 (슬롯 종류 + 아이템 ID)")]
 		[SerializeField] private List<DevSlot> _equipSlots = new List<DevSlot>();
 
@@ -137,8 +134,8 @@ namespace ProjectOne.Boot
 
 		[Header("런타임 조회 (읽기 전용)")]
 		[SerializeField] private float _viewRefreshInterval = 0.5f;
-		[SerializeField] private int _viewCharacterLevel;
-		[SerializeField] private int _viewCharacterExp;
+		[SerializeField] private int _viewMasteryLevel;
+		[SerializeField] private int _viewMasteryExp;
 		[SerializeField] private List<CurrencyView> _viewCurrencies = new List<CurrencyView>();
 		[SerializeField] private List<ItemView> _viewItems = new List<ItemView>();
 		[SerializeField] private List<EquipmentView> _viewEquipments = new List<EquipmentView>();
@@ -210,8 +207,7 @@ namespace ProjectOne.Boot
 			Account.Instance.SetPet(buildPet());
 			Account.Instance.SetCurrency(buildCurrency());
 			applyQuest();
-			Debug.Log("[DevTester] 개발 데이터 오버라이드 — Level:" + _characterLevel
-				+ ", 장착:" + _equipSlots.Count + "칸, 보유장비:" + _ownedEquipments.Count + "개"
+			Debug.Log("[DevTester] 개발 데이터 오버라이드 — 장착:" + _equipSlots.Count + "칸, 보유장비:" + _ownedEquipments.Count + "개"
 				+ ", 보유아이템:" + _ownedItems.Count + "종, 코스튬:" + _ownedCostumes.Count + "종"
 				+ ", 재화:" + _currencies.Count + "종, 펫:" + _pets.Count + "종");
 		}
@@ -499,8 +495,6 @@ namespace ProjectOne.Boot
 		private LoadoutDto buildLoadout()
 		{
 			LoadoutDto dto = new LoadoutDto();
-			dto.level = _characterLevel > 0 ? _characterLevel : 1;
-			dto.exp = 0;
 			for (int i = 0; i < _equipSlots.Count; i++)
 			{
 				DevSlot src = _equipSlots[i];
@@ -542,11 +536,12 @@ namespace ProjectOne.Boot
 			rebuildInventory();
 		}
 
+		// 장착 무기의 마스터리 — 캐릭터 레벨은 없다.
 		private void rebuildCharacter()
 		{
-			Loadout loadout = Account.Instance.Loadout;
-			_viewCharacterLevel = loadout.Level;
-			_viewCharacterExp = loadout.Exp;
+			MasteryProgress progress = Account.Instance.Mastery.CurrentProgress;
+			_viewMasteryLevel = (progress != null) ? progress.Level : 0;
+			_viewMasteryExp = (progress != null) ? progress.TotalExp : 0;
 		}
 
 		private void rebuildCurrencies()

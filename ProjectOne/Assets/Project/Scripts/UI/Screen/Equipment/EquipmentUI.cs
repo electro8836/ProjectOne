@@ -218,24 +218,17 @@ namespace ProjectOne.UI
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
 		}
 
-		// "레벨 12(5)" — 캐릭터 레벨과 장착 무기의 마스터리 레벨. 캐릭터가 하나뿐이라
+		// "레벨 12" — 장착 무기의 마스터리 레벨(대표 레벨). 캐릭터가 하나뿐이라
 		// 이름·등급·아이콘은 프리팹 기본값을 쓴다.
-		// 무기를 착용하지 않았으면 마스터리가 없어 괄호를 생략한다 (HUD 의 HeroInfo 와 같은 정책).
-		public void RenderLevel(int level, int masteryLevel)
+		// 무기를 착용하지 않았으면 레벨을 비운다 (HUD 의 HeroInfo 와 같은 정책).
+		public void RenderLevel(int masteryLevel)
 		{
 			if (_levelText == null)
 			{
 				return;
 			}
 
-			if (masteryLevel > 0)
-			{
-				_levelText.text = "레벨 " + level.ToString() + "(" + masteryLevel.ToString() + ")";
-			}
-			else
-			{
-				_levelText.text = "레벨 " + level.ToString();
-			}
+			_levelText.text = (masteryLevel > 0) ? "레벨 " + masteryLevel.ToString() : string.Empty;
 		}
 
 		// "전투력 12,345"

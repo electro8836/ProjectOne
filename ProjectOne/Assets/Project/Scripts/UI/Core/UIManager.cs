@@ -1548,39 +1548,6 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 마스터리 트리 노드 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
-		// 다른 팝업과 달리 화면 중앙이 아니라 누른 노드 옆에 떠야 해서 위치 기준(anchor)을 함께 넘긴다.
-		public async UniTask ShowMasteryTraitPopupAsync(string address, int nodeId, TraitPopupAnchor anchor, CancellationToken ct)
-		{
-			_popupCts?.Cancel();
-			_popupCts?.Dispose();
-			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
-			if (prefab == null)
-			{
-				return;
-			}
-
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
-			MasteryTraitPopup popup = go.GetComponent<MasteryTraitPopup>();
-			if (popup == null)
-			{
-				Destroy(go);
-				ResourceManager.Instance.Release(address);
-				return;
-			}
-
-			await popup.ShowAsync(nodeId, anchor, _popupCts.Token);
-			Destroy(go);
-
-			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
-			if (ResourceManager.HasInstance)
-			{
-				ResourceManager.Instance.Release(address);
-			}
-		}
-
 		// 액트·필드 목록 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
 		// 이동으로 닫혔으면 true — 호출부(월드 화면)가 그때 자기 창도 닫는다.
 		public async UniTask<bool> ShowActListPopupAsync(string address, CancellationToken ct)

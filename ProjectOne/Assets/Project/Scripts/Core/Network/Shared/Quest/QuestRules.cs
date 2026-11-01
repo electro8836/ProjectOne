@@ -18,8 +18,8 @@ namespace ProjectOne.Shared
 		public EDT.Dungeon dungeon;
 		public int dungeonStage;
 
-		// ReachLevel
-		public int reachLevel;
+		// ReachBattlePower — 최고 전투력 기준
+		public int reachBattlePower;
 	}
 
 	// 퀘스트 규칙 중 테이블만 보고 판단하는 부분. 클라·서버 공용.
@@ -30,7 +30,7 @@ namespace ProjectOne.Shared
 	//   EliteKill    Param1=MapID        Param2=처치 수   (엘리트만)
 	//   BossKill     Param1=MapID        Param2=미사용
 	//   DungeonClear Param1=던전타입     Param2=스테이지
-	//   ReachLevel   Param1=히어로 레벨  Param2=미사용
+	//   ReachBattlePower Param1=전투력  Param2=미사용 (최고 전투력 기준)
 	//
 	// 체인은 ID 오름차순이다 — 클리어한 마지막 ID 보다 큰 것 중 가장 작은 ID 가 다음 퀘스트다.
 	public static class QuestRules
@@ -66,9 +66,9 @@ namespace ProjectOne.Shared
 					target.dungeonStage = parseInt(row.QuestParam_2, 1);
 					return target.dungeon != EDT.Dungeon.None;
 
-				case QuestTargetType.ReachLevel:
-					target.reachLevel = parseInt(row.QuestParam_1, 0);
-					return target.reachLevel > 0;
+				case QuestTargetType.ReachBattlePower:
+					target.reachBattlePower = parseInt(row.QuestParam_1, 0);
+					return target.reachBattlePower > 0;
 			}
 
 			return false;
@@ -83,8 +83,8 @@ namespace ProjectOne.Shared
 				case QuestTargetType.EliteKill:
 					return target.killCount;
 
-				case QuestTargetType.ReachLevel:
-					return target.reachLevel;
+				case QuestTargetType.ReachBattlePower:
+					return target.reachBattlePower;
 			}
 
 			return 1;

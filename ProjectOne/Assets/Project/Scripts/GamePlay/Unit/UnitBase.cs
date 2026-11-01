@@ -180,7 +180,7 @@ namespace ProjectOne.Unit
 
 		public abstract UnitType GetUnitType();
 
-		// 유닛 레벨 — 스탯 성장의 기준이자 데미지 방어 상수 K 의 기준(공격자 레벨).
+		// 유닛 레벨 — 몬스터의 스탯 성장과 데미지 방어 상수 K 의 기준이다. 히어로는 레벨이 없어 1 로 둔다.
 		// 스폰 시 확정되며 실시간으로 변하지 않는다.
 		public int Level { get; private set; } = 1;
 

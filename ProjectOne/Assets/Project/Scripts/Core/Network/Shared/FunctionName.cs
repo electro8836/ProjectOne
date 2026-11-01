@@ -14,8 +14,7 @@ namespace ProjectOne.Shared
 		public const string SaveStash = "SaveStash";
 		public const string FieldSettle = "FieldSettle";
 		public const string FieldSessionRotate = "FieldSessionRotate";
-		public const string SaveMasteryTree = "SaveMasteryTree";
-		public const string UseSkillPointItem = "UseSkillPointItem";
+		public const string SaveMasterySlots = "SaveMasterySlots";
 		public const string ShopBuy = "ShopBuy";
 		public const string DungeonEnter = "DungeonEnter";
 		public const string DungeonSweep = "DungeonSweep";

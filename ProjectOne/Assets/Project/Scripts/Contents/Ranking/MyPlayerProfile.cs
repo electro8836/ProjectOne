@@ -96,11 +96,11 @@ namespace ProjectOne.Ranking
 			profile.battlePower = BattlePower;
 			profile.bestBattlePower = BestBattlePower;
 			profile.masteryLevel = Account.Instance.Mastery.TotalLevel;
+			profile.level = Account.Instance.Mastery.RepresentativeLevel;
 
 			Loadout loadout = Account.Instance.Loadout;
 			if (loadout != null)
 			{
-				profile.level = loadout.Level;
 				for (int i = 1; i < profile.equipped.Length; i++)
 				{
 					profile.equipped[i] = loadout.GetEquipped((EquipSlotTypes)i);

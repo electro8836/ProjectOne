@@ -8,15 +8,15 @@ namespace ProjectOne.Shared
 	//
 	// 전투력 = Σ(영구 출처 스탯 × Weight) + Σ(보유 스킬 옵션 Point)
 	// 스탯 합성: (Base + ΣAdd) × (1 + ΣRatio) × (1 + ΣAmp) → Table_Stat Min/Max 클램프 1회.
-	// Percent 스탯은 Lv1 기본값 초과분만 점수화한다.
+	// Percent 스탯은 기본값 초과분만 점수화한다.
 	//
 	// 화면에 보이는 전투력(BattlePowerCalculator — 살아 있는 히어로의 StatContainer)과 **같은 값이 나와야 한다.**
 	// 영구 출처는 네 갈래다. 새 출처(IHeroAspect)를 추가하면 여기에도 넣는다.
-	//   1. 기본 스탯   Table_CharacterStat × 캐릭터 레벨          (StatContainerFactory.ApplyCharacterBase)
+	//   1. 기본 스탯   Table_CharacterStat.BaseValue (고정)       (StatContainerFactory.ApplyCharacterBase)
 	//   2. 장비        장착 장비의 기본·해금 옵션                 (EquipmentAspect / EquipmentOptionCalculator)
-	//   3. 마스터리    레벨 보너스 + 총합 보너스 + 현재 무기 트리 (MasteryAspect)
+	//   3. 마스터리    레벨 보너스 + 총합 보너스                  (MasteryAspect) — 슬롯 스킬은 세지 않는다
 	//   4. 펫          보유 펫의 옵션                             (PetAspect)
-	// 버프·패시브가 붙이는 임시 스탯과 던전 카드스킬은 들어가지 않는다.
+	// 버프·패시브가 붙이는 임시 스탯은 들어가지 않는다.
 	public static class BattlePowerRules
 	{
 		// 스탯 하나의 레이어 누적.
@@ -48,7 +48,6 @@ namespace ProjectOne.Shared
 		private static readonly Dictionary<Option, OptionEntry> _options = new Dictionary<Option, OptionEntry>();
 		private static readonly Dictionary<long, Table_EquipOption.Row> _equipOptions = new Dictionary<long, Table_EquipOption.Row>();
 		private static readonly Dictionary<WeaponType, Table_WeaponMastery.Row> _masteryByWeapon = new Dictionary<WeaponType, Table_WeaponMastery.Row>();
-		private static readonly Dictionary<int, List<Table_SkillTreeNode.Row>> _nodesByGroup = new Dictionary<int, List<Table_SkillTreeNode.Row>>();
 
 		private static bool _built;
 
@@ -59,7 +58,7 @@ namespace ProjectOne.Shared
 			Dictionary<Stat, Bucket> buckets = new Dictionary<Stat, Bucket>();
 			HashSet<EDT.Skill> skills = new HashSet<EDT.Skill>();
 
-			applyCharacterBase(buckets, (loadout != null) ? loadout.level : 1);
+			applyCharacterBase(buckets);
 
 			EquipmentInstanceDto weapon = applyEquipment(buckets, skills, loadout, inventory);
 			applyMastery(buckets, skills, mastery, weapon);
@@ -88,13 +87,26 @@ namespace ProjectOne.Shared
 			return sum;
 		}
 
+		// 대표 레벨 — 장착 무기의 마스터리 레벨. 무기 미착용이면 0 (마스터리 설계 3.3, 클라 MasteryBook.RepresentativeLevel).
+		public static int RepresentativeLevel(LoadoutDto loadout, InventoryDto inventory, MasteryDto mastery)
+		{
+			ensureBuilt();
+
+			if (loadout == null || loadout.slots == null || inventory == null || (int)EquipSlotTypes.Weapon >= loadout.slots.Length)
+			{
+				return 0;
+			}
+
+			EquipmentInstanceDto weapon = findEquipment(inventory, loadout.slots[(int)EquipSlotTypes.Weapon]);
+			Table_WeaponMastery.Row current = getCurrentMastery(weapon);
+			return (current != null) ? getMasteryLevel(mastery, current.ID) : 0;
+		}
+
 		// ── 출처별 적용 ───────────────────────────────────────────────
 
-		// 값 = BaseValue + PerLevel × (Level - 1)
-		private static void applyCharacterBase(Dictionary<Stat, Bucket> buckets, int level)
+		// 캐릭터 레벨이 없으므로 BaseValue 가 그대로 기본값이다.
+		private static void applyCharacterBase(Dictionary<Stat, Bucket> buckets)
 		{
-			int lv = level > 1 ? level : 1;
-
 			Dictionary<int, Table_CharacterStat.Row>.Enumerator e = Table_CharacterStat.All().GetEnumerator();
 			while (e.MoveNext() == true)
 			{
@@ -107,7 +119,7 @@ namespace ProjectOne.Shared
 				}
 
 				// SetBase 는 절대 대입이다 — 같은 StatDetail 행이 둘이면 마지막 값이 남는다.
-				getBucket(buckets, part.stat).baseValue = row.BaseValue + row.PerLevel * (lv - 1);
+				getBucket(buckets, part.stat).baseValue = row.BaseValue;
 			}
 		}
 
@@ -200,7 +212,7 @@ namespace ProjectOne.Shared
 				applyStatOnly(buckets, row.LevelBonusOption, row.LevelBonusPerLevel * totalLevel);
 			}
 
-			// 3. 현재 무기의 마스터리 — 무기가 없으면 기본공격도 트리도 없다.
+			// 3. 현재 무기의 평타 — 무기가 없으면 기본공격이 없다. 슬롯 스킬은 선택의 영역이라 세지 않는다.
 			Table_WeaponMastery.Row current = getCurrentMastery(weapon);
 			if (current == null)
 			{
@@ -220,26 +232,6 @@ namespace ProjectOne.Shared
 				{
 					addSkill(skills, current.Dev_SkillIDs[i]);
 				}
-			}
-
-			MasteryProgressDto progress = findProgress(mastery, (int)current.ID);
-			List<Table_SkillTreeNode.Row> nodes;
-			if (progress == null || _nodesByGroup.TryGetValue(current.SkillTreeNodeGroupID, out nodes) == false)
-			{
-				return;
-			}
-
-			for (int i = 0; i < nodes.Count; i++)
-			{
-				Table_SkillTreeNode.Row node = nodes[i];
-				int level = getNodeLevel(progress, node.ID);
-				if (level <= 0)
-				{
-					continue;
-				}
-
-				applyOption(buckets, skills, node.Option, node.BaseValue + node.PerLevelValue * (level - 1));
-				applyOption(buckets, skills, node.Option_02, node.BaseValue_02 + node.PerLevelValue_02 * (level - 1));
 			}
 		}
 
@@ -340,7 +332,7 @@ namespace ProjectOne.Shared
 
 		// ── 옵션 적용 ─────────────────────────────────────────────────
 
-		// 장비·트리 노드 — Stat 은 스탯에, SkillGrant 는 보유 스킬에. SkillLevel·Modifier 는 스탯 식에 들어가지 않는다.
+		// 장비 — Stat 은 스탯에, SkillGrant 는 보유 스킬에. SkillLevel·Modifier 는 스탯 식에 들어가지 않는다.
 		private static void applyOption(Dictionary<Stat, Bucket> buckets, HashSet<EDT.Skill> skills, Option option, float value)
 		{
 			OptionEntry entry;
@@ -516,24 +508,6 @@ namespace ProjectOne.Shared
 			return (progress != null) ? MasteryRules.LevelFromExp(progress.totalExp) : 1;
 		}
 
-		private static int getNodeLevel(MasteryProgressDto progress, int nodeId)
-		{
-			if (progress.nodeIds == null || progress.nodeLevels == null)
-			{
-				return 0;
-			}
-
-			for (int i = 0; i < progress.nodeIds.Count && i < progress.nodeLevels.Count; i++)
-			{
-				if (progress.nodeIds[i] == nodeId)
-				{
-					return progress.nodeLevels[i];
-				}
-			}
-
-			return 0;
-		}
-
 		// ── 인덱스 구축 ───────────────────────────────────────────────
 
 		private static void ensureBuilt()
@@ -570,7 +544,7 @@ namespace ProjectOne.Shared
 			}
 		}
 
-		// Percent 스탯의 Lv1 기본값. 레벨 성장분은 일부러 뺀다 — 기준선이 레벨과 같이 오르면 레벨업이 전투력에 안 잡힌다.
+		// Percent 스탯의 기본값 — 아무것도 안 한 상태가 점수를 차지하지 않게 뺀다.
 		private static void buildBaselines()
 		{
 			Dictionary<int, Table_CharacterStat.Row>.Enumerator e = Table_CharacterStat.All().GetEnumerator();
@@ -664,25 +638,6 @@ namespace ProjectOne.Shared
 				{
 					_masteryByWeapon.Add(row.WeaponType, row);
 				}
-			}
-
-			Dictionary<int, Table_SkillTreeNode.Row>.Enumerator ne = Table_SkillTreeNode.All().GetEnumerator();
-			while (ne.MoveNext() == true)
-			{
-				Table_SkillTreeNode.Row row = ne.Current.Value;
-				if (row.GroupID <= 0)
-				{
-					continue;
-				}
-
-				List<Table_SkillTreeNode.Row> list;
-				if (_nodesByGroup.TryGetValue(row.GroupID, out list) == false)
-				{
-					list = new List<Table_SkillTreeNode.Row>();
-					_nodesByGroup.Add(row.GroupID, list);
-				}
-
-				list.Add(row);
 			}
 		}
 	}

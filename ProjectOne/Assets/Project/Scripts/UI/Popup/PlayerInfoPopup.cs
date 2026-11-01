@@ -73,7 +73,7 @@ namespace ProjectOne.UI
 		{
 			_playerNameText.text = profile.playerName;
 			// "현재/최대" — 라벨 문구는 프리펩에 있다.
-			_heroLevelText.text = profile.level.ToString() + "/" + MasteryCatalog.CharacterMaxLevel.ToString();
+			_heroLevelText.text = profile.level.ToString() + "/" + MasteryCatalog.MasteryMaxLevel.ToString();
 			_masteryLevelText.text = profile.masteryLevel.ToString() + "/" + MasteryCatalog.TotalMasteryMaxLevel.ToString();
 			_battlePowerText.text = profile.battlePower.ToString("N0");
 			_recordBattlePowerText.text = profile.bestBattlePower.ToString("N0");

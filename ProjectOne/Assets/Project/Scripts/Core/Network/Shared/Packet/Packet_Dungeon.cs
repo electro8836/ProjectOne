@@ -85,7 +85,7 @@
 	[System.Serializable]
 	public class DungeonClearResponse : ServerResponse
 	{
-		public int exp;
+		public MasteryDto mastery;					// 정산 후 마스터리 상태(서버값) — 경험치 권위값
 		public GrantedRewardDto[] rewards;			// 스택 아이템·재화
 		public EquipmentInstanceDto[] equipments;	// 장비 — 서버가 UID·등급·품질을 확정한 인스턴스
 		public DungeonEntryDto entry;				// 정산 후 진행도(최고 단계)
