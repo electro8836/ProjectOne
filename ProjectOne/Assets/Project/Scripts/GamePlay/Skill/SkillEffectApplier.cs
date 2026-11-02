@@ -484,9 +484,17 @@ namespace ProjectOne.Skill
 				EventManager.Instance.Publish(new DamageAvoidedEvent(target, caster, result.IsBlocked));
 
 				// 막기 성공 — 막은 쪽의 OnBlock 스킬. 좌표 고정형이면 공격자 자리에서 터진다.
-				if (result.IsBlocked == true && target.SkillContainer != null)
+				// 회피 성공 — 피한 쪽의 OnEvade 스킬.
+				if (target.SkillContainer != null)
 				{
-					target.SkillContainer.TriggerOnBlock(caster.HitCenter);
+					if (result.IsBlocked == true)
+					{
+						target.SkillContainer.TriggerOnBlock(caster.HitCenter);
+					}
+					else
+					{
+						target.SkillContainer.TriggerOnEvade(caster.HitCenter);
+					}
 				}
 
 				return false;

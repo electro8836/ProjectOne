@@ -244,6 +244,7 @@ namespace ProjectOne.Skill
 				case SkillCastingTypes.OnHit:
 				case SkillCastingTypes.OnSwingHit:
 				case SkillCastingTypes.OnBlock:
+				case SkillCastingTypes.OnEvade:
 				case SkillCastingTypes.OnCrit:
 				case SkillCastingTypes.OnDamaged:
 				case SkillCastingTypes.OnKill:

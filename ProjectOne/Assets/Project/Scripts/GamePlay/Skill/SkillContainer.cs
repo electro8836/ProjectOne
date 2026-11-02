@@ -1035,6 +1035,12 @@ namespace ProjectOne.Skill
 			triggerByChance(SkillCastingTypes.OnBlock, origin);
 		}
 
+		// 회피 성공 시 — origin 은 피한 공격의 공격자 위치다.
+		public void TriggerOnEvade(Vector2 origin)
+		{
+			triggerByChance(SkillCastingTypes.OnEvade, origin);
+		}
+
 		// 적 처치 시 — 수단 무관. 광역으로 3명을 처치하면 3회 호출된다.
 		public void TriggerOnKill(Vector2 origin)
 		{
@@ -1095,6 +1101,25 @@ namespace ProjectOne.Skill
 				return;
 			}
 
+			// 평타 기반 확률 발동(OnHit·OnSwingHit)만 발동 확률 증가와 추가 판정을 받는다.
+			bool isNormalTrigger = type == SkillCastingTypes.OnHit || type == SkillCastingTypes.OnSwingHit;
+			float chanceScale = 1f;
+			if (isNormalTrigger == true && _owner.Stats != null)
+			{
+				chanceScale += _owner.Stats.GetStat(Stat.Stat_TriggerChanceBonus);
+			}
+
+			rollTriggers(type, origin, chanceScale);
+
+			// 추가 판정 — 같은 발동 조건으로 확률을 한 번 더 굴린다. 확률 증가와 곱으로 쌓인다.
+			if (isNormalTrigger == true && _owner.Stats != null && Random.value < _owner.Stats.GetStat(Stat.Stat_ExtraTriggerRate))
+			{
+				rollTriggers(type, origin, chanceScale);
+			}
+		}
+
+		void rollTriggers(SkillCastingTypes type, Vector2 origin, float chanceScale)
+		{
 			for (int i = 0; i < _ordered.Count; i++)
 			{
 				SkillRuntime rt = _ordered[i];
@@ -1104,7 +1129,7 @@ namespace ProjectOne.Skill
 				}
 
 				// 모든 확률은 0~1 배율이다 (설계 3.3)
-				if (Random.value >= rt.CastingParam)
+				if (Random.value >= rt.CastingParam * chanceScale)
 				{
 					continue;
 				}

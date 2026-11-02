@@ -316,6 +316,7 @@ namespace ProjectOne.Skill
 				case SkillCastingTypes.OnLowHP:   return "[체력 부족 시] ";
 				case SkillCastingTypes.OnSwingHit: return "[평타 적중 시] ";
 				case SkillCastingTypes.OnBlock:   return "[막기 성공 시] ";
+				case SkillCastingTypes.OnEvade:   return "[회피 성공 시] ";
 				default:                          return string.Empty;
 			}
 		}

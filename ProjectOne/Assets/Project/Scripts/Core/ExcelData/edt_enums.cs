@@ -248,6 +248,7 @@ namespace EDT {
         Aura,
         Passive,
         OnBlock,
+        OnEvade,
     }
 
     public enum SkillApplyTarget {
@@ -370,6 +371,8 @@ namespace EDT {
         BUFF_BreakStun,
         BUFF_GreatSword_AtkSpeedUp,
         BUFF_GreatSword_Indomitable,
+        BUFF_Blade_Breach,
+        BUFF_Blade_Kenatsu,
     }
 
     public enum ItemEnhanceTier {
@@ -517,6 +520,21 @@ namespace EDT {
         Skill_GreatSword_Rampage,
         Skill_GreatSword_Rampage_Sweep,
         Skill_GreatSword_GreatCleave,
+        Skill_Blade_Zangeki,
+        Skill_Blade_Kaijiku,
+        Skill_Blade_Rend,
+        Skill_Blade_Yokoichimonji,
+        Skill_Blade_Issen,
+        Skill_Blade_Engetsu,
+        Skill_Blade_Senko,
+        Skill_Blade_Breach,
+        Skill_Blade_Shingan,
+        Skill_Blade_Shingan_Counter,
+        Skill_Blade_Ryusui,
+        Skill_Blade_Hissatsu,
+        Skill_Blade_Kenatsu,
+        Skill_Blade_Ranbu,
+        Skill_Blade_Mugetsu,
     }
 
     public enum SkillEffect {
@@ -578,6 +596,29 @@ namespace EDT {
         SE_GreatSword_Rampage_Sweep_NormalAttack,
         SE_GreatSword_GreatCleave_Damage,
         SE_GreatSword_GreatCleave_Vulnerable,
+        SE_Blade_Zangeki_Damage,
+        SE_Blade_Kaijiku_Damage,
+        SE_Blade_Rend_Damage,
+        SE_Blade_Yokoichimonji_Damage,
+        SE_Blade_Issen_Damage,
+        SE_Blade_Engetsu_Damage,
+        SE_Blade_Senko_Damage,
+        SE_Blade_Breach_Damage,
+        SE_Blade_Breach_Debuff,
+        SE_Blade_Breach_DamageTakenUp,
+        SE_Blade_Shingan_Evasion,
+        SE_Blade_Shingan_Grant,
+        SE_Blade_Shingan_Counter_Damage,
+        SE_Blade_Kenatsu_Damage,
+        SE_Blade_Kenatsu_Debuff,
+        SE_Blade_Kenatsu_DamageTakenUp,
+        SE_Blade_Ryusui_AtkSpeed,
+        SE_Blade_Ryusui_ExtraTrigger,
+        SE_Blade_Hissatsu_SkillDamage,
+        SE_Blade_Hissatsu_Double,
+        SE_Blade_Ranbu_TriggerChance,
+        SE_Blade_Mugetsu_Cooldown,
+        SE_Blade_Mugetsu_SkillDamage,
     }
 
     public enum SkillModifier {
@@ -616,6 +657,9 @@ namespace EDT {
         Stat_SkillDamageBonus,
         Stat_SkillCooldownReduction,
         Stat_DoubleDamageRate,
+        Stat_TriggerChanceBonus,
+        Stat_ExtraTriggerRate,
+        Stat_SkillDoubleDamageRate,
     }
 
     public enum StatDetail {
@@ -684,6 +728,12 @@ namespace EDT {
         StatDetail_SkillCooldownReduction_Add,
         StatDetail_DoubleDamageRate_Base,
         StatDetail_DoubleDamageRate_Add,
+        StatDetail_TriggerChanceBonus_Base,
+        StatDetail_TriggerChanceBonus_Add,
+        StatDetail_ExtraTriggerRate_Base,
+        StatDetail_ExtraTriggerRate_Add,
+        StatDetail_SkillDoubleDamageRate_Base,
+        StatDetail_SkillDoubleDamageRate_Add,
     }
 
     public enum Summon {

@@ -60,8 +60,14 @@ namespace ProjectOne.Combat
 				damage *= a.GetStat(Stat.Stat_CritDamage);
 			}
 
-			// [3-1] 2배 피해 — 치명타와 독립된 판정이다.
-			if (Random.value < a.GetStat(Stat.Stat_DoubleDamageRate))
+			// [3-1] 2배 피해 — 치명타와 독립된 판정이다. 스킬 피해는 스킬 전용 확률을 더해 한 번만 굴린다.
+			float doubleRate = a.GetStat(Stat.Stat_DoubleDamageRate);
+			if (isNormalAttack == false)
+			{
+				doubleRate += a.GetStat(Stat.Stat_SkillDoubleDamageRate);
+			}
+
+			if (Random.value < doubleRate)
 			{
 				damage *= 2f;
 			}
