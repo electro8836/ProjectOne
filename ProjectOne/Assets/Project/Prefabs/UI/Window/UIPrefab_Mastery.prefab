@@ -439,7 +439,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &537149038391448856
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2168,7 +2168,7 @@ RectTransform:
   m_Father: {fileID: 4883682419217581643}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 0.64, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -2717,10 +2717,10 @@ RectTransform:
   - {fileID: 6588188539572907144}
   m_Father: {fileID: 6311179780865034934}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 215, y: -35}
+  m_SizeDelta: {x: 70, y: 70}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &4242640237081069229
 MonoBehaviour:
@@ -3140,7 +3140,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 1006, y: 230}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1730925922058160628
 MonoBehaviour:
@@ -3213,10 +3213,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 7223404412297325195}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 503, y: -30}
+  m_SizeDelta: {x: 1006, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &6059876733782311454
 MonoBehaviour:
@@ -3556,9 +3556,6 @@ MonoBehaviour:
   _masteryIcon: {fileID: 6966647231426416095}
   _masteryName: {fileID: 3623715661829056199}
   _masteryLevel: {fileID: 1413237887262677815}
-  _masteryPoint: {fileID: 1895158817093632729}
-  _skillbookPointText: {fileID: 2278378900308931730}
-  _pointInfoText: {fileID: 8156486765880829499}
   _expSlider: {fileID: 8275118585033826670}
   _expText: {fileID: 223120577026385959}
   _totalLevelText: {fileID: 4288247987296603298}
@@ -3568,12 +3565,7 @@ MonoBehaviour:
   _totalExpText: {fileID: 2253908636674444490}
   _masteryInfoSlotPrefab: {fileID: 7788990011223344561, guid: c9d1d92dc44eea8439054854c482583d, type: 3}
   _masteryListParent: {fileID: 3455752291228154641}
-  _traitLinePrefab: {fileID: 6362379050920916518, guid: ee2a20de44d65e042aa178e331c35ac5, type: 3}
-  _traitSlotPrefab: {fileID: 7788990011223344571, guid: 66d7de14c87c0bb49b25afde670bcf49, type: 3}
-  _skillTreeParent: {fileID: 4293938253600341731}
-  _skillTreeScroll: {fileID: 1864197712695704446}
   _homeButton: {fileID: 1961473072869336623}
-  _resetButton: {fileID: 4455430249996990449}
 --- !u!1 &5516664572445441020
 GameObject:
   m_ObjectHideFlags: 0
