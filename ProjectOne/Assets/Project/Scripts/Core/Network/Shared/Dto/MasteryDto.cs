@@ -11,7 +11,7 @@ namespace ProjectOne.Shared
 		public int level = 1;
 		public int totalExp;
 
-		// 스킬 슬롯 4칸 — 값은 EDT.Skill, 빈 칸은 0 (설계 7.1).
+		// 스킬 슬롯 6칸([0] 패시브 · [1~4] 액티브 · [5] 궁극기) — 값은 EDT.Skill, 빈 칸은 0 (설계 7.1).
 		public List<int> slots = new List<int>();
 	}
 

@@ -231,6 +231,7 @@ namespace EDT {
         Normal,
         Active,
         Passive,
+        Ultimate,
     }
 
     public enum SkillCastingTypes {
@@ -246,6 +247,7 @@ namespace EDT {
         OnKill,
         Aura,
         Passive,
+        OnBlock,
     }
 
     public enum SkillApplyTarget {
@@ -275,6 +277,8 @@ namespace EDT {
         Force,
         CooldownReduce,
         BuffConsume,
+        NormalAttack,
+        SkillGrant,
     }
 
     public enum SkillEffectOrigin {
@@ -365,6 +369,7 @@ namespace EDT {
         BUFF_Invincible,
         BUFF_BreakStun,
         BUFF_GreatSword_AtkSpeedUp,
+        BUFF_GreatSword_Indomitable,
     }
 
     public enum ItemEnhanceTier {
@@ -447,6 +452,8 @@ namespace EDT {
         OPT_DMG_GreatSword_Active_01,
         OPT_APPEND_GreatSword_AtkSpeedBuff,
         OPT_ATKSPEED_GreatSword_Buff,
+        OPT_NORMAL_ATTACK_DAMAGE_BONUS_ADD,
+        OPT_SKILL_DAMAGE_BONUS_ADD,
     }
 
     public enum Projectile {
@@ -494,6 +501,22 @@ namespace EDT {
         Skill_Rift_Spirit,
         Skill_Rift_Collapse,
         Skill_Monster_Boss_MeleeAttack_01,
+        Skill_GreatSword_Smash,
+        Skill_GreatSword_Whirlwind,
+        Skill_GreatSword_HeavyBlow,
+        Skill_GreatSword_Shatter,
+        Skill_GreatSword_ExtraSwing,
+        Skill_GreatSword_IronWall,
+        Skill_GreatSword_Riposte,
+        Skill_GreatSword_ShieldBash,
+        Skill_GreatSword_Frenzy,
+        Skill_GreatSword_Decisive,
+        Skill_GreatSword_Destroyer,
+        Skill_GreatSword_Indomitable,
+        Skill_GreatSword_Indomitable_Stack,
+        Skill_GreatSword_Rampage,
+        Skill_GreatSword_Rampage_Sweep,
+        Skill_GreatSword_GreatCleave,
     }
 
     public enum SkillEffect {
@@ -530,6 +553,31 @@ namespace EDT {
         SE_Rift_Collapse_Damage,
         SE_Ruins_Hazard_Damage,
         SE_Rifle_Attack_Projectile,
+        SE_GreatSword_Smash_Damage,
+        SE_GreatSword_Whirlwind_Damage,
+        SE_GreatSword_HeavyBlow_NormalAttack,
+        SE_GreatSword_Shatter_Damage,
+        SE_GreatSword_ExtraSwing_NormalAttack,
+        SE_GreatSword_IronWall_StatChange,
+        SE_GreatSword_Riposte_Damage,
+        SE_GreatSword_ShieldBash_NormalAttack,
+        SE_GreatSword_ShieldBash_Stun,
+        SE_GreatSword_Frenzy_AtkSpeed,
+        SE_GreatSword_Frenzy_SkillPenalty,
+        SE_GreatSword_Decisive_NormalPenalty,
+        SE_GreatSword_Decisive_Cooldown,
+        SE_GreatSword_Destroyer_StatChange,
+        SE_GreatSword_Indomitable_BlockRate,
+        SE_GreatSword_Indomitable_Grant,
+        SE_GreatSword_Indomitable_Buff,
+        SE_GreatSword_Indomitable_DamageUp,
+        SE_GreatSword_Rampage_AtkSpeed,
+        SE_GreatSword_Rampage_MoveSpeed,
+        SE_GreatSword_Rampage_Damage,
+        SE_GreatSword_Rampage_Grant,
+        SE_GreatSword_Rampage_Sweep_NormalAttack,
+        SE_GreatSword_GreatCleave_Damage,
+        SE_GreatSword_GreatCleave_Vulnerable,
     }
 
     public enum SkillModifier {
@@ -564,6 +612,10 @@ namespace EDT {
         Stat_GoldDropBonus,
         Stat_DamageTakenAmp,
         Stat_MaxBreakGauge,
+        Stat_NormalAttackDamageBonus,
+        Stat_SkillDamageBonus,
+        Stat_SkillCooldownReduction,
+        Stat_DoubleDamageRate,
     }
 
     public enum StatDetail {
@@ -624,6 +676,14 @@ namespace EDT {
         StatDetail_DamageTakenAmp_Add,
         StatDetail_MaxBreakGauge_Base,
         StatDetail_MaxBreakGauge_Add,
+        StatDetail_NormalAttackDamageBonus_Base,
+        StatDetail_NormalAttackDamageBonus_Add,
+        StatDetail_SkillDamageBonus_Base,
+        StatDetail_SkillDamageBonus_Add,
+        StatDetail_SkillCooldownReduction_Base,
+        StatDetail_SkillCooldownReduction_Add,
+        StatDetail_DoubleDamageRate_Base,
+        StatDetail_DoubleDamageRate_Add,
     }
 
     public enum Summon {

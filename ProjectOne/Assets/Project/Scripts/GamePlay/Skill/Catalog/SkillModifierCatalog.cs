@@ -242,6 +242,8 @@ namespace ProjectOne.Skill
 				case SkillCastingTypes.Aura:		return paramKey == "TickInterval";
 
 				case SkillCastingTypes.OnHit:
+				case SkillCastingTypes.OnSwingHit:
+				case SkillCastingTypes.OnBlock:
 				case SkillCastingTypes.OnCrit:
 				case SkillCastingTypes.OnDamaged:
 				case SkillCastingTypes.OnKill:

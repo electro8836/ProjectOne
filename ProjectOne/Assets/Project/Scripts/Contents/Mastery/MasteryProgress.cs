@@ -11,20 +11,21 @@ namespace ProjectOne.Mastery
 		InvalidSlot,	// 슬롯 번호가 범위 밖
 		NotInMastery,	// 이 마스터리의 스킬이 아니다
 		Locked,			// 아직 해금 레벨에 못 미친다
+		WrongSlot,		// 그 칸이 받지 않는 분류다 (패시브 칸·궁극기 칸)
 		InDungeon		// 던전 안에서는 바꿀 수 없다 (설계 7.2)
 	}
 
 	// 마스터리 1종의 진행도 (마스터리 설계 8.1).
 	//
 	// 레벨·해금 여부는 **저장하지 않고 계산한다** (설계 8.2).
-	// 저장되는 것은 누적 경험치와 슬롯 4칸뿐이다.
+	// 저장되는 것은 누적 경험치와 슬롯 6칸뿐이다.
 	public sealed class MasteryProgress
 	{
 		public readonly WeaponMastery id;
 
 		private int _totalExp;
 
-		// 스킬 슬롯 4칸. 빈 칸은 Skill.None (설계 7.1).
+		// 스킬 슬롯 6칸 — [0] 패시브 · [1~4] 액티브 · [5] 궁극기. 빈 칸은 Skill.None (설계 7.1).
 		private readonly EDT.Skill[] _slots = new EDT.Skill[MasteryRules.SlotCount];
 
 		public MasteryProgress(WeaponMastery id)
@@ -126,6 +127,11 @@ namespace ProjectOne.Mastery
 				return SlotBlock.Locked;
 			}
 
+			if (MasteryRules.FitsSlot(index, skill) == false)
+			{
+				return SlotBlock.WrongSlot;
+			}
+
 			return SlotBlock.None;
 		}
 
@@ -153,7 +159,7 @@ namespace ProjectOne.Mastery
 			return true;
 		}
 
-		// 새로 해금된 스킬을 앞쪽 빈 칸에 넣는다. 빈 칸이 없거나 이미 끼워져 있으면 false (설계 7.3).
+		// 새로 해금된 스킬을 그 분류의 앞쪽 빈 칸에 넣는다. 빈 칸이 없거나 이미 끼워져 있으면 false (설계 7.3).
 		public bool TryAutoEquip(EDT.Skill skill)
 		{
 			if (IsUnlocked(skill) == false || IndexOfSlot(skill) >= 0)
@@ -163,7 +169,7 @@ namespace ProjectOne.Mastery
 
 			for (int i = 0; i < _slots.Length; i++)
 			{
-				if (_slots[i] == EDT.Skill.None)
+				if (_slots[i] == EDT.Skill.None && MasteryRules.FitsSlot(i, skill) == true)
 				{
 					_slots[i] = skill;
 					return true;
@@ -175,7 +181,10 @@ namespace ProjectOne.Mastery
 
 		// ── 직렬화 ────────────────────────────────────────────────────
 
-		public void LoadFrom(MasteryProgressDto dto)
+		// 저장값을 읽는다. 지금 규칙에 맞지 않는 칸(이 마스터리의 스킬이 아님·칸 분류가 다름)은 비운다 —
+		// 스킬 구성이나 칸 배치가 바뀌기 전의 저장값이 그대로 남으면 서버 검증을 영영 통과하지 못한다.
+		// 비운 칸이 있으면 true — 호출자가 다시 채우고 저장 대상으로 표시한다.
+		public bool LoadFrom(MasteryProgressDto dto)
 		{
 			for (int i = 0; i < _slots.Length; i++)
 			{
@@ -185,20 +194,35 @@ namespace ProjectOne.Mastery
 			if (dto == null)
 			{
 				_totalExp = 0;
-				return;
+				return false;
 			}
 
 			_totalExp = dto.totalExp;
 			if (dto.slots == null)
 			{
-				return;
+				return false;
 			}
 
+			bool cleared = dto.slots.Count != _slots.Length && dto.slots.Count > 0;
 			int count = dto.slots.Count < _slots.Length ? dto.slots.Count : _slots.Length;
 			for (int i = 0; i < count; i++)
 			{
-				_slots[i] = (EDT.Skill)dto.slots[i];
+				EDT.Skill skill = (EDT.Skill)dto.slots[i];
+				if (skill == EDT.Skill.None)
+				{
+					continue;
+				}
+
+				if (MasteryCatalog.GetUnlockLevel(id, skill) <= 0 || MasteryRules.FitsSlot(i, skill) == false)
+				{
+					cleared = true;
+					continue;
+				}
+
+				_slots[i] = skill;
 			}
+
+			return cleared;
 		}
 
 		public MasteryProgressDto ToDto()

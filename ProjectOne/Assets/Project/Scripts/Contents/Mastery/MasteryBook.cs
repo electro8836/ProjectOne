@@ -371,14 +371,20 @@ namespace ProjectOne.Mastery
 				}
 
 				MasteryProgress progress = new MasteryProgress(id);
-				progress.LoadFrom(src);
+				bool cleared = progress.LoadFrom(src);
 				_byId[id] = progress;
 
 				// 슬롯을 한 번도 저장한 적 없는 진행도 — 이미 해금된 스킬로 채운다.
-				// 일부러 비운 슬롯은 빈 칸으로 저장되므로(slots 4칸) 여기 걸리지 않는다.
+				// 일부러 비운 슬롯은 빈 칸으로 저장되므로(slots 6칸) 여기 걸리지 않는다.
 				if (src.slots == null || src.slots.Count == 0)
 				{
 					fillUnlocked(progress);
+				}
+				else if (cleared == true)
+				{
+					// 규칙이 바뀌어 비운 칸이 있다 — 다시 채우고, 채운 게 없어도 정리된 상태를 저장한다.
+					fillUnlocked(progress);
+					_dirtySlots.Add(id);
 				}
 			}
 		}

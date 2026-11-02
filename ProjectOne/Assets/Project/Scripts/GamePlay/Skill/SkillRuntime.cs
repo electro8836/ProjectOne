@@ -141,6 +141,12 @@ namespace ProjectOne.Skill
 			RemainingCooldown = GetCycleTime(useSpeed);
 		}
 
+		// 해제 전 남은 쿨타임 이어받기 — 재등록 직후 SkillContainer 가 호출한다.
+		public void RestoreCooldown(float remaining)
+		{
+			RemainingCooldown = remaining > 0f ? remaining : 0f;
+		}
+
 		// 쿨타임 회복 (CooldownReduce 효과). 진행 중이 아니면 무시된다.
 		public void ReduceCooldown(float amount)
 		{

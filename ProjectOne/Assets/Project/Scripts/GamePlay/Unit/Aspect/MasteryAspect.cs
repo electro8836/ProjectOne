@@ -12,7 +12,7 @@ namespace ProjectOne.Unit
 	//
 	// 두 가지를 공급한다.
 	//   1. LevelBonusOption   전 마스터리 합산. **무기와 무관하게 항상 적용된다** (설계 4.5)
-	//   2. 보유 스킬          장착 무기의 NormalAttackSkill + 현재 마스터리의 슬롯 4칸 (설계 7.1)
+	//   2. 보유 스킬          장착 무기의 NormalAttackSkill + 현재 마스터리의 슬롯 6칸 (설계 7.1)
 	//
 	// 무기를 착용하지 않으면 2 가 전부 사라지고 1만 남는다 (설계 4.4).
 	// 스킬 위력은 고정이다 — 마스터리는 스킬을 변형하지 않는다 (설계 6.4).
@@ -172,7 +172,7 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		// 현재 마스터리의 슬롯 4칸에 낀 스킬만 등록한다. 해금했어도 슬롯 밖이면 작동하지 않는다 (설계 7.1).
+		// 현재 마스터리의 슬롯 6칸에 낀 스킬만 등록한다. 해금했어도 슬롯 밖이면 작동하지 않는다 (설계 7.1).
 		// 저장 데이터가 어긋나 잠긴 스킬이 끼워져 있으면 등록하지 않는다 — 서버 검증과 같은 기준이다.
 		private void registerSlots(Hero hero, MasteryBook book, Table_WeaponMastery.Row mastery)
 		{

@@ -10,8 +10,39 @@ namespace ProjectOne.Shared
 	// ValidateSlots 는 그 조작들의 **결과 상태**가 유효한지 보는 규칙이다 — 같은 불변식의 양면이다.
 	public static class MasteryRules
 	{
-		// 마스터리마다 스킬 슬롯 4칸 (설계 7.1). 평타는 슬롯 밖이다.
-		public const int SlotCount = 4;
+		// 마스터리마다 스킬 슬롯 6칸 (설계 7.1). 평타는 슬롯 밖이다.
+		// [0] 패시브 · [1~4] 액티브 · [5] 궁극기 — 칸마다 받는 스킬 분류가 정해져 있다.
+		public const int SlotCount = 6;
+		public const int PassiveSlot = 0;
+		public const int UltimateSlot = 5;
+
+		// 그 칸이 받는 스킬 분류. 범위 밖이면 None.
+		public static SkillCategoryTypes GetSlotCategory(int index)
+		{
+			if (index < 0 || index >= SlotCount)
+			{
+				return SkillCategoryTypes.None;
+			}
+
+			if (index == PassiveSlot)
+			{
+				return SkillCategoryTypes.Passive;
+			}
+
+			if (index == UltimateSlot)
+			{
+				return SkillCategoryTypes.Ultimate;
+			}
+
+			return SkillCategoryTypes.Active;
+		}
+
+		// 스킬이 그 칸에 들어갈 수 있는 분류인가.
+		public static bool FitsSlot(int index, EDT.Skill skill)
+		{
+			Table_Skill.Row row = Table_Skill.Get(skill);
+			return row != null && row.SkillCategory == GetSlotCategory(index);
+		}
 
 		// 레벨 곡선 — ID(레벨) 오름차순. 테이블 로드 후 처음 쓸 때 만든다.
 		private static List<Table_MasteryLevelExp.Row> _curve;
@@ -104,6 +135,11 @@ namespace ProjectOne.Shared
 				if (level < unlockLevel)
 				{
 					return "skill " + skillId + " locked: " + level + " < " + unlockLevel;
+				}
+
+				if (FitsSlot(i, (EDT.Skill)skillId) == false)
+				{
+					return "skill " + skillId + " wrong slot " + i;
 				}
 
 				if (seen.Add(skillId) == false)

@@ -102,8 +102,8 @@ namespace ProjectOne.Unit.AI
 				return false;
 			}
 
-			// 고유(Special) 스킬은 HUD 버튼 수동 (castSpecial=true 인 PVP 등만 자동)
-			if (sc.IsSpecial(id) == true && castSpecial == false)
+			// 고유(Special) 스킬·궁극기는 HUD 버튼 수동 (castSpecial=true 인 PVP 등만 자동)
+			if ((sc.IsSpecial(id) == true || row.SkillCategory == SkillCategoryTypes.Ultimate) && castSpecial == false)
 			{
 				return false;
 			}

@@ -23,7 +23,8 @@ namespace ProjectOne.Skill
 			DamageHit,			// 다단히트의 2타 이후
 			HealTick,			// 지속 회복의 2틱 이후
 			ProjectileShot,		// 연속 발사의 2발 이후
-			RemoveModifier		// 한시 StatChange 회수
+			RemoveModifier,		// 한시 StatChange 회수
+			RevokeSkill			// 한시 SkillGrant 회수
 		}
 
 		// 지연 발동 예약 — 코루틴 대신 Tick 에서 카운트다운 (동시 다수 스킬 부하/할당 회피)
@@ -67,6 +68,13 @@ namespace ProjectOne.Skill
 
 		// Aura 스킬의 다음 틱까지 남은 시간 (Skill → remaining)
 		readonly Dictionary<EDT.Skill, float> _auraTimers = new Dictionary<EDT.Skill, float>();
+
+		// 해제된 스킬의 쿨타임 종료 시각(_clock 기준). 같은 스킬이 다시 등록되면 이어받는다.
+		// Aspect 재적용(강화·승급·마스터리 변경)은 해제 → 재등록이라, 이게 없으면 그때마다 쿨타임이 초기화된다.
+		readonly Dictionary<EDT.Skill, float> _retainedCooldownEnds = new Dictionary<EDT.Skill, float>();
+
+		// Tick 누적 시간 — 보관한 쿨타임을 매 프레임 깎지 않고 종료 시각으로 비교하기 위한 기준
+		float _clock;
 
 		// OnLowHP 검사 주기 카운터
 		float _lowHpCheckTimer;
@@ -144,6 +152,13 @@ namespace ProjectOne.Skill
 				rt.ReadFrom(resolved.Row);
 			}
 
+			float cooldownEnd;
+			if (_retainedCooldownEnds.TryGetValue(id, out cooldownEnd) == true)
+			{
+				_retainedCooldownEnds.Remove(id);
+				rt.RestoreCooldown(cooldownEnd - _clock);
+			}
+
 			_byId.Add(id, rt);
 			_ordered.Add(rt);
 
@@ -169,6 +184,11 @@ namespace ProjectOne.Skill
 			_byId.Remove(id);
 			_ordered.Remove(rt);
 			_auraTimers.Remove(id);
+
+			if (rt.RemainingCooldown > 0f)
+			{
+				_retainedCooldownEnds[id] = _clock + rt.RemainingCooldown;
+			}
 		}
 
 		// 리졸브가 무효화된 뒤 등록된 스킬의 사이클 값만 다시 읽는다.
@@ -226,14 +246,16 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			// 스킬 모션이 진행 중이면 다른 스킬을 겹쳐 시전하지 않는다 — 한 번에 하나씩
-			if (IsInAction == true)
+			SkillRuntime rt;
+			if (_byId.TryGetValue(id, out rt) == false)
 			{
 				return false;
 			}
 
-			SkillRuntime rt;
-			if (_byId.TryGetValue(id, out rt) == false)
+			// 스킬 모션이 진행 중이면 다른 스킬을 겹쳐 시전하지 않는다 — 한 번에 하나씩.
+			// 모션이 없는 스킬(효과만 나가는 마스터리 스킬·궁극기)은 평타 모션을 끊지 않으므로 겹쳐 나간다.
+			float useSpeed = rt.GetUseSpeed(getAtkSpeed());
+			if (IsInAction == true && rt.GetActionTime(useSpeed) > 0f)
 			{
 				return false;
 			}
@@ -248,11 +270,12 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			float useSpeed = rt.GetUseSpeed(getAtkSpeed());
+			bool hasMotion = rt.GetActionTime(useSpeed) > 0f;
 			SkillExecutor.Execute(id, _owner, useSpeed);
 
-			// Casting 은 BeginCasting 이 이동/스킬을 이미 잠갔고, 코드 스킬(behavior)은 스스로 이동을 제어한다
-			if (_isCasting == false && _activeBehavior == null)
+			// Casting 은 BeginCasting 이 이동/스킬을 이미 잠갔고, 코드 스킬(behavior)은 스스로 이동을 제어한다.
+			// 모션 없는 스킬은 진행 중인 평타의 동작 시간을 덮어쓰지 않는다.
+			if (_isCasting == false && _activeBehavior == null && hasMotion == true)
 			{
 				beginAction(rt.GetActionTime(useSpeed));
 			}
@@ -260,7 +283,7 @@ namespace ProjectOne.Skill
 			// 콤보는 여기서 세지 않는다 — 평타가 실제로 적중했을 때
 			// SkillEffectApplier 가 NotifyNormalAttackHit 으로 알린다.
 
-			rt.StartCooldown(useSpeed);
+			rt.StartCooldown(getCooldownSpeed(rt, useSpeed));
 			return true;
 		}
 
@@ -401,6 +424,8 @@ namespace ProjectOne.Skill
 
 		public void Tick(float dt)
 		{
+			_clock += dt;
+
 			// 스킬 동작 시간 소진 — 다 되면 조준 잠금을 푼다
 			if (_actionRemaining > 0f)
 			{
@@ -508,7 +533,7 @@ namespace ProjectOne.Skill
 				if (ratio <= rt.CastingParam)
 				{
 					SkillExecutor.Execute(rt.Id, _owner, 1f);
-					rt.StartCooldown(1f);
+					rt.StartCooldown(getCooldownSpeed(rt, 1f));
 				}
 			}
 		}
@@ -547,15 +572,21 @@ namespace ProjectOne.Skill
 			}
 		}
 
-		// 넉백 등 경직 발생 시 호출 — 예약된 모든 지연 효과를 취소 (설계 4.6)
+		// 넉백 등 경직 발생 시 호출 — 예약된 지연 효과를 취소 (설계 4.6)
+		// 한시 스탯 회수·부여 스킬 회수는 남긴다. 효과가 아니라 뒷정리라, 지우면 한시 효과가 영구로 남는다.
 		public void CancelPendingEffects()
 		{
-			for (int i = 0; i < _pending.Count; i++)
+			for (int i = _pending.Count - 1; i >= 0; i--)
 			{
-				releaseTargetList(_pending[i].targets);
-			}
+				PendingKind kind = _pending[i].kind;
+				if (kind == PendingKind.RemoveModifier || kind == PendingKind.RevokeSkill)
+				{
+					continue;
+				}
 
-			_pending.Clear();
+				releaseTargetList(_pending[i].targets);
+				_pending.RemoveAt(i);
+			}
 		}
 
 		// ── 지연 예약 ─────────────────────────────────────────────────
@@ -645,6 +676,25 @@ namespace ProjectOne.Skill
 			_pending.Add(p);
 		}
 
+		// 한시 SkillGrant 회수 예약 — 시간이 되면 부여했던 스킬을 해제한다.
+		// 그 사이 출처가 스킬을 먼저 걷었으면(무기 교체 등) Unregister 가 아무것도 하지 않는다.
+		public void ScheduleSkillRevoke(float delay, EDT.Skill skillId)
+		{
+			if (skillId == EDT.Skill.None || delay <= 0f)
+			{
+				return;
+			}
+
+			PendingEffect p = default(PendingEffect);
+			p.kind = PendingKind.RevokeSkill;
+			p.remaining = delay;
+			p.repeat = 1;
+			p.skillId = skillId;
+			p.targets = rentTargetList(null);
+
+			_pending.Add(p);
+		}
+
 		void dispatch(PendingEffect p)
 		{
 			dispatchWithoutRelease(p);
@@ -692,6 +742,10 @@ namespace ProjectOne.Skill
 
 				case PendingKind.RemoveModifier:
 					removeModifier(p);
+					break;
+
+				case PendingKind.RevokeSkill:
+					Unregister(p.skillId);
 					break;
 			}
 		}
@@ -975,6 +1029,12 @@ namespace ProjectOne.Skill
 			triggerByChance(SkillCastingTypes.OnDamaged, origin);
 		}
 
+		// 막기 성공 시 — origin 은 막은 공격의 공격자 위치다.
+		public void TriggerOnBlock(Vector2 origin)
+		{
+			triggerByChance(SkillCastingTypes.OnBlock, origin);
+		}
+
 		// 적 처치 시 — 수단 무관. 광역으로 3명을 처치하면 3회 호출된다.
 		public void TriggerOnKill(Vector2 origin)
 		{
@@ -993,6 +1053,9 @@ namespace ProjectOne.Skill
 
 			_comboCount++;
 			TriggerOnCombo(origin);
+
+			// 스윙 단위 확률 발동 — OnHit 과 달리 맞은 대상 수와 무관하게 스윙당 한 번 굴린다.
+			triggerByChance(SkillCastingTypes.OnSwingHit, origin);
 		}
 
 		// n번째 평타마다 발동. 카운터는 캐릭터당 1개를 공유하고 각 스킬이 count % n 으로 판정한다.
@@ -1020,7 +1083,7 @@ namespace ProjectOne.Skill
 				if (_comboCount % period == 0)
 				{
 					SkillExecutor.Execute(rt.Id, _owner, 1f, true, origin);
-					rt.StartCooldown(1f);
+					rt.StartCooldown(getCooldownSpeed(rt, 1f));
 				}
 			}
 		}
@@ -1062,6 +1125,24 @@ namespace ProjectOne.Skill
 
 			// 회복량 = (최대 쿨타임 × Ratio) + FlatValue (설계 5.10)
 			rt.ReduceCooldown(rt.Cooldown * ratio + flatValue);
+		}
+
+		// 쿨타임 진행 배속 — 평타는 공속 그대로, 그 외 스킬은 스킬 재사용 대기시간 감소를 반영한다.
+		// 감소율 상한은 스탯 테이블(MaxValue)이 막으므로 1.0 에 닿지 않는다.
+		float getCooldownSpeed(SkillRuntime rt, float useSpeed)
+		{
+			if (rt.IsNormal == true || _owner == null || _owner.Stats == null)
+			{
+				return useSpeed;
+			}
+
+			float reduction = _owner.Stats.GetStat(Stat.Stat_SkillCooldownReduction);
+			if (reduction <= 0f || reduction >= 1f)
+			{
+				return useSpeed;
+			}
+
+			return useSpeed / (1f - reduction);
 		}
 
 		float getAtkSpeed()

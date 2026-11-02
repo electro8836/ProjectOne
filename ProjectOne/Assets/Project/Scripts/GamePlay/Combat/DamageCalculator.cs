@@ -22,7 +22,8 @@ namespace ProjectOne.Combat
 		}
 
 		// scaleStat: 비례 기준 스탯 (Damage 효과의 ScaleStat). 기준 주체는 항상 시전자다.
-		public static Result Calculate(UnitBase attacker, UnitBase target, Stat scaleStat, float ratio, float flatValue, bool triggersOnHit)
+		// isNormalAttack: 평타 피해인가 — 평타 피해량/스킬 피해량 중 어느 쪽을 더할지 정한다.
+		public static Result Calculate(UnitBase attacker, UnitBase target, Stat scaleStat, float ratio, float flatValue, bool triggersOnHit, bool isNormalAttack)
 		{
 			Result r = default(Result);
 			if (attacker == null || target == null || attacker.Stats == null || target.Stats == null)
@@ -59,6 +60,12 @@ namespace ProjectOne.Combat
 				damage *= a.GetStat(Stat.Stat_CritDamage);
 			}
 
+			// [3-1] 2배 피해 — 치명타와 독립된 판정이다.
+			if (Random.value < a.GetStat(Stat.Stat_DoubleDamageRate))
+			{
+				damage *= 2f;
+			}
+
 			// [4] 피해 보너스 — 합연산 레이어.
 			//
 			// 근접/원거리는 장착 무기의 WeaponMastery.RangeType 이 결정하며 스킬별 구분은 없다 (설계 10.4).
@@ -73,6 +80,17 @@ namespace ProjectOne.Combat
 				case WeaponRangeType.Ranged:
 					bonus += a.GetStat(Stat.Stat_RangeDamageBonus);
 					break;
+			}
+
+			// 평타/스킬 보너스 — 평타는 평타 스킬과 그 평타를 다시 치는 효과, 그 외는 전부 스킬 피해다.
+			// 몬스터는 두 스탯을 쓰지 않으므로 이 항이 0이다.
+			if (isNormalAttack == true)
+			{
+				bonus += a.GetStat(Stat.Stat_NormalAttackDamageBonus);
+			}
+			else
+			{
+				bonus += a.GetStat(Stat.Stat_SkillDamageBonus);
 			}
 
 			// 보스 보너스 — 대상이 보스 등급일 때만 (몬스터 설계 2장).

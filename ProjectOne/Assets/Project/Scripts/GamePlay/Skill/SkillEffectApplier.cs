@@ -48,8 +48,9 @@ namespace ProjectOne.Skill
 		// hasCenter/center 는 좌표 고정형(EffectOrigin=Location) 전용 — 연출을 대상마다가 아니라 그 좌표에서 1회 낸다.
 		// buffOwner 는 버프가 부여한 효과일 때만 넘어온다 — StatChange 모디파이어 회수를 버프 수명에 맡긴다.
 		// valueScale 은 버프가 전달하는 수치 배율이다 — StatChange 의 Value 에만 곱한다.
+		// damageScale 은 평타 재타격(NormalAttack)이 전달하는 피해 배율이다 — Damage 의 Ratio·FlatValue 에만 곱한다.
 		public static void Apply(SkillEffect effectId, UnitBase caster, EDT.Skill skillId, List<UnitBase> scanned, int depth,
-			bool hasCenter = false, Vector2 center = default(Vector2), BuffRuntime buffOwner = null, float valueScale = 1f)
+			bool hasCenter = false, Vector2 center = default(Vector2), BuffRuntime buffOwner = null, float valueScale = 1f, float damageScale = 1f)
 		{
 			if (effectId == SkillEffect.None || caster == null)
 			{
@@ -81,7 +82,7 @@ namespace ProjectOne.Skill
 				switch (row.EffectType)
 				{
 					case SkillEffectTypes.Damage:
-						succeeded = applyDamage(row, caster, skillId, targets);
+						succeeded = applyDamage(row, caster, skillId, targets, damageScale);
 						break;
 					case SkillEffectTypes.Heal:
 						succeeded = applyHeal(row, caster, skillId, targets);
@@ -90,7 +91,7 @@ namespace ProjectOne.Skill
 						succeeded = applyBuff(row, caster, skillId, targets);
 						break;
 					case SkillEffectTypes.StatChange:
-						succeeded = applyStatChange(row, caster, targets, buffOwner, valueScale);
+						succeeded = applyStatChange(row, caster, skillId, targets, buffOwner, valueScale);
 						break;
 					case SkillEffectTypes.Projectile:
 						// 발사체는 언제나 시전자 자리에서 나가고(EffectOrigin=Caster), 조준·유도 대상은 스킬이 탐색한 적이다.
@@ -108,6 +109,14 @@ namespace ProjectOne.Skill
 						break;
 					case SkillEffectTypes.BuffConsume:
 						succeeded = applyBuffConsume(row, targets);
+						break;
+					case SkillEffectTypes.NormalAttack:
+						// 연쇄는 이 효과가 실제로 때린 대상에게 걸어야 해서 applyNormalAttack 이 직접 처리한다.
+						// 여기서 succeeded 를 세우면 시전 시점 탐색 결과로 연쇄가 한 번 더 나간다.
+						applyNormalAttack(row, caster, skillId, depth);
+						break;
+					case SkillEffectTypes.SkillGrant:
+						succeeded = applySkillGrant(row, caster, skillId);
 						break;
 					default:
 						Debug.LogError($"[SkillEffectApplier] 알 수 없는 EffectType — Effect:{row.ID} Type:{row.EffectType}");
@@ -340,13 +349,17 @@ namespace ProjectOne.Skill
 
 		// ── 타입별 적용 ───────────────────────────────────────────────
 
-		static bool applyDamage(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets)
+		static bool applyDamage(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets, float damageScale)
 		{
 			DamageParams p;
 			if (SkillEffectParams.TryParseDamage(row, out p) == false || targets.Count == 0)
 			{
 				return false;
 			}
+
+			// 다단히트 2타 이후(RunDamageHit)는 배율을 모른다 — 평타 재타격은 평타가 1타짜리라 해당이 없다.
+			p.Ratio *= damageScale;
+			p.FlatValue *= damageScale;
 
 			// 스윙(타격 1회) 단위로 집계한다 — 광역으로 여러 명을 맞춰도 콤보는 1만 올라야 한다.
 			// 콤보 통지는 targets 사용이 모두 끝난 뒤로 미룬다 (아래 재진입 주석 참조).
@@ -445,7 +458,8 @@ namespace ProjectOne.Skill
 		// origin 은 그 스윙에서 가장 가까웠던 피격 대상의 위치다 (좌표 고정형 콤보 스킬의 중심).
 		static void notifyNormalHit(UnitBase caster, EDT.Skill skillId, Vector2 origin)
 		{
-			if (caster.SkillContainer == null)
+			// 평타 재타격은 휘두른 평타가 아니다 — 콤보·OnSwingHit 를 다시 돌리면 추가 평타가 추가 평타를 낳는다.
+			if (caster.SkillContainer == null || _normalAttackDepth > 0)
 			{
 				return;
 			}
@@ -462,11 +476,19 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			DamageCalculator.Result result = DamageCalculator.Calculate(caster, target, p.ScaleStat, p.Ratio, p.FlatValue, row.OnHitTrigger);
+			DamageCalculator.Result result = DamageCalculator.Calculate(caster, target, p.ScaleStat, p.Ratio, p.FlatValue, row.OnHitTrigger,
+				isNormalAttackDamage(caster, skillId));
 			if (result.IsAvoided == true)
 			{
 				// 무효화는 TakeDamage 를 타지 않아 DamageTakenEvent 가 나가지 않는다 — 여기서 따로 알린다.
 				EventManager.Instance.Publish(new DamageAvoidedEvent(target, caster, result.IsBlocked));
+
+				// 막기 성공 — 막은 쪽의 OnBlock 스킬. 좌표 고정형이면 공격자 자리에서 터진다.
+				if (result.IsBlocked == true && target.SkillContainer != null)
+				{
+					target.SkillContainer.TriggerOnBlock(caster.HitCenter);
+				}
+
 				return false;
 			}
 
@@ -503,6 +525,20 @@ namespace ProjectOne.Skill
 			}
 
 			return true;
+		}
+
+		// 평타 피해인가 — 평타 스킬(SkillCategory=Normal)이 낸 피해만 평타다.
+		// 평타를 다시 치는 효과(NormalAttack)는 평타 스킬 ID 로 피해를 내므로 여기서 함께 평타로 잡힌다.
+		// 소환물의 평타는 주인의 스킬이 만든 피해라 스킬 피해로 본다.
+		static bool isNormalAttackDamage(UnitBase caster, EDT.Skill skillId)
+		{
+			if (caster.Owner != null)
+			{
+				return false;
+			}
+
+			ResolvedSkill resolved = caster.Resolve(skillId);
+			return resolved != null && resolved.IsValid == true && resolved.Row.SkillCategory == SkillCategoryTypes.Normal;
 		}
 
 		static bool applyHeal(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets)
@@ -588,7 +624,25 @@ namespace ProjectOne.Skill
 			return anyApplied;
 		}
 
-		static bool applyStatChange(Table_SkillEffect.Row row, UnitBase caster, List<UnitBase> targets, BuffRuntime buffOwner, float valueScale)
+		// 영구 StatChange(패시브)는 그 스킬을 등록한 출처로 태깅한다 — 출처가 스킬을 걷어낼 때
+		// (MasteryAspect.RemoveFrom → Stats.RemoveAllFromSource) 스탯도 함께 빠져야 한다.
+		// 효과 ID 로 태깅하면 무기를 바꿔도 이전 패시브의 스탯이 남는다.
+		// 시한부·버프 부여분은 각자 회수 경로가 있으므로 효과 ID 그대로 둔다.
+		static string resolveStatSource(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, BuffRuntime buffOwner, float duration)
+		{
+			if (buffOwner == null && duration <= 0f && caster.SkillContainer != null)
+			{
+				SkillRuntime rt = caster.SkillContainer.GetRuntime(skillId);
+				if (rt != null && string.IsNullOrEmpty(rt.Source) == false)
+				{
+					return rt.Source;
+				}
+			}
+
+			return row.ID.ToString();
+		}
+
+		static bool applyStatChange(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets, BuffRuntime buffOwner, float valueScale)
 		{
 			StatChangeParams p;
 			if (SkillEffectParams.TryParseStatChange(row, out p) == false || targets.Count == 0)
@@ -612,7 +666,7 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				StatModifier mod = target.Stats.AddModifier(p.StatDetailID, p.Value * valueScale, row.ID.ToString());
+				StatModifier mod = target.Stats.AddModifier(p.StatDetailID, p.Value * valueScale, resolveStatSource(row, caster, skillId, buffOwner, p.Duration));
 				anyApplied = true;
 
 				// 버프가 부여한 효과면 회수를 버프에 맡긴다 — 만료·중첩 갱신이 한 곳에서만 일어나야
@@ -836,6 +890,94 @@ namespace ProjectOne.Skill
 		}
 
 		// ── 연쇄 / 연출 ───────────────────────────────────────────────
+
+		// 평타 재타격 — 시전자의 평타를 모션 없이 한 번 더 친다(추가 평타·강타·막고 치기).
+		//
+		// 피해는 평타 스킬 ID 로 내므로 평타 피해량을 받는다(isNormalAttackDamage). 범위는 평타의 탐색 형태를
+		// RangeRatio 만큼 키워 지금 다시 탐색하고, Circle 이면 같은 거리의 원형으로 바꾼다.
+		// 연쇄(ChainEffectIDs)는 이 재탐색 대상에게 건다 — 시전 시점 탐색 결과는 평타 범위와 무관하다.
+		static void applyNormalAttack(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, int depth)
+		{
+			NormalAttackParams p;
+			if (SkillEffectParams.TryParseNormalAttack(row, out p) == false || caster.SkillContainer == null)
+			{
+				return;
+			}
+
+			EDT.Skill basic = caster.SkillContainer.GetBasicAttack();
+			if (basic == EDT.Skill.None)
+			{
+				return;
+			}
+
+			ResolvedSkill resolved = caster.Resolve(basic);
+			if (resolved == null || resolved.IsValid == false)
+			{
+				return;
+			}
+
+			Table_Skill.Row basicRow = resolved.Row;
+			SkillScanTypes scanType = (p.Circle == true) ? SkillScanTypes.Circle : basicRow.ScanType;
+
+			// TargetResolver 버퍼는 다음 탐색에 덮어써진다 — 효과마다 다시 쓰므로 깊이별 버퍼에 복사해 둔다.
+			List<UnitBase> hits = rentNormalAttackBuffer(_normalAttackDepth);
+			hits.AddRange(TargetResolver.ScanByType(scanType, basicRow.ApplyTarget, basicRow.ScanRange * p.RangeRatio, basicRow.ScanParam, caster));
+			if (hits.Count == 0)
+			{
+				return;
+			}
+
+			_normalAttackDepth++;
+			for (int i = 0; i < resolved.Effects.Count; i++)
+			{
+				Table_SkillEffect.Row effect = resolved.Effects[i];
+				Apply(effect.ID, caster, basic, hits, depth + 1, damageScale: p.Ratio);
+			}
+
+			_normalAttackDepth--;
+
+			applyChain(row, caster, skillId, hits, depth);
+		}
+
+		// 평타 재타격 중첩 깊이 — 0 보다 크면 지금 나는 피해가 재타격이다(notifyNormalHit 이 본다).
+		static int _normalAttackDepth;
+
+		static readonly List<List<UnitBase>> _normalAttackBuffers = new List<List<UnitBase>>();
+
+		static List<UnitBase> rentNormalAttackBuffer(int slot)
+		{
+			while (_normalAttackBuffers.Count <= slot)
+			{
+				_normalAttackBuffers.Add(new List<UnitBase>(8));
+			}
+
+			List<UnitBase> buffer = _normalAttackBuffers[slot];
+			buffer.Clear();
+
+			return buffer;
+		}
+
+		// 스킬 부여 — 시전자에게 다른 스킬을 등록한다. 부여한 스킬과 같은 출처로 등록해 함께 해제되게 한다.
+		// Duration > 0 이면 그 시간 뒤에 회수한다(폭주처럼 한시적인 반응).
+		static bool applySkillGrant(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId)
+		{
+			SkillGrantParams p;
+			if (SkillEffectParams.TryParseSkillGrant(row, out p) == false || caster.SkillContainer == null)
+			{
+				return false;
+			}
+
+			SkillRuntime parent = caster.SkillContainer.GetRuntime(skillId);
+			string source = (parent != null) ? parent.Source : string.Empty;
+
+			caster.SkillContainer.Register(p.RefID, source);
+			if (p.Duration > 0f)
+			{
+				caster.SkillContainer.ScheduleSkillRevoke(p.Duration, p.RefID);
+			}
+
+			return true;
+		}
 
 		static void applyChain(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> scanned, int depth)
 		{

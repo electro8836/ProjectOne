@@ -46,7 +46,7 @@ namespace ProjectOne.UI
 	// 무기를 끼지 않으면 활성 마스터리가 없다(MasteryBook.CurrentMastery 가 null). 그때는 현재 마스터리 탭을
 	// 잠그고 전체 탭으로 시작한다 — 빈 화면을 보여주는 대신 아예 못 들어가게 한다.
 	//
-	// 스킬 해금 목록·슬롯 4칸 UI 는 새로 구성한다 — 조작 API 는 MasteryBook(TrySetSlot / GetSlotBlock),
+	// 스킬 해금 목록·슬롯 6칸 UI 는 새로 구성한다 — 조작 API 는 MasteryBook(TrySetSlot / GetSlotBlock),
 	// 목록은 MasteryCatalog.GetSkills, 저장은 창을 닫을 때 FlushMasteryIfDirty 가 묶어 보낸다.
 	//
 	public sealed class MasteryPresenter : Presenter<MasteryUI>

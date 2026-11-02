@@ -89,6 +89,21 @@ namespace ProjectOne.Skill
 		public int Count;
 	}
 
+	// NormalAttack — 평타를 모션 없이 한 번 더 친다. 피해·범위 배율과 원형 판정 여부
+	public struct NormalAttackParams
+	{
+		public float Ratio;
+		public float RangeRatio;
+		public bool Circle;
+	}
+
+	// SkillGrant — 다른 스킬 등록. Duration 0 = 부여한 스킬과 수명을 같이한다
+	public struct SkillGrantParams
+	{
+		public EDT.Skill RefID;
+		public float Duration;
+	}
+
 	public static class SkillEffectParams
 	{
 		// ── 타입별 파싱 ───────────────────────────────────────────────
@@ -313,7 +328,69 @@ namespace ProjectOne.Skill
 			return true;
 		}
 
+		public static bool TryParseNormalAttack(Table_SkillEffect.Row row, out NormalAttackParams p)
+		{
+			p = default(NormalAttackParams);
+			if (row == null)
+			{
+				return false;
+			}
+
+			p.Ratio = readFloat(row, "Ratio", 1f);
+			p.RangeRatio = readFloat(row, "RangeRatio", 1f);
+			p.Circle = readBool(row, "Circle", false);
+
+			if (p.RangeRatio <= 0f)
+			{
+				p.RangeRatio = 1f;
+			}
+
+			return true;
+		}
+
+		public static bool TryParseSkillGrant(Table_SkillEffect.Row row, out SkillGrantParams p)
+		{
+			p = default(SkillGrantParams);
+			if (row == null)
+			{
+				return false;
+			}
+
+			p.RefID = readEnum(row, "RefID", EDT.Skill.None);
+			if (p.RefID == EDT.Skill.None)
+			{
+				logMissing(row, "RefID");
+				return false;
+			}
+
+			p.Duration = readFloat(row, "Duration", 0f);
+			return true;
+		}
+
 		// ── 슬롯 읽기 ─────────────────────────────────────────────────
+
+		// 엑셀 불리언 셀은 "True"/"TRUE" 로, 숫자로 적으면 "1"/"0" 으로 들어온다.
+		private static bool readBool(Table_SkillEffect.Row row, string paramKey, bool fallback)
+		{
+			string raw = SkillParamCatalog.GetRawParamByKey(row, paramKey);
+			if (isEmpty(raw) == true)
+			{
+				return fallback;
+			}
+
+			if (string.Equals(raw, "true", StringComparison.OrdinalIgnoreCase) == true || raw == "1")
+			{
+				return true;
+			}
+
+			if (string.Equals(raw, "false", StringComparison.OrdinalIgnoreCase) == true || raw == "0")
+			{
+				return false;
+			}
+
+			logParseError(row, paramKey, raw, "bool");
+			return fallback;
+		}
 
 		private static float readFloat(Table_SkillEffect.Row row, string paramKey, float fallback)
 		{

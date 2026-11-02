@@ -270,6 +270,31 @@ namespace ProjectOne.Skill
 					return name + " " + p.Count + "중첩 소모 시";
 				}
 
+				case SkillEffectTypes.NormalAttack:
+				{
+					NormalAttackParams p;
+					if (SkillEffectParams.TryParseNormalAttack(row, out p) == false)
+					{
+						return string.Empty;
+					}
+
+					string shape = (p.Circle == true) ? "주변 원형으로 " : string.Empty;
+					return shape + "평타 " + (p.Ratio * 100f).ToString("0.#") + "% 추가 타격";
+				}
+
+				case SkillEffectTypes.SkillGrant:
+				{
+					SkillGrantParams p;
+					if (SkillEffectParams.TryParseSkillGrant(row, out p) == false)
+					{
+						return string.Empty;
+					}
+
+					Table_Skill.Row granted = Table_Skill.Get(p.RefID);
+					string name = (granted != null && string.IsNullOrEmpty(granted.Name) == false) ? granted.Name : p.RefID.ToString();
+					return (p.Duration > 0f) ? p.Duration.ToString("0.##") + "초간 " + name + " 부여" : name + " 부여";
+				}
+
 				default:
 					return string.Empty;
 			}
@@ -289,6 +314,8 @@ namespace ProjectOne.Skill
 				case SkillCastingTypes.OnKill:    return "[처치 시] ";
 				case SkillCastingTypes.OnDamaged: return "[피격 시] ";
 				case SkillCastingTypes.OnLowHP:   return "[체력 부족 시] ";
+				case SkillCastingTypes.OnSwingHit: return "[평타 적중 시] ";
+				case SkillCastingTypes.OnBlock:   return "[막기 성공 시] ";
 				default:                          return string.Empty;
 			}
 		}
