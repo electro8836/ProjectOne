@@ -148,7 +148,8 @@ namespace ProjectOne.Projectile
 					return;
 				}
 
-				applyHit(unit);
+				// 이미 한 번 튕긴 뒤의 적중은 후속 적중이다.
+				applyHit(unit, _bouncedUnits.Count > 0);
 
 				// 유도는 타겟만 맞힌다 — 튕김이 남았으면 가까운 다음 적으로 갈아타고, 없으면 소멸한다(관통 미사용).
 				if (_homing != null)
@@ -172,17 +173,29 @@ namespace ProjectOne.Projectile
 		}
 
 		// 적중 — 범위공격(hitRadius>0)이면 적중 위치 원형 범위에, 아니면 적중 대상 단일에 효과 적용
-		private void applyHit(UnitBase unit)
+		// followUp: 튕겨서 맞힌 적중 — 평타 적중 통지(콤보·OnSwingHit)와 온히트를 다시 일으키지 않는다.
+		private void applyHit(UnitBase unit, bool followUp)
 		{
+			if (followUp == true)
+			{
+				SkillEffectApplier.EnterFollowUpHit();
+			}
+
 			if (_data.hitRadius > 0f)
 			{
 				SkillEffectApplier.ApplyAtPosition(_data.hitEffect, _data.caster, _data.skillId, transform.position, _data.hitRadius);
-				return;
+			}
+			else
+			{
+				_hitBuffer.Clear();
+				_hitBuffer.Add(unit);
+				SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer, 0);
 			}
 
-			_hitBuffer.Clear();
-			_hitBuffer.Add(unit);
-			SkillEffectApplier.Apply(_data.hitEffect, _data.caster, _data.skillId, _hitBuffer, 0);
+			if (followUp == true)
+			{
+				SkillEffectApplier.ExitFollowUpHit();
+			}
 		}
 
 		// 맞힌 대상 기준 _bounceRange 안의 가장 가까운 적으로 튕긴다. 대상이 없거나 횟수가 다 됐으면 소멸.
@@ -213,7 +226,7 @@ namespace ProjectOne.Projectile
 					return;
 				}
 
-				applyHit(next);
+				applyHit(next, true);
 				from = next;
 			}
 		}

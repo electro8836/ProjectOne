@@ -113,6 +113,12 @@ namespace ProjectOne.Unit.Stats
 		// 최종 스탯에 클램프를 1회 적용한다. Min/Max 가 0이면 그 방향의 제한이 없다.
 		public static float ApplyClamp(Stat stat, float value)
 		{
+			return ApplyClamp(stat, value, 0f);
+		}
+
+		// 상한을 extraMax 만큼 늘려 클램프한다 — 상한 자체를 올리는 스탯(공격 속도 상한 증가)용.
+		public static float ApplyClamp(Stat stat, float value, float extraMax)
+		{
 			Clamp c;
 			if (_clamps.TryGetValue(stat, out c) == false)
 			{
@@ -124,9 +130,9 @@ namespace ProjectOne.Unit.Stats
 				value = c.min;
 			}
 
-			if (c.max != 0f && value > c.max)
+			if (c.max != 0f && value > c.max + extraMax)
 			{
-				value = c.max;
+				value = c.max + extraMax;
 			}
 
 			return value;

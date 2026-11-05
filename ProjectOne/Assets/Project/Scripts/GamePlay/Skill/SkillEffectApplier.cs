@@ -296,8 +296,7 @@ namespace ProjectOne.Skill
 				return;
 			}
 
-			UnitBase target = pickAliveTarget(targets);
-			launchShot(caster, target, skillId, projectile, p, shotIndex);
+			launchShot(caster, targets, skillId, projectile, p, shotIndex);
 		}
 
 		// ── EffectOrigin 해석 (설계 2.6) ──────────────────────────────
@@ -459,12 +458,28 @@ namespace ProjectOne.Skill
 		static void notifyNormalHit(UnitBase caster, EDT.Skill skillId, Vector2 origin)
 		{
 			// 평타 재타격은 휘두른 평타가 아니다 — 콤보·OnSwingHit 를 다시 돌리면 추가 평타가 추가 평타를 낳는다.
-			if (caster.SkillContainer == null || _normalAttackDepth > 0)
+			// 튕긴 적중도 같은 스윙의 연장이라 다시 알리지 않는다.
+			if (caster.SkillContainer == null || _normalAttackDepth > 0 || _followUpHitDepth > 0)
 			{
 				return;
 			}
 
 			caster.SkillContainer.NotifyNormalAttackHit(skillId, origin);
+		}
+
+		// 후속 적중 중첩 깊이 — 0 보다 크면 지금 나는 피해가 튕긴 투사체의 적중이다(notifyNormalHit 이 본다).
+		static int _followUpHitDepth;
+
+		// 투사체가 튕겨서 맞히는 적중의 앞뒤로 부른다. 평타 적중 통지(콤보·OnSwingHit)와
+		// 온히트(적중 시 발동·흡혈)는 첫 적중에서만 일어난다.
+		public static void EnterFollowUpHit()
+		{
+			_followUpHitDepth++;
+		}
+
+		public static void ExitFollowUpHit()
+		{
+			_followUpHitDepth--;
 		}
 
 		static bool dealDamage(UnitBase caster, UnitBase target, EDT.Skill skillId, Table_SkillEffect.Row row, in DamageParams p)
@@ -476,7 +491,10 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			DamageCalculator.Result result = DamageCalculator.Calculate(caster, target, p.ScaleStat, p.Ratio, p.FlatValue, row.OnHitTrigger,
+			// 튕긴 투사체의 후속 적중은 온히트(적중 시 발동·흡혈)를 켜지 않는다 — 한 발이 연달아 발동을 일으키지 않게.
+			bool triggersOnHit = row.OnHitTrigger == true && _followUpHitDepth == 0;
+
+			DamageCalculator.Result result = DamageCalculator.Calculate(caster, target, p.ScaleStat, p.Ratio, p.FlatValue, triggersOnHit,
 				isNormalAttackDamage(caster, skillId));
 			if (result.IsAvoided == true)
 			{
@@ -506,7 +524,7 @@ namespace ProjectOne.Skill
 			info.HitPoint = target.HitCenter;
 			info.IsCritical = result.IsCritical;
 			info.SkillID = (int)skillId;
-			info.TriggersOnHit = row.OnHitTrigger;
+			info.TriggersOnHit = triggersOnHit;
 
 			IDamageable damageable = target as IDamageable;
 			if (damageable != null)
@@ -521,7 +539,7 @@ namespace ProjectOne.Skill
 			}
 
 			// 온히트 계열 발동 — 다단히트에는 TRUE 를 넣지 않는 것이 데이터 규약이다 (설계 5.7)
-			if (row.OnHitTrigger == true && caster.SkillContainer != null)
+			if (triggersOnHit == true && caster.SkillContainer != null)
 			{
 				// 발동될 스킬이 좌표 고정형이면 이 대상 자리에서 터진다.
 				Vector2 hitOrigin = target.HitCenter;
@@ -718,21 +736,19 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
-			UnitBase target = pickAliveTarget(targets);
-
 			// Interval 이 0이면 Count 개를 같은 프레임에 부채꼴로 뿌린다.
 			if (p.Interval <= 0f)
 			{
 				for (int i = 0; i < p.Count; i++)
 				{
-					launchShot(caster, target, skillId, projectile, p, i);
+					launchShot(caster, targets, skillId, projectile, p, i);
 				}
 
 				return true;
 			}
 
 			// Interval 이 있으면 한 발씩 순차 발사한다. 2발 이후는 예약 큐가 맡는다.
-			launchShot(caster, target, skillId, projectile, p, 0);
+			launchShot(caster, targets, skillId, projectile, p, 0);
 
 			if (p.Count > 1 && caster.SkillContainer != null)
 			{
@@ -744,11 +760,15 @@ namespace ProjectOne.Skill
 		}
 
 		// shotIndex 로 부채꼴 각도를 계산한다 — 순차 발사에서도 각도가 유지되어야 한다.
-		static void launchShot(UnitBase caster, UnitBase target, EDT.Skill skillId,
+		// 부채꼴의 기준 방향은 첫 대상이고, 유도 대상은 탐색된 적에게 발사 회차 순으로 나눠 준다.
+		static void launchShot(UnitBase caster, List<UnitBase> targets, EDT.Skill skillId,
 			Table_Projectile.Row projectile, in ProjectileParams p, int shotIndex)
 		{
+			UnitBase aim = pickAliveTarget(targets);
+			UnitBase target = pickAliveTargetAt(targets, shotIndex);
+
 			Vector2 origin = caster.HitCenter;
-			Vector2 baseDir = resolveFacing(caster, target, origin);
+			Vector2 baseDir = resolveFacing(caster, aim, origin);
 
 			float half = (p.Count - 1) * 0.5f;
 			float angle = (p.Angle != 0f) ? (shotIndex - half) * p.Angle : 0f;
@@ -766,7 +786,52 @@ namespace ProjectOne.Skill
 			data.pierce = projectile.Pierce;
 			data.bounce = projectile.Bounce;
 
+			// 평타 투사체 튕김 증가 (수리검 연환) — 평타 피해를 내는 투사체에만 붙는다.
+			if (caster.Stats != null && isNormalAttackDamage(caster, skillId) == true)
+			{
+				data.bounce += Mathf.RoundToInt(caster.Stats.GetStat(Stat.Stat_NormalAttackBounce));
+			}
+
 			ProjectileManager.Instance.Launch(projectile.PrefabPath, data);
+		}
+
+		// 살아 있는 대상 중 index 번째(대상 수로 순환) — 여러 발을 주변 적에게 번갈아 배정한다.
+		static UnitBase pickAliveTargetAt(List<UnitBase> targets, int index)
+		{
+			if (targets == null)
+			{
+				return null;
+			}
+
+			int alive = 0;
+			for (int i = 0; i < targets.Count; i++)
+			{
+				if (targets[i] != null && targets[i].IsDead == false && targets[i].IsTargetable == true)
+				{
+					alive++;
+				}
+			}
+
+			if (alive == 0)
+			{
+				return null;
+			}
+
+			int order = index % alive;
+			for (int i = 0; i < targets.Count; i++)
+			{
+				if (targets[i] != null && targets[i].IsDead == false && targets[i].IsTargetable == true)
+				{
+					if (order == 0)
+					{
+						return targets[i];
+					}
+
+					order--;
+				}
+			}
+
+			return null;
 		}
 
 		static UnitBase pickAliveTarget(List<UnitBase> targets)

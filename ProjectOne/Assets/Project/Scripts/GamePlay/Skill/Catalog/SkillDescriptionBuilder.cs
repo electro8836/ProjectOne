@@ -306,15 +306,15 @@ namespace ProjectOne.Skill
 		{
 			switch (type)
 			{
-				case SkillCastingTypes.Passive:   return "[패시브] ";
+				case SkillCastingTypes.Passive:   return "[상시] ";
 				case SkillCastingTypes.Aura:      return "[오라] ";
-				case SkillCastingTypes.OnHit:     return "[적중 시] ";
+				case SkillCastingTypes.OnHit:     return "[평타 적중 시] ";
 				case SkillCastingTypes.OnCrit:    return "[치명타 시] ";
 				case SkillCastingTypes.OnCombo:   return "[연타 시] ";
 				case SkillCastingTypes.OnKill:    return "[처치 시] ";
 				case SkillCastingTypes.OnDamaged: return "[피격 시] ";
 				case SkillCastingTypes.OnLowHP:   return "[체력 부족 시] ";
-				case SkillCastingTypes.OnSwingHit: return "[평타 적중 시] ";
+				case SkillCastingTypes.OnSwingHit: return "[스윙 시] ";
 				case SkillCastingTypes.OnBlock:   return "[막기 성공 시] ";
 				case SkillCastingTypes.OnEvade:   return "[회피 성공 시] ";
 				default:                          return string.Empty;
@@ -333,6 +333,8 @@ namespace ProjectOne.Skill
 					return "전방 " + row.ScanRange.ToString("0.##") + " 직선상의 대상에게";
 				case SkillScanTypes.Target:
 					return "사거리 " + row.ScanRange.ToString("0.##") + " 내 대상에게";
+				case SkillScanTypes.RandomTarget:
+					return "사거리 " + row.ScanRange.ToString("0.##") + " 내 무작위 대상에게";
 				default:
 					return string.Empty;
 			}

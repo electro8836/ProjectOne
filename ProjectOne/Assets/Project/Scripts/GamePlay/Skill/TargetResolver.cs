@@ -44,7 +44,7 @@ namespace ProjectOne.Skill
 				Vector2 hitCenter = useOverride ? centerOverride : caster.ScanOrigin;
 				Vector2 facing = useOverride ? facingOverride : GetFacing(caster);
 				IReadOnlyList<UnitBase> all = UnitManager.Instance.All;
-				if (scanType == SkillScanTypes.Target)
+				if (scanType == SkillScanTypes.Target || scanType == SkillScanTypes.RandomTarget)
 				{
 					// 대상 수 제한은 Target 전용이다. 범위 공격은 범위 안을 전부 타격한다 (설계 2.4).
 					int count = (scanParam < 1f) ? 1 : (int)scanParam;
@@ -67,8 +67,28 @@ namespace ProjectOne.Skill
 						}
 					}
 
-					// 가장 가까운 count 명을 앞쪽으로 부분 선택정렬 (후보가 적으면 있는 만큼만)
 					int select = (count < _scratch.Count) ? count : _scratch.Count;
+
+					// 무작위 대상 — 후보 중 count 명을 무작위로 앞쪽에 모은다 (부분 Fisher-Yates)
+					if (scanType == SkillScanTypes.RandomTarget)
+					{
+						for (int k = 0; k < select; k++)
+						{
+							int pick = Random.Range(k, _scratch.Count);
+							UnitBase tmpUnit = _scratch[k];
+							_scratch[k] = _scratch[pick];
+							_scratch[pick] = tmpUnit;
+						}
+
+						if (_scratch.Count > select)
+						{
+							_scratch.RemoveRange(select, _scratch.Count - select);
+						}
+
+						return _scratch;
+					}
+
+					// 가장 가까운 count 명을 앞쪽으로 부분 선택정렬 (후보가 적으면 있는 만큼만)
 					for (int k = 0; k < select; k++)
 					{
 						int minIdx = k;

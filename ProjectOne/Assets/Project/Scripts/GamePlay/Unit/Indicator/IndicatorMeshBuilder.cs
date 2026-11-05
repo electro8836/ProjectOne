@@ -16,6 +16,7 @@ namespace ProjectOne.Unit
 		{
 			{ SkillScanTypes.Circle, new CircleMeshBuilder() },
 			{ SkillScanTypes.Target, new TargetMeshBuilder() },
+			{ SkillScanTypes.RandomTarget, new TargetMeshBuilder() },
 			{ SkillScanTypes.Sector, new SectorMeshBuilder() },
 			{ SkillScanTypes.Line,   new LineMeshBuilder() },
 		};

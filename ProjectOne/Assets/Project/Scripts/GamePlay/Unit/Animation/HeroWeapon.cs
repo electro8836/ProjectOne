@@ -31,7 +31,8 @@ namespace ProjectOne.Unit
 		// 공격 클립이 키를 잡는다 — 1 이면 위쪽(BackAngle 이상)으로 공격할 때 무기 FX 를 무기 위·몸 아래에 그린다(태도)
 		private static readonly int HashWeaponFxBehindUp = Animator.StringToHash("WeaponFxBehindUp");
 
-		// 무기 클립이 키를 잡는다 — 0 보다 크면 각도 규칙의 몸 뒤 기준각을 BackAngle 대신 이 값으로 쓴다(태도 Idle 75)
+		// 무기 클립이 키를 잡는다 — 0 보다 크면 각도 규칙의 몸 뒤 기준각을 BackAngle 대신 이 값으로 쓴다(태도 Idle 75).
+		// 음수면 규칙을 뒤집어 그 절댓값 이상 아래를 볼 때만 몸 앞에 그린다(수리검 -45)
 		private static readonly int HashWeaponBackAngle = Animator.StringToHash("WeaponBackAngle");
 
 		private const string WeaponLayerName = "Weapon";
@@ -92,7 +93,7 @@ namespace ProjectOne.Unit
 		[SerializeField] private float _swayRecoverTime = 0.1f;
 
 		// 앞뒤 판정 — 클립이 Model 의 sortingOrder 를 정렬 힌트로 키를 잡는다.
-		// 양수 = 무조건 몸 앞, 음수 = 무조건 몸 뒤, 0 = 조준각 규칙(BackAngle — 클립이 WeaponBackAngle 을 잡으면 그 값 — 아래면 뒤)
+		// 양수 = 무조건 몸 앞, 음수 = 무조건 몸 뒤, 0 = 조준각 규칙(BackAngle — 클립이 WeaponBackAngle 을 잡으면 그 값 — 아래면 뒤, WeaponBackAngle 이 음수면 반대)
 		private SpriteRenderer _modelRenderer;
 
 		private int _weaponLayer = -1;
@@ -256,6 +257,7 @@ namespace ProjectOne.Unit
 			else
 			{
 				float backAngle = BackAngle;
+				bool frontBelow = false;
 				if (_hasBackAngleParam == true)
 				{
 					float clipAngle = _animator.GetFloat(HashWeaponBackAngle);
@@ -263,10 +265,23 @@ namespace ProjectOne.Unit
 					{
 						backAngle = clipAngle;
 					}
+					else if (clipAngle < 0f)
+					{
+						// 음수면 규칙을 뒤집는다 — 평소엔 몸 뒤, 조준각이 그 절댓값 이상 아래일 때만 몸 앞(수리검 -45)
+						frontBelow = true;
+						backAngle = -clipAngle;
+					}
 				}
 
-				// 조준각을 아직 못 받았으면(NaN) 앞으로 둔다
-				front = (_lastAngle > backAngle) == false;
+				// 조준각을 아직 못 받았으면(NaN) 기본 규칙은 앞, 뒤집은 규칙은 뒤로 둔다
+				if (frontBelow == true)
+				{
+					front = _lastAngle >= backAngle;
+				}
+				else
+				{
+					front = (_lastAngle > backAngle) == false;
+				}
 			}
 
 			// 몸 뒤는 몸 - 2 — 몸 - 1 은 몸 뒤 모드의 무기 FX 자리(무기 위·몸 아래)

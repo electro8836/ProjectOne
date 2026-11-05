@@ -220,6 +220,13 @@ namespace ProjectOne.Unit
 			applyInherit(_row.InheritStatType_1, _row.InheritStatRatio_1);
 			applyInherit(_row.InheritStatType_2, _row.InheritStatRatio_2);
 
+			// 주인의 소환물 치명타 계승(소총 전술 연동) 비율로 치명타 확률·피해량을 따라간다.
+			// 계승이 0이면 Base 도 0이 된다 — 확률 0, 피해량은 스탯 하한(MinValue)으로 소환물 기본값과 같다.
+			// 풀에서 재사용되는 소환물이라 계승이 빠졌을 때도 매번 덮어써야 지난 값이 남지 않는다.
+			float critInherit = _owner.Stats.GetStat(Stat.Stat_SummonCritInherit);
+			setInheritedBase(Stat.Stat_CritRate, critInherit);
+			setInheritedBase(Stat.Stat_CritDamage, critInherit);
+
 			// MaxHp 상속으로 최대치가 바뀌면 UnitBase.tickHpNotify 가 다음 틱에 비율을 맞춘다.
 			// 여기서 또 부르면 이중 적용된다.
 		}
@@ -231,6 +238,12 @@ namespace ProjectOne.Unit
 				return;
 			}
 
+			setInheritedBase(statType, ratio);
+		}
+
+		// 비율이 0이어도 Base 를 0으로 덮는다 — 꺼진 계승을 되돌릴 때 쓴다.
+		private void setInheritedBase(Stat statType, float ratio)
+		{
 			StatDetail detail;
 			if (StatCatalog.TryGetBaseDetail(statType, out detail) == false)
 			{

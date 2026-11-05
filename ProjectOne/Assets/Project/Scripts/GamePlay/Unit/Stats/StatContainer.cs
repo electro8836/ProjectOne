@@ -188,6 +188,69 @@ namespace ProjectOne.Unit.Stats
 		// 최종 스탯 — 공식 적용 후 Min/Max 클램프를 딱 한 번 적용한다.
 		public float GetStat(Stat stat)
 		{
+			if (stat == Stat.Stat_AtkSpeed)
+			{
+				return getAtkSpeed();
+			}
+
+			if (stat == Stat.Stat_CritDamage)
+			{
+				return getCritDamage();
+			}
+
+			return getCached(stat);
+		}
+
+		// 공격 속도 — 상한이 상한 증가 스탯만큼 늘어난다.
+		// 상한 증가가 따로 바뀌어도 맞게 나오도록 캐시에는 상한 적용 전 값을 두고 조회마다 상한을 건다.
+		float getAtkSpeed()
+		{
+			float raw = 0f;
+			Bucket b;
+			if (_buckets.TryGetValue(Stat.Stat_AtkSpeed, out b) == true)
+			{
+				if (b.Dirty == true)
+				{
+					b.Cached = compose(b.Base, b.Add, b.Ratio, b.Amp);
+					b.Dirty = false;
+				}
+
+				raw = b.Cached;
+			}
+
+			return StatCatalog.ApplyClamp(Stat.Stat_AtkSpeed, raw, GetStat(Stat.Stat_AtkSpeedCapBonus));
+		}
+
+		// 치명타 피해량 — 치명타 확률이 상한(100%)을 넘은 만큼 전환 비율을 곱해 더한다(소총 초과 조준).
+		// 전환 비율이 없으면 일반 스탯과 같은 경로다.
+		float getCritDamage()
+		{
+			float critDamage = getCached(Stat.Stat_CritDamage);
+			float ratio = GetStat(Stat.Stat_CritOverflowToCritDamage);
+			if (ratio <= 0f)
+			{
+				return critDamage;
+			}
+
+			// 확률 캐시는 상한이 걸린 값이라 넘친 양을 알 수 없다 — 상한 전 값을 직접 합성한다.
+			Bucket b;
+			if (_buckets.TryGetValue(Stat.Stat_CritRate, out b) == false)
+			{
+				return critDamage;
+			}
+
+			float overflow = compose(b.Base, b.Add, b.Ratio, b.Amp) - 1f;
+			if (overflow <= 0f)
+			{
+				return critDamage;
+			}
+
+			return critDamage + overflow * ratio;
+		}
+
+		// 일반 스탯 조회 — 합성 후 Min/Max 클램프를 건 값을 캐시한다.
+		float getCached(Stat stat)
+		{
 			Bucket b;
 			if (_buckets.TryGetValue(stat, out b) == false)
 			{

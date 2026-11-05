@@ -262,6 +262,7 @@ namespace ProjectOne.Skill
 				case SkillScanTypes.Sector:	return paramKey == "Angle";
 				case SkillScanTypes.Line:	return paramKey == "Width";
 				case SkillScanTypes.Target:	return paramKey == "MaxTarget";
+				case SkillScanTypes.RandomTarget:	return paramKey == "MaxTarget";
 			}
 
 			return false;

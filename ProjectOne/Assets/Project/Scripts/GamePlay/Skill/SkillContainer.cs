@@ -271,7 +271,22 @@ namespace ProjectOne.Skill
 			}
 
 			bool hasMotion = rt.GetActionTime(useSpeed) > 0f;
-			SkillExecutor.Execute(id, _owner, useSpeed);
+
+			// 평타 대체 — 평타 뒤에 다른 평타가 붙어 있으면 그것이 이번 평타 1회를 대신한다(데드아이 강화 저격탄).
+			// 주기·모션·쿨타임은 원래 평타 것을 그대로 쓰고, 나가는 공격만 바뀐다.
+			// 쏘기 전에 해제한다 — 이 공격의 치명타가 같은 스킬을 다시 붙일 수 있어야 한다(연속 장전).
+			EDT.Skill castId = id;
+			if (rt.IsNormal == true)
+			{
+				SkillRuntime replacement = findNormalReplacement(rt);
+				if (replacement != null)
+				{
+					castId = replacement.Id;
+					Unregister(castId);
+				}
+			}
+
+			SkillExecutor.Execute(castId, _owner, useSpeed);
 
 			// Casting 은 BeginCasting 이 이동/스킬을 이미 잠갔고, 코드 스킬(behavior)은 스스로 이동을 제어한다.
 			// 모션 없는 스킬은 진행 중인 평타의 동작 시간을 덮어쓰지 않는다.
@@ -285,6 +300,26 @@ namespace ProjectOne.Skill
 
 			rt.StartCooldown(getCooldownSpeed(rt, useSpeed));
 			return true;
+		}
+
+		// 기본 평타(가장 먼저 등록된 평타) 뒤에 붙은 평타 — 가장 최근 것을 고른다. 없으면 null.
+		SkillRuntime findNormalReplacement(SkillRuntime basic)
+		{
+			for (int i = _ordered.Count - 1; i >= 0; i--)
+			{
+				SkillRuntime candidate = _ordered[i];
+				if (candidate == basic)
+				{
+					return null;
+				}
+
+				if (candidate.IsNormal == true)
+				{
+					return candidate;
+				}
+			}
+
+			return null;
 		}
 
 		// 직접 눌러 시전할 수 있는 방식인가 — 조건 발동형과 상시형은 제외한다.
@@ -1051,8 +1086,7 @@ namespace ProjectOne.Skill
 		// 광역으로 여러 명을 맞춰도 타격 1회는 1 카운트다 (호출자가 스윙 단위로 부른다).
 		public void NotifyNormalAttackHit(EDT.Skill id, Vector2 origin)
 		{
-			SkillRuntime rt;
-			if (_byId.TryGetValue(id, out rt) == false || rt.IsNormal == false)
+			if (isNormalSkill(id) == false)
 			{
 				return;
 			}
@@ -1062,6 +1096,19 @@ namespace ProjectOne.Skill
 
 			// 스윙 단위 확률 발동 — OnHit 과 달리 맞은 대상 수와 무관하게 스윙당 한 번 굴린다.
 			triggerByChance(SkillCastingTypes.OnSwingHit, origin);
+		}
+
+		// 평타인가 — 대체 평타(강화 저격탄)는 쏘는 순간 해제돼 목록에 없으므로 테이블 분류로 판정한다.
+		bool isNormalSkill(EDT.Skill id)
+		{
+			SkillRuntime rt;
+			if (_byId.TryGetValue(id, out rt) == true)
+			{
+				return rt.IsNormal;
+			}
+
+			ResolvedSkill resolved = _owner.Resolve(id);
+			return resolved != null && resolved.IsValid == true && resolved.Row.SkillCategory == SkillCategoryTypes.Normal;
 		}
 
 		// n번째 평타마다 발동. 카운터는 캐릭터당 1개를 공유하고 각 스킬이 count % n 으로 판정한다.

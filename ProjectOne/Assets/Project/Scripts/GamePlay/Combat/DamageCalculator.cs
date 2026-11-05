@@ -97,6 +97,17 @@ namespace ProjectOne.Combat
 			else
 			{
 				bonus += a.GetStat(Stat.Stat_SkillDamageBonus);
+
+				// 공격 속도 초과분 전환 — 100%를 넘는 공속에 전환율을 곱해 스킬 피해량에 더한다 (수리검 질풍).
+				float toSkill = a.GetStat(Stat.Stat_AtkSpeedToSkillDamage);
+				if (toSkill > 0f)
+				{
+					float overSpeed = a.GetStat(Stat.Stat_AtkSpeed) - 1f;
+					if (overSpeed > 0f)
+					{
+						bonus += overSpeed * toSkill;
+					}
+				}
 			}
 
 			// 보스 보너스 — 대상이 보스 등급일 때만 (몬스터 설계 2장).
