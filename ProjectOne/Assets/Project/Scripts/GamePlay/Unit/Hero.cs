@@ -35,11 +35,17 @@ namespace ProjectOne.Unit
 		// base 가 UnitAnimator 좌우 반전까지 끝낸 뒤에 무기를 돌린다 — 반전 결과로 조준각을 구한다.
 		public override void ManualTick(float dt)
 		{
+			// 공격 모션이 도는 동안 몸 반전을 보류한다(지난 프레임 무기 상태 기준)
+			if (_weapon != null && _animator != null)
+			{
+				_animator.SetFlipHeld(_weapon.HoldsFlip);
+			}
+
 			base.ManualTick(dt);
 
 			if (_weapon != null && _mover != null && IsDead == false)
 			{
-				_weapon.Tick(_mover.Facing, dt);
+				_weapon.Tick(_mover.Facing, _mover.IsFacingLocked, dt);
 			}
 
 			// 정렬은 사망 후에도 몸과 함께 따라가야 하므로 생존과 무관하게 맞춘다

@@ -197,6 +197,12 @@ namespace ProjectOne.UI
 				weapon = (loadout != null) ? loadout.GetEquipped(EquipSlotTypes.Weapon) : null;
 			}
 
+			// 쥐는 자세는 애니메이터와 같은 무기 행을 따른다 — 프리뷰는 공격하지 않아 정면(0도) 오프셋만 쓰인다.
+			if (_weapon != null)
+			{
+				_weapon.SetHoldData(HeroAvatarAspect.ResolveWeaponHold(weapon));
+			}
+
 			Table_Equipment.Row row = (weapon != null) ? weapon.Equipment : null;
 			if (row == null || row.WeaponType == WeaponType.None)
 			{

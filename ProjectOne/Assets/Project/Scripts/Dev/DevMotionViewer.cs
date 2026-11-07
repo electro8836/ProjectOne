@@ -14,6 +14,8 @@ namespace ProjectOne.Dev
 	// 스탯·스킬 컨테이너 없이 UnitAnimator 만 직접 몬다. 공격 배속·주기는 SkillExecutor 와 같은 공식이다:
 	// 주기 = Cooldown ÷ 공속, 무기 클립 배속 = AnimLength ÷ 주기. Cooldown·AnimLength·ComboSteps 는 Skill 테이블 값을 읽는다.
 	// 이동은 제자리 걷기다 — 이동 상태·방향만 만들고 위치는 매 프레임 제자리로 돌린다.
+	// 공격은 인게임(SkillContainer.beginAction)처럼 슬라이더 방향을 보고 동작 시간 동안 조준을 잠근다 —
+	// 그래야 HeroWeapon 이 공격 중 조준각·각도별 오프셋을 쓰고, 끝나면 0도로 돌아오는 모습이 인게임과 같다.
 	//
 	// 버튼·슬라이더는 씬에서 이 컴포넌트의 public 메서드로 직접 연결한다(영구 리스너).
 	public class DevMotionViewer : MonoBehaviour
@@ -24,6 +26,12 @@ namespace ProjectOne.Dev
 			public RuntimeAnimatorController controller;
 
 			public Sprite model;
+
+			// 무기 FX(궤적·섬광) — 인게임에선 장비 행의 WeaponFX 가 고른다
+			public WeaponFxSet fxSet;
+
+			// 쥐는 자세(자세 회전·조준각별 오프셋) — 인게임에선 장비 행의 WeaponHold 가 고른다
+			public WeaponHoldData holdData;
 
 			// 평타 스킬 — 주기·클립 길이·콤보 수를 여기서 읽는다
 			public EDT.Skill attackSkill;
@@ -96,6 +104,9 @@ namespace ProjectOne.Dev
 		private bool _attackQueued;
 
 		private float _cooldownTimer;
+
+		// 남은 동작 시간 — 0 이 되면 조준 잠금을 푼다
+		private float _actionRemaining;
 
 		// 1 = 100%
 		private float _attackSpeed = 1f;
@@ -204,6 +215,15 @@ namespace ProjectOne.Dev
 				_cooldownTimer -= Time.deltaTime;
 			}
 
+			if (_actionRemaining > 0f)
+			{
+				_actionRemaining -= Time.deltaTime;
+				if (_actionRemaining <= 0f)
+				{
+					endAction();
+				}
+			}
+
 			if (_cooldownTimer <= 0f && (_attackQueued == true || _isContinuous == true))
 			{
 				fireAttack();
@@ -223,10 +243,16 @@ namespace ProjectOne.Dev
 			_weaponIndex = index;
 			_attackQueued = false;
 			_cooldownTimer = 0f;
+			endAction();
 
 			WeaponEntry weapon = _weapons[index];
 			_animator.SetController(weapon.controller);
 			_avatar.ApplyWeaponModel(weapon.model);
+			if (_hero.Weapon != null)
+			{
+				_hero.Weapon.SetFxSet(weapon.fxSet);
+				_hero.Weapon.SetHoldData(weapon.holdData);
+			}
 
 			// 컨트롤러 교체는 애니메이터 파라미터를 기본값으로 되돌린다 — 배속을 다시 넣는다
 			applySpeeds();
@@ -409,9 +435,45 @@ namespace ProjectOne.Dev
 			}
 
 			_cooldownTimer = cycle;
+
+			// 인게임은 시전 직전 대상 쪽으로 facing 을 맞춘다 — 여기선 슬라이더 방향이 대상이다.
+			// 연속 공격이면 이전 잠금이 남아 있을 수 있어 풀고 맞춘 뒤 다시 잠근다.
+			_mover.SetFacingLocked(false);
+			_mover.SetFacing(_direction);
+
 			_animator.SetWeaponAttackSpeed(weaponSpeed);
 			_animator.SetComboSteps(row.ComboSteps);
 			_animator.PlayMotion(row.AnimName);
+
+			beginAction(row, cycle);
+		}
+
+		// SkillRuntime.GetActionTime 과 같은 공식 — 모션 재생 시간과 주기 중 짧은 쪽만큼 조준을 잠근다
+		private void beginAction(EDT.Table_Skill.Row row, float cycle)
+		{
+			if (row.AnimLength <= 0f)
+			{
+				return;
+			}
+
+			float animSpeed = Mathf.Clamp(_attackSpeed, ProjectOne.Skill.SkillConstants.ANIM_SPEED_MIN, ProjectOne.Skill.SkillConstants.ANIM_SPEED_MAX);
+			float actionTime = row.AnimLength / animSpeed;
+			if (row.Cooldown > 0f && cycle < actionTime)
+			{
+				actionTime = cycle;
+			}
+
+			_actionRemaining = actionTime;
+			_mover.SetFacingLocked(true);
+		}
+
+		private void endAction()
+		{
+			_actionRemaining = 0f;
+			_mover.SetFacingLocked(false);
+
+			// 잠금 중 슬라이더로 바꾼 방향을 반영한다
+			_mover.SetFacing(_direction);
 		}
 	}
 }

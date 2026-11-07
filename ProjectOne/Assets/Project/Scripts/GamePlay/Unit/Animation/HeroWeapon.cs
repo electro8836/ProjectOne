@@ -6,27 +6,23 @@ namespace ProjectOne.Unit
 	// 히어로 무기 조준·배치. 손에 달지 않고 손이 있을 자리(WeaponAim)에 두고 facing 방향으로 돌린다.
 	//
 	// 계층 역할: WeaponAim(중심·조준 회전, 이 컴포넌트 / 위치 = 흔들림, WeaponSway 레이어)
-	//   → Offset(조준각별 위치, WeaponOffset 레이어) → Motion(자세·공격 모션, Weapon 레이어) → Model(무기 스프라이트, HeroAvatar)
-	// 조준각별 오프셋은 블렌드 트리가 AimAngle 파라미터로 고른다. 이 컴포넌트는 그 값을 넘기기만 한다.
-	// 공격 모션은 각도 하나로 끝난다 — 휘두르는 구간은 클립이 WeaponOffsetOff 를 1 로 키를 잡아 오프셋을 끄고
-	// WeaponAim 기준 절대 위치로 움직인다(판정·궤적과 일치). 반동처럼 손에서의 상대 움직임은 0 으로 두어 오프셋을 유지한다.
-	// 공격 중에도 WeaponAim 은 조준각을 유지한다 — 같은 공격 모션이 바라보는 방향으로 나간다.
-	// WeaponAim 회전은 클립이 키를 잡으면 안 된다(이 컴포넌트가 쓴다). 위치는 흔들림 레이어만 쓰고 공격 중엔 0 이라
-	// 공격 판정·무기 FX(WeaponFX) 기준점이 콜라이더 중심과 어긋나지 않는다.
+	//   → Offset(조준각별 위치, 이 컴포넌트) → Motion(공격 모션, Weapon 레이어) → Model(무기 스프라이트 HeroAvatar / 자세 회전, 이 컴포넌트)
+	// 자세 회전·조준각별 오프셋은 장비의 WeaponHoldData, 무기 FX 스프라이트는 장비의 WeaponFxSet 에서 이 컴포넌트가 고른다.
+	// 클립은 Offset 위치·Model 회전을 키로 잡으면 안 된다(애니메이터가 덮어쓴다). FX 는 WeaponFxFrame 으로 프레임 번호만 잡는다.
+	// 공격 중이 아닐 땐 조준각 0(좌우)만 쓴다. 공격 중엔 조준각으로 WeaponAim 을 돌리고 그 각의 오프셋을 더해
+	// 공격 모션 하나가 각도마다 자연스러운 위치로 나가게 한다. 공격이 끝나면 _returnSpeed 로 0도로 돌아오며 오프셋도 함께 돌아온다.
+	// 공격 클립(Motion)은 0도 오프셋을 뺀 값으로 잡는다 — 0도 공격은 WeaponAim 기준 클립 그대로이고, 다른 각은 0도와의 차이만큼 옮겨진다.
+	// 무기 FX(WeaponFX)는 WeaponAim 바로 아래라 그 차이(오프셋 - 0도 오프셋)만큼 따로 옮긴다 — 칼과 궤적이 어긋나지 않는다.
+	// WeaponAim 회전은 클립이 키를 잡으면 안 된다(이 컴포넌트가 쓴다). 위치는 흔들림 레이어만 쓰고 공격 중엔 0 이다.
 	//
 	// Hero.ManualTick 이 base(UnitAnimator 좌우 반전) 직후 Tick 을 부른다. 반전 결과를 읽어야 각이 맞는다.
 	public class HeroWeapon : MonoBehaviour
 	{
-		private static readonly int HashAimAngle = Animator.StringToHash("AimAngle");
-
 		// AC_Hero Weapon 레이어 공격 상태(WEAPON_ATTACK·_2·_3)의 태그
 		private static readonly int HashAttackTag = Animator.StringToHash("Attack");
 
 		// 총 공격 클립이 1 로 키를 잡는다 — 이 동안 무기 FX(총구 섬광)를 총구에 둔다. 도검은 0(조준 중심)
 		private static readonly int HashWeaponMuzzle = Animator.StringToHash("WeaponMuzzle");
-
-		// 공격 클립이 키를 잡는다 — 1 이면 오프셋을 끈다(오프셋 레이어 가중치 = 1 - 값). 공격 종료 전이 동안엔 1 → 0 으로 섞인다
-		private static readonly int HashWeaponOffsetOff = Animator.StringToHash("WeaponOffsetOff");
 
 		// 공격 클립이 키를 잡는다 — 1 이면 위쪽(BackAngle 이상)으로 공격할 때 무기 FX 를 무기 위·몸 아래에 그린다(태도)
 		private static readonly int HashWeaponFxBehindUp = Animator.StringToHash("WeaponFxBehindUp");
@@ -35,9 +31,10 @@ namespace ProjectOne.Unit
 		// 음수면 규칙을 뒤집어 그 절댓값 이상 아래를 볼 때만 몸 앞에 그린다(수리검 -45)
 		private static readonly int HashWeaponBackAngle = Animator.StringToHash("WeaponBackAngle");
 
-		private const string WeaponLayerName = "Weapon";
+		// 공격 클립이 키를 잡는다 — 장비 WeaponFxSet 의 프레임 번호(-1 = 끔)
+		private static readonly int HashWeaponFxFrame = Animator.StringToHash("WeaponFxFrame");
 
-		private const string OffsetLayerName = "WeaponOffset";
+		private const string WeaponLayerName = "Weapon";
 
 		private const string SwayLayerName = "WeaponSway";
 
@@ -50,7 +47,21 @@ namespace ProjectOne.Unit
 		// 위치(캐릭터 중심축)는 프리팹 값 그대로 두고 회전만 쓴다.
 		[SerializeField] private Transform _weaponAim;
 
+		// 조준각별 오프셋 위치를 쓴다(WeaponAim/Offset)
+		[SerializeField] private Transform _weaponOffset;
+
 		[SerializeField] private Transform _weaponModel;
+
+		// 장착 무기의 자세 데이터 — 없으면 자세 회전·오프셋 0
+		private WeaponHoldData _holdData;
+
+		// 마지막으로 쓴 오프셋. 바뀔 때만 쓴다(_offsetApplied 가 false 면 다시 써야 함)
+		private Vector3 _currentOffset;
+
+		// 무기 FX 위치 — 현재 오프셋과 0도 오프셋의 차이
+		private Vector3 _fxOffset;
+
+		private bool _offsetApplied;
 
 		// 무기 정렬 그룹(WeaponAim). 몸(Body) 그룹과 나눠, 몸 순서를 기준으로 앞뒤만 따로 정한다 —
 		// 몸 앞 구간이면 칼이 닿는 거리 안의 아래쪽(더 가까운) 몬스터보다도 위에 그린다.
@@ -71,6 +82,15 @@ namespace ProjectOne.Unit
 		private bool _hasFxBehindParam;
 
 		private bool _hasBackAngleParam;
+
+		private bool _hasFxFrameParam;
+
+		// 무기 FX 렌더러와 장착 무기의 FX 세트 — 프레임 번호가 바뀔 때만 스프라이트를 쓴다
+		private SpriteRenderer _fxRenderer;
+
+		private WeaponFxSet _fxSet;
+
+		private int _lastFxFrame = int.MinValue;
 
 		// 이번 공격의 무기 FX 를 몸 뒤에 그리는지 — 공격이 시작될 때의 조준각으로 정해 그 공격 동안 고정한다(45도 근처 깜빡임 방지)
 		private bool _fxBehind;
@@ -100,15 +120,8 @@ namespace ProjectOne.Unit
 
 		private int _swayLayer = -1;
 
-		private int _offsetLayer = -1;
-
 		// 마지막으로 쓴 흔들림 레이어 가중치. 바뀔 때만 쓴다(NaN = 다시 써야 함).
 		private float _swayWeight = float.NaN;
-
-		// 마지막으로 쓴 오프셋 레이어 가중치. 바뀔 때만 쓴다(NaN = 다시 써야 함).
-		private float _offsetWeight = float.NaN;
-
-		private bool _hasOffsetOffParam;
 
 		// 지난 프레임의 공격 여부 — 공격이 시작된 프레임을 알아낸다
 		private bool _isAttacking;
@@ -120,7 +133,7 @@ namespace ProjectOne.Unit
 
 		private Vector3 _muzzleLocal;
 
-		// 무기 FX 를 총구로 옮겨 둔 상태 — 끝나면 조준 중심(0)으로 한 번만 되돌린다
+		// 무기 FX 를 총구로 옮겨 둔 상태 — 끝나면 _fxOffset 자리로 한 번만 되돌린다
 		private bool _fxAtMuzzle;
 
 		private int _lastWeaponOrder = int.MinValue;
@@ -128,15 +141,15 @@ namespace ProjectOne.Unit
 		// 컨트롤러가 바뀌면(무기 AOC 교체) 리바인드로 파라미터가 기본값이 된다 — 바뀐 것을 알아채 다시 보낸다.
 		private RuntimeAnimatorController _lastController;
 
-		private bool _hasAimParam;
-
-		// 마지막으로 적용한 조준각. 차이가 이보다 작으면 회전·파라미터 쓰기를 건너뛴다.
+		// 마지막으로 적용한 조준각. 차이가 이보다 작으면 회전·오프셋 쓰기를 건너뛴다.
 		// 트랜스폼은 같은 값을 써도 자식 계층에 변경이 전파되므로 바뀔 때만 쓴다.
 		private float _lastAngle = float.NaN;
 
-		// 갱신 기준 각 — 각이 바뀐 프레임마다 Animator 를 한 번 더 평가하므로(Tick 참고),
-		// 아날로그 입력으로 방향을 틀 때 매 프레임 재평가되지 않게 눈에 띄지 않는 0.5도 단위로만 갱신한다.
+		// 갱신 기준 각 — 아날로그 입력으로 방향을 틀 때 매 프레임 쓰지 않게 눈에 띄지 않는 0.5도 단위로만 갱신한다.
 		private const float AngleEpsilon = 0.5f;
+
+		// 공격이 끝난 뒤 0도로 돌아오는 속도(도/초). 90도를 약 0.15초에 돌아온다
+		[SerializeField] private float _returnSpeed = 600f;
 
 		private void Awake()
 		{
@@ -154,6 +167,7 @@ namespace ProjectOne.Unit
 
 			if (_weaponFx != null)
 			{
+				_fxRenderer = _weaponFx.GetComponent<SpriteRenderer>();
 				_fxGroup = _weaponFx.GetComponent<SortingGroup>();
 				if (_fxGroup != null)
 				{
@@ -169,8 +183,19 @@ namespace ProjectOne.Unit
 		// 그 사이 facing 이 몸 뒤쪽을 가리켜도 무기는 정면 기준 같은 높이를 유지하다가 반전과 함께 넘어간다.
 		// (예전처럼 ±90도로 자르면 지연 구간에 무기가 수직 위/아래로 튀었다가 돌아온다.)
 		// 반전이 제때 끝난 상태에서는 -facing.x * 스케일부호 와 |facing.x| 가 같으므로 결과도 같다.
-		public void Tick(Vector2 facing, float dt)
+		// 조준 잠금이 풀린 공격 모션 꼬리 동안 몸 반전을 보류하게 한다(Hero 가 UnitAnimator 에 넘긴다).
+		// 잠금 중엔 막지 않는다 — 공격 시작 때 몸이 대상 쪽으로 도는 것(평활로 몇 프레임 걸림)을 막으면 안 된다
+		public bool HoldsFlip
 		{
+			get { return _isAttacking == true && _facingLocked == false; }
+		}
+
+		private bool _facingLocked;
+
+		public void Tick(Vector2 facing, bool facingLocked, float dt)
+		{
+			_facingLocked = facingLocked;
+
 			if (_weaponAim == null || _flipRoot == null)
 			{
 				return;
@@ -180,13 +205,13 @@ namespace ProjectOne.Unit
 
 			// 이 Tick 은 Animator 평가 뒤라 여기서 바꾼 가중치는 다음 평가부터 반영된다 — 바뀐 프레임에만 0초로 한 번 더 평가해 맞춘다.
 			bool swayStarted = updateSway(dt);
-			bool offsetChanged = updateOffset();
-			if (swayStarted == true || offsetChanged == true)
+			if (swayStarted == true)
 			{
 				_animator.Update(0f);
 			}
 
 			updateFxBehind();
+			updateFxSprite();
 			updateWeaponFx();
 
 			if (facing.sqrMagnitude < 1E-06f)
@@ -194,11 +219,35 @@ namespace ProjectOne.Unit
 				return;
 			}
 
+			// 공격 모션 꼬리는 조준 잠금(행동 시간)보다 길다. 잠금이 풀린 뒤 facing 은 이동 방향이라
+			// 그대로 따르면 총구가 이동 방향으로 튄다 — 공격 모션 중 잠금이 풀렸으면 마지막 공격 각을 유지한다
+			if (_isAttacking == true && facingLocked == false)
+			{
+				return;
+			}
+
 			// x 가 0 이상이라 결과는 항상 -90 ~ 90 이다.
 			float angle = Mathf.Atan2(-facing.y, Mathf.Abs(facing.x)) * Mathf.Rad2Deg;
 
+			// 공격 중이 아니면 0도(좌우)만 쓴다. 공격이 끝나면 조준각에서 0도로 _returnSpeed(도/초)로 돌아온다 — 바로 0 으로 두면 무기가 튄다
+			bool returnDone = false;
+			if (_isAttacking == false)
+			{
+				if (float.IsNaN(_lastAngle) == true)
+				{
+					angle = 0f;
+				}
+				else
+				{
+					angle = Mathf.MoveTowards(_lastAngle, 0f, _returnSpeed * dt);
+				}
+
+				// 마지막 한 걸음은 0.5도보다 작을 수 있다 — 0 에 닿는 프레임은 건너뛰지 않는다
+				returnDone = angle == 0f && _lastAngle != 0f;
+			}
+
 			// 정지·직진·시전 고정 중에는 각이 그대로다 — 방향을 틀 때만 아래를 수행한다.
-			if (Mathf.Abs(angle - _lastAngle) < AngleEpsilon)
+			if (returnDone == false && Mathf.Abs(angle - _lastAngle) < AngleEpsilon)
 			{
 				return;
 			}
@@ -208,13 +257,48 @@ namespace ProjectOne.Unit
 			// 로컬 값이라 좌우 반전은 _flipRoot 가 처리한다.
 			_weaponAim.localRotation = Quaternion.Euler(0f, 0f, angle);
 
-			if (_hasAimParam == true)
-			{
-				_animator.SetFloat(HashAimAngle, angle);
+			// Offset 은 어떤 클립도 키를 잡지 않아 애니메이터 재평가 없이 바로 반영된다.
+			applyOffset(angle);
+		}
 
-				// 이 Tick 은 LateUpdate(UnitManager) 라 Animator 평가가 이미 끝났다 — 그대로 두면 Motion 의 각도별 자세가
-				// 한 프레임 늦게 따라와 WeaponAim 회전과 어긋난다. 각이 바뀐 프레임에만 0초로 한 번 더 평가해 맞춘다.
-				_animator.Update(0f);
+		// 장착 무기의 자세 데이터를 설정한다 — 장비 외형 적용(HeroAvatarAspect)·캐릭터 프리뷰가 부른다.
+		// null 이면 자세 회전·오프셋 0. 자세 회전은 여기서 한 번만 쓰고, 오프셋은 현재 조준각(없으면 0도)으로 바로 맞춘다.
+		public void SetHoldData(WeaponHoldData data)
+		{
+			_holdData = data;
+
+			if (_weaponModel != null)
+			{
+				float pose = (data != null) ? data.PoseRotation : 0f;
+				_weaponModel.localRotation = Quaternion.Euler(0f, 0f, pose);
+			}
+
+			_offsetApplied = false;
+			applyOffset(float.IsNaN(_lastAngle) ? 0f : _lastAngle);
+		}
+
+		// 조준각의 오프셋을 Offset 에 쓰고, 총구에 가 있지 않은 무기 FX 는 0도와의 차이만큼 옮긴다. 바뀔 때만 쓴다.
+		private void applyOffset(float angle)
+		{
+			if (_weaponOffset == null)
+			{
+				return;
+			}
+
+			Vector3 offset = (_holdData != null) ? _holdData.GetOffset(angle) : Vector3.zero;
+			if (_offsetApplied == true && offset == _currentOffset)
+			{
+				return;
+			}
+
+			_offsetApplied = true;
+			_currentOffset = offset;
+			_weaponOffset.localPosition = offset;
+
+			_fxOffset = (_holdData != null) ? offset - _holdData.GetOffset(0f) : Vector3.zero;
+			if (_weaponFx != null && _fxAtMuzzle == false)
+			{
+				_weaponFx.localPosition = _fxOffset;
 			}
 		}
 
@@ -373,7 +457,7 @@ namespace ProjectOne.Unit
 				return;
 			}
 
-			// 초기화 전 Animator 는 parameters 가 비어 있다 — 그때 캐시하면 AimAngle 이 없다고 굳어 버린다. 다음 틱에 다시 본다.
+			// 초기화 전 Animator 는 parameters 가 비어 있다 — 그때 캐시하면 파라미터가 없다고 굳어 버린다. 다음 틱에 다시 본다.
 			if (_animator.isInitialized == false)
 			{
 				return;
@@ -381,34 +465,24 @@ namespace ProjectOne.Unit
 
 			_lastController = _animator.runtimeAnimatorController;
 			_lastAngle = float.NaN;
-			_hasAimParam = false;
 
 			// 컨트롤러 교체는 레이어 가중치도 기본값으로 되돌린다 — 다시 쓰게 한다
 			_weaponLayer = _animator.GetLayerIndex(WeaponLayerName);
 			_swayLayer = _animator.GetLayerIndex(SwayLayerName);
-			_offsetLayer = _animator.GetLayerIndex(OffsetLayerName);
 			_swayWeight = float.NaN;
-			_offsetWeight = float.NaN;
 			_isAttacking = false;
 			_hasMuzzleParam = false;
-			_hasOffsetOffParam = false;
 			_hasFxBehindParam = false;
 			_hasBackAngleParam = false;
+			_hasFxFrameParam = false;
+			_lastFxFrame = int.MinValue;
 
 			AnimatorControllerParameter[] parameters = _animator.parameters;
 			for (int i = 0; i < parameters.Length; i++)
 			{
-				if (parameters[i].nameHash == HashAimAngle)
-				{
-					_hasAimParam = true;
-				}
-				else if (parameters[i].nameHash == HashWeaponMuzzle)
+				if (parameters[i].nameHash == HashWeaponMuzzle)
 				{
 					_hasMuzzleParam = true;
-				}
-				else if (parameters[i].nameHash == HashWeaponOffsetOff)
-				{
-					_hasOffsetOffParam = true;
 				}
 				else if (parameters[i].nameHash == HashWeaponFxBehindUp)
 				{
@@ -417,6 +491,10 @@ namespace ProjectOne.Unit
 				else if (parameters[i].nameHash == HashWeaponBackAngle)
 				{
 					_hasBackAngleParam = true;
+				}
+				else if (parameters[i].nameHash == HashWeaponFxFrame)
+				{
+					_hasFxFrameParam = true;
 				}
 			}
 		}
@@ -465,23 +543,40 @@ namespace ProjectOne.Unit
 			return started;
 		}
 
-		// 공격 클립이 키를 잡은 WeaponOffsetOff 로 오프셋 레이어를 끄고 켠다. 가중치가 바뀌었으면 true.
-		private bool updateOffset()
+		// 장착 무기의 FX 세트를 설정한다 — 장비 외형 적용(HeroAvatarAspect)이 부른다. null 이면 FX 를 내지 않는다.
+		public void SetFxSet(WeaponFxSet set)
 		{
-			if (_offsetLayer < 0 || _hasOffsetOffParam == false)
+			_fxSet = set;
+			_lastFxFrame = int.MinValue;
+		}
+
+		// 클립이 잡은 프레임 번호로 FX 스프라이트를 고른다. 번호가 바뀐 프레임에만 쓴다. 음수는 끔이다.
+		// 전이 중엔 두 클립 값이 섞여 정수가 아닐 수 있다 — 섞인 번호는 엉뚱한 프레임이므로 끈다.
+		private void updateFxSprite()
+		{
+			if (_fxRenderer == null)
 			{
-				return false;
+				return;
 			}
 
-			float weight = 1f - Mathf.Clamp01(_animator.GetFloat(HashWeaponOffsetOff));
-			if (weight == _offsetWeight)
+			int frame = -1;
+			if (_hasFxFrameParam == true)
 			{
-				return false;
+				float value = _animator.GetFloat(HashWeaponFxFrame);
+				int rounded = Mathf.RoundToInt(value);
+				if (Mathf.Abs(value - rounded) < 0.01f)
+				{
+					frame = rounded;
+				}
 			}
 
-			_offsetWeight = weight;
-			_animator.SetLayerWeight(_offsetLayer, weight);
-			return true;
+			if (frame == _lastFxFrame)
+			{
+				return;
+			}
+
+			_lastFxFrame = frame;
+			_fxRenderer.sprite = (_fxSet != null) ? _fxSet.Get(frame) : null;
 		}
 
 		// 총 공격 중이면 무기 FX 를 총구에 붙인다. 반동으로 총이 움직여도 섬광이 총구를 따라간다.
@@ -503,7 +598,7 @@ namespace ProjectOne.Unit
 
 			if (_fxAtMuzzle == true)
 			{
-				_weaponFx.localPosition = Vector3.zero;
+				_weaponFx.localPosition = _fxOffset;
 				_fxAtMuzzle = false;
 			}
 		}

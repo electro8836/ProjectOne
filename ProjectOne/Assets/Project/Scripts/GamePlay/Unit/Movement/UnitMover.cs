@@ -317,6 +317,11 @@ public class UnitMover : MonoBehaviour
 		Facing = direction.normalized;
 	}
 
+	public bool IsFacingLocked
+	{
+		get { return _facingLocked; }
+	}
+
 	// 캐스팅 중 조준 고정 토글 — 잠금 시 SetFacing/자동 facing 갱신을 무시한다
 	public void SetFacingLocked(bool locked)
 	{

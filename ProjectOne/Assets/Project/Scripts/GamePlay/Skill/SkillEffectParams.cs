@@ -83,9 +83,29 @@ namespace ProjectOne.Skill
 		public float FlatValue;
 	}
 
+	// BuffConsume — Count 0 은 전부 소모. DamagePerStack 이 있으면 소모한 중첩 수에 비례한 피해를 대상마다 준다
 	public struct BuffConsumeParams
 	{
 		public EDT.Buff RefID;
+		public int Count;
+		public float DamagePerStack;
+		public Stat ScaleStat;
+	}
+
+	// Execute — 체력 비율이 HpThreshold 이하인 대상에게만 피해
+	public struct ExecuteParams
+	{
+		public float Ratio;
+		public float HpThreshold;
+		public Stat ScaleStat;
+	}
+
+	// BuffStack — 버프를 Count 중첩 한 번에 부여. Count 0 = 최대 중첩까지 채운다
+	public struct BuffStackParams
+	{
+		public EDT.Buff RefID;
+		public float Duration;
+		public int StackMax;
 		public int Count;
 	}
 
@@ -319,10 +339,53 @@ namespace ProjectOne.Skill
 				return false;
 			}
 
+			// 빈 칸은 1중첩, 0 은 전부 소모다.
 			p.Count = readInt(row, "Count", 1);
-			if (p.Count < 1)
+			if (p.Count < 0)
 			{
-				p.Count = 1;
+				p.Count = 0;
+			}
+
+			p.DamagePerStack = readFloat(row, "DamagePerStack", 0f);
+			p.ScaleStat = readEnum(row, "ScaleStat", Stat.None);
+			return true;
+		}
+
+		public static bool TryParseExecute(Table_SkillEffect.Row row, out ExecuteParams p)
+		{
+			p = default(ExecuteParams);
+			if (row == null)
+			{
+				return false;
+			}
+
+			p.Ratio = readFloat(row, "Ratio", 0f);
+			p.HpThreshold = readFloat(row, "HpThreshold", 0f);
+			p.ScaleStat = readEnum(row, "ScaleStat", Stat.None);
+			return true;
+		}
+
+		public static bool TryParseBuffStack(Table_SkillEffect.Row row, out BuffStackParams p)
+		{
+			p = default(BuffStackParams);
+			if (row == null)
+			{
+				return false;
+			}
+
+			p.RefID = readEnum(row, "RefID", EDT.Buff.None);
+			if (p.RefID == EDT.Buff.None)
+			{
+				logMissing(row, "RefID");
+				return false;
+			}
+
+			p.Duration = readFloat(row, "Duration", 0f);
+			p.StackMax = readInt(row, "StackMax", 1);
+			p.Count = readInt(row, "Count", 1);
+			if (p.Count < 0)
+			{
+				p.Count = 0;
 			}
 
 			return true;

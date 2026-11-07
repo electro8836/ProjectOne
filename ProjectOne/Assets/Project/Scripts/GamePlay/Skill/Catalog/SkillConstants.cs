@@ -13,5 +13,11 @@ namespace ProjectOne.Skill
 
 		// ChainEffectIDs 순환 참조 방지 깊이
 		public const int CHAIN_DEPTH_LIMIT = 5;
+
+		// 출혈 — 무기와 무관한 공통 상태이상. 출혈 전용 스탯(최대 중첩·피해량·중첩당 평타 피해)이 이 버프를 가리킨다.
+		public const EDT.Buff BLEED_BUFF = EDT.Buff.BUFF_Bleed;
+
+		// 체력 비율이 이 값 이하인 대상에게 Stat_LowHpTargetDamageBonus 가 붙는다 (단검 처형자)
+		public const float LOW_HP_TARGET_RATIO = 0.5f;
 	}
 }

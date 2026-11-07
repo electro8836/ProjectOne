@@ -15,6 +15,8 @@ namespace EDT {
             public string Model { get; set; } = string.Empty;
             public Skill NormalAttackSkill { get; set; } = Skill.None;
             public string AnimControllerName { get; set; } = string.Empty;
+            public string WeaponFX { get; set; } = string.Empty;
+            public string WeaponHold { get; set; } = string.Empty;
         }
 
         public const string Filename = "edt_equipment.bytes";
@@ -45,6 +47,8 @@ namespace EDT {
                 row.Model = reader.ReadString();
                 row.NormalAttackSkill = (Skill)reader.ReadInt32();
                 row.AnimControllerName = reader.ReadString();
+                row.WeaponFX = reader.ReadString();
+                row.WeaponHold = reader.ReadString();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

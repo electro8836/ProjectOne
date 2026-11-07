@@ -108,7 +108,13 @@ namespace ProjectOne.Skill
 						succeeded = applyCooldownReduce(row, caster);
 						break;
 					case SkillEffectTypes.BuffConsume:
-						succeeded = applyBuffConsume(row, targets);
+						succeeded = applyBuffConsume(row, caster, skillId, targets);
+						break;
+					case SkillEffectTypes.Execute:
+						succeeded = applyExecute(row, caster, skillId, targets);
+						break;
+					case SkillEffectTypes.BuffStack:
+						succeeded = applyBuffStack(row, caster, skillId, targets);
 						break;
 					case SkillEffectTypes.NormalAttack:
 						// 연쇄는 이 효과가 실제로 때린 대상에게 걸어야 해서 applyNormalAttack 이 직접 처리한다.
@@ -643,11 +649,58 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				target.BuffContainer.Apply(p.RefID, p.Duration, p.StackMax, caster, skillId, p.Ratio);
+				target.BuffContainer.Apply(p.RefID, p.Duration, resolveStackMax(p.RefID, p.StackMax, caster), caster, skillId, p.Ratio);
 				anyApplied = true;
 			}
 
 			return anyApplied;
+		}
+
+		// 버프를 여러 중첩 한 번에 건다. Count 0 이면 최대 중첩까지 채운다(이미 꽉 찼으면 지속시간만 되돌린다).
+		static bool applyBuffStack(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets)
+		{
+			BuffStackParams p;
+			if (SkillEffectParams.TryParseBuffStack(row, out p) == false || targets.Count == 0)
+			{
+				return false;
+			}
+
+			int stackMax = resolveStackMax(p.RefID, p.StackMax, caster);
+			bool anyApplied = false;
+			for (int i = 0; i < targets.Count; i++)
+			{
+				UnitBase target = targets[i];
+				if (target == null || target.IsDead == true || target.BuffContainer == null)
+				{
+					continue;
+				}
+
+				int count = p.Count;
+				if (count <= 0)
+				{
+					count = Mathf.Max(1, stackMax - target.BuffContainer.GetStack(p.RefID));
+				}
+
+				for (int n = 0; n < count; n++)
+				{
+					target.BuffContainer.Apply(p.RefID, p.Duration, stackMax, caster, skillId);
+				}
+
+				anyApplied = true;
+			}
+
+			return anyApplied;
+		}
+
+		// 출혈 최대 중첩은 시전자의 Stat_BleedStackMaxBonus 만큼 늘어난다 (단검 깊은 상처).
+		static int resolveStackMax(EDT.Buff buffId, int stackMax, UnitBase caster)
+		{
+			if (buffId != SkillConstants.BLEED_BUFF || stackMax <= 0 || caster.Stats == null)
+			{
+				return stackMax;
+			}
+
+			return stackMax + Mathf.RoundToInt(caster.Stats.GetStat(Stat.Stat_BleedStackMaxBonus));
 		}
 
 		// 영구 StatChange(패시브)는 그 스킬을 등록한 출처로 태깅한다 — 출처가 스킬을 걷어낼 때
@@ -936,7 +989,9 @@ namespace ProjectOne.Skill
 		}
 
 		// 스택 소모에 성공했을 때만 연쇄가 이어진다 — 조건 분기의 게이트다 (설계 5.9).
-		static bool applyBuffConsume(Table_SkillEffect.Row row, List<UnitBase> targets)
+		// Count 0 은 대상마다 걸린 중첩을 전부 소모한다.
+		// DamagePerStack 이 있으면 대상마다 소모한 중첩 수 × 계수의 피해를 그 대상에게 준다 (단검 피의 폭발).
+		static bool applyBuffConsume(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets)
 		{
 			BuffConsumeParams p;
 			if (SkillEffectParams.TryParseBuffConsume(row, out p) == false || targets.Count == 0)
@@ -953,13 +1008,67 @@ namespace ProjectOne.Skill
 					continue;
 				}
 
-				if (target.BuffContainer.TryConsume(p.RefID, p.Count) == true)
+				int count = p.Count;
+				if (count <= 0)
 				{
-					anyConsumed = true;
+					count = target.BuffContainer.GetStack(p.RefID);
+				}
+
+				if (target.BuffContainer.TryConsume(p.RefID, count) == false)
+				{
+					continue;
+				}
+
+				anyConsumed = true;
+				if (p.DamagePerStack > 0f && target.IsDead == false && target != caster)
+				{
+					DamageParams damage = default(DamageParams);
+					damage.Ratio = p.DamagePerStack * count;
+					damage.ScaleStat = p.ScaleStat;
+					damage.HitCount = 1;
+					dealDamage(caster, target, skillId, row, damage);
 				}
 			}
 
 			return anyConsumed;
+		}
+
+		// 체력 비율이 HpThreshold 이하인 대상에게만 피해를 준다 (단검 마무리 일격의 추가 피해).
+		// 앞 효과로 체력이 깎인 뒤의 비율을 본다 — 같은 스킬의 첫 타가 문턱 아래로 떨어뜨리면 추가 피해도 들어간다.
+		static bool applyExecute(Table_SkillEffect.Row row, UnitBase caster, EDT.Skill skillId, List<UnitBase> targets)
+		{
+			ExecuteParams p;
+			if (SkillEffectParams.TryParseExecute(row, out p) == false || targets.Count == 0)
+			{
+				return false;
+			}
+
+			DamageParams damage = default(DamageParams);
+			damage.Ratio = p.Ratio;
+			damage.ScaleStat = p.ScaleStat;
+			damage.HitCount = 1;
+
+			bool anyHit = false;
+			for (int i = 0; i < targets.Count; i++)
+			{
+				UnitBase target = targets[i];
+				if (target == null || target.IsDead == true || target == caster)
+				{
+					continue;
+				}
+
+				if (DamageCalculator.GetHpRatio(target) > p.HpThreshold)
+				{
+					continue;
+				}
+
+				if (dealDamage(caster, target, skillId, row, damage) == true)
+				{
+					anyHit = true;
+				}
+			}
+
+			return anyHit;
 		}
 
 		// ── 연쇄 / 연출 ───────────────────────────────────────────────

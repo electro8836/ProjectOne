@@ -2,6 +2,7 @@ using EDT;
 using UnityEngine;
 using ProjectOne.Unit;
 using ProjectOne.Unit.Stats;
+using ProjectOne.Skill;
 
 namespace ProjectOne.Combat
 {
@@ -93,6 +94,13 @@ namespace ProjectOne.Combat
 			if (isNormalAttack == true)
 			{
 				bonus += a.GetStat(Stat.Stat_NormalAttackDamageBonus);
+
+				// 출혈 중첩 비례 — 대상의 출혈 1중첩마다 평타 피해량을 더한다 (단검 상처 벌리기).
+				float perBleed = a.GetStat(Stat.Stat_NormalDamagePerBleedStack);
+				if (perBleed > 0f && target.BuffContainer != null)
+				{
+					bonus += perBleed * target.BuffContainer.GetStack(SkillConstants.BLEED_BUFF);
+				}
 			}
 			else
 			{
@@ -114,6 +122,13 @@ namespace ProjectOne.Combat
 			if (target.MonsterType == MonsterType.Boss)
 			{
 				bonus += a.GetStat(Stat.Stat_BossDamageBonus);
+			}
+
+			// 저체력 대상 보너스 — 대상 체력 비율이 LOW_HP_TARGET_RATIO 이하일 때만 (단검 처형자).
+			float lowHpBonus = a.GetStat(Stat.Stat_LowHpTargetDamageBonus);
+			if (lowHpBonus > 0f && GetHpRatio(target) <= SkillConstants.LOW_HP_TARGET_RATIO)
+			{
+				bonus += lowHpBonus;
 			}
 
 			damage *= 1f + bonus;
@@ -154,6 +169,23 @@ namespace ProjectOne.Combat
 			}
 
 			return r;
+		}
+
+		// 현재 체력 비율(0~1). 체력 정보가 없으면 1(만피)로 본다 — 처형 조건이 잘못 켜지지 않게.
+		public static float GetHpRatio(UnitBase unit)
+		{
+			if (unit == null || unit.Vitals == null || unit.Stats == null)
+			{
+				return 1f;
+			}
+
+			float maxHp = unit.Stats.GetStat(Stat.Stat_MaxHp);
+			if (maxHp <= 0f)
+			{
+				return 1f;
+			}
+
+			return unit.Vitals.Hp / maxHp;
 		}
 
 		// 회복량 (설계 10.7) — 치명타·방어·감소를 적용하지 않는다.

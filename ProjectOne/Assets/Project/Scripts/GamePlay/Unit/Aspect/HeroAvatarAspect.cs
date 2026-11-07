@@ -42,6 +42,54 @@ namespace ProjectOne.Unit
 
 			// 무기는 코스튬 무기가 장비 무기보다 우선이다.
 			avatar.ApplyWeaponModel(ResolveWeaponModel());
+
+			// 무기 FX(궤적·섬광)와 쥐는 자세는 코스튬과 무관하게 장비 무기가 정한다.
+			if (hero.Weapon != null)
+			{
+				hero.Weapon.SetFxSet(ResolveWeaponFx());
+				hero.Weapon.SetHoldData(ResolveWeaponHold(getEquippedWeapon()));
+			}
+		}
+
+		// 장비 무기의 쥐는 자세 데이터. 미착용이거나 비어 있으면 null.
+		public static WeaponHoldData ResolveWeaponHold(EquipmentInstance weapon)
+		{
+			if (weapon == null || weapon.Equipment == null)
+			{
+				return null;
+			}
+
+			return AvatarCatalog.GetWeaponHold(weapon.Equipment.WeaponHold);
+		}
+
+		// 내 장착 무기. 미착용이면 null.
+		private static EquipmentInstance getEquippedWeapon()
+		{
+			Loadout loadout = Account.Instance.Loadout;
+			if (loadout == null)
+			{
+				return null;
+			}
+
+			return loadout.GetEquipped(EquipSlotTypes.Weapon);
+		}
+
+		// 장착 장비 무기의 FX 세트. 미착용이거나 비어 있으면 null.
+		public static WeaponFxSet ResolveWeaponFx()
+		{
+			Loadout loadout = Account.Instance.Loadout;
+			if (loadout == null)
+			{
+				return null;
+			}
+
+			EquipmentInstance weapon = loadout.GetEquipped(EquipSlotTypes.Weapon);
+			if (weapon == null || weapon.Equipment == null)
+			{
+				return null;
+			}
+
+			return AvatarCatalog.GetWeaponFxSet(weapon.Equipment.WeaponFX);
 		}
 
 		public void RemoveFrom(Hero hero)

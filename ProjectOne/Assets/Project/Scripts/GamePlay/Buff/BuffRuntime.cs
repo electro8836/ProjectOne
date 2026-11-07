@@ -216,8 +216,15 @@ namespace ProjectOne.Buff
 
 			UnitBase caster = (Source != null) ? Source : Owner;
 
+			// 출혈 피해는 건 쪽의 Stat_BleedDamageBonus 만큼 커진다 (단검 깊은 상처).
+			float damageScale = 1f;
+			if (Id == SkillConstants.BLEED_BUFF && caster.Stats != null)
+			{
+				damageScale += caster.Stats.GetStat(Stat.Stat_BleedDamageBonus);
+			}
+
 			// 자신을 넘겨 StatChange 모디파이어가 이 버프의 회수 목록에 등록되게 한다.
-			SkillEffectApplier.Apply(effectId, caster, SourceSkill, _selfTarget, 0, buffOwner: this, valueScale: ValueScale);
+			SkillEffectApplier.Apply(effectId, caster, SourceSkill, _selfTarget, 0, buffOwner: this, valueScale: ValueScale, damageScale: damageScale);
 		}
 
 		// BlockFlags 자체가 효과다 — 기절 계열은 EffectID 가 비어 있어도 된다 (설계 8.2).

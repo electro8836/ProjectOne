@@ -267,7 +267,40 @@ namespace ProjectOne.Skill
 
 					Table_Buff.Row buff = Table_Buff.Get(p.RefID);
 					string name = (buff != null && string.IsNullOrEmpty(buff.Name) == false) ? buff.Name : p.RefID.ToString();
-					return name + " " + p.Count + "중첩 소모 시";
+					string amount = (p.Count <= 0) ? "전부" : (p.Count + "중첩");
+					if (p.DamagePerStack > 0f && p.ScaleStat != Stat.None)
+					{
+						return name + " " + amount + " 소모, 1중첩당 " + SkillTextNames.StatName(p.ScaleStat) + "의 "
+							+ (p.DamagePerStack * 100f).ToString("0.##") + "% 피해";
+					}
+
+					return name + " " + amount + " 소모 시";
+				}
+
+				case SkillEffectTypes.Execute:
+				{
+					ExecuteParams p;
+					if (SkillEffectParams.TryParseExecute(row, out p) == false)
+					{
+						return string.Empty;
+					}
+
+					return "체력 " + (p.HpThreshold * 100f).ToString("0.##") + "% 이하인 대상에게 "
+						+ SkillTextNames.StatName(p.ScaleStat) + "의 " + (p.Ratio * 100f).ToString("0.##") + "% 추가 피해";
+				}
+
+				case SkillEffectTypes.BuffStack:
+				{
+					BuffStackParams p;
+					if (SkillEffectParams.TryParseBuffStack(row, out p) == false)
+					{
+						return string.Empty;
+					}
+
+					Table_Buff.Row buff = Table_Buff.Get(p.RefID);
+					string name = (buff != null && string.IsNullOrEmpty(buff.Name) == false) ? buff.Name : p.RefID.ToString();
+					string amount = (p.Count <= 0) ? "최대 중첩까지" : (p.Count + "중첩");
+					return name + " " + amount + " 부여";
 				}
 
 				case SkillEffectTypes.NormalAttack:

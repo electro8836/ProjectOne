@@ -239,11 +239,25 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 히어로가 공격 모션 끝까지 몸을 돌리지 않게 반전을 보류한다
+		private bool _flipHeld;
+
+		public void SetFlipHeld(bool held)
+		{
+			_flipHeld = held;
+		}
+
 		public void SetFacing(Vector2 facing)
 		{
 			// 이동 벡터 x를 시간 기반으로 부드럽게 누적 — 평균 이동 방향은 일관되므로
 			// 평활값 부호는 실제 진행 방향(우회 길찾기 포함)을 따라가되 순간 떨림만 흡수
 			_facingXSmoothed = Mathf.Lerp(_facingXSmoothed, facing.x, Time.deltaTime * FacingSmoothRate);
+
+			// 반전 보류 중(히어로 공격 모션 재생 중)엔 평활값만 쌓고 돌지 않는다 — 풀리면 다음 프레임에 바로 돈다
+			if (_flipHeld == true)
+			{
+				return;
+			}
 
 			// 0 근처(거의 수직 이동)면 마지막 좌우 방향 유지 → 미세 부호반전 플립 방지
 			if (_facingXSmoothed > FacingDeadband)
