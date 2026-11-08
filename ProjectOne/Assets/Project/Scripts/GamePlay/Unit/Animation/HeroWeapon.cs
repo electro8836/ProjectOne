@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -85,12 +86,35 @@ namespace ProjectOne.Unit
 
 		private bool _hasFxFrameParam;
 
-		// 무기 FX 렌더러와 장착 무기의 FX 세트 — 프레임 번호가 바뀔 때만 스프라이트를 쓴다
-		private SpriteRenderer _fxRenderer;
-
+		// 장착 무기의 FX 세트. WeaponFX 자체는 그리지 않고 위치·정렬의 원본으로만 쓴다 — 실제 FX 는 복제해 띄운다(FxTrail).
 		private WeaponFxSet _fxSet;
 
-		private int _lastFxFrame = int.MinValue;
+		// 띄운 FX 하나 — WeaponFX 를 복제해 히어로 루트 아래에 둔다.
+		// 히어로 이동은 따라가고, 조준 회전·좌우 반전은 띄운 순간 값으로 고정한다(다음 공격이 방향을 바꿔도 앞 궤적은 그대로 사라진다).
+		private class FxTrail
+		{
+			public GameObject gameObject;
+
+			public Transform transform;
+
+			public SpriteRenderer renderer;
+
+			public SortingGroup group;
+
+			public int startFrame;
+
+			public int frameCount;
+
+			public int frame;
+
+			public float elapsed;
+		}
+
+		// 띄운 궤적 재사용 목록 — 꺼진 것을 다시 쓰고, 모자랄 때만 늘린다
+		private readonly List<FxTrail> _trails = new List<FxTrail>();
+
+		// 마지막으로 FX 를 띄운 타(WeaponFxSet.GetHit). -1 = 클립이 FX 를 끈 상태
+		private int _lastTrailHit = -1;
 
 		// 이번 공격의 무기 FX 를 몸 뒤에 그리는지 — 공격이 시작될 때의 조준각으로 정해 그 공격 동안 고정한다(45도 근처 깜빡임 방지)
 		private bool _fxBehind;
@@ -167,7 +191,13 @@ namespace ProjectOne.Unit
 
 			if (_weaponFx != null)
 			{
-				_fxRenderer = _weaponFx.GetComponent<SpriteRenderer>();
+				// 원본은 그리지 않는다 — 프리팹에 스프라이트가 남아 있어도 끈다
+				SpriteRenderer fxRenderer = _weaponFx.GetComponent<SpriteRenderer>();
+				if (fxRenderer != null)
+				{
+					fxRenderer.sprite = null;
+				}
+
 				_fxGroup = _weaponFx.GetComponent<SortingGroup>();
 				if (_fxGroup != null)
 				{
@@ -183,18 +213,19 @@ namespace ProjectOne.Unit
 		// 그 사이 facing 이 몸 뒤쪽을 가리켜도 무기는 정면 기준 같은 높이를 유지하다가 반전과 함께 넘어간다.
 		// (예전처럼 ±90도로 자르면 지연 구간에 무기가 수직 위/아래로 튀었다가 돌아온다.)
 		// 반전이 제때 끝난 상태에서는 -facing.x * 스케일부호 와 |facing.x| 가 같으므로 결과도 같다.
-		// 조준 잠금이 풀린 공격 모션 꼬리 동안 몸 반전을 보류하게 한다(Hero 가 UnitAnimator 에 넘긴다).
-		// 잠금 중엔 막지 않는다 — 공격 시작 때 몸이 대상 쪽으로 도는 것(평활로 몇 프레임 걸림)을 막으면 안 된다
+		// 조준이 facing 을 따르지 않는 공격 모션 꼬리 동안 몸 반전을 보류하게 한다(Hero 가 UnitAnimator 에 넘긴다).
+		// 따르는 동안엔 막지 않는다 — 공격 시작 때나 대상 지정 평타 중 몸이 대상 쪽으로 도는 것(평활로 몇 프레임 걸림)을 막으면 안 된다
 		public bool HoldsFlip
 		{
-			get { return _isAttacking == true && _facingLocked == false; }
+			get { return _isAttacking == true && _aimFollows == false; }
 		}
 
-		private bool _facingLocked;
+		private bool _aimFollows;
 
-		public void Tick(Vector2 facing, bool facingLocked, float dt)
+		// aimFollows — 조준 잠금 중이거나 잠그지 않는 행동(대상 지정 평타) 중이라 무기가 facing 을 따라야 하는지(Hero 가 정한다)
+		public void Tick(Vector2 facing, bool aimFollows, float dt)
 		{
-			_facingLocked = facingLocked;
+			_aimFollows = aimFollows;
 
 			if (_weaponAim == null || _flipRoot == null)
 			{
@@ -211,17 +242,20 @@ namespace ProjectOne.Unit
 			}
 
 			updateFxBehind();
-			updateFxSprite();
+			tickTrails(dt);
+
+			// FX 를 띄울 때 무기 FX 의 이번 프레임 위치를 복사하므로 위치를 먼저 맞춘다
 			updateWeaponFx();
+			updateFxSpawn();
 
 			if (facing.sqrMagnitude < 1E-06f)
 			{
 				return;
 			}
 
-			// 공격 모션 꼬리는 조준 잠금(행동 시간)보다 길다. 잠금이 풀린 뒤 facing 은 이동 방향이라
-			// 그대로 따르면 총구가 이동 방향으로 튄다 — 공격 모션 중 잠금이 풀렸으면 마지막 공격 각을 유지한다
-			if (_isAttacking == true && facingLocked == false)
+			// 공격 모션 꼬리는 행동 시간보다 길 수 있다. 행동이 끝난 뒤 facing 은 이동 방향일 수 있어
+			// 그대로 따르면 총구가 이동 방향으로 튄다 — 공격 모션 중 조준을 따르지 않게 됐으면 마지막 공격 각을 유지한다
+			if (_isAttacking == true && aimFollows == false)
 			{
 				return;
 			}
@@ -475,7 +509,7 @@ namespace ProjectOne.Unit
 			_hasFxBehindParam = false;
 			_hasBackAngleParam = false;
 			_hasFxFrameParam = false;
-			_lastFxFrame = int.MinValue;
+			_lastTrailHit = -1;
 
 			AnimatorControllerParameter[] parameters = _animator.parameters;
 			for (int i = 0; i < parameters.Length; i++)
@@ -547,18 +581,14 @@ namespace ProjectOne.Unit
 		public void SetFxSet(WeaponFxSet set)
 		{
 			_fxSet = set;
-			_lastFxFrame = int.MinValue;
+			_lastTrailHit = -1;
 		}
 
-		// 클립이 잡은 프레임 번호로 FX 스프라이트를 고른다. 번호가 바뀐 프레임에만 쓴다. 음수는 끔이다.
-		// 전이 중엔 두 클립 값이 섞여 정수가 아닐 수 있다 — 섞인 번호는 엉뚱한 프레임이므로 끈다.
-		private void updateFxSprite()
+		// 클립이 잡은 프레임 번호가 새 타 구간으로 들어서면 그 타의 FX 를 하나 띄운다. 같은 타 안에서 번호가 넘어가는 것은 무시한다.
+		// 타 사이엔 클립이 -1(끔)을 지나므로 같은 타를 연달아 쳐도 다시 띄운다.
+		// 전이 중엔 두 클립 값이 섞여 정수가 아닐 수 있다 — 섞인 번호는 엉뚱한 타이므로 끔으로 본다.
+		private void updateFxSpawn()
 		{
-			if (_fxRenderer == null)
-			{
-				return;
-			}
-
 			int frame = -1;
 			if (_hasFxFrameParam == true)
 			{
@@ -570,16 +600,116 @@ namespace ProjectOne.Unit
 				}
 			}
 
-			if (frame == _lastFxFrame)
+			int hit = (_fxSet != null) ? _fxSet.GetHit(frame) : -1;
+			if (hit == _lastTrailHit)
 			{
 				return;
 			}
 
-			_lastFxFrame = frame;
-			_fxRenderer.sprite = (_fxSet != null) ? _fxSet.Get(frame) : null;
+			_lastTrailHit = hit;
+			if (hit >= 0)
+			{
+				spawnTrail(_fxSet.GetHitStart(hit), _fxSet.GetHitFrameCount(hit));
+			}
 		}
 
-		// 총 공격 중이면 무기 FX 를 총구에 붙인다. 반동으로 총이 움직여도 섬광이 총구를 따라간다.
+		private void spawnTrail(int startFrame, int frameCount)
+		{
+			if (_weaponFx == null)
+			{
+				return;
+			}
+
+			FxTrail trail = null;
+			for (int i = 0; i < _trails.Count; i++)
+			{
+				if (_trails[i].gameObject.activeSelf == false)
+				{
+					trail = _trails[i];
+					break;
+				}
+			}
+
+			if (trail == null)
+			{
+				trail = createTrail();
+			}
+
+			// 무기 FX 의 지금 월드 자세를 히어로 루트 기준 로컬로 옮긴다.
+			// 좌우 반전(UnitRoot 음수 스케일)은 회전으로 표현되지 않아 행렬 축에서 직접 푼다 — 두 축의 외적 부호가 음수면 반전이다.
+			Matrix4x4 local = transform.worldToLocalMatrix * _weaponFx.localToWorldMatrix;
+			Vector3 axisX = local.GetColumn(0);
+			Vector3 axisY = local.GetColumn(1);
+			float scaleX = axisX.magnitude;
+			if (axisX.x * axisY.y - axisX.y * axisY.x < 0f)
+			{
+				scaleX = -scaleX;
+			}
+
+			float angle = Mathf.Atan2(-axisY.x, axisY.y) * Mathf.Rad2Deg;
+			trail.transform.localPosition = local.GetColumn(3);
+			trail.transform.localRotation = Quaternion.Euler(0f, 0f, angle);
+			trail.transform.localScale = new Vector3(scaleX, axisY.magnitude, 1f);
+
+			// 정렬은 띄운 순간의 무기 FX 값(평소 Effect 레이어, 몸 뒤 모드면 무기 위·몸 아래)을 그대로 쓴다
+			if (trail.group != null && _fxGroup != null)
+			{
+				trail.group.sortingLayerID = _fxGroup.sortingLayerID;
+				trail.group.sortingOrder = _fxGroup.sortingOrder;
+			}
+
+			trail.startFrame = startFrame;
+			trail.frameCount = frameCount;
+			trail.frame = startFrame;
+			trail.elapsed = 0f;
+			trail.renderer.sprite = _fxSet.Get(startFrame);
+			trail.gameObject.SetActive(true);
+		}
+
+		// WeaponFX 를 복제해 렌더러·정렬 그룹 설정을 그대로 물려받는다
+		private FxTrail createTrail()
+		{
+			GameObject go = Instantiate(_weaponFx.gameObject, transform);
+			go.name = "WeaponFXTrail";
+
+			FxTrail trail = new FxTrail();
+			trail.gameObject = go;
+			trail.transform = go.transform;
+			trail.renderer = go.GetComponent<SpriteRenderer>();
+			trail.group = go.GetComponent<SortingGroup>();
+			_trails.Add(trail);
+			return trail;
+		}
+
+		// 띄운 FX 를 실제 시간으로 진행한다 — 세트의 프레임 간격(FrameTime)마다 한 장. 프레임이 바뀔 때만 스프라이트를 쓴다.
+		private void tickTrails(float dt)
+		{
+			for (int i = 0; i < _trails.Count; i++)
+			{
+				FxTrail trail = _trails[i];
+				if (trail.gameObject.activeSelf == false)
+				{
+					continue;
+				}
+
+				trail.elapsed += dt;
+				int step = (_fxSet != null && _fxSet.FrameTime > 0f) ? (int)(trail.elapsed / _fxSet.FrameTime) : trail.frameCount;
+				if (step >= trail.frameCount)
+				{
+					trail.gameObject.SetActive(false);
+					continue;
+				}
+
+				int frame = trail.startFrame + step;
+				if (frame != trail.frame)
+				{
+					trail.frame = frame;
+					trail.renderer.sprite = _fxSet.Get(frame);
+				}
+			}
+		}
+
+		// 총 공격 중이면 무기 FX(원본)를 총구에 붙인다 — 섬광은 쏜 순간의 총구 자리에 띄워져 그 자리에서 재생된다.
 		// 클립이 WeaponFX 위치를 키로 잡지 않으므로(애니메이터가 덮어쓰지 않음) 여기서 쓴 값이 그대로 그려진다.
 		private void updateWeaponFx()
 		{

@@ -292,7 +292,7 @@ namespace ProjectOne.Skill
 			// 모션 없는 스킬은 진행 중인 평타의 동작 시간을 덮어쓰지 않는다.
 			if (_isCasting == false && _activeBehavior == null && hasMotion == true)
 			{
-				beginAction(rt.GetActionTime(useSpeed));
+				beginAction(rt.GetActionTime(useSpeed), rt.ScanType != SkillScanTypes.Target);
 			}
 
 			// 콤보는 여기서 세지 않는다 — 평타가 실제로 적중했을 때
@@ -1002,14 +1002,15 @@ namespace ProjectOne.Skill
 			SkillRuntime rt = GetRuntime(_castingId);
 			if (rt != null)
 			{
-				beginAction(rt.GetAnimPlayTime(_castUseSpeed));
+				beginAction(rt.GetAnimPlayTime(_castUseSpeed), true);
 			}
 		}
 
 		// ── 액션(모션) 잠금 ──────────────────────────────────────────
 
 		// 모션이 도는 동안 조준을 고정한다 — Line/Sector 스킬이 시전 도중 타겟을 따라 휘는 것을 막는다.
-		void beginAction(float actionTime)
+		// 대상 지정(Target) 스킬은 고정하지 않는다(lockFacing=false) — 발사체를 쏘는 소총·수리검 평타가 모션 중에도 다음 대상을 조준하고 있게 한다.
+		void beginAction(float actionTime, bool lockFacing)
 		{
 			if (actionTime <= 0f)
 			{
@@ -1017,7 +1018,7 @@ namespace ProjectOne.Skill
 			}
 
 			_actionRemaining = actionTime;
-			if (_owner.Mover != null)
+			if (lockFacing == true && _owner.Mover != null)
 			{
 				_owner.Mover.SetFacingLocked(true);
 			}

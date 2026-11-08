@@ -17,6 +17,7 @@ namespace ProjectOne.Skill
 		public SkillCastingTypes CastingType { get; private set; }
 		public float CastingParam { get; private set; }	// 의미는 CastingType 이 결정 (설계 2.2)
 		public float AnimLength { get; private set; }	// 클립 실제 길이(공속 1.0 기준)
+		public SkillScanTypes ScanType { get; private set; }
 
 		// 평타 여부 — 구 IsBasicAttack 컬럼이 사라져 SkillCategory 로 판정한다.
 		public bool IsNormal
@@ -53,6 +54,7 @@ namespace ProjectOne.Skill
 			CastingType = row.CastingType;
 			CastingParam = row.CastingParam;
 			AnimLength = row.AnimLength;
+			ScanType = row.ScanType;
 		}
 
 		public bool IsOnCooldown
