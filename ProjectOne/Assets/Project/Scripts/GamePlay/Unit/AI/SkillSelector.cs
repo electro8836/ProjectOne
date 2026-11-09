@@ -19,6 +19,12 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
+			// 히어로는 평타 사거리 안에 적이 있을 때만 스킬을 쓴다 — 사거리 긴 스킬이 평타 없이 혼자 나가지 않게
+			if (self.GetUnitType() == UnitType.Hero && HasEnemyInBasicRange(self, sc) == false)
+			{
+				return;
+			}
+
 			IReadOnlyList<EDT.Skill> all = sc.GetAll();
 			for (int i = 0; i < all.Count; i++)
 			{
@@ -137,6 +143,24 @@ namespace ProjectOne.Unit.AI
 			}
 
 			return sc.TryCast(basic);
+		}
+
+		// 평타 사거리 안에 적이 있는가 — 평타가 없으면 false
+		private static bool HasEnemyInBasicRange(UnitBase self, SkillContainer sc)
+		{
+			EDT.Skill basic = sc.GetBasicAttack();
+			if (basic == EDT.Skill.None)
+			{
+				return false;
+			}
+
+			ResolvedSkill basicResolved = self.Resolve(basic);
+			if (basicResolved == null || basicResolved.IsValid == false)
+			{
+				return false;
+			}
+
+			return HasEnemyInRange(self, basicResolved.Row);
 		}
 
 		// 스킬의 실제 ScanType 범위(caster.Facing 기준) 안에 시전 가능한 적이 1명 이상 있는지 — SkillExecutor 와 동일 경로.

@@ -144,9 +144,15 @@ namespace ProjectOne.Buff
 			if (TickInterval > 0f)
 			{
 				int n = _intervalTimer.Tick(dt, TickInterval);
-				for (int i = 0; i < n; i++)
+				if (n > 0)
 				{
-					applyEffects();
+					SkillEffectApplier.EnterPeriodicTick();
+					for (int i = 0; i < n; i++)
+					{
+						applyEffects();
+					}
+
+					SkillEffectApplier.ExitPeriodicTick();
 				}
 			}
 

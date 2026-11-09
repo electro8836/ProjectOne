@@ -295,6 +295,25 @@ namespace ProjectOne.Unit
 			applyOffset(angle);
 		}
 
+		// 무기 표시 여부 — 사망 시 숨기고 부활 시 다시 보인다(Hero 가 부른다). 숨길 때 떠 있는 FX 도 끈다.
+		public void SetVisible(bool visible)
+		{
+			if (_weaponAim != null && _weaponAim.gameObject.activeSelf != visible)
+			{
+				_weaponAim.gameObject.SetActive(visible);
+			}
+
+			if (visible == true)
+			{
+				return;
+			}
+
+			for (int i = 0; i < _trails.Count; i++)
+			{
+				_trails[i].gameObject.SetActive(false);
+			}
+		}
+
 		// 장착 무기의 자세 데이터를 설정한다 — 장비 외형 적용(HeroAvatarAspect)·캐릭터 프리뷰가 부른다.
 		// null 이면 자세 회전·오프셋 0. 자세 회전은 여기서 한 번만 쓰고, 오프셋은 현재 조준각(없으면 0도)으로 바로 맞춘다.
 		public void SetHoldData(WeaponHoldData data)

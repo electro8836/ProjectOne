@@ -57,6 +57,27 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 사망 모션은 쓰러지는데 무기는 공중에 남으므로 숨긴다
+		protected override void Die()
+		{
+			base.Die();
+
+			if (_weapon != null)
+			{
+				_weapon.SetVisible(false);
+			}
+		}
+
+		public override void OnSpawnReset(Vector3 pos)
+		{
+			base.OnSpawnReset(pos);
+
+			if (_weapon != null)
+			{
+				_weapon.SetVisible(true);
+			}
+		}
+
 		public override UnitType GetUnitType()
 		{
 			return UnitType.Hero;

@@ -19,7 +19,7 @@ namespace ProjectOne.Unit
 
 		public void TakeDamage(in DamageInfo info)
 		{
-			if (_animator != null)
+			if (_animator != null && info.IsPeriodic == false)
 			{
 				_animator.TriggerHitFlash();
 			}
@@ -32,8 +32,11 @@ namespace ProjectOne.Unit
 				_mover.ClearImpulse();
 			}
 
-			// 일반 피격도 매번 Damaged 모션을 낸다 (몬스터는 경직·기절에만 낸다)
-			PlayStaggerMotion();
+			// 일반 피격도 매번 Damaged 모션을 낸다 (몬스터는 경직·기절에만 낸다). 지속 피해 틱은 제외
+			if (info.IsPeriodic == false)
+			{
+				PlayStaggerMotion();
+			}
 		}
 
 		public override void ManualTick(float dt)

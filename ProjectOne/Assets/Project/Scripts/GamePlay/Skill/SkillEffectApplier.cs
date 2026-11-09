@@ -488,6 +488,20 @@ namespace ProjectOne.Skill
 			_followUpHitDepth--;
 		}
 
+		// 지속 피해 중첩 깊이 — 0 보다 크면 지금 나는 피해가 주기 발동 버프(DoT)의 틱이다.
+		static int _periodicTickDepth;
+
+		// 주기 발동 버프가 틱 효과를 적용하는 앞뒤로 부른다. 이 사이의 피해는 피격 연출(히트 플래시)을 내지 않는다.
+		public static void EnterPeriodicTick()
+		{
+			_periodicTickDepth++;
+		}
+
+		public static void ExitPeriodicTick()
+		{
+			_periodicTickDepth--;
+		}
+
 		static bool dealDamage(UnitBase caster, UnitBase target, EDT.Skill skillId, Table_SkillEffect.Row row, in DamageParams p)
 		{
 			// 무적 — 모든 피해가 이 함수를 지난다(단일·다단히트·투사체 착탄·연쇄).
@@ -531,6 +545,7 @@ namespace ProjectOne.Skill
 			info.IsCritical = result.IsCritical;
 			info.SkillID = (int)skillId;
 			info.TriggersOnHit = triggersOnHit;
+			info.IsPeriodic = _periodicTickDepth > 0;
 
 			IDamageable damageable = target as IDamageable;
 			if (damageable != null)

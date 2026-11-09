@@ -24,5 +24,8 @@ namespace ProjectOne.Combat
 		// 이 타격이 온히트 계열(OnHit/OnCrit/Stat_LifeOnHit)을 발동시키는가.
 		// SkillEffect.OnHitTrigger 를 그대로 실어 나른다.
 		public bool TriggersOnHit;
+
+		// 주기 발동 버프(DoT)의 틱 피해인가 — 피격 연출(히트 플래시)을 내지 않는다.
+		public bool IsPeriodic;
 	}
 }

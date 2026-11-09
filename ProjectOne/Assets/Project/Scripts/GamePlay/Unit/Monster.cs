@@ -79,7 +79,7 @@ namespace ProjectOne.Unit
 
 		public void TakeDamage(in DamageInfo info)
 		{
-			if (IsDead == false && _animator != null)
+			if (IsDead == false && _animator != null && info.IsPeriodic == false)
 			{
 				_animator.TriggerHitFlash();
 			}
