@@ -71,9 +71,9 @@ namespace ProjectOne.Unit
 			_alive = 0;
 		}
 
-		// 한 마리를 처치가 아닌 풀 반환으로 걷는다 — 균열 던전에서 도착지점에 닿은 몬스터.
+		// 한 마리를 처치가 아닌 풀 반환으로 걷는다 — 균열 던전에서 도착지점에 닿은 몬스터, 비활성된 구역의 몬스터.
 		// ClearAlive 와 같은 규칙이다: 사망 연출·킬카운트·경험치가 발생하지 않는다.
-		public void RemoveArrived(Monster monster)
+		public void Despawn(Monster monster)
 		{
 			if (monster == null || _active.Remove(monster.GetID()) == false)
 			{

@@ -51,8 +51,8 @@ namespace ProjectOne.Map
 		// 타일이 아니라 오브젝트로 놓인 장애물 — InitializeFlowField 가 사각형을 캐시한다.
 		private MapBlocker[] _blockers;
 
-		// 맵 이동 구역 — 도착 위치를 역방향 포털에서 찾는다.
-		private MapPortal[] _portals;
+		// 구역 관문(장막) — 월드 간 관문의 도착 위치를 역방향 관문에서 찾는다.
+		private ZoneGate[] _gates;
 
 		// 균열 던전 몬스터 이동 경로 — Index 오름차순.
 		private DungeonWaypoint[] _waypoints;
@@ -95,12 +95,12 @@ namespace ProjectOne.Map
 			}
 		}
 
-		public IReadOnlyList<MapPortal> Portals
+		public IReadOnlyList<ZoneGate> Gates
 		{
 			get
 			{
 				ensureMarkers();
-				return _portals;
+				return _gates;
 			}
 		}
 
@@ -126,7 +126,7 @@ namespace ProjectOne.Map
 			_npcPoints = this.GetComponentsInChildren<NpcSpawnPoint>(true);
 			_anchor = this.GetComponentInChildren<MapAnchor>(true);
 			_blockers = this.GetComponentsInChildren<MapBlocker>(true);
-			_portals = this.GetComponentsInChildren<MapPortal>(true);
+			_gates = this.GetComponentsInChildren<ZoneGate>(true);
 			_waypoints = this.GetComponentsInChildren<DungeonWaypoint>(true);
 
 			System.Array.Sort(_slots, compareSlotIndex);
@@ -187,7 +187,7 @@ namespace ProjectOne.Map
 			_boundsReady = true;
 		}
 
-		// 장막(MapPortal) 개폐 후 호출한다 — 활성 블로커를 다시 모으고 경로탐색 통행 배열을 새로 만든다.
+		// 장막(ZoneGate) 개폐 후 호출한다 — 활성 블로커를 다시 모으고 경로탐색 통행 배열을 새로 만든다.
 		// 타일 셀 캐시(_walkable)는 바뀌지 않으므로 그대로 둔다.
 		public void RefreshBlockers()
 		{

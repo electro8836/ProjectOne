@@ -8,25 +8,25 @@ using ProjectOne.Unit;
 
 namespace ProjectOne.Map
 {
-	// 필드 맵의 이동 구역 — 히어로가 사각형 안에 들어오면 목적지 필드로 옮긴다.
+	// 구역 관문 — 목적지 구역이 열리기 전까지 장막으로 길목을 막는다.
 	//
-	// 같은 액트면 순간이동, 다른 액트면 로딩창 후 이동한다(FieldDirector.MoveByPortal 이 분기).
-	// 도착 위치는 목적지 맵에서 "이 필드로 돌아오는 포털"의 ArrivalPoint 다 — 짝 ID 없이 targetFieldId 로 맞춘다.
+	// 목적지 구역(Table_Zone)의 ReqQuestID 를 클리어하지 못했으면 잠긴다. 잠긴 동안은 장막(MapBlocker)이
+	// 길을 막고, 안내 영역(_warningArea)에 들어오면 해금 조건(선행 퀘스트명)을 제한 메시지로 띄운다.
+	// 퀘스트 상태가 바뀔 때마다 다시 평가한다.
 	//
-	// 목적지 필드의 ReqQuestID 를 아직 클리어하지 못했으면 잠긴다. 잠긴 동안은 장막(MapBlocker)이
-	// 길을 막고 구역 진입도 무시한다. 퀘스트 상태가 바뀔 때마다 다시 평가한다.
-	// 잠긴 동안 안내 영역(_warningArea)에 들어오면 해금 조건(선행 퀘스트명)을 제한 메시지로 띄운다.
+	// 같은 월드의 구역은 이어져 있으므로 장막만 쓴다. 이동 구역(_area)은 다른 월드로 넘어가는 관문에만 둔다 —
+	// 열린 관문의 _area 에 들어오면 로딩 후 목적지 월드의 역방향 관문(_arrivalPoint)에 도착한다.
 	//
 	// Physics2D 트리거를 쓰지 않는다 — NpcProximityTrigger 와 같은 이유로 히어로 좌표만 비교한다.
-	public class MapPortal : MonoBehaviour
+	public class ZoneGate : MonoBehaviour
 	{
-		[Tooltip("이동할 필드 (Table_Field.ID)")]
-		[SerializeField] private int _targetFieldId;
+		[Tooltip("이 관문이 여는 구역 (Table_Zone.ID)")]
+		[SerializeField] private int _targetZoneId;
 
-		// 이동 구역. 씬 뷰에서 박스 핸들로 크기를 맞추는 편집 수단일 뿐이다 (MapBlocker 와 같은 규약).
+		[Tooltip("다른 월드로 넘어가는 이동 구역. 같은 월드 안의 관문이면 비워 둔다.")]
 		[SerializeField] private BoxCollider2D _area;
 
-		[Tooltip("목적지 필드에서 이 포털로 돌아온 히어로가 설 자리. 구역 밖에 둬야 도착 즉시 되돌아가지 않는다.")]
+		[Tooltip("다른 월드에서 이 관문으로 돌아온 히어로가 설 자리. 이동 구역 밖에 둬야 도착 즉시 되돌아가지 않는다.")]
 		[SerializeField] private Transform _arrivalPoint;
 
 		[Tooltip("잠긴 동안 켜지는 장막 (검정 스프라이트 + MapBlocker)")]
@@ -40,12 +40,12 @@ namespace ProjectOne.Map
 		// 해금 조건 안내를 띄운 상태. 바뀔 때만 Show/Hide 한다 — 제한 메시지는 Hide 전까지 떠 있다.
 		private bool _warningShown;
 
-		// 구역 안에 있는 동안 켜져 있는 빗장. 벗어났다 다시 들어와야 재발동한다.
+		// 이동 구역 안에 있는 동안 켜져 있는 빗장. 벗어났다 다시 들어와야 재발동한다.
 		private bool _inside;
 
-		public int TargetFieldId
+		public int TargetZoneId
 		{
-			get { return _targetFieldId; }
+			get { return _targetZoneId; }
 		}
 
 		public Vector3 ArrivalPosition
@@ -53,12 +53,7 @@ namespace ProjectOne.Map
 			get { return _arrivalPoint != null ? _arrivalPoint.position : this.transform.position; }
 		}
 
-		private void Reset()
-		{
-			_area = this.GetComponent<BoxCollider2D>();
-		}
-
-		// 맵 인스턴스화 중에 돈다 — 뒤이은 TilemapGrid.InitializeFlowField 가 장막 상태를 그대로 굽는다.
+		// 씬 로드 중에 돈다 — 뒤이은 TilemapGrid.InitializeFlowField 가 장막 상태를 그대로 굽는다.
 		private void Awake()
 		{
 			EventManager.Instance.Subscribe<QuestChangeEvent>(onQuestChanged);
@@ -82,8 +77,13 @@ namespace ProjectOne.Map
 				return;
 			}
 
+			if (_area == null)
+			{
+				return;
+			}
+
 			UnitBase hero = findAliveHero();
-			if (hero == null || isInArea(hero.CachedPos) == false)
+			if (hero == null || BoxArea.Contains(_area, hero.CachedPos) == false)
 			{
 				_inside = false;
 				return;
@@ -96,27 +96,28 @@ namespace ProjectOne.Map
 
 			_inside = true;
 
-			if (FieldDirector.HasInstance == false)
+			if (WorldDirector.HasInstance == false)
 			{
 				return;
 			}
 
-			FieldDirector.Instance.MoveByPortal(_targetFieldId);
+			// 출발 구역은 이 관문의 도착 지점이 놓인 구역이다 — 목적지 월드에서 역방향 관문을 찾는 키가 된다.
+			WorldDirector.Instance.MoveByGate(_targetZoneId, MapManager.Instance.GetMapIdAt(ArrivalPosition));
 		}
 
 		// ── 잠금 ──────────────────────────────────────────────────────
 
-		// 목적지 필드가 열렸는지는 FieldProgress 가 판정한다 — 액트 목록 팝업과 같은 기준이어야 한다.
+		// 목적지 구역이 열렸는지는 ZoneProgress 가 판정한다 — 월드 화면과 같은 기준이어야 한다.
 		private bool evaluateLocked()
 		{
-			Table_Field.Row field = Table_Field.Get(_targetFieldId);
-			if (field == null)
+			Table_Zone.Row zone = Table_Zone.Get(_targetZoneId);
+			if (zone == null)
 			{
-				Debug.LogError($"[MapPortal] Table_Field.Get({_targetFieldId}) == null — {this.name}");
+				Debug.LogError($"[ZoneGate] Table_Zone.Get({_targetZoneId}) == null — {this.name}");
 				return true;
 			}
 
-			return FieldProgress.IsCleared(field) == false;
+			return ZoneProgress.IsOpen(zone) == false;
 		}
 
 		private void applyLock(bool locked)
@@ -134,7 +135,7 @@ namespace ProjectOne.Map
 			}
 		}
 
-		// 해금 조건 안내 — 목적지 필드의 ReqQuestID 퀘스트명을 띄운다.
+		// 해금 조건 안내 — 목적지 구역의 ReqQuestID 퀘스트명을 띄운다.
 		private void setWarning(bool show)
 		{
 			if (_warningShown == show || UIManager.HasInstance == false)
@@ -161,16 +162,16 @@ namespace ProjectOne.Map
 
 		private string buildWarningMessage()
 		{
-			Table_Field.Row field = Table_Field.Get(_targetFieldId);
-			if (field == null)
+			Table_Zone.Row zone = Table_Zone.Get(_targetZoneId);
+			if (zone == null)
 			{
 				return null;
 			}
 
-			Table_Quest.Row quest = Table_Quest.Get(field.ReqQuestID);
+			Table_Quest.Row quest = Table_Quest.Get(zone.ReqQuestID);
 			if (quest == null)
 			{
-				Debug.LogError($"[MapPortal] Table_Quest.Get({field.ReqQuestID}) == null — {this.name}");
+				Debug.LogError($"[ZoneGate] Table_Quest.Get({zone.ReqQuestID}) == null — {this.name}");
 				return null;
 			}
 
@@ -197,23 +198,6 @@ namespace ProjectOne.Map
 
 		// ── 판정 ──────────────────────────────────────────────────────
 
-		// 구역 사각형의 월드 AABB 안인지. 회전은 지원하지 않는다 (MapBlocker.GetWorldRect 와 같은 계산).
-		private bool isInArea(Vector2 pos)
-		{
-			if (_area == null)
-			{
-				return false;
-			}
-
-			Vector3 center = this.transform.TransformPoint(new Vector3(_area.offset.x, _area.offset.y, 0f));
-			Vector3 scale  = this.transform.lossyScale;
-			float halfX = Mathf.Abs(_area.size.x * scale.x) * 0.5f;
-			float halfY = Mathf.Abs(_area.size.y * scale.y) * 0.5f;
-
-			return pos.x >= center.x - halfX && pos.x <= center.x + halfX
-				&& pos.y >= center.y - halfY && pos.y <= center.y + halfY;
-		}
-
 		// 살아 있는 히어로 하나. NpcProximityTrigger.findAliveHero 와 같은 조회 방식이다.
 		private static UnitBase findAliveHero()
 		{
@@ -234,26 +218,19 @@ namespace ProjectOne.Map
 			return null;
 		}
 
-		// 도착 지점을 구역 안에 두는 실수를 씬 뷰에서 바로 보이게 한다.
+#if UNITY_EDITOR
+		// 도착 지점을 이동 구역 안에 두는 실수를 씬 뷰에서 바로 보이게 한다.
 		private void OnDrawGizmos()
 		{
-			if (_area != null)
-			{
-				Gizmos.color = Color.magenta;
-				Vector3 center = this.transform.TransformPoint(new Vector3(_area.offset.x, _area.offset.y, 0f));
-				Vector3 scale  = this.transform.lossyScale;
-				Gizmos.DrawWireCube(center, new Vector3(Mathf.Abs(_area.size.x * scale.x), Mathf.Abs(_area.size.y * scale.y), 0f));
-			}
+			BoxArea.DrawGizmo(_area, Color.magenta);
+			BoxArea.DrawGizmo(_warningArea, Color.yellow);
 
 			if (_arrivalPoint != null)
 			{
 				Gizmos.color = Color.green;
 				Gizmos.DrawWireSphere(_arrivalPoint.position, 0.3f);
 			}
-
-#if UNITY_EDITOR
-			BoxArea.DrawGizmo(_warningArea, Color.yellow);
-#endif
 		}
+#endif
 	}
 }

@@ -12,7 +12,7 @@ namespace ProjectOne.UI
 	// 현재 위치 표시 — 아이콘 + 지역명.
 	//
 	// HeroInfo 와 같은 자율 HUD 위젯이다(MVP 를 쓰지 않는다).
-	//   필드 : Icon_Field + "액트-순서 필드명"   (예: 1-3 이끼 낀 바위굴)
+	//   월드 : Icon_Field + "월드-순서 구역명"   (예: 1-3 후반 협곡)
 	//   던전 : 던전 아이콘 + "던전명 - 단계"      (예: 고블린의 보물창고 - 3)
 	//
 	// 마을에서 숨기는 것은 MainHud 의 ContextGroup 이 맡는다.
@@ -29,7 +29,7 @@ namespace ProjectOne.UI
 
 		private void Awake()
 		{
-			EventManager.Instance.Subscribe<FieldChangedEvent>(onFieldChanged);
+			EventManager.Instance.Subscribe<ZoneChangedEvent>(onZoneChanged);
 			EventManager.Instance.Subscribe<DungeonStageStartedEvent>(onDungeonStageStarted);
 
 			refreshCurrent();
@@ -37,7 +37,7 @@ namespace ProjectOne.UI
 
 		private void OnDestroy()
 		{
-			EventManager.Instance.Unsubscribe<FieldChangedEvent>(onFieldChanged);
+			EventManager.Instance.Unsubscribe<ZoneChangedEvent>(onZoneChanged);
 			EventManager.Instance.Unsubscribe<DungeonStageStartedEvent>(onDungeonStageStarted);
 
 			releaseIcon();
@@ -50,9 +50,9 @@ namespace ProjectOne.UI
 		// 두 디렉터는 씬 수명이라 동시에 존재하지 않는다.
 		private void refreshCurrent()
 		{
-			if (ProjectOne.Field.FieldDirector.HasInstance == true && ProjectOne.Field.FieldDirector.Instance.CurrentFieldId > 0)
+			if (ProjectOne.Field.WorldDirector.HasInstance == true && ProjectOne.Field.WorldDirector.Instance.CurrentZoneId > 0)
 			{
-				showField(ProjectOne.Field.FieldDirector.Instance.CurrentFieldId);
+				showField(ProjectOne.Field.WorldDirector.Instance.CurrentZoneId);
 				return;
 			}
 
@@ -64,9 +64,9 @@ namespace ProjectOne.UI
 
 		// ── 이벤트 ────────────────────────────────────────────────────
 
-		private void onFieldChanged(FieldChangedEvent e)
+		private void onZoneChanged(ZoneChangedEvent e)
 		{
-			showField(e.FieldId);
+			showField(e.ZoneId);
 		}
 
 		private void onDungeonStageStarted(DungeonStageStartedEvent e)
@@ -76,16 +76,16 @@ namespace ProjectOne.UI
 
 		// ── 표시 ──────────────────────────────────────────────────────
 
-		private void showField(int fieldId)
+		private void showField(int zoneId)
 		{
-			Table_Field.Row field = Table_Field.Get(fieldId);
-			if (field == null)
+			Table_Zone.Row zone = Table_Zone.Get(zoneId);
+			if (zone == null)
 			{
-				Debug.LogError($"[MapInfo] Table_Field.Get({fieldId}) == null");
+				Debug.LogError($"[MapInfo] Table_Zone.Get({zoneId}) == null");
 				return;
 			}
 
-			_mapText.text = field.ActID.ToString() + "-" + field.Order.ToString() + " " + field.Name;
+			_mapText.text = zone.WorldID.ToString() + "-" + zone.Order.ToString() + " " + zone.Name;
 			setIconAsync(FieldIconAddress, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 

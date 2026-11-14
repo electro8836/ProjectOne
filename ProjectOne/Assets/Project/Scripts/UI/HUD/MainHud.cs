@@ -30,7 +30,7 @@ namespace ProjectOne.UI
 				return HudContext.Town;
 			}
 
-			if (stateType == typeof(Flow.FieldState))
+			if (stateType == typeof(Flow.WorldState))
 			{
 				return HudContext.Field;
 			}

@@ -22,7 +22,7 @@ namespace ProjectOne.Map
 		// 이전 씬에서 남은 유닛을 걷어낸다. **디렉터가 히어로를 새로 스폰하기 전에 불러야 한다.**
 		//
 		// UnitManager 는 영속이고 컨테이너가 그 자식이라 DontDestroyOnLoad 다 — 씬을 옮겨도 유닛이 살아남는다.
-		// 그런데 TownDirector/FieldDirector 는 진입할 때마다 히어로를 새로 만든다.
+		// 그런데 TownDirector/WorldDirector 는 진입할 때마다 히어로를 새로 만든다.
 		// 이걸 부르지 않으면 마을↔필드를 오갈 때마다 히어로가 한 마리씩 쌓인다.
 		//
 		// 풀 허브를 함께 비우는 이유 — ClearAll 이 Destroy 라서, 풀이 파괴된 인스턴스를 물고 있으면

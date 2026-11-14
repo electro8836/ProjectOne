@@ -118,8 +118,7 @@ namespace ProjectOne.Map
 		// 프리팹에 값을 박아 둔다. 트랜스폼 이동은 OnValidate 가 잡지 못해 Update 로 받는다.
 		//
 		// 맵은 y = 0 에 배치된다는 전제다 (MapManager.LoadMapAsync 는 Vector3.zero,
-		// 필드는 GetFieldOrigin 이 Act 1 에서 y = 0). Act 2 이상은 y 오프셋이 10000 이라
-		// 유닛 sortingOrder 부터 int16 을 넘겨 정렬 자체가 성립하지 않는다 — 별도 문제다.
+		// 월드 맵은 씬에서 원점에 둔다).
 		private void OnValidate()
 		{
 			bakeSortingInEditor();

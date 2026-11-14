@@ -211,7 +211,7 @@ namespace ProjectOne.Dungeon
 
 			for (int i = 0; i < _arrived.Count; i++)
 			{
-				MonsterSpawnManager.Instance.RemoveArrived(_arrived[i]);
+				MonsterSpawnManager.Instance.Despawn(_arrived[i]);
 
 				if (_stopped == false && _life > 0)
 				{

@@ -4,17 +4,18 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_Act
+    public static class Table_World
     {
         public class Row {
             public int ID { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
+            public string SceneName { get; set; } = string.Empty;
         }
 
-        public const string Filename = "edt_act.bytes";
-        public const TableType Type = TableType.TableAct;
+        public const string Filename = "edt_world.bytes";
+        public const TableType Type = TableType.TableWorld;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -37,6 +38,7 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
+                row.SceneName = reader.ReadString();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

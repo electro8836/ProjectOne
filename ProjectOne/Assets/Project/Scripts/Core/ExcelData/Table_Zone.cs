@@ -4,18 +4,18 @@ using System.IO;
 
 namespace EDT {
 
-    public static class Table_Field
+    public static class Table_Zone
     {
         public class Row {
             public int ID { get; set; } = 0;
-            public int ActID { get; set; } = 0;
+            public int WorldID { get; set; } = 0;
             public int Order { get; set; } = 0;
             public string Name { get; set; } = string.Empty;
             public int ReqQuestID { get; set; } = 0;
         }
 
-        public const string Filename = "edt_field.bytes";
-        public const TableType Type = TableType.TableField;
+        public const string Filename = "edt_zone.bytes";
+        public const TableType Type = TableType.TableZone;
         static Dictionary<int, Row> _all = new Dictionary<int, Row>();
 
         public static Row Get( int id )
@@ -35,7 +35,7 @@ namespace EDT {
             try {
                 Row row = new Row();
                 row.ID = reader.ReadInt32();
-                row.ActID = reader.ReadInt32();
+                row.WorldID = reader.ReadInt32();
                 row.Order = reader.ReadInt32();
                 row.Name = reader.ReadString();
                 row.ReqQuestID = reader.ReadInt32();

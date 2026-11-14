@@ -53,7 +53,7 @@ namespace BackendFunction
 					return FuncResult.Error("invalid level " + req.level);
 				}
 
-				if (Table_Field.Get(req.fieldId) == null)
+				if (Table_Zone.Get(req.fieldId) == null)
 				{
 					return FuncResult.Error("invalid field " + req.fieldId);
 				}

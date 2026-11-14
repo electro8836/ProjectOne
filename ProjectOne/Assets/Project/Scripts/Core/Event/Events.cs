@@ -402,15 +402,15 @@ namespace ProjectOne.Event
 		{
 		}
 
-		// 히어로가 있는 필드가 바뀜 (필드 진입 / 같은 액트 내 이동 / 액트 전환).
+		// 히어로가 있는 구역이 바뀜 (월드 진입 / 구역 경계 통과 / 구역 이동).
 		// 같은 상태 안에서의 이동이라 GameStateChangedEvent 로는 잡히지 않는다.
-		public readonly struct FieldChangedEvent
+		public readonly struct ZoneChangedEvent
 		{
-				public readonly int FieldId;
+				public readonly int ZoneId;
 
-				public FieldChangedEvent(int fieldId)
+				public ZoneChangedEvent(int zoneId)
 				{
-						this.FieldId = fieldId;
+						this.ZoneId = zoneId;
 				}
 		}
 

@@ -4,7 +4,7 @@ namespace ProjectOne.Map
 {
 	// BoxCollider2D 로 저작한 사각형 영역의 월드 AABB 판정.
 	//
-	// 콜라이더는 씬 뷰에서 크기를 맞추는 편집 수단일 뿐이다 — Physics2D 는 쓰지 않는다 (MapPortal 과 같은 규약).
+	// 콜라이더는 씬 뷰에서 크기를 맞추는 편집 수단일 뿐이다 — Physics2D 는 쓰지 않는다 (ZoneGate 와 같은 규약).
 	// 회전은 지원하지 않는다.
 	public static class BoxArea
 	{

@@ -20,7 +20,7 @@ namespace ProjectOne.Shared
 	[System.Serializable]
 	public class FieldBossKillRequest
 	{
-		public int fieldId;					// Table_Field ID — 같은 보스라도 필드마다 하루 1회
+		public int fieldId;					// Table_Zone ID — 같은 보스라도 구역마다 하루 1회
 		public int spawnId;					// MonsterSpawn 행 ID (RespawnType.DailyReset)
 		public int monsterId;
 		public int level;

@@ -23,7 +23,7 @@ namespace ProjectOne.UI
 
 	// 계속하기 팝업 표시 데이터.
 	//
-	// **문구와 비용 공식을 여기 팩토리에 모은다.** 호출부(FieldDirector·DungeonDirector)가
+	// **문구와 비용 공식을 여기 팩토리에 모은다.** 호출부(WorldDirector·DungeonDirector)가
 	// 각자 문자열을 들면 같은 문구가 세 군데로 흩어져 한쪽만 고쳐지는 사고가 난다.
 	// 호출부는 ForFieldDeath() 처럼 의도만 적는다.
 	public struct ContinuePopupData

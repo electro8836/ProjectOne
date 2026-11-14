@@ -59,17 +59,17 @@ namespace ProjectOne.Map
 			Debug.LogWarning($"[MapNavigator] 아직 지원하지 않는 이동 대상입니다 — Map {mapId} ({map.MapType})");
 		}
 
-		// 필드 밖(마을)이면 씬 전환, 필드 안이면 씬 전환 없이 이동/교체한다.
-		// Map.ID 와 Field.ID 는 같은 값이다.
-		private static void moveToField(int fieldId, CancellationToken ct)
+		// 월드 밖(마을)이면 월드 씬으로 들어가고, 월드 안이면 WorldDirector 가 같은 월드인지 보고 정한다.
+		// Map.ID 와 Zone.ID 는 같은 값이다.
+		private static void moveToField(int zoneId, CancellationToken ct)
 		{
-			if (FieldDirector.HasInstance == false)
+			if (WorldDirector.HasInstance == false)
 			{
-				GameFlow.Instance.ChangeStateAsync(new FieldState(fieldId)).Forget();
+				GameFlow.Instance.ChangeStateAsync(new WorldState(zoneId)).Forget();
 				return;
 			}
 
-			FieldDirector.Instance.ChangeActAsync(fieldId, ct).Forget();
+			WorldDirector.Instance.MoveToZone(zoneId);
 		}
 
 		// 마을 귀환. 마을은 Map.ID 없이 TownState 로 충분하다 — 마을 맵은 TownDirector 가 테이블에서 찾는다.

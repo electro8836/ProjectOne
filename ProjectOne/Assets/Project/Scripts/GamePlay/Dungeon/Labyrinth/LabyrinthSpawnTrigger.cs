@@ -43,7 +43,7 @@ namespace ProjectOne.Dungeon
 			return BoxArea.Contains(_area, pos);
 		}
 
-		// 장막을 켜고 끈다. 이동 차단은 TilemapGrid 캐시에서 나오므로 바꾼 뒤 다시 굽는다 (MapPortal 과 같은 방식).
+		// 장막을 켜고 끈다. 이동 차단은 TilemapGrid 캐시에서 나오므로 바꾼 뒤 다시 굽는다 (ZoneGate 와 같은 방식).
 		public void SetCurtain(bool active)
 		{
 			if (_curtain == null || _curtain.activeSelf == active)

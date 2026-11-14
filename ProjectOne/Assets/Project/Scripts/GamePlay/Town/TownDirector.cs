@@ -11,7 +11,7 @@ using ProjectOne.Unit;
 
 namespace ProjectOne.Town
 {
-	// 마을(3.Town)의 오케스트레이터. FieldDirector 와 동형이다.
+	// 마을(3.Town)의 오케스트레이터. WorldDirector 와 동형이다.
 	//
 	// 마을도 그리드맵 프리팹이다 — 씬은 비어 있고 코드가 띄운다 (맵 설계 8장).
 	// NPC 배치가 씬 마커를 필요로 하므로 마을 맵이 MapManager 를 거쳐야 마커를 찾을 수 있다.

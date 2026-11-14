@@ -12,12 +12,12 @@ namespace ProjectOne.Field
 {
 	// 필드 몬스터 스폰 + 개체 단위 리젠 (몬스터 설계 8장).
 	//
-	// - **히어로가 있는 필드 하나만** 다룬다. 필드를 떠나면 슬롯을 버리고 새 필드 것으로 갈아끼운다
+	// - **활성 구역(히어로가 있는 구역 + 인접 구역)만** 다룬다. 활성에서 빠지는 구역은 슬롯과 살아있는 개체를 걷는다
 	// - **리젠은 개체 단위다.** Count=3 인 지점에서 하나만 죽으면 그 하나만, 사망 시각 기준으로 그 자리에 다시 뜬다
-	// - 던전에는 리젠이 없다 — 이 클래스는 필드 전용이다
+	// - 던전에는 리젠이 없다 — 이 클래스는 월드 전용이다
 	//
-	// 리젠 시각은 MonsterRespawnClock 이 들고 있다. 슬롯은 필드를 떠나면 사라지지만
-	// 시각은 남아서, 다른 필드를 도는 동안에도 이 필드의 리젠이 흐른다.
+	// 리젠 시각은 MonsterRespawnClock 이 들고 있다. 슬롯은 구역이 비활성되면 사라지지만
+	// 시각은 남아서, 다른 구역을 도는 동안에도 이 구역의 리젠이 흐른다.
 	//
 	// "최소 마릿수 유지" 방식은 쓰지 않는다. 지정된 자리에 뜨고 죽으면 그 자리에 돌아오는 일반적인 방식이다.
 	public sealed class FieldMonsterSpawner : MonoBehaviour
@@ -43,6 +43,7 @@ namespace ProjectOne.Field
 			public Vector3 origin;
 
 			public int instanceId;		// 살아있는 개체. 0이면 비어 있음
+			public Monster monster;		// 살아있는 개체 — 구역이 비활성될 때 풀로 걷는다
 
 			public RespawnTimerLabel label;	// 리젠 대기 중 스폰 위치에 띄운 남은 시간. 없으면 null
 			public string labelTitle;		// 라벨 윗줄 — 색을 입힌 몬스터 이름. 라벨을 쓰는 슬롯만 만든다
@@ -52,6 +53,9 @@ namespace ProjectOne.Field
 
 		// InstanceID → 슬롯. 사망 이벤트에서 O(1) 로 찾는다.
 		private readonly Dictionary<int, Slot> _byInstance = new Dictionary<int, Slot>();
+
+		// 지금 슬롯을 들고 있는 구역 (Table_Zone.ID)
+		private readonly List<int> _activeZoneIds = new List<int>(4);
 
 		private void Awake()
 		{
@@ -63,26 +67,38 @@ namespace ProjectOne.Field
 			EventManager.Instance.Unsubscribe<UnitDiedEvent>(onUnitDied);
 		}
 
-		// 필드 하나의 스폰 포인트를 수집하고, 리젠 시각이 된 슬롯만 스폰한다.
-		// 아직 시각이 안 된 슬롯은 Update 가 때가 되면 채운다.
-		public void BeginField(int fieldId)
+		// 활성 구역을 갈아끼운다 — 빠지는 구역은 슬롯과 개체를 걷고, 새로 드는 구역은 스폰 포인트를 수집한다.
+		// 리젠 시각이 된 슬롯만 바로 스폰하고, 아직 안 된 슬롯은 Update 가 때가 되면 채운다.
+		public void SetActiveZones(IReadOnlyList<int> zoneIds)
 		{
-			Clear();
-
-			int pointCount = collectMap(fieldId);
-			if (pointCount == 0)
+			for (int i = _activeZoneIds.Count - 1; i >= 0; i--)
 			{
-				Debug.LogWarning($"[FieldMonsterSpawner] 필드 {fieldId} 에 MonsterSpawnPoint 가 하나도 없습니다 — 필드가 비어 있습니다.");
+				int zoneId = _activeZoneIds[i];
+				if (containsZone(zoneIds, zoneId) == true)
+				{
+					continue;
+				}
+
+				removeZone(zoneId);
+				_activeZoneIds.RemoveAt(i);
+			}
+
+			for (int i = 0; i < zoneIds.Count; i++)
+			{
+				int zoneId = zoneIds[i];
+				if (_activeZoneIds.Contains(zoneId) == true)
+				{
+					continue;
+				}
+
+				_activeZoneIds.Add(zoneId);
+				if (collectMap(zoneId) == 0)
+				{
+					Debug.LogWarning($"[FieldMonsterSpawner] 구역 {zoneId} 에 MonsterSpawnPoint 가 하나도 없습니다 — 구역이 비어 있습니다.");
+				}
 			}
 
 			spawnReadySlots();
-		}
-
-		// 필드를 떠날 때. 살아있는 개체 회수는 MonsterSpawnManager.ClearAlive 가 하므로 여기서는 슬롯만 버린다.
-		// ClearAlive 는 사망 이벤트를 쏘지 않으니 살아있던 슬롯에는 리젠 기록이 남지 않는다 — 재입장 시 즉시 부활한다.
-		public void EndField()
-		{
-			Clear();
 		}
 
 		public void Clear()
@@ -94,6 +110,44 @@ namespace ProjectOne.Field
 
 			_slots.Clear();
 			_byInstance.Clear();
+			_activeZoneIds.Clear();
+		}
+
+		private static bool containsZone(IReadOnlyList<int> zoneIds, int zoneId)
+		{
+			for (int i = 0; i < zoneIds.Count; i++)
+			{
+				if (zoneIds[i] == zoneId)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		// 구역 하나의 슬롯을 버리고 살아있는 개체를 풀로 걷는다.
+		// 사망 이벤트를 쏘지 않으니 살아있던 슬롯에는 리젠 기록이 남지 않는다 — 다시 활성되면 즉시 부활한다.
+		private void removeZone(int zoneId)
+		{
+			for (int i = _slots.Count - 1; i >= 0; i--)
+			{
+				Slot slot = _slots[i];
+				if (slot.key.MapId != zoneId)
+				{
+					continue;
+				}
+
+				hideLabel(slot);
+
+				if (slot.monster != null && slot.instanceId > 0)
+				{
+					_byInstance.Remove(slot.instanceId);
+					MonsterSpawnManager.Instance.Despawn(slot.monster);
+				}
+
+				_slots.RemoveAt(i);
+			}
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────
@@ -233,7 +287,15 @@ namespace ProjectOne.Field
 				return;
 			}
 
+			// 스폰을 기다리는 동안 구역이 비활성됐다 — 주인 없는 개체가 남지 않게 바로 걷는다.
+			if (_slots.Contains(slot) == false)
+			{
+				MonsterSpawnManager.Instance.Despawn(monster);
+				return;
+			}
+
 			slot.instanceId = monster.GetID();
+			slot.monster = monster;
 			_byInstance[slot.instanceId] = slot;
 
 			// 필드보스 표시 — 처치 보상이 배치 정산 대신 FieldBossKill 로 간다. Field.ID 와 Map.ID 는 같다.
@@ -253,6 +315,7 @@ namespace ProjectOne.Field
 
 			_byInstance.Remove(e.InstanceID);
 			slot.instanceId = 0;
+			slot.monster = null;
 
 			// 일일 리젠은 다음 초기화 시각(06시)에 돌아온다. 서버 기록은 FieldBossReward 가 응답으로 덮는다.
 			if (slot.respawnType == RespawnType.DailyReset)

@@ -145,28 +145,28 @@ namespace ProjectOne.UI
 
 		private WorldInfoData buildInfo()
 		{
-			int actId = FieldProgress.GetCurrentActId();
-			Table_Act.Row act = Table_Act.Get(actId);
+			int worldId = ZoneProgress.GetCurrentWorldId();
+			Table_World.Row world = Table_World.Get(worldId);
 
 			WorldInfoData data;
-			data.actIconAddress = act != null ? act.Icon : string.Empty;
-			data.actName = act != null ? act.Name : string.Empty;
+			data.actIconAddress = world != null ? world.Icon : string.Empty;
+			data.actName = world != null ? world.Name : string.Empty;
 			data.locationName = getLocationName();
-			data.progress = FieldProgress.GetActProgress(actId);
+			data.progress = ZoneProgress.GetWorldProgress(worldId);
 
 			return data;
 		}
 
-		// 필드 안이면 그 필드 이름, 밖이면 마을 이름. 둘 다 못 찾으면 빈 문자열로 두고 표시만 비운다.
+		// 월드 안이면 그 구역 이름, 밖이면 마을 이름. 둘 다 못 찾으면 빈 문자열로 두고 표시만 비운다.
 		private static string getLocationName()
 		{
-			int fieldId = FieldProgress.GetCurrentFieldId();
-			if (fieldId > 0)
+			int zoneId = ZoneProgress.GetCurrentZoneId();
+			if (zoneId > 0)
 			{
-				Table_Field.Row field = Table_Field.Get(fieldId);
-				if (field != null)
+				Table_Zone.Row zone = Table_Zone.Get(zoneId);
+				if (zone != null)
 				{
-					return field.Name;
+					return zone.Name;
 				}
 			}
 

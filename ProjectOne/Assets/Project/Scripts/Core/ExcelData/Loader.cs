@@ -260,22 +260,22 @@ namespace EDT {
             }
             #endregion
 
-            #region Table - Act
+            #region Table - World
             {
-                CurrentFile = Table_Act.Filename;
+                CurrentFile = Table_World.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Act._parser ) == false ) {
+                if( Load( reader, Table_World._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }
             }
             #endregion
 
-            #region Table - Field
+            #region Table - Zone
             {
-                CurrentFile = Table_Field.Filename;
+                CurrentFile = Table_Zone.Filename;
                 reader = open_file_functor( CurrentFile );
-                if( Load( reader, Table_Field._parser ) == false ) {
+                if( Load( reader, Table_Zone._parser ) == false ) {
                     return false;
                 }
                 if( callback != null ) { callback( CurrentFile ); }

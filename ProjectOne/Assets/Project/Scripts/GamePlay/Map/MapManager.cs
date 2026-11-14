@@ -11,18 +11,12 @@ namespace ProjectOne.Map
 {
 	// 맵 로드/수명/플로우필드 질의를 전담하는 전투 수명 매니저.
 	//
-	// 필드(4.Field)는 **액트 하나의 필드 그리드맵을 전부 동시에 로드**하므로 여러 개를 함께 보유한다.
-	// 던전(5.Dungeon)은 단계마다 하나만 쓴다 — 같은 구조로 1개만 로드하면 된다.
-	//
-	// 배치 좌표는 테이블이 아니라 코드가 정한다:
-	//   ( (필드Order - 1) × Spacing,  (액트Order - 1) × Spacing,  0 )
+	// 월드는 씬에 직접 배치된 이어진 맵 하나다 (RegisterWorldMap). 구역 단위 질의는 그 맵의 ZoneArea 가 답한다.
+	// 마을·던전은 맵 프리팹 하나를 Addressable 로 띄운다 (LoadMapAsync).
 	//
 	// 플로우필드 계산(좌표/통행/BFS)만 담당 — "누구를 향해 베이크할지"는 호출자(전투 규칙)가 정한다.
 	public class MapManager : MonoSingleton<MapManager>
 	{
-		// 그리드맵끼리 절대 겹치지 않도록 띄우는 간격
-		public const float MapSpacing = 10000f;
-
 		// 상시 매니저 — 마을·필드·던전이 모두 이 매니저를 거쳐 맵을 띄운다.
 		// 맵 로드와 청소의 유일한 주체이므로 씬과 함께 죽으면 안 된다.
 		protected override bool Persistent => true;
@@ -33,6 +27,7 @@ namespace ProjectOne.Map
 			public GameObject instance;
 			public TilemapGrid grid;
 			public Vector3 origin;
+			public bool sceneOwned;		// 월드 씬에 배치된 맵 — Addressable 인스턴스가 아니므로 해제하지 않는다
 		}
 
 		// Map.ID → 로드된 그리드맵
@@ -46,6 +41,9 @@ namespace ProjectOne.Map
 
 		// 씬에 배치된 컨테이너. 없으면 ensureContainerRoot 가 **활성 씬에** 만든다(매니저 자식이 아니다).
 		private MapContainer _container;
+
+		// 월드 씬의 맵. 월드에 있을 때만 있다 — 구역 단위 질의가 이것을 본다.
+		private WorldMap _world;
 
 		public bool HasMap => _ordered.Count > 0;
 
@@ -79,75 +77,30 @@ namespace ProjectOne.Map
 			return await instantiateAsync(address, Vector3.zero, 0, ct);
 		}
 
-		// 액트 단위 로드 — 그 액트에 속한 Field 전부를 좌표 규칙대로 배치한다.
-		public async UniTask<bool> LoadActAsync(int actId, CancellationToken ct = default)
+		// 월드 맵 등록 — 월드 씬에 직접 배치된 맵을 쓴다. 로드도 해제도 씬이 맡는다.
+		// 구역 질의(스폰·NPC·시작 지점·좌표→구역)는 이후 _world 의 ZoneArea 로 답한다.
+		public bool RegisterWorldMap(WorldMap world)
 		{
 			UnloadAll();
 
-			Table_Act.Row act = Table_Act.Get(actId);
-			if (act == null)
+			if (world == null || world.Grid == null)
 			{
-				Debug.LogError($"[MapManager] Table_Act.Get({actId}) == null");
+				Debug.LogError("[MapManager] WorldMap 또는 TilemapGrid 가 없습니다 — 월드 씬 구성을 확인하세요.");
 				return false;
 			}
 
-			List<Table_Field.Row> fields = new List<Table_Field.Row>();
-			Dictionary<int, Table_Field.Row> all = Table_Field.All();
-			Dictionary<int, Table_Field.Row>.Enumerator e = all.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				if (e.Current.Value.ActID == actId)
-				{
-					fields.Add(e.Current.Value);
-				}
-			}
+			world.Grid.InitializeFlowField();
 
-			if (fields.Count == 0)
-			{
-				Debug.LogError($"[MapManager] 액트 {actId} 에 속한 Field 가 없습니다.");
-				return false;
-			}
+			Entry entry = new Entry();
+			entry.mapId = 0;
+			entry.instance = world.gameObject;
+			entry.grid = world.Grid;
+			entry.origin = world.transform.position;
+			entry.sceneOwned = true;
 
-			bool anyLoaded = false;
-			for (int i = 0; i < fields.Count; i++)
-			{
-				Table_Field.Row field = fields[i];
-				Vector3 origin = GetFieldOrigin(act.ID, field.Order);
-
-				// Field 는 Map 과 ID 를 공유한다 (맵 설계 8장).
-				bool ok = await loadOneAsync(field.ID, origin, ct);
-				anyLoaded |= ok;
-			}
-
-			return anyLoaded;
-		}
-
-		// 배치 좌표 규칙 — 액트는 Y축, 필드는 X축으로 나열한다.
-		// 액트는 ID 가 곧 진행 순서다 (Act 테이블에 Order 컬럼이 없다).
-		public static Vector3 GetFieldOrigin(int actId, int fieldOrder)
-		{
-			float x = (fieldOrder - 1) * MapSpacing;
-			float y = (actId - 1) * MapSpacing;
-			return new Vector3(x, y, 0f);
-		}
-
-		// Map.ID 로 그 맵이 배치된 원점을 돌려준다. 로드돼 있지 않으면 테이블에서 계산한다.
-		public Vector3 GetOriginOfMap(int mapId)
-		{
-			Entry entry;
-			if (_byMapId.TryGetValue(mapId, out entry) == true)
-			{
-				return entry.origin;
-			}
-
-			Table_Field.Row field = Table_Field.Get(mapId);
-			if (field == null)
-			{
-				return Vector3.zero;
-			}
-
-			Table_Act.Row act = Table_Act.Get(field.ActID);
-			return GetFieldOrigin(act != null ? act.ID : 1, field.Order);
+			_ordered.Add(entry);
+			_world = world;
+			return true;
 		}
 
 		private async UniTask<bool> loadOneAsync(int mapId, Vector3 origin, CancellationToken ct)
@@ -294,7 +247,7 @@ namespace ProjectOne.Map
 		private static bool usesMap(System.Type stateType)
 		{
 			return stateType == typeof(Flow.TownState)
-				|| stateType == typeof(Flow.FieldState)
+				|| stateType == typeof(Flow.WorldState)
 				|| stateType == typeof(Flow.DungeonState);
 		}
 
@@ -304,12 +257,18 @@ namespace ProjectOne.Map
 			// 해제해야 한다. ReleaseInstance 가 파괴 여부를 구분해 처리한다.
 			for (int i = 0; i < _ordered.Count; i++)
 			{
+				if (_ordered[i].sceneOwned == true)
+				{
+					continue;
+				}
+
 				AddressableHelper.ReleaseInstance(_ordered[i].instance);
 			}
 
 			_ordered.Clear();
 			_byMapId.Clear();
 			_lastHit = null;
+			_world = null;
 		}
 
 		// 하위 호환 — 던전 종료 시 호출된다.
@@ -401,6 +360,12 @@ namespace ProjectOne.Map
 		// 필드 스폰 포인트. 맵이 없으면 빈 목록(널 아님).
 		public IReadOnlyList<MonsterSpawnPoint> GetSpawnPoints(int mapId)
 		{
+			if (_world != null)
+			{
+				ZoneArea zone = _world.GetZone(mapId);
+				return zone != null ? zone.SpawnPoints : _emptySpawnPoints;
+			}
+
 			Entry entry;
 			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.grid == null)
 			{
@@ -413,6 +378,12 @@ namespace ProjectOne.Map
 		// NPC 배치 마커. 맵이 없으면 빈 목록(널 아님).
 		public IReadOnlyList<NpcSpawnPoint> GetNpcSpawnPoints(int mapId)
 		{
+			if (_world != null)
+			{
+				ZoneArea zone = _world.GetZone(mapId);
+				return zone != null ? zone.NpcPoints : _emptyNpcPoints;
+			}
+
 			Entry entry;
 			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.grid == null)
 			{
@@ -422,10 +393,21 @@ namespace ProjectOne.Map
 			return entry.grid.NpcPoints;
 		}
 
-		// 현재 로드된 맵 ID 목록 — NPC 배치가 맵 단위로 순회한다.
+		// 현재 로드된 맵 ID 목록 — NPC 배치가 맵 단위로 순회한다. 월드면 구역 ID 목록이다.
 		public void CollectLoadedMapIds(List<int> buffer)
 		{
 			buffer.Clear();
+			if (_world != null)
+			{
+				IReadOnlyList<ZoneArea> zones = _world.Zones;
+				for (int i = 0; i < zones.Count; i++)
+				{
+					buffer.Add(zones[i].ZoneId);
+				}
+
+				return;
+			}
+
 			for (int i = 0; i < _ordered.Count; i++)
 			{
 				if (_ordered[i].mapId > 0)
@@ -435,12 +417,16 @@ namespace ProjectOne.Map
 			}
 		}
 
-		// 좌표가 속한 맵의 ID. 어느 그리드에도 안 들어가면 0.
+		// 좌표가 속한 맵의 ID. 월드면 구역 ID(= Map.ID)다. 어디에도 안 들어가면 0.
 		//
-		// 퀘스트의 지역 한정 처치(KillMonster / QuestParam_3)가 쓴다 — 그리드가 10000 간격으로
-		// 떨어져 있어 좌표만으로 어느 지역인지 확정된다.
+		// 퀘스트의 지역 한정 처치와 히어로의 현재 구역 판정이 쓴다.
 		public int GetMapIdAt(Vector2 worldPos)
 		{
+			if (_world != null)
+			{
+				return _world.FindZoneIdAt(worldPos);
+			}
+
 			if (_lastHit != null && _lastHit.grid != null && _lastHit.grid.ContainsWorldPos(worldPos) == true)
 			{
 				return _lastHit.mapId;
@@ -507,6 +493,18 @@ namespace ProjectOne.Map
 
 		public Vector3 GetAnchorPosition(int mapId)
 		{
+			if (_world != null)
+			{
+				ZoneArea zone = _world.GetZone(mapId);
+				if (zone == null)
+				{
+					Debug.LogError($"[MapManager] 월드 {_world.WorldId} 에 구역 {mapId} 가 없습니다.");
+					return Vector3.zero;
+				}
+
+				return zone.AnchorPosition;
+			}
+
 			Entry entry;
 			if (_byMapId.TryGetValue(mapId, out entry) == false || entry.grid == null)
 			{
@@ -523,24 +521,24 @@ namespace ProjectOne.Map
 			return new Vector3(center.x, center.y, 0f);
 		}
 
-		// 포털로 들어온 히어로의 도착 위치 — 이 맵에서 출발 필드로 돌아가는 포털의 ArrivalPoint.
-		// 역방향 포털이 없으면(액트 시작 필드 등) 시작 지점으로 폴백한다.
-		public Vector3 GetArrivalPosition(int mapId, int fromFieldId)
+		// 다른 월드에서 관문으로 넘어온 히어로의 도착 위치 — 출발 구역으로 돌아가는 관문의 ArrivalPoint.
+		// 역방향 관문이 없으면 그 구역의 시작 지점으로 폴백한다.
+		public Vector3 GetArrivalPosition(int zoneId, int fromZoneId)
 		{
-			Entry entry;
-			if (fromFieldId > 0 && _byMapId.TryGetValue(mapId, out entry) == true && entry.grid != null)
+			TilemapGrid grid = Current;
+			if (fromZoneId > 0 && grid != null)
 			{
-				IReadOnlyList<MapPortal> portals = entry.grid.Portals;
-				for (int i = 0; i < portals.Count; i++)
+				IReadOnlyList<ZoneGate> gates = grid.Gates;
+				for (int i = 0; i < gates.Count; i++)
 				{
-					if (portals[i] != null && portals[i].TargetFieldId == fromFieldId)
+					if (gates[i] != null && gates[i].TargetZoneId == fromZoneId)
 					{
-						return portals[i].ArrivalPosition;
+						return gates[i].ArrivalPosition;
 					}
 				}
 			}
 
-			return GetAnchorPosition(mapId);
+			return GetAnchorPosition(zoneId);
 		}
 
 		// 스폰 위치를 통행 가능한 자리로 보정한다 — 벽 속 스폰을 막는다.

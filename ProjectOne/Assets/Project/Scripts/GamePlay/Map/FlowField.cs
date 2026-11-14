@@ -53,10 +53,38 @@ namespace ProjectOne.Map
 			System.Array.Copy(walkable, _costField, size);
 		}
 
+		// 목표에서 이 칸 수(8방향 걸음)까지만 경로를 굽는다. 월드 맵은 이어진 타일맵 하나라 전체를 굽으면
+		// 히어로가 셀을 옮길 때마다 맵 크기만큼 비용이 든다. 몬스터는 히어로 근처 구역에만 있으므로
+		// 이 반경 밖은 방향 없음(zero)으로 둔다. 셀 0.64 기준 약 41 유닛이다.
+		public const int BakeRadius = 64;
+
+		// 지난 베이크가 방향을 쓴 사각형 — 다음 베이크 전에 비워 반경 밖에 낡은 방향이 남지 않게 한다.
+		private int _winMinX;
+		private int _winMinY;
+		private int _winMaxX = -1;
+		private int _winMaxY = -1;
+
 		public void Bake(int targetX, int targetY)
 		{
 			BuildIntegrationField(targetX, targetY);
+			clearWindow();
+
+			_winMinX = Mathf.Max(0, targetX - BakeRadius - 1);
+			_winMinY = Mathf.Max(0, targetY - BakeRadius - 1);
+			_winMaxX = Mathf.Min(Width - 1, targetX + BakeRadius + 1);
+			_winMaxY = Mathf.Min(Height - 1, targetY + BakeRadius + 1);
 			BuildFlowField();
+		}
+
+		private void clearWindow()
+		{
+			for (int y = _winMinY; y <= _winMaxY; y++)
+			{
+				for (int x = _winMinX; x <= _winMaxX; x++)
+				{
+					_flowField[GetIndex(x, y)] = Vector2.zero;
+				}
+			}
 		}
 
 		public Vector2 GetDirection(int x, int y)
@@ -108,6 +136,10 @@ namespace ProjectOne.Map
 				int cx      = current % Width;
 				int cy      = current / Width;
 				ushort nextCost = (ushort)(_integrationField[current] + 1);
+				if (nextCost > BakeRadius)
+				{
+					continue;
+				}
 
 				for (int i = 0; i < _neighborOffsets.Length; i++)
 				{
@@ -137,11 +169,12 @@ namespace ProjectOne.Map
 			}
 		}
 
+		// 지난 베이크 반경 사각형(_win*) 안만 계산한다. 그 밖은 적분값이 MaxValue 라 어차피 방향이 없다.
 		private void BuildFlowField()
 		{
-			for (int y = 0; y < Height; y++)
+			for (int y = _winMinY; y <= _winMaxY; y++)
 			{
-				for (int x = 0; x < Width; x++)
+				for (int x = _winMinX; x <= _winMaxX; x++)
 				{
 					int index = GetIndex(x, y);
 
