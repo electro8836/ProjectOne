@@ -140,10 +140,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a939a309fdead047a0df19414ac9f64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Projectile.Projectile
-  _speed: 1
+  _speed: 8
   _lifeTime: 99
   _maxDistance: 99
   _spriteForwardAngle: 90
+  _bounceRange: 1
 --- !u!50 &-193738570544416176
 Rigidbody2D:
   serializedVersion: 5
@@ -221,7 +222,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Projectile.Trajectory_Parabolic
   _visual: {fileID: 6473878149572376389}
-  _arcHeight: 1
+  _arcHeight: 1.2
+  _arcHeightPerDistance: 0.3
+  _flightTime: 0.5
+  _shadow: {fileID: 4513310312201005674}
+  _shadowMinScale: 0.55
+  _shadowMinAlpha: 0.45
 --- !u!1 &7955611843741541148
 GameObject:
   m_ObjectHideFlags: 0
