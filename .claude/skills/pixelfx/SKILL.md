@@ -31,7 +31,26 @@ node Tools/pixelfx-unity.mjs fire/torch --name torch_blue --opts '{"palette":["#
 
 옵션: `--name`(에셋 이름, 기본은 id 의 뒷부분 — 색 바꾼 변형은 반드시 다른 이름), `--fps`(기본 이펙트 값 30 — 프레임이
 많으면 20~24 로 낮춘다), `--seed`, `--opts JSON`, `--pivot x,y`(프레임 좌상단 기준 픽셀 — 기본은 이펙트 원점),
-`--random-rotation`(재생마다 0~360도 랜덤 회전 — 파티클이 프레임 중심을 축으로 돌기 때문에 기준점이 프레임 중심인 이펙트만 허용).
+`--random-rotation`(재생마다 0~360도 랜덤 회전 — 파티클이 프레임 중심을 축으로 돌기 때문에 기준점이 프레임 중심인 이펙트만 허용),
+`--margin N`(캔버스를 사방으로 N px 늘림 — `radius`·`reach` 같은 크기 옵션을 키워 그림이 원래 캔버스를 넘을 때. `--pivot` 은 늘어난 프레임 기준).
+
+프리펩 파티클은 로컬 정렬이라 `SkillVFXFacing` 회전을 그대로 따른다. 방향성 SkillVFX 는 기준점을 시전자 손(이펙트 원점보다 약 20px 위)에 둔다.
+이 저장소에서 추가한 `impacts/spark-pop`(작은 무방향 타격, 원점 = 중앙)은 투사체·총탄 피격용이다(`--random-rotation` 가능).
+
+**스킬 시전 FX 는 범위에 맞춰 뽑는다.** 아래 이펙트는 탑다운·중력 없음·원점 = 시전자 `HitCenter`(=범위 판정 기준점)라
+`--pivot` 없이 그대로 쓰고, 크기 옵션에 테이블 범위 × 32px 를 넣으면 판정 범위와 정확히 겹친다(공용 헬퍼 `melee/_p1.js`).
+
+| 이펙트 | 범위 | 크기 옵션 | 비고 |
+|---|---|---|---|
+| `melee/wave-cleave` | Line | `length`, `width`, `thick` | 초승달 참격파가 전방으로 날아감 |
+| `melee/blade-drop` | Line | `length`, `width`, `hits`, `gap` | 거대 검 낙하 + 충격 hits 회 (피해 횟수·간격과 맞춤) |
+| `melee/whirl-ring` | Circle | `radius`, `spins`, `gap`, `parry` | 원형 회전베기 |
+| `melee/blade-bloom` | Circle | `radius`, `cuts`, `gap` | 연속 직선 베기 후 피꽃 |
+| `melee/fan-cut` | Sector | `radius`, `spread`, `style`(gale/cross/burst) | 부채꼴 베기 |
+| `projectiles/snipe-line` | Line | `length`, `width`, `rings` | 저격 탄도선 |
+| `status/power-surge` | Self | `radius`, `style`(rage/storm/focus/shadow) | 버프 발동 |
+
+방향성 범위(Line·Sector)는 테이블 `SkillVFXFacing` TRUE, `SkillVFXOffset` 0 으로 둔다.
 
 **피격 이펙트는 `--pivot` 을 확인한다.** 게임은 피격 VFX 를 맞은 유닛의 `HitCenter`(몸 중앙)에 재생한다. 그런데 라이브러리의
 타격 이펙트는 원점이 바닥이거나(예: `impacts/blunt-hit` 원점 (64,72), 그림 중심은 `height` 22px 위인 (64,50)) 한쪽으로

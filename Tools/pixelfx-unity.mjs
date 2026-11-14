@@ -10,6 +10,7 @@
 //               피격 이펙트를 유닛의 HitCenter 에 맞출 때처럼 그림 중심을 기준점으로 쓰고 싶으면 지정한다.
 // --random-rotation : 재생할 때마다 0~360도 랜덤 회전. 파티클은 프레임 중심을 축으로 돌므로
 //               기준점이 프레임 중심인 이펙트만 허용한다 (아니면 돌 때 위치가 어긋난다).
+// --margin N : 캔버스를 사방으로 N px 늘린다. radius 같은 크기 옵션을 키워 그림이 원래 캔버스를 넘을 때 쓴다.
 //
 // 출력
 //   ProjectOne/Assets/Project/Art/VFX/PixelFx/<name>/<name>.png, <name>.json   — Unity 가 가져갈 시트
@@ -41,7 +42,7 @@ for (let i = 0; i < args.length; i++) {
 }
 
 if (ids.length !== 1) {
-	console.error("usage: node Tools/pixelfx-unity.mjs <category/name> [--name N] [--fps N] [--seed N] [--opts JSON] [--pivot X,Y] [--random-rotation]");
+	console.error("usage: node Tools/pixelfx-unity.mjs <category/name> [--name N] [--fps N] [--seed N] [--opts JSON] [--pivot X,Y] [--random-rotation] [--margin N]");
 	process.exit(1);
 }
 
@@ -64,9 +65,16 @@ const seed = flags.seed ? +flags.seed : undefined;
 const options = flags.opts ? JSON.parse(flags.opts) : undefined;
 const version = JSON.parse(readFileSync(join(PIXELFX, "package.json"), "utf8")).version;
 
+const margin = flags.margin ? +flags.margin : 0;
 const fx = await loadEffect(id);
-const r = renderFrames(fx, { fps, seed, options });
+const r = renderFrames(fx, { fps, seed, options, margin });
 const sheet = spriteSheet(fx, r, name);
+
+// 여백만큼 캔버스가 사방으로 늘어나므로 원점도 같이 민다 (--pivot 은 늘어난 프레임 기준 좌표)
+if (margin > 0) {
+	const [ox, oy] = sheet.json.meta.pixelfx.pivot;
+	sheet.json.meta.pixelfx.pivot = [ox + margin, oy + margin];
+}
 
 let pivot = null;
 if (flags.pivot) {
@@ -91,12 +99,14 @@ if (randomRotation) {
 sheet.json.meta.pixelfx.randomRotation = randomRotation;
 
 // 같은 시트를 다시 뽑을 수 있도록 입력값을 남긴다
-sheet.json.meta.pixelfx.source = { id, version, fps: r.fps, seed: seed ?? null, opts: options ?? null, pivot, randomRotation };
+sheet.json.meta.pixelfx.source = { id, version, fps: r.fps, seed: seed ?? null, opts: options ?? null, pivot, randomRotation, margin };
 
 const dir = join(ASSET_ROOT, name);
 const png = save(join(dir, `${name}.png`), sheet.png);
 const json = save(join(dir, `${name}.json`), JSON.stringify(sheet.json, null, 1));
-const contact = save(join(PIXELFX, "records", id, "contact.png"), contactSheet(fx, r, {}));
+// 같은 이펙트를 색·크기만 바꿔 여러 이름으로 뽑으면 접촉 시트가 서로 덮어쓰지 않도록 이름별로 남긴다
+const contactName = name === id.split("/")[1] ? "contact.png" : `contact-${name}.png`;
+const contact = save(join(PIXELFX, "records", id, contactName), contactSheet(fx, r, {}));
 
 const m = sheet.json.meta;
 console.log(`${id} → ${name}  ${r.n}프레임 @${r.fps}fps  프레임 ${r.w}x${r.h}  시트 ${m.size.w}x${m.size.h}  ${fx.meta.loop ? "루프" : "1회"}`);

@@ -81,18 +81,24 @@ import * as scifi_teleporter_pad from "./scifi/teleporter-pad.js";
 import * as scifi_tractor_beam from "./scifi/tractor-beam.js";
 import * as scifi_warp_in from "./scifi/warp-in.js";
 import * as scifi_warp_out from "./scifi/warp-out.js";
+import * as melee_blade_bloom from "./melee/blade-bloom.js";
+import * as melee_blade_drop from "./melee/blade-drop.js";
 import * as melee_claw_swipe from "./melee/claw-swipe.js";
 import * as melee_dagger_flurry from "./melee/dagger-flurry.js";
 import * as melee_double_slash from "./melee/double-slash.js";
+import * as melee_fan_cut from "./melee/fan-cut.js";
 import * as melee_hammer_smash from "./melee/hammer-smash.js";
 import * as melee_heavy_cleave from "./melee/heavy-cleave.js";
+import * as melee_line_slash from "./melee/line-slash.js";
 import * as melee_scythe_reap from "./melee/scythe-reap.js";
 import * as melee_spear_sweep from "./melee/spear-sweep.js";
 import * as melee_spin_slash from "./melee/spin-slash.js";
 import * as melee_sword_slash from "./melee/sword-slash.js";
 import * as melee_thrust from "./melee/thrust.js";
 import * as melee_uppercut from "./melee/uppercut.js";
+import * as melee_wave_cleave from "./melee/wave-cleave.js";
 import * as melee_whip_crack from "./melee/whip-crack.js";
+import * as melee_whirl_ring from "./melee/whirl-ring.js";
 import * as impacts_blunt_hit from "./impacts/blunt-hit.js";
 import * as impacts_bullet_impact from "./impacts/bullet-impact.js";
 import * as impacts_crit_hit from "./impacts/crit-hit.js";
@@ -104,6 +110,7 @@ import * as impacts_impact_frame from "./impacts/impact-frame.js";
 import * as impacts_parry from "./impacts/parry.js";
 import * as impacts_ricochet from "./impacts/ricochet.js";
 import * as impacts_shield_block from "./impacts/shield-block.js";
+import * as impacts_spark_pop from "./impacts/spark-pop.js";
 import * as projectiles_arrow from "./projectiles/arrow.js";
 import * as projectiles_bullet_tracer from "./projectiles/bullet-tracer.js";
 import * as projectiles_cannonball from "./projectiles/cannonball.js";
@@ -117,6 +124,7 @@ import * as projectiles_muzzle_shotgun from "./projectiles/muzzle-shotgun.js";
 import * as projectiles_muzzle_smg from "./projectiles/muzzle-smg.js";
 import * as projectiles_plasma_shot from "./projectiles/plasma-shot.js";
 import * as projectiles_rocket from "./projectiles/rocket.js";
+import * as projectiles_snipe_line from "./projectiles/snipe-line.js";
 import * as spawn_coin_drop from "./spawn/coin-drop.js";
 import * as spawn_disintegrate from "./spawn/disintegrate.js";
 import * as spawn_dissolve_burn from "./spawn/dissolve-burn.js";
@@ -170,6 +178,7 @@ import * as status_frozen from "./status/frozen.js";
 import * as status_haste from "./status/haste.js";
 import * as status_petrified from "./status/petrified.js";
 import * as status_poisoned from "./status/poisoned.js";
+import * as status_power_surge from "./status/power-surge.js";
 import * as status_rage from "./status/rage.js";
 import * as status_sleep from "./status/sleep.js";
 import * as status_slowed from "./status/slowed.js";
@@ -329,18 +338,24 @@ export const effects = {
   "scifi/tractor-beam": scifi_tractor_beam,
   "scifi/warp-in": scifi_warp_in,
   "scifi/warp-out": scifi_warp_out,
+  "melee/blade-bloom": melee_blade_bloom,
+  "melee/blade-drop": melee_blade_drop,
   "melee/claw-swipe": melee_claw_swipe,
   "melee/dagger-flurry": melee_dagger_flurry,
   "melee/double-slash": melee_double_slash,
+  "melee/fan-cut": melee_fan_cut,
   "melee/hammer-smash": melee_hammer_smash,
   "melee/heavy-cleave": melee_heavy_cleave,
+  "melee/line-slash": melee_line_slash,
   "melee/scythe-reap": melee_scythe_reap,
   "melee/spear-sweep": melee_spear_sweep,
   "melee/spin-slash": melee_spin_slash,
   "melee/sword-slash": melee_sword_slash,
   "melee/thrust": melee_thrust,
   "melee/uppercut": melee_uppercut,
+  "melee/wave-cleave": melee_wave_cleave,
   "melee/whip-crack": melee_whip_crack,
+  "melee/whirl-ring": melee_whirl_ring,
   "impacts/blunt-hit": impacts_blunt_hit,
   "impacts/bullet-impact": impacts_bullet_impact,
   "impacts/crit-hit": impacts_crit_hit,
@@ -352,6 +367,7 @@ export const effects = {
   "impacts/parry": impacts_parry,
   "impacts/ricochet": impacts_ricochet,
   "impacts/shield-block": impacts_shield_block,
+  "impacts/spark-pop": impacts_spark_pop,
   "projectiles/arrow": projectiles_arrow,
   "projectiles/bullet-tracer": projectiles_bullet_tracer,
   "projectiles/cannonball": projectiles_cannonball,
@@ -365,6 +381,7 @@ export const effects = {
   "projectiles/muzzle-smg": projectiles_muzzle_smg,
   "projectiles/plasma-shot": projectiles_plasma_shot,
   "projectiles/rocket": projectiles_rocket,
+  "projectiles/snipe-line": projectiles_snipe_line,
   "spawn/coin-drop": spawn_coin_drop,
   "spawn/disintegrate": spawn_disintegrate,
   "spawn/dissolve-burn": spawn_dissolve_burn,
@@ -418,6 +435,7 @@ export const effects = {
   "status/haste": status_haste,
   "status/petrified": status_petrified,
   "status/poisoned": status_poisoned,
+  "status/power-surge": status_power_surge,
   "status/rage": status_rage,
   "status/sleep": status_sleep,
   "status/slowed": status_slowed,

@@ -1,6 +1,6 @@
 # Catalog
 
-244 effects in 21 categories. Every one is a file in
+253 effects in 21 categories. Every one is a file in
 `src/fx/<category>/<name>.js`; render any of them with `node tools/render.mjs <id> --gif`.
 
 ## moves
@@ -139,18 +139,24 @@ slashes, smears, cleaves, combos.
 
 | effect | id | | size | what it does |
 |---|---|---|---|---|
+| Blade bloom | `melee/blade-bloom` | one-shot 1.45s | 184×184 | Seen from above, straight cuts cross a circle one after another at turning angles, each spraying blood; on the last one the blood opens into a flower of petals and mist. |
+| Blade drop | `melee/blade-drop` | one-shot 0.95s | 140×104 | A giant spectral blade falls onto a straight lane and slams flat: a white flash, then shock fronts, dust and stone chips on every pulse while the floor cracks glow and cool. |
 | Claw swipe | `melee/claw-swipe` | one-shot 0.9s | 128×96 | Three claw marks rake down one after another, white-hot, cooling through orange to red, then close up from both ends and leave a dotted scar, with hot flecks and drips. |
 | Dagger flurry | `melee/dagger-flurry` | one-shot 0.95s | 148×104 | A flurry of small quick crescents at every angle in front of the fighter, each with a flick of sparks, finished by one big cut that glints and bursts. |
 | Double slash | `melee/double-slash` | one-shot 0.8s | 164×108 | A down cut, then an up cut that crosses it: the moment the X closes both strokes flash white, the crossing bursts with light and sparks, and a dotted X lingers. |
+| Fan cut | `melee/fan-cut` | one-shot 0.6s | 80×96 | Seen from above, a cone in front of the caster is cut: sweeping wind blades, a crossing X slash or chained blood bursts, each sized to the cone's radius and spread. |
 | Hammer smash | `melee/hammer-smash` | one-shot 2s | 208×112 | A hammer drops in front in a wedge of motion: a white slam with rays, a dome of force, a dent with cracks, rocks thrown up that bounce and settle, and dust. |
 | Heavy cleave | `melee/heavy-cleave` | one-shot 1.9s | 208×116 | A glint over the head, then a thick ember arc accelerates over the top into the floor: a white slam, glowing cracks, dust rolling both ways, grit and rising embers. |
+| Line slash | `melee/line-slash` | one-shot 0.4s | 104×56 | One thin, long straight cut flicks across the target: the line shoots out end to end, flashes white, then thins and draws away from the tail. |
 | Scythe reap | `melee/scythe-reap` | one-shot 2.1s | 184×116 | A slow, huge dark crescent reaps round the front with a pale ghostly edge; it hangs, then tears away from the tail into curling wisps and cold vapour. |
 | Spear sweep | `melee/spear-sweep` | one-shot 1.5s | 216×84 | A wide low sweep at shin height: a long flat crescent swings from behind the legs round the front, and the wind of it kicks a wake of dust and grit along the floor. |
 | Spin slash | `melee/spin-slash` | one-shot 0.8s | 208×104 | The blade whirls once round the waist on a tilted plane, behind the body and back in front; the closed ring flares white, dissolves into a dotted trace and throws sparks. |
 | Sword slash | `melee/sword-slash` | one-shot 0.75s | 136×104 | A tilted crescent whips round in two frames, cools from white to deep blue as it trails off, glints at the tip and throws sparks. |
 | Thrust | `melee/thrust` | one-shot 0.75s | 196×76 | A piercing stab: a bundle of streaks shoots out from the hand to a point, a long four-point star flares at the tip with a pierce ring, sparks and speed lines. |
 | Uppercut | `melee/uppercut` | one-shot 0.85s | 132×128 | A crescent rises from the floor past the face, and at the top a comic impact star bursts: bold outline, hot core, burst lines, twinkles and sparks. |
+| Wave cleave | `melee/wave-cleave` | one-shot 0.6s | 196×120 | A crescent blade of force races forward down a straight lane, an echo and a translucent wake behind it, a glowing scar and wind lines left in its path; it breaks in shavings at the end. |
 | Whip crack | `melee/whip-crack` | one-shot 0.85s | 192×80 | A whip rolls out to the right as a loop running down its length, faster and faster, until the tip flips over and cracks: a white pop, a ring of air, sparks and a puff of smoke. |
+| Whirl ring | `melee/whirl-ring` | one-shot 0.8s | 184×184 | Seen from above, a blade whirls a full circle round the caster one or more times: crescent smears with an inner echo, wind streaks, sparks flung off the rim and a pulse of the ring's edge. |
 
 ## impacts
 
@@ -169,6 +175,7 @@ hit sparks, shockwaves, landings.
 | Parry | `impacts/parry` | one-shot 1s | 200×112 | Two blades clash: their edges flash in an X, a white four-point star rings out, a ring breaks into arcs and a fan of gold sparks sprays up and rains down. |
 | Ricochet | `impacts/ricochet` | one-shot 1.1s | 232×84 | A tracer streaks down onto the floor, glances off with a white-hot star and skips away at an angle, leaving a glowing skid while sparks skitter along the ground. |
 | Shield block | `impacts/shield-block` | one-shot 1.1s | 148×104 | A blow is caught on a half-dome of energy in front of the character: its diamond lattice flashes, a ripple runs over it, sparks glance off, then it blinks out cell by cell. |
+| Spark pop | `impacts/spark-pop` | one-shot 0.36s | 56×56 | A small hit with no direction: a white four-point flare pops, a thin ring snaps out round it and short sparks fly off every way, gone in a third of a second. |
 
 ## projectiles
 
@@ -189,6 +196,7 @@ bullets, rockets, lasers, arrows.
 | SMG burst | `projectiles/muzzle-smg` | loop 1s | 112×72 | Sustained fire at twelve rounds a second: each shot a different spiky flash with a white core, sparks, smoke wisps piling up and drifting, brass casings bouncing on the floor. |
 | Plasma shot | `projectiles/plasma-shot` | loop 0.8s | 144×60 | A glowing plasma blob: hot knots churning in its core, a corona crackling over its skin, its tail necking into droplets that tear off, cool and wink out behind. |
 | Rocket | `projectiles/rocket` | loop 1.2s | 288×76 | A steel rocket roars along: a flickering jet with shock diamonds and a white-hot nozzle, a thick billowing smoke trail lit by the flame, sparks shed behind. |
+| Snipe line | `projectiles/snipe-line` | one-shot 0.5s | 352×96 | A sniper round cuts a straight lane in an instant: muzzle flash, a white-hot tracer that cools and retracts, shock rings and a twisting air wake along it, smoke left hanging. |
 
 ## spawn & death
 
@@ -277,6 +285,7 @@ burning, frozen, poisoned, asleep.
 | Haste | `status/haste` | loop 1.2s | 100×56 | Sped up: striped after-images stream out behind, speed lines whip past, dust kicks off the heels and the leading edge catches the wind. Faces right. |
 | Petrified | `status/petrified` | one-shot 3.8s | 120×74 | Turned to stone: grey creeps up from the feet behind a crackling edge that spits grit, the statue holds, cracks run through it, and it bursts into tumbling chunks and dust. |
 | Poisoned | `status/poisoned` | loop 1.6s | 72×64 | Sick to the bone: green rolls up the body in waves, dark veins creep from a wound, toxic sweat drips and hisses; every 0.8 s it wobbles, blisters pop and a ring pulses out. |
+| Power surge | `status/power-surge` | one-shot 0.9s | 128×128 | A self buff goes off round the caster, seen from above: a rage shock with rising heat, a tightening wind spiral, a scope that locks on, or shadow drawn in and thrown out as orbiting blades. |
 | Rage | `status/rage` | loop 1.2s | 80×80 | Seething: the body judders on every heartbeat, an anger mark throbs at the temple, eyes burn, steam jets off the head, stress lines flash out and the floor cracks hot underfoot. |
 | Sleep | `status/sleep` | loop 2.4s | 60×82 | Fast asleep: eyes shut, soft outlined Zs float up off the head one after another, swaying and growing as they rise, dream motes drift, a slow breathing glow. |
 | Slowed | `status/slowed` | loop 2.4s | 64×76 | Dragged through time: a glassy clock dial behind the head ticks round in heavy steps, flashing with each, while drops sink in slow motion and spread slow rings. |

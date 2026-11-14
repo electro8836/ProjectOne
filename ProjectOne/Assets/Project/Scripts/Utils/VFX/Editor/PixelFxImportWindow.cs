@@ -422,6 +422,8 @@ namespace ProjectOne.Editor
 
 			ParticleSystemRenderer renderer = child.GetComponent<ParticleSystemRenderer>();
 			renderer.renderMode = ParticleSystemRenderMode.Billboard;
+			// 기본(View) 정렬은 트랜스폼 회전을 무시한다 — 방향성 SkillVFX 가 바라보는 방향으로 돌도록 로컬 정렬을 쓴다
+			renderer.alignment = ParticleSystemRenderSpace.Local;
 			renderer.sharedMaterial = material;
 			renderer.sortingLayerName = SortingLayerName;
 			renderer.sortingOrder = 0;
