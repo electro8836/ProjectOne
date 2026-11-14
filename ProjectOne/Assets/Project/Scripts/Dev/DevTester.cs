@@ -49,11 +49,20 @@ namespace ProjectOne.Boot
 		}
 
 		// 마스터리 1종의 개발 진행도 — 레벨만 지정하면 누적 경험치를 역산해 넣는다.
+		// 스킬 칸을 하나라도 지정하면 6칸을 그대로 쓰고(None = 빈 칸), 전부 None 이면 해금된 스킬로 자동 채운다.
 		[System.Serializable]
 		public struct DevMastery
 		{
 			public WeaponMastery mastery;
 			public int level;
+
+			[Header("스킬 칸 (전부 None = 자동 장착)")]
+			public EDT.Skill passive;
+			public EDT.Skill tactical1;
+			public EDT.Skill tactical2;
+			public EDT.Skill tactical3;
+			public EDT.Skill tactical4;
+			public EDT.Skill core;
 		}
 
 		// 펫 1마리의 개발 상태. 등급이 None 이면 Pet 테이블의 기본 등급을 쓴다.
@@ -399,10 +408,81 @@ namespace ProjectOne.Boot
 				entry.masteryId = (int)src.mastery;
 				entry.level = src.level;
 				entry.totalExp = MasteryCatalog.GetMasteryTotalExp(src.level);
+				fillDevSlots(entry, src);
 				dto.masteries.Add(entry);
 			}
 
 			return dto;
+		}
+
+		// 인스펙터 스킬 칸을 슬롯 6칸([0] 패시브 · [1~4] 전술 · [5] 코어)으로 옮긴다.
+		// 전부 None 이면 slots 를 비워 두어 MasteryBook 이 해금된 스킬로 자동 채우게 한다.
+		private static void fillDevSlots(MasteryProgressDto entry, DevMastery src)
+		{
+			EDT.Skill[] skills = new EDT.Skill[MasteryRules.SlotCount];
+			skills[0] = src.passive;
+			skills[1] = src.tactical1;
+			skills[2] = src.tactical2;
+			skills[3] = src.tactical3;
+			skills[4] = src.tactical4;
+			skills[5] = src.core;
+
+			bool any = false;
+			for (int i = 0; i < skills.Length; i++)
+			{
+				if (skills[i] != EDT.Skill.None)
+				{
+					any = true;
+					break;
+				}
+			}
+
+			if (any == false)
+			{
+				return;
+			}
+
+			for (int i = 0; i < skills.Length; i++)
+			{
+				EDT.Skill skill = skills[i];
+				if (skill != EDT.Skill.None && isDevSlotValid(entry, src, i, skill) == false)
+				{
+					skill = EDT.Skill.None;
+				}
+
+				entry.slots.Add((int)skill);
+			}
+		}
+
+		// 다른 무기의 스킬·칸 분류 불일치·미해금·앞 칸과 중복은 빈 칸으로 바꾸고 경고한다.
+		private static bool isDevSlotValid(MasteryProgressDto entry, DevMastery src, int index, EDT.Skill skill)
+		{
+			int unlockLevel = MasteryCatalog.GetUnlockLevel(src.mastery, skill);
+			if (unlockLevel <= 0)
+			{
+				Debug.LogWarning("[DevTester] " + src.mastery + " 의 스킬이 아님 — " + index + "번 칸을 비웁니다: " + skill);
+				return false;
+			}
+
+			if (MasteryRules.FitsSlot(index, skill) == false)
+			{
+				Debug.LogWarning("[DevTester] 칸 분류가 맞지 않음 — " + index + "번 칸을 비웁니다: " + skill);
+				return false;
+			}
+
+			if (src.level < unlockLevel)
+			{
+				Debug.LogWarning("[DevTester] 미해금 스킬(Lv." + unlockLevel + ") — " + index + "번 칸을 비웁니다: " + skill);
+				return false;
+			}
+
+			if (entry.slots.Contains((int)skill) == true)
+			{
+				Debug.LogWarning("[DevTester] 같은 스킬이 앞 칸에 이미 있음 — " + index + "번 칸을 비웁니다: " + skill);
+				return false;
+			}
+
+			return true;
 		}
 
 		private InventoryDto buildInventory()
