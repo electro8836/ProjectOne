@@ -11,8 +11,8 @@ namespace ProjectOne.Map
 {
 	// 맵 로드/수명/플로우필드 질의를 전담하는 전투 수명 매니저.
 	//
-	// 월드는 씬에 직접 배치된 이어진 맵 하나다 (RegisterWorldMap). 구역 단위 질의는 그 맵의 ZoneArea 가 답한다.
-	// 마을·던전은 맵 프리팹 하나를 Addressable 로 띄운다 (LoadMapAsync).
+	// 맵은 전부 Addressable 프리팹이다. 마을·던전은 맵 하나(LoadMapAsync),
+	// 월드는 이어진 월드 맵 하나(LoadWorldAsync)이고 구역 단위 질의는 그 맵의 ZoneArea 가 답한다.
 	//
 	// 플로우필드 계산(좌표/통행/BFS)만 담당 — "누구를 향해 베이크할지"는 호출자(전투 규칙)가 정한다.
 	public class MapManager : MonoSingleton<MapManager>
@@ -27,7 +27,6 @@ namespace ProjectOne.Map
 			public GameObject instance;
 			public TilemapGrid grid;
 			public Vector3 origin;
-			public bool sceneOwned;		// 월드 씬에 배치된 맵 — Addressable 인스턴스가 아니므로 해제하지 않는다
 		}
 
 		// Map.ID → 로드된 그리드맵
@@ -42,7 +41,7 @@ namespace ProjectOne.Map
 		// 씬에 배치된 컨테이너. 없으면 ensureContainerRoot 가 **활성 씬에** 만든다(매니저 자식이 아니다).
 		private MapContainer _container;
 
-		// 월드 씬의 맵. 월드에 있을 때만 있다 — 구역 단위 질의가 이것을 본다.
+		// 로드된 월드 맵. 월드에 있을 때만 있다 — 구역 단위 질의가 이것을 본다.
 		private WorldMap _world;
 
 		public bool HasMap => _ordered.Count > 0;
@@ -77,31 +76,44 @@ namespace ProjectOne.Map
 			return await instantiateAsync(address, Vector3.zero, 0, ct);
 		}
 
-		// 월드 맵 등록 — 월드 씬에 직접 배치된 맵을 쓴다. 로드도 해제도 씬이 맡는다.
+		// 월드 맵 로드 — Table_World.MapPrefab 의 월드 맵 프리팹 하나를 띄운다. 기존 맵은 전부 언로드한다.
+		// 월드 씬은 하나이고 다른 월드로 갈 때 이 프리팹만 갈아끼운다.
 		// 구역 질의(스폰·NPC·시작 지점·좌표→구역)는 이후 _world 의 ZoneArea 로 답한다.
-		public bool RegisterWorldMap(WorldMap world)
+		public async UniTask<bool> LoadWorldAsync(int worldId, CancellationToken ct = default)
 		{
 			UnloadAll();
 
-			if (world == null || world.Grid == null)
+			Table_World.Row row = Table_World.Get(worldId);
+			if (row == null || string.IsNullOrEmpty(row.MapPrefab) == true)
 			{
-				Debug.LogError("[MapManager] WorldMap 또는 TilemapGrid 가 없습니다 — 월드 씬 구성을 확인하세요.");
+				Debug.LogError($"[MapManager] 월드 {worldId} 의 MapPrefab 이 없습니다.");
 				return false;
 			}
 
-			world.Grid.InitializeFlowField();
+			if (await instantiateAsync(row.MapPrefab, Vector3.zero, 0, ct) == false)
+			{
+				return false;
+			}
 
-			Entry entry = new Entry();
-			entry.mapId = 0;
-			entry.instance = world.gameObject;
-			entry.grid = world.Grid;
-			entry.origin = world.transform.position;
-			entry.sceneOwned = true;
+			WorldMap world = _ordered[0].instance.GetComponent<WorldMap>();
+			if (world == null)
+			{
+				Debug.LogError($"[MapManager] 월드 맵 프리팹에 WorldMap 이 없습니다: {row.MapPrefab}");
+				UnloadAll();
+				return false;
+			}
 
-			_ordered.Add(entry);
+			if (world.WorldId != worldId)
+			{
+				Debug.LogError($"[MapManager] 프리팹 {row.MapPrefab} 의 WorldMap({world.WorldId}) 과 월드 {worldId} 가 다릅니다.");
+			}
+
 			_world = world;
 			return true;
 		}
+
+		// 현재 로드된 월드 맵. 월드가 아니면 null.
+		public WorldMap World => _world;
 
 		private async UniTask<bool> loadOneAsync(int mapId, Vector3 origin, CancellationToken ct)
 		{
@@ -257,11 +269,6 @@ namespace ProjectOne.Map
 			// 해제해야 한다. ReleaseInstance 가 파괴 여부를 구분해 처리한다.
 			for (int i = 0; i < _ordered.Count; i++)
 			{
-				if (_ordered[i].sceneOwned == true)
-				{
-					continue;
-				}
-
 				AddressableHelper.ReleaseInstance(_ordered[i].instance);
 			}
 

@@ -1,21 +1,21 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
 using UnityEngine.SceneManagement;
-using EDT;
 using ProjectOne.Field;
 using ProjectOne.Loading;
 using ProjectOne.Network;
-using ProjectOne.UI;
 
 namespace ProjectOne.Flow
 {
-	// 월드 상태 — 월드 씬 하나를 띄우고 그 안의 이어진 구역을 돌아다닌다.
+	// 월드 상태 — 월드 씬을 띄우고 그 안의 이어진 구역을 돌아다닌다.
 	//
 	// **클리어 개념이 없다.** 몬스터를 잡으면 일정 시간 후 재스폰되고, 마을 복귀는 UI 로 한다.
-	// 월드마다 씬이 따로 있다(Table_World.SceneName). 다른 월드로 갈 때는 이 상태로 다시 들어온다.
+	// 월드 씬은 하나다. 월드마다 맵 프리팹(Table_World.MapPrefab)이 따로 있다.
+	// 다른 월드로 갈 때도 이 상태로 다시 들어와 씬째 새로 띄운다 — 이전 월드의 상태를 남기지 않는다.
 	public class WorldState : IGameState
 	{
+		public const string SceneName = "4.World";
+
 		// 진입할 구역 (Table_Zone.ID = Map.ID)
 		private readonly int _zoneId;
 
@@ -35,17 +35,10 @@ namespace ProjectOne.Flow
 				await LoadingManager.Instance.ShowAsync(LoadingFlow.ToField, ct);
 			}
 
-			string sceneName = GetSceneName(_zoneId);
-			if (string.IsNullOrEmpty(sceneName) == true)
-			{
-				await LoadingManager.Instance.HideAsync();
-				return;
-			}
-
 			// 맵을 바꾸기 전에 필드 세션을 교체한다(남은 처치 정산 + 새 시드).
 			await FieldSessionRotation.RotateAsync(ct);
 
-			await SceneManager.LoadSceneAsync(sceneName).ToUniTask(Progress.Create<float>(onSceneLoadProgress), cancellationToken: ct);
+			await SceneManager.LoadSceneAsync(SceneName).ToUniTask(Progress.Create<float>(onSceneLoadProgress), cancellationToken: ct);
 
 			LoadingManager.Instance.SetPhaseProgress(LoadingPhase.SceneReady, 0f);
 			WorldDirector director = WorldDirector.EnsureInstance();
@@ -58,26 +51,6 @@ namespace ProjectOne.Flow
 		public UniTask ExitAsync()
 		{
 			return UniTask.CompletedTask;
-		}
-
-		// 구역이 속한 월드의 씬 이름. 테이블이 비어 있으면 에러를 남기고 null.
-		public static string GetSceneName(int zoneId)
-		{
-			Table_Zone.Row zone = Table_Zone.Get(zoneId);
-			if (zone == null)
-			{
-				Debug.LogError($"[WorldState] Table_Zone.Get({zoneId}) == null");
-				return null;
-			}
-
-			Table_World.Row world = Table_World.Get(zone.WorldID);
-			if (world == null || string.IsNullOrEmpty(world.SceneName) == true)
-			{
-				Debug.LogError($"[WorldState] 구역 {zoneId} 의 월드 {zone.WorldID} 에 SceneName 이 없습니다.");
-				return null;
-			}
-
-			return world.SceneName;
 		}
 
 		private void onSceneLoadProgress(float ratio)

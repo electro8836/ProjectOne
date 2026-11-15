@@ -11,7 +11,7 @@ namespace EDT {
             public string Name { get; set; } = string.Empty;
             public string Desc { get; set; } = string.Empty;
             public string Icon { get; set; } = string.Empty;
-            public string SceneName { get; set; } = string.Empty;
+            public string MapPrefab { get; set; } = string.Empty;
         }
 
         public const string Filename = "edt_world.bytes";
@@ -38,7 +38,7 @@ namespace EDT {
                 row.Name = reader.ReadString();
                 row.Desc = reader.ReadString();
                 row.Icon = reader.ReadString();
-                row.SceneName = reader.ReadString();
+                row.MapPrefab = reader.ReadString();
                 _all.Add( row.ID, row );
             } catch( Exception e ) {
                 error = string.Format( "EDT Binary parsing error - Message:{0}, File:{1}", e.Message, Filename );

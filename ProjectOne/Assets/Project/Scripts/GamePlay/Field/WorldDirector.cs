@@ -14,11 +14,11 @@ using ProjectOne.Unit;
 
 namespace ProjectOne.Field
 {
-	// 월드 씬의 오케스트레이터. 씬에는 맵(WorldMap)만 배치돼 있고 나머지는 코드가 직접 생성한다.
+	// 월드 씬의 오케스트레이터. 월드 맵(WorldMap) 프리팹을 포함해 전부 코드가 직접 생성한다.
 	//
 	// 월드 안의 구역은 끊김 없이 이어져 있다 — 구역 이동에 로드가 없다. 히어로 좌표로 현재 구역을 판정하고,
 	// 몬스터는 현재 구역과 그 인접 구역에서만 활성화한다(FieldMonsterSpawner).
-	// 다른 월드로 갈 때는 WorldState 로 다시 들어가 씬을 바꾼다.
+	// 다른 월드로 갈 때는 WorldState 로 다시 들어가 씬째 새로 띄운다 — 이전 월드의 상태를 하나도 남기지 않는다.
 	//
 	// 구역 이동에서는 회복하지 않는다 — 월드 진행이 연속된 소모전이 되도록 (기반테이블 5.3).
 	public sealed class WorldDirector : MonoBehaviour
@@ -41,7 +41,7 @@ namespace ProjectOne.Field
 
 		private Hero _hero;
 
-		// 씬에 배치된 월드 맵. Begin 에서 찾는다.
+		// 현재 로드된 월드 맵 프리팹 인스턴스
 		private WorldMap _world;
 
 		// 관문 이동(월드 전환 로딩) 중 재진입 차단
@@ -116,7 +116,7 @@ namespace ProjectOne.Field
 			}
 		}
 
-		// 월드 진입 — 씬은 WorldState 가 이미 로드했다. 씬의 맵을 등록하고 히어로를 그 구역에 놓는다.
+		// 월드 진입 — 씬은 WorldState 가 이미 로드했다. 월드 맵을 띄우고 히어로를 그 구역에 놓는다.
 		// fromZoneId 가 0 이 아니면 그 구역으로 돌아가는 관문 앞에 도착한다.
 		public async UniTask Begin(int zoneId, int fromZoneId, CancellationToken ct)
 		{
@@ -133,17 +133,12 @@ namespace ProjectOne.Field
 			// 카메라 리그는 씬과 함께 파괴된다. 없으면 vcam 이 없어 화면이 히어로를 따라가지 않는다.
 			await GameplaySceneSetup.EnsureCameraAsync(ct);
 
-			_world = Object.FindAnyObjectByType<WorldMap>();
-			if (MapManager.Instance.RegisterWorldMap(_world) == false)
+			if (await MapManager.Instance.LoadWorldAsync(zone.WorldID, ct) == false)
 			{
 				return;
 			}
 
-			if (_world.WorldId != zone.WorldID)
-			{
-				Debug.LogError($"[WorldDirector] 씬의 WorldMap({_world.WorldId}) 과 구역 {zoneId} 의 월드({zone.WorldID}) 가 다릅니다.");
-			}
-
+			_world = MapManager.Instance.World;
 			_currentWorldId = zone.WorldID;
 			_lastHeroCell = new Vector3Int(int.MinValue, int.MinValue, 0);
 
@@ -165,7 +160,7 @@ namespace ProjectOne.Field
 			setCurrentZone(zoneId);
 		}
 
-		// 구역 이동 — 같은 월드면 그 구역 시작 지점으로 옮기고, 다른 월드면 씬을 바꾼다.
+		// 구역 이동 — 같은 월드면 그 구역 시작 지점으로 옮기고, 다른 월드면 WorldState 로 다시 들어간다.
 		// 월드 화면·개발용 이동이 쓴다. 회복은 없다.
 		public void MoveToZone(int zoneId)
 		{
