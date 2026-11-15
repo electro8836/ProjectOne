@@ -126,6 +126,29 @@ namespace ProjectOne.Field
 			return false;
 		}
 
+		// 구역의 필드보스(DailyReset) 슬롯 조회 — 보스소환석이 쓴다.
+		// 보스 슬롯이 없으면 false. 있으면 spawnId 와 오늘 처치돼 리젠 대기 중인지(killedToday)를 돌려준다.
+		public bool TryGetBossSlot(int zoneId, out int spawnId, out bool killedToday)
+		{
+			spawnId = 0;
+			killedToday = false;
+
+			for (int i = 0; i < _slots.Count; i++)
+			{
+				Slot slot = _slots[i];
+				if (slot.key.MapId != zoneId || slot.respawnType != RespawnType.DailyReset)
+				{
+					continue;
+				}
+
+				spawnId = slot.spawnId;
+				killedToday = slot.instanceId == 0 && MonsterRespawnClock.Instance.IsBossKilledToday(zoneId, slot.spawnId) == true;
+				return true;
+			}
+
+			return false;
+		}
+
 		// 구역 하나의 슬롯을 버리고 살아있는 개체를 풀로 걷는다.
 		// 사망 이벤트를 쏘지 않으니 살아있던 슬롯에는 리젠 기록이 남지 않는다 — 다시 활성되면 즉시 부활한다.
 		private void removeZone(int zoneId)

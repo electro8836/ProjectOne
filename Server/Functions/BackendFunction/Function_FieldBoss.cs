@@ -188,6 +188,96 @@ namespace BackendFunction
 			}
 		}
 
+		// 보스소환석 사용 — 오늘 처치한 보스의 처치 기록을 지워 즉시 리스폰시킨다.
+		//
+		// 보스가 살아 있으면(오늘 처치 기록이 없으면) 소모하지 않고 거절한다.
+		// 서버는 히어로 위치를 모르므로 구역은 실존만 확인한다(FieldBossKill 과 같은 한계).
+		public Stream BossSummon()
+		{
+			try
+			{
+				if (GameData.EnsureLoaded(out string loadErr) == false)
+				{
+					return FuncResult.Error(loadErr);
+				}
+
+				if (Backend.HasKey("req") == false)
+				{
+					return FuncResult.Error("req key is not exist");
+				}
+
+				BossSummonRequest req = JsonConvert.DeserializeObject<BossSummonRequest>(Backend.Content["req"].ToString());
+				if (req == null)
+				{
+					return FuncResult.Error("req parse failed");
+				}
+
+				// 1. 소모품·보스 검증
+				Table_Consumable.Row consumable = Table_Consumable.Get(req.itemId);
+				if (consumable == null || consumable.ConsumeEffect != ConsumeEffect.BossSummon)
+				{
+					return FuncResult.Error("not a boss summon item: " + req.itemId);
+				}
+
+				Table_MonsterSpawn.Row spawn = Table_MonsterSpawn.Get(req.spawnId);
+				if (spawn == null || spawn.RespawnType != RespawnType.DailyReset)
+				{
+					return FuncResult.Error("not a field boss spawn: " + req.spawnId);
+				}
+
+				if (Table_Zone.Get(req.fieldId) == null)
+				{
+					return FuncResult.Error("invalid field " + req.fieldId);
+				}
+
+				// 2. 오늘 처치했어야 소환할 수 있다
+				if (MyData.Load("USER_FIELD", out FieldSessionDto field, out string fieldErr) == false)
+				{
+					return FuncResult.Error(fieldErr);
+				}
+
+				FieldBossKillDto kill = findKill(field, req.fieldId, req.spawnId);
+				if (kill == null || kill.resetDay != ResetDay.FromUtc(DateTime.UtcNow))
+				{
+					return FuncResult.Error("boss is alive: field " + req.fieldId + " spawn " + req.spawnId);
+				}
+
+				// 3. 1개 차감 + 처치 기록 삭제
+				if (MyData.Load("USER_INVENTORY", out InventoryDto inventory, out string invErr) == false)
+				{
+					return FuncResult.Error(invErr);
+				}
+
+				if (InventoryUtil.TrySpendItem(inventory, req.itemId, 1) == false)
+				{
+					return FuncResult.Error("not enough item: " + req.itemId);
+				}
+
+				field.bossKills.Remove(kill);
+
+				// 4. 원자 저장
+				List<TransactionValue> tx = new List<TransactionValue>();
+				tx.Add(TransactionValue.SetUpdate("USER_FIELD", new Where(), DungeonProgressOps.ToParam(field)));
+				tx.Add(TransactionValue.SetUpdate("USER_INVENTORY", new Where(), DungeonProgressOps.ToParam(inventory)));
+
+				var txResult = Backend.GameData.TransactionWriteV2(tx);
+				if (!txResult.IsSuccess())
+				{
+					return FuncResult.Error("Transaction failed: " + txResult.GetErrorCode());
+				}
+
+				BossSummonResponse response = new BossSummonResponse();
+				response.success = true;
+				response.fieldId = req.fieldId;
+				response.spawnId = req.spawnId;
+				return FuncResult.Json(response);
+			}
+			catch (Exception ex)
+			{
+				return FuncResult.Error("Server Error: " + ex.ToString());
+			}
+		}
+
 		private static FieldBossKillDto findKill(FieldSessionDto field, int fieldId, int spawnId)
 		{
 			for (int i = 0; i < field.bossKills.Count; i++)

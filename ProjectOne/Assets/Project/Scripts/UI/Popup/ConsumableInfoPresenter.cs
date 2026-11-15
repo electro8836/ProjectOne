@@ -105,6 +105,26 @@ namespace ProjectOne.UI
 			}
 
 			ConsumableUseResult result = ConsumableUser.Use(_itemId);
+
+			// 서버 판정 대기 — 결과(보스 등장·차감)는 필드에서 보이므로 팝업을 닫는다.
+			if (result == ConsumableUseResult.Pending)
+			{
+				view.CloseFromInput();
+				return;
+			}
+
+			if (result == ConsumableUseResult.NoBoss)
+			{
+				UIManager.Instance.ShowAlertMessage("보스 구역에서만 사용할 수 있습니다");
+				return;
+			}
+
+			if (result == ConsumableUseResult.BossAlive)
+			{
+				UIManager.Instance.ShowAlertMessage("보스가 이미 있습니다");
+				return;
+			}
+
 			if (result != ConsumableUseResult.Success)
 			{
 				// 무기 미착용·포인트 상한 등 — 안내 UI 는 실패 처리 정리 때 붙인다.

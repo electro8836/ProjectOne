@@ -117,6 +117,8 @@ namespace BackendFunction
 					return new NicknameFunctions().ChangeNickname();
 				case FunctionName.FieldBossKill:
 					return new FieldBoss().FieldBossKill();
+				case FunctionName.BossSummon:
+					return new FieldBoss().BossSummon();
 				case FunctionName.EquipmentEnhance:
 					return new EquipmentFunctions().EquipmentEnhance();
 				case FunctionName.EquipmentPromote:

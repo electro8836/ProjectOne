@@ -62,6 +62,19 @@ namespace ProjectOne.Field
 		public int CurrentWorldId => _currentWorldId;
 		public int CurrentZoneId => _currentZoneId;
 
+		// 현재 구역의 필드보스 슬롯 — 보스소환석 사용 조건 판정용
+		public bool TryGetCurrentBossSlot(out int spawnId, out bool killedToday)
+		{
+			spawnId = 0;
+			killedToday = false;
+			if (_spawner == null || _currentZoneId <= 0)
+			{
+				return false;
+			}
+
+			return _spawner.TryGetBossSlot(_currentZoneId, out spawnId, out killedToday);
+		}
+
 		public static WorldDirector EnsureInstance()
 		{
 			if (_instance != null)

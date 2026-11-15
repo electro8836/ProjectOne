@@ -433,6 +433,17 @@ namespace ProjectOne.Network
 			_caller.Invoke<FieldBossKillRequest, FieldBossKillResponse>(FunctionName.FieldBossKill, request, callback, false);
 		}
 
+		// 보스소환석 사용 — 서버가 소환석 1개를 차감하고 오늘 처치 기록을 지운다.
+		public void RequestBossSummon(BossSummonRequest request, ResponseCallback<BossSummonResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			_caller.Invoke<BossSummonRequest, BossSummonResponse>(FunctionName.BossSummon, request, callback);
+		}
+
 		// ── 상점 ──────────────────────────────────────────────────────────
 
 		// 상품 구매(지금은 보물상자만) — 서버가 가격 차감·추첨·지급을 모두 하고 결과를 내려준다.

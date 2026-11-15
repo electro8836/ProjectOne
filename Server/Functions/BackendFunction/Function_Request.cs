@@ -40,6 +40,7 @@ namespace BackendFunction
 				case FunctionName.HeroPassClaim:
 				case FunctionName.MailReceive:
 				case FunctionName.ChangeNickname:
+				case FunctionName.BossSummon:
 					return true;
 			}
 

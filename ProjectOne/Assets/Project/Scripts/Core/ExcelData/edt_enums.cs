@@ -22,7 +22,7 @@ namespace EDT {
 
     public enum ConsumeEffect {
         None,
-        Reserved,
+        BossSummon,
     }
 
     public enum CostumeType {

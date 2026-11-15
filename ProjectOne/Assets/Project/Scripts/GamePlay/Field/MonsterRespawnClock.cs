@@ -51,6 +51,12 @@ namespace ProjectOne.Field
 			_bossKilledDay[bossKey(fieldId, spawnId)] = resetDay;
 		}
 
+		// 필드보스 처치 기록 삭제 — 보스소환석으로 즉시 리스폰시킬 때 쓴다.
+		public void ClearBossKill(int fieldId, int spawnId)
+		{
+			_bossKilledDay.Remove(bossKey(fieldId, spawnId));
+		}
+
 		// 오늘 처치한 필드보스인지 — 다음 06시까지 리젠되지 않는다.
 		public bool IsBossKilledToday(int fieldId, int spawnId)
 		{

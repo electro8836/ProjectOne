@@ -7,7 +7,7 @@ namespace ProjectOne.Consumables
 	// 소모품 정적 조회 캐시 + 데이터 정합성 검증.
 	//
 	// 소모품은 단발성만 둔다 — 지속 버프·회복·상자형은 넣지 않는다(밸런스·공수 대비 단점).
-	// 현재 정의된 효과가 없다 — 첫 소모품 효과를 추가할 때 bake / validateParams / ConsumableUser.apply 에 분기를 넣는다.
+	// 효과를 추가할 때 bake / validateParams / ConsumableUser.apply 에 분기를 넣는다.
 	//
 	// EffectParam_1/2 는 자유 형식 문자열이라 사용할 때마다 파싱하지 않고 Build 시점에 굽는다.
 	// RewardCatalog 와 동일 패턴 — BootState 가 테이블 로드 직후 Build() 를 호출한다.
@@ -82,9 +82,12 @@ namespace ProjectOne.Consumables
 			baked.effect = row.ConsumeEffect;
 			baked.isValid = true;
 
-			// 아직 처리할 효과 종류가 없다 — 모든 행이 사용 대상에서 빠진다.
 			switch (row.ConsumeEffect)
 			{
+				// 파라미터 없음 — 대상 보스는 사용 시점의 히어로 구역이 정한다.
+				case ConsumeEffect.BossSummon:
+					break;
+
 				default:
 					baked.isValid = false;
 					break;
@@ -157,6 +160,9 @@ namespace ProjectOne.Consumables
 			// 효과별 검증은 효과를 추가할 때 함께 넣는다 (소모품 설계 9장).
 			switch (baked.effect)
 			{
+				case ConsumeEffect.BossSummon:
+					break;
+
 				default:
 					Debug.LogWarning($"[ConsumableCatalog] Consumable {baked.itemId} 의 ConsumeEffect {baked.effect} 를 처리하는 코드가 없습니다.");
 					issues++;

@@ -38,6 +38,22 @@ namespace ProjectOne.Shared
 		public FieldBossKillDto kill;			// 저장된 처치 기록 — 리스폰 판정에 반영한다
 	}
 
+	// 보스소환석 사용 — 오늘 처치한 보스의 처치 기록을 지워 즉시 리스폰시킨다.
+	[System.Serializable]
+	public class BossSummonRequest
+	{
+		public int fieldId;					// Table_Zone ID — 히어로가 있는 보스 구역
+		public int spawnId;					// MonsterSpawn 행 ID (RespawnType.DailyReset)
+		public int itemId;					// 사용한 소모품 (ConsumeEffect.BossSummon)
+	}
+
+	[System.Serializable]
+	public class BossSummonResponse : ServerResponse
+	{
+		public int fieldId;
+		public int spawnId;
+	}
+
 	[System.Serializable]
 	public class FieldSettleRequest
 	{
