@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
+using ProjectOne.Audio;
 using ProjectOne.Utils;
 using ProjectOne.Event;
 using ProjectOne.Items;
@@ -37,8 +38,19 @@ namespace ProjectOne.UI
 		// UIManager 직속(=Canvas 없는 루트의 자식)이어야 WorldSpace 로 산다.
 		[SerializeField] private Canvas _worldCanvas;
 
-		[Header("네트워크 딤")]
-		[SerializeField] private GameObject _networkBlockerPrefab;
+		// UI Toolkit 층 — 위 Canvas 와 같은 정렬 값의 PanelSettings 를 쓴다(UI구조_설계.md 2.1).
+		// 전환 중에는 UGUI 화면과 UI Toolkit 화면이 정렬 값대로 섞여 그려진다.
+		[Header("UI Toolkit 층")]
+		[SerializeField] private UIDocument _hudLayer;			// 90 (UGUI HUD 캔버스 100 아래 — 던전 HUD 가 위에 온다)
+		[SerializeField] private UIDocument _windowLayer;		// 200
+		[SerializeField] private UIDocument _navigationLayer;	// 300
+		[SerializeField] private UIDocument _popupLayer;		// 350
+		[SerializeField] private UIDocument _systemLayer;		// 400
+
+		// UI Toolkit 클릭음 — FMOD event:/SFX/<이름>. UGUI 버튼 테마(NormalButtonTheme / TabButtonTheme)와 같은 소리다.
+		[Header("UI Toolkit 클릭음")]
+		[SerializeField] private string _clickSfx = "block_small_73";
+		[SerializeField] private string _tabClickSfx = "block_small_69";
 
 		// 이 시간(초) 안에 응답이 오면 딤을 보이지 않는다 — 응답이 실제로 지연될 때만 보인다.
 		// 그동안에도 입력은 투명 차단막으로 즉시 막는다(응답 전 연타·탭 전환·창 닫기 방지).
@@ -66,11 +78,6 @@ namespace ProjectOne.UI
 
 		// 현재 진행 중인 팝업의 CancellationTokenSource
 		private CancellationTokenSource _popupCts;
-
-		// 공용 팝업은 별도 CTS 를 쓴다. _popupCts 를 같이 쓰면 확인 팝업을 여는 순간
-		// 그 아래 팝업(노드 팝업 등)이 취소되어 파괴된다 — 확인 팝업은 아래를 밀어내는 것이 아니라
-		// 그 위에 겹치는 존재다.
-		private CancellationTokenSource _commonPopupCts;
 
 		// 재화 목록 팝업도 별도 CTS 를 쓴다. 이 팝업의 슬롯은 설명 툴팁(SimplePopup)을 띄우는데,
 		// 툴팁이 _popupCts 를 취소하면 그것을 띄운 목록 팝업 자신이 닫혀 버린다.
@@ -106,16 +113,18 @@ namespace ProjectOne.UI
 		// 계정 팝업도 전용이다 — 위에 뜨는 닉네임 변경 팝업이 _popupCts 를 취소한다.
 		private CancellationTokenSource _accountPopupCts;
 
-		// 네트워크 딤 — 1회 생성 후 캐시(SetActive 토글로 재사용)
-		private GameObject _networkBlocker;
-		// 딤 표시 여부 — 요청 즉시 alpha 0 으로 입력만 막고, 지연 뒤 alpha 1 로 보인다.
-		private CanvasGroup _networkBlockerGroup;
+		// 네트워크 딤 — System 층에 1회 만들어 두고 display 로 켜고 끈다.
+		// 차단막(_networkBlocker)은 늘 입력을 막고, 보이는 내용(_networkBlockerContent)만 지연 뒤 보인다.
+		private VisualElement _networkBlocker;
+		private VisualElement _networkBlockerContent;
+		private VisualElement _networkBlockerSpinner;
+		private IVisualElementScheduledItem _networkBlockerSpin;
 		// 동시 네트워크 요청 참조카운트 — 0이 되면 딤을 닫는다.
 		private int _blockerRefCount;
 		// 지연 표시 코루틴 — 닫힘 시 중지
 		private Coroutine _blockerDelayCo;
-		// 딤 안의 문구(Text). 평소 응답 대기에는 쓰지 않고 꺼 둔다 — ShowNetworkMessage 로만 켠다.
-		private TMP_Text _networkBlockerText;
+		// 딤 안의 문구. 평소 응답 대기에는 쓰지 않고 꺼 둔다 — ShowNetworkMessage 로만 켠다.
+		private Label _networkBlockerText;
 		private bool _networkMessageShown;
 
 		protected override void Awake()
@@ -123,6 +132,7 @@ namespace ProjectOne.UI
 			base.Awake();
 			ensureEventSystem();
 			validateCanvases();
+			validateToolkitLayers();
 			EventManager.Instance.Subscribe<GameStateChangedEvent>(onGameStateChanged);
 		}
 
@@ -185,6 +195,96 @@ namespace ProjectOne.UI
 			{
 				Debug.LogError("[UIManager] _worldCanvas 가 비었습니다 — 월드 게이지를 띄울 수 없습니다.");
 			}
+		}
+
+		// validateCanvases 와 같은 이유 — 직렬화 연결이 끊기면 부팅 첫 줄에서 밝힌다.
+		private void validateToolkitLayers()
+		{
+			validateToolkitLayer(_hudLayer, "_hudLayer");
+			validateToolkitLayer(_windowLayer, "_windowLayer");
+			validateToolkitLayer(_navigationLayer, "_navigationLayer");
+			validateToolkitLayer(_popupLayer, "_popupLayer");
+			validateToolkitLayer(_systemLayer, "_systemLayer");
+		}
+
+		private static void validateToolkitLayer(UIDocument layer, string fieldName)
+		{
+			if (layer == null)
+			{
+				Debug.LogError($"[UIManager] {fieldName} 가 비었습니다 — 그 층의 UI Toolkit 화면을 띄울 수 없습니다.");
+			}
+		}
+
+		// 층 루트. 빈 곳을 누르면 아래 층(UGUI 포함)으로 통과시킨다 — 화면이 붙은 곳만 입력을 받는다.
+		// 클릭음도 여기서 층마다 한 번 건다(같은 콜백은 중복 등록되지 않는다).
+		// Awake 에서 하지 않는 이유: 자식 UIDocument 의 OnEnable 이 아직 돌지 않아 rootVisualElement 가 없다.
+		private VisualElement getLayerRoot(UIDocument layer)
+		{
+			VisualElement root = layer.rootVisualElement;
+			root.pickingMode = PickingMode.Ignore;
+			root.RegisterCallback<ClickEvent>(onLayerClicked);
+			return root;
+		}
+
+		// ── 클릭음 ─────────────────────────────────────────────────────
+		//
+		// 버튼마다 연결하지 않고 층 루트에서 올라오는(bubble) 클릭을 받아 한꺼번에 낸다.
+		// 끌어서 스크롤한 뒤의 클릭은 ScrollDragManipulator 가 삼키므로 여기까지 오지 않는다.
+		// 소리 대상: Button · 탭(.tab / .nav-tab) · 버튼이 아니지만 누르는 요소(.sfx-click — 아이템 칸, 목록 행 등).
+
+		private void onLayerClicked(ClickEvent evt)
+		{
+			VisualElement element = evt.target as VisualElement;
+			while (element != null && element != evt.currentTarget)
+			{
+				if (element.ClassListContains("tab") == true || element.ClassListContains("nav-tab") == true)
+				{
+					playClickSfx(_tabClickSfx);
+					return;
+				}
+
+				if (element is Button || element.ClassListContains("sfx-click") == true)
+				{
+					playClickSfx(_clickSfx);
+					return;
+				}
+
+				element = element.parent;
+			}
+		}
+
+		private static void playClickSfx(string sfxName)
+		{
+			if (string.IsNullOrEmpty(sfxName) == false && AudioManager.HasInstance == true)
+			{
+				AudioManager.Instance.PlaySFX(sfxName);
+			}
+		}
+
+		// 팝업 프리펩을 팝업 캔버스 아래에 만든다. UI Toolkit 팝업이면 팝업 층에도 붙인다 —
+		// 전환 중에는 UGUI 팝업(던전)과 UI Toolkit 팝업이 같은 경로로 열린다.
+		private GameObject spawnPopup(GameObject prefab)
+		{
+			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			ToolkitScreen toolkit = go.GetComponent<ToolkitScreen>();
+			if (toolkit != null && _popupLayer != null)
+			{
+				toolkit.Attach(getLayerRoot(_popupLayer));
+			}
+
+			return go;
+		}
+
+		// UI Toolkit 화면이면 층 루트에 붙인다. UGUI 화면은 Canvas 아래 생성만으로 충분하다.
+		private void attachToLayer(UIScreen screen, UIDocument layer)
+		{
+			ToolkitScreen toolkit = screen as ToolkitScreen;
+			if (toolkit == null || layer == null)
+			{
+				return;
+			}
+
+			toolkit.Attach(getLayerRoot(layer));
 		}
 
 		protected override void OnDestroy()
@@ -259,7 +359,7 @@ namespace ProjectOne.UI
 				setBlockerVisible(false);
 			}
 
-			_networkBlocker.SetActive(true);
+			setBlockerShown(true);
 
 			_blockerDelayCo = StartCoroutine(showBlockerDelayed());
 		}
@@ -288,7 +388,7 @@ namespace ProjectOne.UI
 			// 문구가 떠 있으면 그쪽이 닫을 때까지 둔다.
 			if (_networkBlocker != null && _networkMessageShown == false)
 			{
-				_networkBlocker.SetActive(false);
+				setBlockerShown(false);
 			}
 		}
 
@@ -299,14 +399,10 @@ namespace ProjectOne.UI
 			ensureNetworkBlocker();
 
 			_networkMessageShown = true;
-			if (_networkBlockerText != null)
-			{
-				_networkBlockerText.text = message;
-				_networkBlockerText.gameObject.SetActive(true);
-			}
+			_networkBlockerText.text = message;
+			_networkBlockerText.style.display = DisplayStyle.Flex;
 
-			_networkBlocker.transform.SetAsLastSibling();
-			_networkBlocker.SetActive(true);
+			setBlockerShown(true);
 			setBlockerVisible(true);
 		}
 
@@ -318,14 +414,11 @@ namespace ProjectOne.UI
 			}
 
 			_networkMessageShown = false;
-			if (_networkBlockerText != null)
-			{
-				_networkBlockerText.gameObject.SetActive(false);
-			}
+			_networkBlockerText.style.display = DisplayStyle.None;
 
 			if (_blockerRefCount <= 0)
 			{
-				_networkBlocker.SetActive(false);
+				setBlockerShown(false);
 				return;
 			}
 
@@ -336,7 +429,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 딤은 최초 1회만 생성해 캐시하고, 이후 SetActive 로 재사용한다.
+		// 딤은 최초 1회만 만들어 System 층에 붙여 두고, 이후 켜고 끄기만 한다.
 		private void ensureNetworkBlocker()
 		{
 			if (_networkBlocker != null)
@@ -344,16 +437,53 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			Transform parent = (_systemCanvas != null) ? _systemCanvas.transform : _popupCanvas.transform;
-			_networkBlocker = Instantiate(_networkBlockerPrefab, parent);
-			_networkBlockerGroup = _networkBlocker.GetComponent<CanvasGroup>();
+			_networkBlocker = new VisualElement();
+			_networkBlocker.AddToClassList("net-blocker");
+
+			_networkBlockerContent = new VisualElement();
+			_networkBlockerContent.AddToClassList("net-blocker__content");
+			_networkBlockerContent.pickingMode = PickingMode.Ignore;
+			_networkBlocker.Add(_networkBlockerContent);
+
+			_networkBlockerSpinner = new VisualElement();
+			_networkBlockerSpinner.AddToClassList("net-blocker__spinner");
+			_networkBlockerSpinner.pickingMode = PickingMode.Ignore;
+			_networkBlockerContent.Add(_networkBlockerSpinner);
 
 			// 문구는 필요할 때만 켠다 — 평소 응답 대기는 회전 아이콘만 보인다.
-			_networkBlockerText = _networkBlocker.GetComponentInChildren<TMP_Text>(true);
-			if (_networkBlockerText != null)
+			_networkBlockerText = new Label();
+			_networkBlockerText.AddToClassList("net-blocker__text");
+			_networkBlockerText.pickingMode = PickingMode.Ignore;
+			_networkBlockerText.style.display = DisplayStyle.None;
+			_networkBlockerContent.Add(_networkBlockerText);
+
+			_networkBlockerSpin = _networkBlockerSpinner.schedule.Execute(spinNetworkBlocker).Every(50);
+			_networkBlockerSpin.Pause();
+
+			_networkBlocker.style.display = DisplayStyle.None;
+			getLayerRoot(_systemLayer).Add(_networkBlocker);
+		}
+
+		// 켜면 층 맨 위로 올린다 — 알림 메시지보다 위에서 입력을 막는다.
+		private void setBlockerShown(bool shown)
+		{
+			if (shown == true)
 			{
-				_networkBlockerText.gameObject.SetActive(false);
+				_networkBlocker.BringToFront();
+				_networkBlockerSpin.Resume();
 			}
+			else
+			{
+				_networkBlockerSpin.Pause();
+			}
+
+			_networkBlocker.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
+		}
+
+		private void spinNetworkBlocker()
+		{
+			float angle = _networkBlockerSpinner.style.rotate.value.angle.value + 30f;
+			_networkBlockerSpinner.style.rotate = new Rotate(new Angle(angle % 360f));
 		}
 
 		// 지연 후 딤 표시 — 지연 동안 모든 요청이 끝나면(refCount 0) 표시하지 않는다.
@@ -371,16 +501,10 @@ namespace ProjectOne.UI
 			setBlockerVisible(true);
 		}
 
-		// 차단막은 그대로 두고 보이기만 바꾼다 — 자식 이미지의 RaycastTarget 이 alpha 0 에서도 입력을 막는다.
+		// 차단막은 그대로 두고 보이기만 바꾼다 — 투명한 상태에서도 차단막이 입력을 막는다.
 		private void setBlockerVisible(bool visible)
 		{
-			if (_networkBlockerGroup == null)
-			{
-				Debug.LogWarning("[UIManager] 네트워크 딤 프리팹 루트에 CanvasGroup 이 없습니다 — 즉시 보입니다.");
-				return;
-			}
-
-			_networkBlockerGroup.alpha = visible ? 1f : 0f;
+			_networkBlocker.EnableInClassList("net-blocker--visible", visible);
 		}
 
 		// ── 영속 MainHUD ────────────────────────────────────────────────
@@ -389,22 +513,23 @@ namespace ProjectOne.UI
 		// HudContext 가시성으로 정한다 (MainHud.ApplyContext).
 
 		private const string MainHudAddress = "UIPrefab_MainHUD";
+		private const string JoystickAddress = "UIPrefab_Joystick";
 
-		private GameObject _mainHud;
+		private MainHud _mainHud;
 
-		// MainHUD 안에 중첩된 보스 배너. 던전 전용 HUD 가 자리를 양보할 대상을 찾는 유일한 경로다 —
-		// 서로 다른 프리팹이라 인스펙터로 이을 수 없다.
-		private BossUI _bossUI;
+		// 이동 조이스틱 — UGUI 라 HUD 캔버스에 따로 둔다. 자기 Canvas(정렬 80)로 툴킷 HUD 층(90) 아래에 깔린다.
+		private GameObject _joystick;
 
-		public BossUI BossUI
+		// MainHUD 안의 보스 배너. 던전 전용 HUD 가 자리를 양보할 대상을 찾는 유일한 경로다.
+		public HudBossBanner BossUI
 		{
-			get { return _bossUI; }
+			get { return (_mainHud != null) ? _mainHud.BossBanner : null; }
 		}
 
 		// 마을 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
 		//
-		// **히어로 스폰보다 먼저 불려야 한다.** JoystickController 가 Awake 에서 UnitSpawnedEvent 를
-		// 구독하므로, 히어로가 뜬 뒤에 HUD 가 생기면 이벤트를 놓쳐 조이스틱이 영영 대상을 못 찾는다.
+		// **히어로 스폰보다 먼저 불려야 한다.** 조이스틱·HUD 위젯이 UnitSpawnedEvent 를 구독하므로,
+		// 히어로가 뜬 뒤에 HUD 가 생기면 이벤트를 놓쳐 영영 대상을 못 찾는다.
 		public async UniTask EnsureMainHudAsync(CancellationToken ct)
 		{
 			if (_mainHud != null)
@@ -420,16 +545,20 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			// HUD 캔버스(100) 자식으로 둔다 — 창(200)·네비(300)·팝업(350)·시스템(400)이 자연히 위를 덮는다.
-			// UIManager 자신이 영속이라 별도 DontDestroyOnLoad 가 필요 없다.
-			_mainHud = Instantiate(prefab, _hudCanvas.transform);
-
-			// 비활성 포함으로 찾는다 — BossUI 는 Awake 에서 스스로 꺼진다.
-			_bossUI = _mainHud.GetComponentInChildren<BossUI>(true);
-			if (_bossUI == null)
+			GameObject joystickPrefab = await ResourceManager.Instance.AcquireAsync<GameObject>(JoystickAddress, ct);
+			if (joystickPrefab == null)
 			{
-				Debug.LogWarning("[UIManager] MainHUD 안에서 BossUI 를 찾지 못했습니다 — 던전 HUD 가 보스 배너에 자리를 비켜주지 못합니다.");
+				Debug.LogError($"[UIManager] 조이스틱 프리팹을 찾지 못했습니다: {JoystickAddress}");
 			}
+			else
+			{
+				_joystick = Instantiate(joystickPrefab, _hudCanvas.transform);
+			}
+
+			// HUD 층(90) — 창(200)·네비(300)·팝업(350)·시스템(400)이 자연히 위를 덮는다.
+			// UIManager 자신이 영속이라 별도 DontDestroyOnLoad 가 필요 없다.
+			_mainHud = Instantiate(prefab, this.transform).GetComponent<MainHud>();
+			attachToLayer(_mainHud, _hudLayer);
 		}
 
 		// ── 타이틀 복귀 ────────────────────────────────────────────────
@@ -442,7 +571,7 @@ namespace ProjectOne.UI
 
 			// 떠 있는 팝업 — 취소를 받은 Show 메서드가 스스로 파괴·해제한다.
 			cancelPopup(ref _popupCts);
-			cancelPopup(ref _commonPopupCts);
+			cancelToolkitPopups();
 			cancelPopup(ref _currencyListCts);
 			cancelPopup(ref _questListCts);
 			cancelPopup(ref _dailyBonusCts);
@@ -463,6 +592,16 @@ namespace ProjectOne.UI
 			resetNetworkBlocker();
 		}
 
+		// UI Toolkit 팝업을 모두 취소한다. 취소가 그 자리에서 이어져 사전을 고칠 수 있어 먼저 복사해 둔다.
+		private void cancelToolkitPopups()
+		{
+			List<CancellationTokenSource> list = new List<CancellationTokenSource>(_toolkitPopupCts.Values);
+			for (int i = 0; i < list.Count; i++)
+			{
+				list[i].Cancel();
+			}
+		}
+
 		private static void cancelPopup(ref CancellationTokenSource cts)
 		{
 			if (cts == null)
@@ -478,14 +617,20 @@ namespace ProjectOne.UI
 		// HUD 는 맥락이 None 이어도 재화 바·조이스틱 같은 상시 위젯이 남아 타이틀을 덮는다.
 		private void releaseMainHud()
 		{
+			if (_joystick != null)
+			{
+				Destroy(_joystick);
+				_joystick = null;
+				ResourceManager.Instance.Release(JoystickAddress);
+			}
+
 			if (_mainHud == null)
 			{
 				return;
 			}
 
-			Destroy(_mainHud);
+			Destroy(_mainHud.gameObject);
 			_mainHud = null;
-			_bossUI = null;
 			ResourceManager.Instance.Release(MainHudAddress);
 		}
 
@@ -528,7 +673,7 @@ namespace ProjectOne.UI
 			ResourceManager.Instance.Release(address);
 		}
 
-		// 딤은 프리팹을 인스펙터로 들고 있어 파괴하지 않는다 — 꺼진 상태로만 되돌린다.
+		// 딤은 파괴하지 않는다 — 꺼진 상태로만 되돌린다.
 		private void resetNetworkBlocker()
 		{
 			_blockerRefCount = 0;
@@ -540,14 +685,10 @@ namespace ProjectOne.UI
 				_blockerDelayCo = null;
 			}
 
-			if (_networkBlockerText != null)
-			{
-				_networkBlockerText.gameObject.SetActive(false);
-			}
-
 			if (_networkBlocker != null)
 			{
-				_networkBlocker.SetActive(false);
+				_networkBlockerText.style.display = DisplayStyle.None;
+				setBlockerShown(false);
 			}
 		}
 
@@ -718,6 +859,7 @@ namespace ProjectOne.UI
 
 			_navigationBar = Instantiate(prefab, _navigationCanvas.transform);
 			_navigationBarView = _navigationBar.GetComponent<NavigationBar>();
+			attachToLayer(_navigationBarView, _navigationLayer);
 
 			// 네비게이션 바가 뒤늦게 서는 경우가 있다 — 이미 열려 있는 창의 요구를 바로 반영한다.
 			applyNavigationBarVisibility();
@@ -774,7 +916,7 @@ namespace ProjectOne.UI
 			// 네트워크 딤이 먼저 만들어져 있었다면 메시지들이 그 위에 붙었다 — 딤을 다시 최상단으로.
 			if (_networkBlocker != null)
 			{
-				_networkBlocker.transform.SetAsLastSibling();
+				_networkBlocker.BringToFront();
 			}
 		}
 
@@ -836,6 +978,14 @@ namespace ProjectOne.UI
 			}
 
 			GameObject go = Instantiate(prefab, _systemCanvas.transform);
+
+			// UI Toolkit 알림이면 System 층(400)에 붙인다.
+			ToolkitScreen toolkit = go.GetComponent<ToolkitScreen>();
+			if (toolkit != null && _systemLayer != null)
+			{
+				toolkit.Attach(getLayerRoot(_systemLayer));
+			}
+
 			T view = go.GetComponent<T>();
 			if (view == null)
 			{
@@ -1019,6 +1169,7 @@ namespace ProjectOne.UI
 				return null;
 			}
 
+			attachToLayer(screen, _windowLayer);
 			_windowStack.Push(new WindowEntry(screen, address));
 			applyNavigationBarVisibility();
 
@@ -1066,6 +1217,8 @@ namespace ProjectOne.UI
 				ResourceManager.Instance.Release(address);
 				return null;
 			}
+
+			attachToLayer(screen, _windowLayer);
 
 			// 새 창만 남기고, 밀려난 것들은 아래에서 정리한다.
 			WindowEntry[] closing = _windowStack.ToArray();
@@ -1135,7 +1288,6 @@ namespace ProjectOne.UI
 
 		// ── 공통 팝업 ───────────────────────────────────────────────────
 
-		private const string COMMON_POPUP_ADDRESS = "UIPrefab_CommonPopup";
 		private const string SIMPLE_POPUP_ADDRESS = "UIPrefab_SimplePopup";
 		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
 		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
@@ -1167,7 +1319,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			PetEnhancePopup popup = go.GetComponent<PetEnhancePopup>();
 			if (popup == null)
 			{
@@ -1199,7 +1351,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			StatPopup popup = go.GetComponent<StatPopup>();
 			if (popup == null)
 			{
@@ -1231,7 +1383,7 @@ namespace ProjectOne.UI
 				return MenuPopupResult.None;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			MenuPopup popup = go.GetComponent<MenuPopup>();
 			if (popup == null)
 			{
@@ -1264,7 +1416,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			NicknamePopup popup = go.GetComponent<NicknamePopup>();
 			if (popup == null)
 			{
@@ -1296,7 +1448,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			AccountPopup popup = go.GetComponent<AccountPopup>();
 			if (popup == null)
 			{
@@ -1328,7 +1480,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			MailBoxPopup popup = go.GetComponent<MailBoxPopup>();
 			if (popup == null)
 			{
@@ -1360,7 +1512,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			MailSlotPopup popup = go.GetComponent<MailSlotPopup>();
 			if (popup == null)
 			{
@@ -1392,7 +1544,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			CurrencyListPopup popup = go.GetComponent<CurrencyListPopup>();
 			if (popup == null)
 			{
@@ -1424,7 +1576,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			ItemInfoPopup popup = go.GetComponent<ItemInfoPopup>();
 			if (popup == null)
 			{
@@ -1457,7 +1609,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			ItemInfoPopup popup = go.GetComponent<ItemInfoPopup>();
 			if (popup == null)
 			{
@@ -1490,7 +1642,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			ConsumableInfoPopup popup = go.GetComponent<ConsumableInfoPopup>();
 			if (popup == null)
 			{
@@ -1525,7 +1677,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			SimplePopup popup = go.GetComponent<SimplePopup>();
 			if (popup == null)
 			{
@@ -1562,7 +1714,7 @@ namespace ProjectOne.UI
 				return false;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			ActListPopup popup = go.GetComponent<ActListPopup>();
 			if (popup == null)
 			{
@@ -1596,7 +1748,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			GoldDungeonPopup popup = go.GetComponent<GoldDungeonPopup>();
 			if (popup == null)
 			{
@@ -1627,7 +1779,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			LabyrinthDungeonPopup popup = go.GetComponent<LabyrinthDungeonPopup>();
 			if (popup == null)
 			{
@@ -1658,7 +1810,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			RuinsDungeonPopup popup = go.GetComponent<RuinsDungeonPopup>();
 			if (popup == null)
 			{
@@ -1689,7 +1841,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			RiftDungeonPopup popup = go.GetComponent<RiftDungeonPopup>();
 			if (popup == null)
 			{
@@ -1727,7 +1879,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			RewardPopup popup = go.GetComponent<RewardPopup>();
 			if (popup == null)
 			{
@@ -1759,7 +1911,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			QuestListPopup popup = go.GetComponent<QuestListPopup>();
 			if (popup == null)
 			{
@@ -1791,7 +1943,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			DailyBonusPopup popup = go.GetComponent<DailyBonusPopup>();
 			if (popup == null)
 			{
@@ -1824,7 +1976,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			HeroPassPopup popup = go.GetComponent<HeroPassPopup>();
 			if (popup == null)
 			{
@@ -1856,7 +2008,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			RankingPopup popup = go.GetComponent<RankingPopup>();
 			if (popup == null)
 			{
@@ -1888,7 +2040,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			PlayerInfoPopup popup = go.GetComponent<PlayerInfoPopup>();
 			if (popup == null)
 			{
@@ -1921,7 +2073,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			DecompositionPopup popup = go.GetComponent<DecompositionPopup>();
 			if (popup == null)
 			{
@@ -1953,7 +2105,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = spawnPopup(prefab);
 			BoxRewardPopup popup = go.GetComponent<BoxRewardPopup>();
 			if (popup == null)
 			{
@@ -1971,40 +2123,158 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 공용 확인 팝업을 _popupCanvas(창보다 상위)에 열고 어떤 버튼이 눌렸는지 돌려준다.
-		//
-		// 다른 팝업과 달리 주소를 호출부에서 받지 않는다 — 공용 팝업은 하나뿐이라
-		// 주소가 호출부마다 흩어지면 UIScreenCatalog 주석이 경고하는 상황이 그대로 재현된다.
-		public async UniTask<CommonPopupResult> ShowCommonPopupAsync(CommonPopupData data, CancellationToken ct)
+		// 공용 확인 팝업을 열고 어떤 버튼이 눌렸는지 돌려준다 (UI Toolkit — UIPopupId.Common).
+		public UniTask<CommonPopupResult> ShowCommonPopupAsync(CommonPopupData data, CancellationToken ct)
 		{
-			_commonPopupCts?.Cancel();
-			_commonPopupCts?.Dispose();
-			_commonPopupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+			return ShowPopupAsync<CommonPopupToolkit, CommonPopupData, CommonPopupResult>(UIPopupId.Common, data, ct);
+		}
 
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(COMMON_POPUP_ADDRESS, _commonPopupCts.Token);
-			if (prefab == null)
+		// ── UI Toolkit 툴팁 ─────────────────────────────────────────────
+		// 누른 요소 위에 잠깐 뜨는 한두 줄 설명(재화·재료처럼 정식 팝업이 필요 없는 대상). 팝업 층에 하나만 둔다.
+
+		private const float TooltipSeconds = 2f;
+		private const float TooltipGap = 20f;		// 앵커 위쪽 여백
+		private const float TooltipPadding = 16f;	// 화면 좌우 끝에서 띄울 여백
+
+		private Label _tooltip;
+		private Rect _tooltipAnchor;
+		private CancellationTokenSource _tooltipCts;
+
+		public async UniTask ShowTooltipAsync(string text, VisualElement anchor, CancellationToken ct)
+		{
+			if (_tooltipCts != null)
 			{
-				return CommonPopupResult.Closed;
+				_tooltipCts.Cancel();
+				_tooltipCts.Dispose();
 			}
 
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
-			CommonPopup popup = go.GetComponent<CommonPopup>();
+			_tooltipCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+			CancellationTokenSource mine = _tooltipCts;
+
+			if (_tooltip == null)
+			{
+				_tooltip = new Label();
+				_tooltip.AddToClassList("tooltip");
+				_tooltip.pickingMode = PickingMode.Ignore;
+				_tooltip.RegisterCallback<GeometryChangedEvent>(onTooltipGeometryChanged);
+			}
+
+			_tooltip.text = text;
+			_tooltipAnchor = (anchor != null) ? anchor.worldBound : new Rect(540f, 960f, 0f, 0f);
+			getLayerRoot(_popupLayer).Add(_tooltip);
+			placeTooltip();
+
+			bool cancelled = await UniTask.Delay(System.TimeSpan.FromSeconds(TooltipSeconds), cancellationToken: mine.Token).SuppressCancellationThrow();
+
+			// 새 툴팁이 이어받았으면(그쪽이 다시 붙였다) 건드리지 않는다.
+			if (cancelled == true && _tooltipCts != mine)
+			{
+				return;
+			}
+
+			_tooltip.RemoveFromHierarchy();
+		}
+
+		// 크기가 정해진 뒤 앵커 위·화면 안쪽으로 다시 맞춘다.
+		private void onTooltipGeometryChanged(GeometryChangedEvent evt)
+		{
+			placeTooltip();
+		}
+
+		private void placeTooltip()
+		{
+			VisualElement layer = _tooltip.parent;
+			if (layer == null)
+			{
+				return;
+			}
+
+			float width = _tooltip.resolvedStyle.width;
+			float height = _tooltip.resolvedStyle.height;
+			if (float.IsNaN(width) == true || float.IsNaN(height) == true)
+			{
+				return;
+			}
+
+			float maxLeft = layer.resolvedStyle.width - width - TooltipPadding;
+			float left = Mathf.Clamp(_tooltipAnchor.center.x - width * 0.5f, TooltipPadding, Mathf.Max(TooltipPadding, maxLeft));
+			float top = _tooltipAnchor.yMin - TooltipGap - height;
+
+			// 같은 값을 다시 쓰면 GeometryChangedEvent 가 또 오지 않는다 — 바뀔 때만 쓴다.
+			if (Mathf.Approximately(_tooltip.resolvedStyle.left, left) == false)
+			{
+				_tooltip.style.left = left;
+			}
+
+			if (Mathf.Approximately(_tooltip.resolvedStyle.top, top) == false)
+			{
+				_tooltip.style.top = top;
+			}
+		}
+
+		// ── UI Toolkit 팝업 ─────────────────────────────────────────────
+		// 팝업마다 ShowXxxPopupAsync 를 두지 않고 이 함수 하나로 연다 (UI구조_설계.md 4.1).
+		// 같은 ID 를 다시 열면 앞의 것을 닫고, 다른 ID 는 위에 겹친다 — 위 팝업이 아래 팝업을 취소하지 않는다.
+
+		private readonly Dictionary<UIPopupId, CancellationTokenSource> _toolkitPopupCts = new Dictionary<UIPopupId, CancellationTokenSource>();
+
+		public async UniTask<TResult> ShowPopupAsync<TPopup, TArgs, TResult>(UIPopupId id, TArgs args, CancellationToken ct)
+			where TPopup : UIPopup<TArgs, TResult>
+		{
+			string address = UIPopupCatalog.GetAddress(id);
+			if (string.IsNullOrEmpty(address) == true)
+			{
+				Debug.LogError($"[UIManager] {id} 의 주소가 UIPopupCatalog 에 없습니다.");
+				return default;
+			}
+
+			CancellationTokenSource previous;
+			if (_toolkitPopupCts.TryGetValue(id, out previous) == true)
+			{
+				// 앞의 팝업은 자기 흐름에서 닫히고 CTS 를 정리한다.
+				previous.Cancel();
+			}
+
+			CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+			_toolkitPopupCts[id] = cts;
+
+			TResult result = await showPopupCoreAsync<TPopup, TArgs, TResult>(address, args, cts.Token);
+
+			CancellationTokenSource current;
+			if (_toolkitPopupCts.TryGetValue(id, out current) == true && current == cts)
+			{
+				_toolkitPopupCts.Remove(id);
+			}
+
+			cts.Dispose();
+			return result;
+		}
+
+		private async UniTask<TResult> showPopupCoreAsync<TPopup, TArgs, TResult>(string address, TArgs args, CancellationToken ct)
+			where TPopup : UIPopup<TArgs, TResult>
+		{
+			// 로드 중 취소돼도 ShowPopupAsync 의 CTS 정리까지 이어지게 예외 대신 결과로 받는다.
+			(bool cancelled, GameObject prefab) = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct).SuppressCancellationThrow();
+			if (cancelled == true || prefab == null)
+			{
+				return default;
+			}
+
+			GameObject go = spawnPopup(prefab);
+			TPopup popup = go.GetComponent<TPopup>();
 			if (popup == null)
 			{
+				Debug.LogError($"[UIManager] {address} 에 {typeof(TPopup).Name} 이 없습니다.");
 				Destroy(go);
-				ResourceManager.Instance.Release(COMMON_POPUP_ADDRESS);
-				return CommonPopupResult.Closed;
+				releaseWindow(address);
+				return default;
 			}
 
-			CommonPopupResult result = await popup.ShowAsync(data, _commonPopupCts.Token);
+			popup.Attach(getLayerRoot(_popupLayer));
+			TResult result = await popup.ShowAsync(args, ct);
+
 			Destroy(go);
-
-			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
-			if (ResourceManager.HasInstance)
-			{
-				ResourceManager.Instance.Release(COMMON_POPUP_ADDRESS);
-			}
-
+			releaseWindow(address);
 			return result;
 		}
 

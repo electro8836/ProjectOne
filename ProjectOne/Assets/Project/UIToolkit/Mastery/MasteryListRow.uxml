@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<!-- 전체 마스터리 목록 1행. 스타일은 MasteryScreen.uss 가 화면 루트에서 내려준다. -->
+	<ui:VisualElement class="mastery-row">
+		<ui:VisualElement class="mastery-row__icon-frame">
+			<ui:VisualElement name="icon" class="icon" />
+		</ui:VisualElement>
+		<ui:VisualElement class="mastery-row__body">
+			<ui:VisualElement class="mastery-row__title-row">
+				<ui:Label name="name" text="" class="mastery-row__name" />
+				<ui:Label name="level" text="" class="level-text" />
+			</ui:VisualElement>
+			<ui:VisualElement class="gauge">
+				<ui:VisualElement name="fill" class="gauge__fill" />
+				<ui:Label name="gauge-text" text="" class="gauge__text" />
+			</ui:VisualElement>
+			<ui:Label name="bonus" text="" class="mastery-row__bonus" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

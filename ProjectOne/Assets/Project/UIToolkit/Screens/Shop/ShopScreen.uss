@@ -1,0 +1,213 @@
+/* 상점 화면 — 카테고리 탭 + 그룹별 상품 목록. 부품·색·글자는 Theme.uss 를 따른다. */
+
+.tab {
+	font-size: 36px;
+}
+
+.shop-list {
+	flex-grow: 1;
+}
+
+.shop-group-title {
+	margin: 18px 0 12px 6px;
+	font-size: 48px;
+	color: var(--gold);
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+}
+
+/* 낱개 상품 3열 */
+.shop-grid {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: flex-start;
+}
+
+/* ── 상품 칸 공통 ───────────────────────────────── */
+
+.shop-card {
+	padding: 20px;
+	margin-bottom: 16px;
+}
+
+.shop-card__title {
+	font-size: 36px;
+	-unity-text-align: middle-center;
+	white-space: normal;
+}
+
+.shop-card__limit {
+	font-size: 36px;
+	color: var(--ink-sub);
+	-unity-text-align: middle-center;
+}
+
+.shop-card__buy {
+	min-width: 0;
+	height: 96px;
+	padding: 0 16px 8px 16px;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+
+.shop-card__price-icon {
+	width: 48px;
+	height: 48px;
+	margin-right: 8px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.shop-card__price {
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+/* ── 낱개 (3열 그리드) ─────────────────────────── */
+
+.shop-card--single {
+	width: 31.5%;
+	margin-right: 1.5%;
+	align-items: stretch;
+}
+
+.shop-card__media {
+	height: 200px;
+	align-items: center;
+	justify-content: center;
+	margin: 8px 0;
+}
+
+.shop-card__currency {
+	width: 180px;
+	height: 180px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.shop-card__item {
+	width: 180px;
+	height: 180px;
+}
+
+.shop-card__amount {
+	font-size: 48px;
+	color: var(--gold);
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+}
+
+/* 보너스 — 칸 오른쪽 위 모서리 밖으로 걸쳐 이름을 가리지 않는다 */
+.shop-card__bonus {
+	position: absolute;
+	top: -18px;
+	right: -10px;
+}
+
+.shop-card--single {
+	margin-top: 14px;
+}
+
+/* ── 넓은 칸 (상자·패키지·패스·광고 제거) ──────── */
+
+.shop-card__row {
+	flex-direction: row;
+	align-items: center;
+}
+
+.shop-card__icon-frame {
+	width: 200px;
+	height: 200px;
+	padding: 18px;
+	margin-right: 24px;
+	background-image: url("../../Pixel/slot_gold.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.shop-card__text {
+	flex-grow: 1;
+	flex-shrink: 1;
+	align-items: flex-start;
+}
+
+.shop-card--wide .shop-card__title {
+	font-size: 48px;
+	-unity-text-align: middle-left;
+	margin-bottom: 8px;
+}
+
+.shop-card--wide .shop-card__limit {
+	-unity-text-align: middle-left;
+}
+
+.shop-card__desc {
+	font-size: 36px;
+	color: var(--ink-sub);
+	white-space: normal;
+	margin-bottom: 8px;
+}
+
+.shop-card__package {
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin: 12px 0;
+}
+
+.shop-card__package .item-cell {
+	width: 160px;
+	height: 160px;
+	margin: 6px;
+}
+
+.shop-card__buttons {
+	flex-direction: row;
+	align-items: center;
+	justify-content: flex-end;
+	margin-top: 14px;
+}
+
+.shop-card__buttons .btn {
+	margin-left: 12px;
+}
+
+.shop-card--wide .shop-card__buy {
+	min-width: 260px;
+}
+
+/* 자동분해 체크 */
+.shop-card__check {
+	flex-direction: row;
+	align-items: center;
+	margin-right: auto;
+	padding: 0;
+	border-width: 0;
+	background-color: rgba(0, 0, 0, 0);
+	font-size: 36px;
+	color: var(--text);
+}
+
+.shop-card__check-box {
+	width: 48px;
+	height: 48px;
+	margin-right: 10px;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 2px;
+}
+
+.shop-card__check-box--on {
+	background-image: url("../../Pixel/slot_gold.png");
+	background-color: var(--green);
+}

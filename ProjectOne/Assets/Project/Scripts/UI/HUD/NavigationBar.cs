@@ -1,141 +1,148 @@
 ﻿using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UIElements;
 using ProjectOne.Event;
 
 namespace ProjectOne.UI
 {
-	// 화면 하단 상시 네비게이션 바.
+	// 하단 네비게이션 바(UIPrefab_NavigationBar, UI Toolkit). 레이아웃은 UIToolkit/HUD/Navigation/NavigationBar.uxml.
+	// UIManager 가 Navigation 층(300)에 한 번 세워 두고, 보일 맥락(마을·필드)과 창이 가리는지에 따라 스스로 숨는다.
 	//
-	// MainHUD 하단에 있던 탭 묶음을 떼어낸 것이다. 뗀 이유는 레이어다 —
-	// MainHUD 는 Overlay(100) 라 창(200)·팝업(300)에 가려지지만, 네비게이션은 창 위에 상시 떠야 한다.
-	// 그래서 UIManager 의 Navigation(350) 캔버스에 따로 붙는다.
-	//
-	// Presenter 를 두지 않는다. 하는 일이 "탭 인덱스 → UIScreenId → 창 열기" 뿐이라 나눌 상태가 없다.
-	public class NavigationBar : UIScreen
+	// 탭을 누르면 그 화면으로 창을 교체하고, 열린 탭을 다시 누르면 창을 모두 닫는다.
+	public class NavigationBar : ToolkitScreen
 	{
-		// 배타 선택은 TabGroup 이 알아서 하고, 여기서는 "선택되면 무엇을 여는가"만 정한다.
-		[SerializeField] private TabGroup _tabs;
+		private const int TAB_COUNT = 5;
 
-		// 탭 순서(Hierarchy 순서)대로의 화면. None 이거나 배열이 짧으면 로그만 남기고 넘어간다.
-		[SerializeField] private UIScreenId[] _tabScreens;
+		// 탭 순서와 열 화면 — UXML 의 tab-0 ~ tab-4 와 같은 순서다.
+		private static readonly UIScreenId[] TabScreens =
+		{
+			UIScreenId.Shop,
+			UIScreenId.Equipment,
+			UIScreenId.World,
+			UIScreenId.Mastery,
+			UIScreenId.Craft
+		};
 
-		// 이 맥락에서만 보인다. 던전처럼 네비게이션이 방해가 되는 곳에서는 체크를 뺀다.
 		[SerializeField] private HudContext _visibleContexts = HudContext.Town | HudContext.Field;
 
-		// 현재 열려 있는 화면의 탭 인덱스. 열린 화면이 없으면 -1.
-		// 같은 탭을 다시 눌렀는지 판별하는 유일한 근거다 — 선택 표시와 어긋나면 토글이 통째로 틀어진다.
+		private readonly Button[] _tabs = new Button[TAB_COUNT];
+		private VisualElement _nav;
+
 		private int _openedIndex = -1;
-
-		// 창을 여닫는 동안 들어온 탭 입력은 버린다.
-		// 화면 열기가 await(Addressable 로드) 라, 연타하면 _openedIndex 가 갱신되기 전에
-		// 다음 클릭이 들어와 "같은 탭인가" 판정이 어긋난다.
 		private bool _isSwitching;
-
-		// 맥락상 보여야 하는가 (GameState 기준)
 		private bool _contextVisible;
-
-		// 위에 뜬 창이 가리고 있는가 (UIManager 가 창 스택 최상단 기준으로 알려준다)
 		private bool _hiddenByWindow;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			if (_tabs != null)
+			_nav = root.Q("nav");
+			for (int i = 0; i < TAB_COUNT; i++)
 			{
-				_tabs.OnTabChanged += onTabChanged;
+				Button tab = root.Q<Button>("tab-" + i);
+				tab.userData = i;
+				tab.RegisterCallback<ClickEvent>(onTabClicked);
+				_tabs[i] = tab;
 			}
 
 			EventManager.Instance.Subscribe<GameStateChangedEvent>(onGameStateChanged);
 			EventManager.Instance.Subscribe<WindowClosedEvent>(onWindowClosed);
-
-			// 부트 직후에는 어느 맥락도 아니다 — 숨긴 상태로 시작하고 상태 전이가 켠다.
-			// 이 컴포넌트는 EventManager(순수 C#) 로 구독하므로 비활성 상태에서도 통지를 받는다.
-			gameObject.SetActive(false);
-		}
-
-		private void OnDestroy()
-		{
-			if (_tabs != null)
-			{
-				_tabs.OnTabChanged -= onTabChanged;
-			}
-
-			EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
-			EventManager.Instance.Unsubscribe<WindowClosedEvent>(onWindowClosed);
-		}
-
-		// ── 가시성 ──────────────────────────────
-
-		// UIManager 전용 — 창이 열리고 닫힐 때마다 불린다.
-		public void SetHiddenByWindow(bool hidden)
-		{
-			_hiddenByWindow = hidden;
-
 			applyVisible();
 		}
 
-		// 맥락과 창, 둘 다 통과해야 보인다.
-		private void applyVisible()
+		protected override void OnDestroy()
 		{
-			gameObject.SetActive(_contextVisible == true && _hiddenByWindow == false);
+			if (IsBound == true)
+			{
+				EventManager.Instance.Unsubscribe<GameStateChangedEvent>(onGameStateChanged);
+				EventManager.Instance.Unsubscribe<WindowClosedEvent>(onWindowClosed);
+			}
+
+			base.OnDestroy();
 		}
 
-		// ── 탭 ────────────────────────────────────────────────────────
+		// 창 스택 최상단이 네비게이션 바를 가리는지 (UIManager 가 알려 준다).
+		public void SetHiddenByWindow(bool hidden)
+		{
+			_hiddenByWindow = hidden;
+			applyVisible();
+		}
 
-		private void onTabChanged(int index)
+		// 코드에서 탭을 연다 — 탭을 누른 것과 같이 창을 교체하고 선택 표시도 옮긴다.
+		public UniTask<UIScreen> OpenTabAsync(UIScreenId screen)
+		{
+			if (_isSwitching == true)
+			{
+				return UniTask.FromResult<UIScreen>(null);
+			}
+
+			int index = indexOf(screen);
+			if (index < 0)
+			{
+				Debug.Log($"[NavigationBar] {screen} 에 연결된 탭이 없습니다.");
+				return UniTask.FromResult<UIScreen>(null);
+			}
+
+			select(index);
+			return switchScreenAsync(screen, index);
+		}
+
+		// ── 내부 ─────────────────────────────────────────────────────────
+
+		private void applyVisible()
+		{
+			if (_nav != null)
+			{
+				_nav.style.display = (_contextVisible == true && _hiddenByWindow == false) ? DisplayStyle.Flex : DisplayStyle.None;
+			}
+		}
+
+		private void select(int index)
+		{
+			for (int i = 0; i < TAB_COUNT; i++)
+			{
+				_tabs[i].EnableInClassList("nav-tab--selected", i == index);
+			}
+		}
+
+		private static int indexOf(UIScreenId screen)
+		{
+			for (int i = 0; i < TabScreens.Length; i++)
+			{
+				if (TabScreens[i] == screen)
+				{
+					return i;
+				}
+			}
+
+			return -1;
+		}
+
+		private void onTabClicked(ClickEvent evt)
 		{
 			if (_isSwitching == true)
 			{
 				return;
 			}
 
-			// 이미 열려 있는 탭을 다시 눌렀다 — 연다가 아니라 닫는다.
-			//
-			// TabGroup 은 범용 배타 선택 컴포넌트라 재클릭을 구분하지 않는다(EquipmentUI 의 분류 탭처럼
-			// 선택이 풀리면 안 되는 사용처가 있다). 그래서 판별은 여기서 한다.
+			int index = (int)((VisualElement)evt.currentTarget).userData;
 			if (index == _openedIndex)
 			{
 				closeAsync().Forget();
 				return;
 			}
 
-			if (_tabScreens == null || index < 0 || index >= _tabScreens.Length)
-			{
-				Debug.Log($"[NavigationBar] 탭 {index} 에 연결된 화면이 없습니다.");
-				return;
-			}
-
-			UIScreenId screen = _tabScreens[index];
-			if (screen == UIScreenId.None)
-			{
-				Debug.Log($"[NavigationBar] 탭 {index} 에 연결된 화면이 없습니다.");
-				return;
-			}
-
-			switchScreenAsync(screen, index).Forget();
+			select(index);
+			switchScreenAsync(TabScreens[index], index).Forget();
 		}
 
-		// 탭 전환은 교체지 겹치기가 아니다 — 새 창만 남고 이전 창은 정리된다.
-		// 닫고 나서 여는 것이 아니라 SwitchWindowAsync 가 새 창을 세운 뒤에 이전 것을 치운다.
-		// 그래야 프리팹을 불러오는 동안 빈 화면이 비쳐 화면이 튀지 않는다.
+		// 실패하면 선택 표시를 이전 상태로 되돌린다.
 		private async UniTask<UIScreen> switchScreenAsync(UIScreenId screen, int index)
 		{
 			_isSwitching = true;
-
 			UIScreen opened = await UIManager.Instance.SwitchWindowAsync(screen, this.GetCancellationTokenOnDestroy());
-
-			// 열기에 실패해도(주소 누락·프리팹 없음) 이전 창은 그대로 남아 있다.
-			// 선택 표시만 새 탭에 두면 "표시된 탭과 보이는 화면이 다른" 상태가 되므로 원래 탭으로 되돌린다.
 			if (opened == null)
 			{
-				if (_openedIndex >= 0)
-				{
-					_tabs.Select(_openedIndex);
-				}
-				else
-				{
-					_tabs.ClearSelection();
-				}
-
+				select(_openedIndex);
 				_isSwitching = false;
 				return null;
 			}
@@ -145,91 +152,31 @@ namespace ProjectOne.UI
 			return opened;
 		}
 
-		// 탭을 누르지 않고 코드로 탭을 이동한다 (장비 정보 팝업의 강화 버튼 → 제작 탭 등).
-		// 탭 클릭과 같은 경로를 태워야 _openedIndex·선택 표시·재클릭 토글이 어긋나지 않는다.
-		// 전환 중이거나 그 화면이 탭에 없으면 null.
-		public UniTask<UIScreen> OpenTabAsync(UIScreenId screen)
-		{
-			if (_isSwitching == true)
-			{
-				return UniTask.FromResult<UIScreen>(null);
-			}
-
-			int index = -1;
-			if (_tabScreens != null)
-			{
-				for (int i = 0; i < _tabScreens.Length; i++)
-				{
-					if (_tabScreens[i] == screen)
-					{
-						index = i;
-						break;
-					}
-				}
-			}
-
-			if (index < 0)
-			{
-				Debug.Log($"[NavigationBar] {screen} 에 연결된 탭이 없습니다.");
-				return UniTask.FromResult<UIScreen>(null);
-			}
-
-			// Select 는 OnTabChanged 를 발행하지 않는다 — 전환은 아래에서 한 번만 한다.
-			_tabs.Select(index);
-			return switchScreenAsync(screen, index);
-		}
-
-		// 열려 있는 화면을 접는다 — 같은 탭 재클릭.
-		// 조용히 닫으므로 WindowClosedEvent 가 오지 않는다. 선택 해제는 여기서 직접 한다.
 		private async UniTaskVoid closeAsync()
 		{
 			_isSwitching = true;
-
 			await UIManager.Instance.CloseAllWindowsAsync();
-
 			_openedIndex = -1;
-			_tabs.ClearSelection();
+			select(-1);
 			_isSwitching = false;
 		}
 
-		// ── 이벤트 ────────────────────────────────────────────────────
-
-		// 사용자가 창을 직접 닫아 스택이 비면 선택 표시를 지운다 (열린 화면이 없는 상태와 일치시킨다).
+		// 창이 닫기 버튼으로 모두 닫히면 선택을 푼다.
 		private void onWindowClosed(WindowClosedEvent e)
 		{
 			_openedIndex = -1;
-
-			if (_tabs != null)
-			{
-				_tabs.ClearSelection();
-			}
+			select(-1);
 		}
 
-		// 상태 전이가 곧 맥락 전환이다.
-		//
-		// 선택은 무조건 지운다 — UIManager 가 상태 전이마다 열린 창을 모두 조용히 닫으므로
-		// (publishWhenEmpty=false 라 WindowClosedEvent 도 오지 않는다) 그대로 두면
-		// 마을→필드처럼 네비게이션이 계속 보이는 전이에서 "열린 화면 없는 선택 탭"이 남는다.
-		//
-		// **활성화가 먼저다.** 이 오브젝트는 부트 직후 꺼진 채로 시작하는데, 유니티는 꺼진
-		// 오브젝트의 Awake 를 미뤄 두므로 그때까지 자식 TabGroup 은 초기화되지 않은 상태다.
-		// 순서를 뒤집으면 첫 마을 진입에서 TabGroup 이 죽은 채 불려 예외가 난다.
 		private void onGameStateChanged(GameStateChangedEvent e)
 		{
 			HudContext context = HudContexts.FromState(e.StateType);
 			_contextVisible = (_visibleContexts & context) != 0;
-
-			// 상태 전이는 UIManager 가 열린 창을 모두 닫는 시점이다 — 가림 상태도 같이 푼다.
 			_hiddenByWindow = false;
-
 			applyVisible();
 
 			_openedIndex = -1;
-
-			if (_tabs != null)
-			{
-				_tabs.ClearSelection();
-			}
+			select(-1);
 		}
 	}
 }

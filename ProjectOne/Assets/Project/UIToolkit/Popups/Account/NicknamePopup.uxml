@@ -1,0 +1,29 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Account.uss" />
+
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label text="닉네임 변경" class="popup__name text-pop" />
+			</ui:VisualElement>
+			<ui:VisualElement class="popup__body">
+				<ui:TextField name="input" class="nickname-input" />
+				<ui:Label name="byte" text="" class="nickname-byte" />
+				<ui:Label name="error" text="" class="nickname-error" />
+			</ui:VisualElement>
+			<ui:VisualElement class="popup__buttons">
+				<ui:Button name="cancel" text="취소" class="btn btn--red popup__button" />
+				<ui:Button name="change" text="" class="btn btn--green popup__button nickname-change">
+					<ui:Label text="변경" class="nickname-change__label" picking-mode="Ignore" />
+					<ui:VisualElement class="nickname-change__cost" picking-mode="Ignore">
+						<ui:VisualElement name="cost-icon" class="nickname-change__icon" picking-mode="Ignore" />
+						<ui:Label name="cost" text="" class="nickname-change__value" picking-mode="Ignore" />
+					</ui:VisualElement>
+				</ui:Button>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

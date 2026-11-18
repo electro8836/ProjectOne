@@ -1,0 +1,33 @@
+/* 능력치 팝업 — 묶음마다 2열 줄(아이콘 + 값) */
+
+.stat-scroll {
+	max-height: 1300px;
+}
+
+.stat-group {
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin-bottom: 16px;
+}
+
+.stat-row {
+	width: 50%;
+	flex-direction: row;
+	align-items: center;
+	padding: 6px 4px;
+}
+
+.stat-row__icon {
+	width: 60px;
+	height: 60px;
+	margin-right: 12px;
+	-unity-background-scale-mode: scale-to-fit;
+	flex-shrink: 0;
+}
+
+.stat-row__text {
+	flex-grow: 1;
+	flex-shrink: 1;
+	font-size: 36px;
+	white-space: normal;
+}

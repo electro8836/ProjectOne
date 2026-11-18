@@ -1,138 +1,81 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using ProjectOne.HeroPasses;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.UIElements;
+using ProjectOne.HeroPasses;
 
 namespace ProjectOne.UI
 {
-	// 히어로패스 팝업의 View(MVP). UIManager.ShowHeroPassPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	//
-	// 레벨별 슬롯은 테이블 레벨 수만큼 Awake 에서 한 번 만들어 두고, 렌더마다 값만 다시 채운다.
-	// 무엇을 받을 수 있는지는 HeroPassPopupPresenter 가 정한다.
-	public class HeroPassPopup : UIScreen, IView
+	// 히어로 패스 팝업(UIPrefab_PassPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/HeroPass/HeroPassPopup.uxml.
+	// 위에 패스 레벨·구매 상태·진행도·남은 기간, 아래에 레벨별 보상 줄(일반 | 레벨 | 패스).
+	// 남은 기간은 Presenter 가 매초(OnSecondTick) 갱신한다.
+	public class HeroPassPopup : ToolkitScreen, IView
 	{
-		[Header("상단")]
-		[SerializeField] private TMP_Text _levelText;			// PassLevel/LevelText
-		[SerializeField] private TMP_Text _stateText;			// StateText — 패스 구매 여부
-		[SerializeField] private TMP_Text _remainTimeText;		// RemainTimeText
-		[SerializeField] private Image _passLineImage;			// ScrollRect/PassLine — 패스 구매 여부로 스프라이트가 바뀐다
-		[SerializeField] private Sprite _passLineActiveSprite;	// BaseFrame_Convex_Tapered_01_Yellow
-		[SerializeField] private Sprite _passLineInactiveSprite;	// BaseFrame_Convex_Tapered_01_Gray
-		[SerializeField] private Image _bgRightImage;			// Frame/BgRight — 패스 구매 여부로 색이 바뀐다
-		[SerializeField] private Color _bgRightActiveColor;		// #6437A0
-		[SerializeField] private Color _bgRightInactiveColor;	// #2C213A
-
-		[Header("진행")]
-		[SerializeField] private Slider _progressSlider;		// PassProgress
-		[SerializeField] private TMP_Text _progressText;		// ProgressText
-
-		[Header("슬롯")]
-		[SerializeField] private ScrollRect _scrollRect;		// Frame/ScrollRect
-		[SerializeField] private RectTransform _slotContent;	// ScrollRect/Viewport/Content
-		[SerializeField] private HeroPassRewardSlot _slotPrefab;	// UIPrefab_PassRewardSlot
-
-		[Header("버튼")]
-		[SerializeField] private UIButton _allReceiveButton;	// AllReceiveButton
-		[SerializeField] private UIButton _exitButton;			// ExitButton
-		[SerializeField] private UIButton _dimButton;			// Dim
+		private const long TickIntervalMs = 1000;
 
 		private readonly HeroPassPopupPresenter _presenter = new HeroPassPopupPresenter();
-		private readonly List<HeroPassRewardSlot> _slots = new List<HeroPassRewardSlot>(50);
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
+		private readonly List<HeroPassRow> _rows = new List<HeroPassRow>(50);
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();
 
-		private CanvasGroup _canvasGroup;
+		private Label _level;
+		private Label _state;
+		private Label _remainTime;
+		private VisualElement _progressFill;
+		private Label _progressText;
+		private VisualElement _header;
+		private ScrollView _list;
+		private Button _allReceiveButton;
+		private IVisualElementScheduledItem _tick;
+		private int _scrollIndex = -1;
 		private UniTaskCompletionSource _tcs;
 
-		// 남은 시간 갱신 틱. 구독자는 Presenter 다.
 		public event Action OnSecondTick;
-
-		// 받을 수 있는 칸을 눌렀다 — (레벨, 추가 보상인가).
 		public event Action<int, bool> OnClaimRequested;
-
-		// 모두 받기를 눌렀다.
 		public event Action OnAllReceiveRequested;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			// 첫 렌더가 끝나기 전 빈 칸이 비치지 않도록 숨겨 두고 시작한다.
-			_canvasGroup = GetComponent<CanvasGroup>();
-			if (_canvasGroup == null)
+			_level = root.Q<Label>("level");
+			_state = root.Q<Label>("state");
+			_remainTime = root.Q<Label>("remain");
+			_progressFill = root.Q("progress-fill");
+			_progressText = root.Q<Label>("progress-text");
+			_header = root.Q("header");
+
+			_list = root.Q<ScrollView>("list");
+			_list.AddManipulator(new ScrollDragManipulator(_list));
+
+			// 레벨 수만큼 줄을 미리 만든다(최대 레벨이 곧 줄 수).
+			CancellationToken ownerToken = GetDestroyToken();
+			for (int i = 0; i < HeroPassCatalog.MaxLevel; i++)
 			{
-				_canvasGroup = gameObject.AddComponent<CanvasGroup>();
+				HeroPassRow row = new HeroPassRow(_list.contentContainer, _icons, ownerToken);
+				row.OnClaimClicked += onRowClaimClicked;
+				_rows.Add(row);
 			}
 
-			setVisible(false);
-			createSlots();
+			_allReceiveButton = root.Q<Button>("all-receive");
+			_allReceiveButton.clicked += onAllReceiveClicked;
+			root.Q<Button>("close").clicked += Close;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 
-			if (_exitButton != null)
-			{
-				_exitButton.OnClickEvent += onCloseClicked;
-			}
-
-			if (_dimButton != null)
-			{
-				_dimButton.OnClickEvent += onCloseClicked;
-			}
-
-			if (_allReceiveButton != null)
-			{
-				_allReceiveButton.OnClickEvent += onAllReceiveClicked;
-			}
-
+			_tick = root.schedule.Execute(onTick).Every(TickIntervalMs);
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			if (_exitButton != null)
+			if (IsBound == true)
 			{
-				_exitButton.OnClickEvent -= onCloseClicked;
+				_tick.Pause();
+				_presenter.Dispose();
 			}
 
-			if (_dimButton != null)
-			{
-				_dimButton.OnClickEvent -= onCloseClicked;
-			}
-
-			if (_allReceiveButton != null)
-			{
-				_allReceiveButton.OnClickEvent -= onAllReceiveClicked;
-			}
-
-			for (int i = 0; i < _slots.Count; i++)
-			{
-				if (_slots[i] != null)
-				{
-					_slots[i].OnClaimClicked -= onSlotClaimClicked;
-				}
-			}
-
-			_presenter.Dispose();
-		}
-
-		// 남은 시간을 1초마다 다시 그리기 위한 틱. 오브젝트가 파괴되면 코루틴도 함께 멈춘다.
-		private void OnEnable()
-		{
-			StartCoroutine(tickRoutine());
-		}
-
-		private IEnumerator tickRoutine()
-		{
-			WaitForSeconds wait = new WaitForSeconds(1f);
-			while (true)
-			{
-				if (OnSecondTick != null)
-				{
-					OnSecondTick.Invoke();
-				}
-
-				yield return wait;
-			}
+			_icons.ReleaseAll();
+			base.OnDestroy();
 		}
 
 		public CancellationToken GetDestroyToken()
@@ -140,7 +83,6 @@ namespace ProjectOne.UI
 			return this.GetCancellationTokenOnDestroy();
 		}
 
-		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
 		public async UniTask ShowAsync(CancellationToken ct)
 		{
 			await _presenter.ShowAsync(ct);
@@ -149,115 +91,63 @@ namespace ProjectOne.UI
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
 
-		// ── Presenter → View ──────────────────────────────────────────────
-
+		// 패스 레벨과 구매 상태 — 구매하면 머리 영역을 강조한다.
 		public void SetHeader(int level, bool isPurchased)
 		{
-			if (_levelText != null)
-			{
-				_levelText.text = level.ToString();
-			}
-
-			if (_stateText != null)
-			{
-				_stateText.text = isPurchased ? "활성화됨" : "비활성화";
-			}
-
-			if (_passLineImage != null)
-			{
-				_passLineImage.sprite = isPurchased ? _passLineActiveSprite : _passLineInactiveSprite;
-			}
-
-			if (_bgRightImage != null)
-			{
-				_bgRightImage.color = isPurchased ? _bgRightActiveColor : _bgRightInactiveColor;
-			}
+			_level.text = level.ToString();
+			_state.text = isPurchased ? "활성화됨" : "비활성화";
+			_header.EnableInClassList("pass-header--active", isPurchased);
 		}
 
 		public void SetProgress(float ratio, string text)
 		{
-			if (_progressSlider != null)
-			{
-				_progressSlider.value = ratio;
-			}
-
-			if (_progressText != null)
-			{
-				_progressText.text = text;
-			}
+			_progressFill.style.width = Length.Percent(Mathf.Clamp01(ratio) * 100f);
+			_progressText.text = text;
 		}
 
-		// 받을 보상이 없으면 끈다. 비활성 틴트와 클릭 차단은 UIButton 이 맡는다.
 		public void SetAllReceiveInteractable(bool value)
 		{
-			if (_allReceiveButton != null)
-			{
-				_allReceiveButton.interactable = value;
-			}
+			_allReceiveButton.SetEnabled(value);
 		}
 
 		public void SetRemainTimeText(string text)
 		{
-			if (_remainTimeText != null)
-			{
-				_remainTimeText.text = text;
-			}
+			_remainTime.text = text;
 		}
 
-		// data 는 1레벨부터 순서대로다.
 		public async UniTask RenderSlotsAsync(IReadOnlyList<HeroPassRewardSlotData> data, CancellationToken ct)
 		{
 			_bindTasks.Clear();
-
-			for (int i = 0; i < _slots.Count; i++)
+			for (int i = 0; i < _rows.Count; i++)
 			{
-				HeroPassRewardSlot slot = _slots[i];
 				if (i >= data.Count)
 				{
-					slot.gameObject.SetActive(false);
+					_rows[i].SetShown(false);
 					continue;
 				}
 
-				slot.gameObject.SetActive(true);
-				_bindTasks.Add(slot.BindAsync(data[i], ct));
+				_rows[i].SetShown(true);
+				_bindTasks.Add(_rows[i].BindAsync(data[i], ct));
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
 		}
 
-		// index 칸이 뷰포트 맨 위에 오도록 스크롤한다. 끝 칸이라 더 내릴 수 없으면 바닥에서 멈춘다.
-		// ActListPopup.ScrollToSlot 과 같은 방식이다.
+		// 지정한 줄이 보이도록 스크롤한다. 배치가 끝난 다음 프레임에 옮긴다.
 		public void ScrollToSlot(int index)
 		{
-			if (_scrollRect == null || index < 0 || index >= _slots.Count)
+			if (index < 0 || index >= _rows.Count)
 			{
 				return;
 			}
 
-			// 방금 채운 슬롯은 레이아웃이 아직 안 잡혀 있다 — 위치를 읽기 전에 즉시 재배치한다.
-			RectTransform content = _scrollRect.content;
-			LayoutRebuilder.ForceRebuildLayoutImmediate(content);
-
-			RectTransform viewport = _scrollRect.viewport != null ? _scrollRect.viewport : (RectTransform)_scrollRect.transform;
-			float scrollable = content.rect.height - viewport.rect.height;
-			if (scrollable <= 0f)
-			{
-				_scrollRect.verticalNormalizedPosition = 1f;
-				return;
-			}
-
-			// 콘텐츠 윗변에서 슬롯 윗변까지의 거리 — 스케일이 걸려 있어도 콘텐츠 로컬 좌표로 잰다.
-			RectTransform slot = (RectTransform)_slots[index].transform;
-			Vector3 slotTop = content.InverseTransformPoint(slot.TransformPoint(new Vector3(0f, slot.rect.yMax, 0f)));
-			float fromTop = content.rect.yMax - slotTop.y;
-
-			_scrollRect.StopMovement();
-			_scrollRect.verticalNormalizedPosition = 1f - Mathf.Clamp01(fromTop / scrollable);
+			_scrollIndex = index;
+			_list.schedule.Execute(applyScroll);
 		}
 
 		public void Reveal()
 		{
-			setVisible(true);
+			PlayPopupOpen();
 		}
 
 		public void Close()
@@ -268,39 +158,27 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────────
-
-		private void createSlots()
+		private void applyScroll()
 		{
-			_slots.Clear();
-
-			if (_slotContent == null || _slotPrefab == null)
+			if (_scrollIndex >= 0 && _scrollIndex < _rows.Count)
 			{
-				Debug.LogWarning("[HeroPassPopup] 슬롯 Content 또는 슬롯 프리펩이 연결되지 않았다.");
-				return;
-			}
-
-			int count = HeroPassCatalog.MaxLevel;
-			for (int i = 0; i < count; i++)
-			{
-				HeroPassRewardSlot slot = Instantiate(_slotPrefab, _slotContent);
-				slot.OnClaimClicked += onSlotClaimClicked;
-				_slots.Add(slot);
+				_list.ScrollTo(_rows[_scrollIndex].Root);
 			}
 		}
 
-		private void setVisible(bool visible)
+		private void onTick()
 		{
-			_canvasGroup.alpha = visible ? 1f : 0f;
-			_canvasGroup.interactable = visible;
-			_canvasGroup.blocksRaycasts = visible;
+			if (OnSecondTick != null)
+			{
+				OnSecondTick.Invoke();
+			}
 		}
 
-		private void onSlotClaimClicked(HeroPassRewardSlot slot, bool advanced)
+		private void onRowClaimClicked(HeroPassRow row, bool advanced)
 		{
 			if (OnClaimRequested != null)
 			{
-				OnClaimRequested.Invoke(slot.Level, advanced);
+				OnClaimRequested.Invoke(row.Level, advanced);
 			}
 		}
 
@@ -312,7 +190,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private void onCloseClicked()
+		private void onDimClicked(ClickEvent evt)
 		{
 			Close();
 		}

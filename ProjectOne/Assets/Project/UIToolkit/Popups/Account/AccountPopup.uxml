@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Account.uss" />
+
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label text="계정" class="popup__name text-pop" />
+				<ui:Button name="close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+			<ui:VisualElement class="px-inset account-row popup__body">
+				<ui:Label name="name" text="" class="account-row__text" />
+				<ui:Button name="name-button" text="변경" class="btn btn--small" />
+			</ui:VisualElement>
+			<ui:VisualElement class="px-inset account-row popup__body">
+				<ui:Label name="uuid" text="" class="account-row__text" />
+				<ui:Button name="copy" text="복사" class="btn btn--small" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

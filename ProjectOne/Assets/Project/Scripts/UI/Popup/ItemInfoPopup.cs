@@ -3,94 +3,22 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Items;
+using ProjectOne.Resources;
 
 namespace ProjectOne.UI
 {
-	// 아이템 정보 팝업의 View(MVP). UIManager.ShowItemInfoPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	// 정보/옵션 표시와 입력 전달만 담당하고, 장착/해제 결정은 ItemInfoPresenter 가 한다.
-	// (클래스명을 ItemInfoPopup 으로 유지 — 프리펩이 이 스크립트 GUID 를 참조.)
-	//
-	// 옵션 줄은 프리펩에 미리 배치되어 있다(BasicOptionInfo_1~4 / GradeOptionInfo_1~6).
-	// 그래서 슬롯을 생성하지 않고 고정 칸을 켜고 끄며 채운다.
-	public class ItemInfoPopup : UIScreen, IView
+	// 장비 정보 팝업(UIPrefab_EquipmentPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/ItemInfo/EquipmentPopup.uxml.
+	// 이름·등급·레벨·품질·설명, 기본 옵션(아이콘+문구), 등급 옵션(등급 표시+문구+범위, 잠긴 줄은 회색)을 보여 주고
+	// 장착·강화·보관·분해·잠금 버튼을 둔다. 읽기 전용이면 버튼 줄을 감춘다. 결정은 ItemInfoPresenter 가 한다.
+	public class ItemInfoPopup : ToolkitScreen, IView
 	{
-		// 미해금 등급 줄의 색 — 수치만이 아니라 문구·범위를 포함한 줄 전체가 이 색이 된다.
 		private static readonly Color LockedColor = new Color(0.42745098f, 0.42745098f, 0.42745098f, 1f);	// #6D6D6D
 
-		// 잠금 버튼 색 — 잠금 / 해제
-		private static readonly Color LockOnColor = new Color32(0x2D, 0x9D, 0x32, 0xFF);
-		private static readonly Color LockOffColor = new Color32(0x52, 0x52, 0x52, 0xFF);
+		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
 
-		[Header("정보 텍스트")]
-		[SerializeField] private TMP_Text _nameText;		// NameText
-		[SerializeField] private TMP_Text _gradeText;		// GradeText
-		[SerializeField] private TMP_Text _levelText;		// LevelText
-		[SerializeField] private TMP_Text _qualityText;	// QualityText
-		[SerializeField] private TMP_Text _descText;		// DescText
-
-		[Header("슬롯 / 옵션")]
-		[SerializeField] private Transform _itemSlotRoot;			// ItemSlotRoot
-		[SerializeField] private BasicOptionView[] _basicOptions;	// BasicOptionInfo_1~4
-		[SerializeField] private GradeOptionView[] _gradeOptions;	// GradeOptionInfo_1~6
-
-		[Header("버튼")]
-		// 장착·강화 묶음. 디스플레이(읽기 전용)로 열 때 통째로 감춘다.
-		[SerializeField] private GameObject _bottomButtons;		// BottomButtons
-		[SerializeField] private UIButton _equipButton;			// EquipButton
-		[SerializeField] private TMP_Text _equipButtonLabel;	// EquipButton 라벨
-		[SerializeField] private UIButton _enchantButton;		// EnchantButton
-		[SerializeField] private TMP_Text _enchantButtonLabel;	// EnchantButton 라벨 (강화/승급/최대치)
-
-		// 보관함↔인벤토리 이동. 장비 화면이 보관함 모드일 때만 보인다.
-		[SerializeField] private UIButton _stashButton;			// BottomExtraButtons/StashButton
-		[SerializeField] private TMP_Text _stashButtonLabel;	// StashButton/Text
-
-		// 분해. 버튼 묶음 밖에 있어 디스플레이로 열 때 따로 감춘다.
-		[SerializeField] private UIButton _decompositionButton;	// DecompositionButton
-
-		// 잠금 토글. 분해 버튼 옆에 있고, 잠금 여부를 버튼 색으로 보여준다.
-		[SerializeField] private UIButton _lockButton;				// LockButton
-		[SerializeField] private Graphic _lockButtonGraphic;		// LockButton 의 Image
-
-		// 닫기는 ExitButton 과 Dimmed 두 경로다.
-		// 본문 영역은 ItemInfo/Bg 가 레이캐스트를 흡수하므로, Dimmed 까지 내려오는 클릭은
-		// 곧 "팝업 밖을 눌렀다"는 뜻이다.
-		[SerializeField] private UIButton _exitButton;
-		[SerializeField] private UIButton _dimmedButton;
-
-		[Header("프리펩 / 데이터")]
-		[SerializeField] private ItemSlot _slotPrefab;				// Prefab_ItemSlot
-		[SerializeField] private ItemGradeColorTable _gradeColors;
-
-		// 기본 옵션 1칸 — 아이콘 + 문구.
-		[System.Serializable]
-		private class BasicOptionView
-		{
-			public GameObject root;
-			public Image icon;
-			public TMP_Text optionText;
-		}
-
-		// 등급 옵션 1칸 — 등급 마크(테두리 포함) + 문구 + 범위.
-		[System.Serializable]
-		private class GradeOptionView
-		{
-			public GameObject root;
-			public Image gradeMark;
-			public Image gradeMarkBorder;
-			public TMP_Text optionText;
-			public TMP_Text rangeText;
-
-			// 해금 줄로 되돌릴 때 쓸 프리펩 기본색. 회색을 덮어쓰기 전에 Awake 에서 받아 둔다.
-			[System.NonSerialized] public Color defaultTextColor;
-			[System.NonSerialized] public Color defaultRangeColor;
-		}
-
-		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action OnEquipToggleClicked;
 		public event Action OnEnchantClicked;
 		public event Action OnStashClicked;
@@ -98,50 +26,83 @@ namespace ProjectOne.UI
 		public event Action OnLockClicked;
 		public event Action OnExitClicked;
 
+		private sealed class BasicLine
+		{
+			public VisualElement root;
+			public VisualElement icon;
+			public Label text;
+		}
+
+		private sealed class GradeLine
+		{
+			public VisualElement root;
+			public VisualElement mark;
+			public Label text;
+			public Label range;
+		}
+
 		private readonly ItemInfoPresenter _presenter = new ItemInfoPresenter();
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
+		private readonly List<BasicLine> _basicLines = new List<BasicLine>();
+		private readonly List<GradeLine> _gradeLines = new List<GradeLine>();
+
+		private Label _name;
+		private Label _grade;
+		private Label _level;
+		private Label _quality;
+		private Label _desc;
+		private VisualElement _basicBox;
+		private VisualElement _gradeBox;
+		private VisualElement _buttons;
+		private Button _equip;
+		private Button _enchant;
+		private Button _stash;
+		private Button _decompose;
+		private Button _lock;
+		private ItemCellView _cell;
 		private UniTaskCompletionSource<bool> _tcs;
 
-		// ItemSlotRoot 에 만든 슬롯 — 팝업 1회 표시에 하나만 쓴다.
-		private ItemSlot _itemSlot;
-
-		// 첫 렌더(아이콘 로드)가 끝날 때까지 숨겼다가 한 번에 보여주기 위한 그룹
-		private CanvasGroup _canvasGroup;
-
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_canvasGroup = GetComponent<CanvasGroup>();
-			if (_canvasGroup == null)
-			{
-				_canvasGroup = gameObject.AddComponent<CanvasGroup>();
-			}
+			_name = root.Q<Label>("name");
+			_grade = root.Q<Label>("grade");
+			_level = root.Q<Label>("level");
+			_quality = root.Q<Label>("quality");
+			_desc = root.Q<Label>("desc");
+			_basicBox = root.Q("basic-options");
+			_gradeBox = root.Q("grade-options");
+			_buttons = root.Q("buttons");
+			_cell = new ItemCellView(root.Q("cell"), _gradeColors, _icons);
 
-			// 로드 완료 전까지 숨김 — Reveal 에서 보여준다.
-			setVisible(false);
+			_equip = root.Q<Button>("equip");
+			_equip.clicked += onEquipClicked;
+			_enchant = root.Q<Button>("enchant");
+			_enchant.clicked += onEnchantClicked;
+			_stash = root.Q<Button>("stash");
+			_stash.clicked += onStashClicked;
+			_decompose = root.Q<Button>("decompose");
+			_decompose.clicked += onDecompositionClicked;
+			_lock = root.Q<Button>("lock");
+			_lock.clicked += onLockClicked;
 
-			cacheGradeTextColors();
+			ScrollView scroll = root.Q<ScrollView>("scroll");
+			scroll.AddManipulator(new ScrollDragManipulator(scroll));
 
-			_equipButton.OnClickEvent += onEquipClicked;
-			_enchantButton.OnClickEvent += onEnchantClicked;
-			_stashButton.OnClickEvent += onStashClicked;
-			_decompositionButton.OnClickEvent += onDecompositionClicked;
-			_lockButton.OnClickEvent += onLockClicked;
-			_exitButton.OnClickEvent += onExitClicked;
-			_dimmedButton.OnClickEvent += onExitClicked;
+			root.Q<Button>("close").clicked += onExitClicked;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			_presenter.Dispose();
+			if (IsBound == true)
+			{
+				_presenter.Dispose();
+			}
 
-			_equipButton.OnClickEvent -= onEquipClicked;
-			_enchantButton.OnClickEvent -= onEnchantClicked;
-			_stashButton.OnClickEvent -= onStashClicked;
-			_decompositionButton.OnClickEvent -= onDecompositionClicked;
-			_lockButton.OnClickEvent -= onLockClicked;
-			_exitButton.OnClickEvent -= onExitClicked;
-			_dimmedButton.OnClickEvent -= onExitClicked;
+			_icons.ReleaseAll();
+			base.OnDestroy();
 		}
 
 		public CancellationToken GetDestroyToken()
@@ -149,201 +110,166 @@ namespace ProjectOne.UI
 			return this.GetCancellationTokenOnDestroy();
 		}
 
-		// UIManager 가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
-		//
-		// 인벤토리 경로 — 내 장비이므로 조작 버튼이 살아 있다.
 		public UniTask ShowAsync(long uid, bool stashMode, CancellationToken ct)
 		{
 			return _presenter.ShowAsync(uid, stashMode, ct);
 		}
 
-		// 디스플레이 경로 — 결과창·상점처럼 내 것이 아닌 목록에서 연다.
-		// 인벤토리를 조회하지 않으므로 보유하지 않은 인스턴스도 열린다.
 		public UniTask ShowAsync(EquipmentInstance instance, CancellationToken ct)
 		{
 			return _presenter.ShowAsync(instance, ct);
 		}
 
-		// 조작 기능을 잠근다. 내 아이템이 아닐 때는 장착·강화가 있으면 안 된다.
 		public void SetReadOnly(bool readOnly)
 		{
-			if (_bottomButtons != null)
-			{
-				_bottomButtons.SetActive(readOnly == false);
-			}
+			_buttons.style.display = readOnly ? DisplayStyle.None : DisplayStyle.Flex;
 		}
 
-		// Presenter 가 첫 렌더(아이콘 로드)를 끝낸 뒤 호출 — 채워진 상태로 한 번에 표시.
 		public void Reveal()
 		{
-			setVisible(true);
+			PlayPopupOpen();
 		}
 
-		private void setVisible(bool visible)
-		{
-			_canvasGroup.alpha = visible ? 1f : 0f;
-			_canvasGroup.interactable = visible;
-			_canvasGroup.blocksRaycasts = visible;
-		}
-
-		// ── Presenter 가 호출하는 표시 API ─────────────────────────────────
-
-		// 등급·레벨·품질은 Item 테이블이 아니라 장비 인스턴스가 소유하므로 따로 받는다.
 		public void SetInfo(Table_Item.Row row, ItemGradeType grade, int level, int maxLevel, int quality)
 		{
-			applyGradeColor(grade);
-			_nameText.text = row.Name;
-			_gradeText.text = ItemGradeNames.Get(grade);
-			_levelText.text = "레벨: " + level + "/" + maxLevel;
-			_qualityText.text = "품질 : " + ProjectOne.Shared.EquipmentQuality.Format(quality) + "%";
-			_descText.text = row.Desc;
+			_name.text = row.Name;
+			_grade.text = ItemGradeNames.Get(grade);
+			if (_gradeColors != null)
+			{
+				_grade.style.color = _gradeColors.Get(grade).text;
+			}
+
+			_level.text = "레벨: " + level + "/" + maxLevel;
+			_quality.text = "품질 : " + ProjectOne.Shared.EquipmentQuality.Format(quality) + "%";
+			_desc.text = row.Desc;
 		}
 
-		// 기본 옵션 — 데이터 개수만큼 칸을 켜고 나머지는 끈다.
 		public void RenderBasicOptions(IReadOnlyList<OptionLine> lines)
 		{
-			if (_basicOptions == null)
+			for (int i = 0; i < lines.Count; i++)
 			{
-				return;
+				BasicLine line = getBasicLine(i);
+				line.root.style.display = DisplayStyle.Flex;
+				line.text.text = lines[i].text;
+
+				Sprite icon = string.IsNullOrEmpty(lines[i].iconAddress) ? null : AtlasManager.Instance.Get(lines[i].iconAddress);
+				line.icon.style.backgroundImage = (icon != null) ? new StyleBackground(icon) : new StyleBackground(StyleKeyword.None);
 			}
 
-			for (int i = 0; i < _basicOptions.Length; i++)
+			for (int i = lines.Count; i < _basicLines.Count; i++)
 			{
-				BasicOptionView slot = _basicOptions[i];
-				if (i >= lines.Count)
-				{
-					setActive(slot.root, false);
-					continue;
-				}
-
-				setActive(slot.root, true);
-				slot.optionText.text = lines[i].text;
-				setIcon(slot.icon, lines[i].iconAddress);
+				_basicLines[i].root.style.display = DisplayStyle.None;
 			}
+
+			_basicBox.style.display = lines.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
-		// 등급 옵션 — 칸이 등급에 1:1 대응하므로 개수만큼 그대로 채운다.
-		// 해금 옵션이 없는 등급(Normal 등)은 칸을 켠 채 문구만 비운다.
+		// 등급 옵션 — 잠긴 줄은 회색, 범위가 없는 줄은 범위를 감춘다.
 		public void RenderGradeOptions(IReadOnlyList<GradeOptionLine> lines)
 		{
-			if (_gradeOptions == null)
+			int shown = 0;
+			for (int i = 0; i < lines.Count; i++)
 			{
-				return;
-			}
-
-			for (int i = 0; i < _gradeOptions.Length; i++)
-			{
-				GradeOptionView slot = _gradeOptions[i];
-
-				// 그 등급에 해금 옵션이 아예 없으면(Normal 등) 칸을 통째로 감춘다.
-				if (i >= lines.Count || lines[i].hasOption == false)
+				GradeOptionLine data = lines[i];
+				if (data.hasOption == false)
 				{
-					setActive(slot.root, false);
 					continue;
 				}
 
-				GradeOptionLine line = lines[i];
-				setActive(slot.root, true);
+				GradeLine line = getGradeLine(shown);
+				shown++;
+				line.root.style.display = DisplayStyle.Flex;
 
-				// 마크는 그 칸이 대표하는 등급의 색을 쓴다(해금 여부와 무관 — 어느 등급 칸인지 알려주는 표시다).
 				if (_gradeColors != null)
 				{
-					ItemGradeColorTable.GradeColor gc = _gradeColors.Get(line.grade);
-					if (slot.gradeMark != null) { slot.gradeMark.color = gc.bg; }
-					if (slot.gradeMarkBorder != null) { slot.gradeMarkBorder.color = gc.border; }
+					ItemGradeColorTable.GradeColor gc = _gradeColors.Get(data.grade);
+					line.mark.style.backgroundColor = gc.bg;
+					line.mark.style.borderTopColor = gc.border;
+					line.mark.style.borderBottomColor = gc.border;
+					line.mark.style.borderLeftColor = gc.border;
+					line.mark.style.borderRightColor = gc.border;
 				}
 
-				// 미해금은 수치뿐 아니라 스탯 이름까지 줄 전체가 회색이다.
-				// Presenter 가 미해금 문구에는 색 태그를 넣지 않으므로 여기서 색이 그대로 먹는다.
-				slot.optionText.text = line.text;
-				slot.optionText.color = line.unlocked ? slot.defaultTextColor : LockedColor;
-
-				if (slot.rangeText != null)
-				{
-					slot.rangeText.gameObject.SetActive(line.hasRange);
-					slot.rangeText.text = line.rangeText;
-					slot.rangeText.color = line.unlocked ? slot.defaultRangeColor : LockedColor;
-				}
+				line.text.text = data.text;
+				line.text.style.color = data.unlocked ? new StyleColor(StyleKeyword.Null) : new StyleColor(LockedColor);
+				line.range.style.display = data.hasRange ? DisplayStyle.Flex : DisplayStyle.None;
+				line.range.text = data.rangeText;
+				line.range.style.color = data.unlocked ? new StyleColor(StyleKeyword.Null) : new StyleColor(LockedColor);
 			}
+
+			for (int i = shown; i < _gradeLines.Count; i++)
+			{
+				_gradeLines[i].root.style.display = DisplayStyle.None;
+			}
+
+			_gradeBox.style.display = shown > 0 ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
-		// ItemSlotRoot 에 아이템 슬롯을 만들어 등급/아이콘/품질을 표시한다.
-		// 레벨은 팝업 상단(LevelText)이 따로 적으므로 슬롯에서는 끈다.
+		// 레벨은 위에 따로 적으므로 칸의 레벨 표시는 끈다.
 		public async UniTask BindItemSlotAsync(EquipmentInstance instance, bool equipped, CancellationToken ct)
 		{
-			if (_itemSlot == null)
-			{
-				_itemSlot = Instantiate(_slotPrefab, _itemSlotRoot);
-			}
-
-			await _itemSlot.BindEquipmentAsync(instance, equipped, _gradeColors, ct);
-			_itemSlot.HideLevel();
+			await _cell.BindEquipmentAsync(instance, equipped, ct);
+			_cell.HideLevel();
 		}
 
 		public void SetEquipInteractable(bool interactable)
 		{
-			_equipButton.interactable = interactable;
+			_equip.SetEnabled(interactable);
 		}
 
 		public void SetEquipLabel(string label)
 		{
-			_equipButtonLabel.text = label;
+			_equip.text = label;
 		}
 
 		public void SetEnchantInteractable(bool interactable)
 		{
-			_enchantButton.interactable = interactable;
+			_enchant.SetEnabled(interactable);
 		}
 
 		public void SetEnchantLabel(string label)
 		{
-			_enchantButtonLabel.text = label;
+			_enchant.text = label;
 		}
 
 		public void SetStashVisible(bool visible)
 		{
-			_stashButton.gameObject.SetActive(visible);
+			setShown(_stash, visible);
 		}
 
 		public void SetStashInteractable(bool interactable)
 		{
-			_stashButton.interactable = interactable;
+			_stash.SetEnabled(interactable);
 		}
 
 		public void SetStashLabel(string label)
 		{
-			_stashButtonLabel.text = label;
+			_stash.text = label;
 		}
 
 		public void SetDecompositionVisible(bool visible)
 		{
-			_decompositionButton.gameObject.SetActive(visible);
+			setShown(_decompose, visible);
 		}
 
 		public void SetLockVisible(bool visible)
 		{
-			_lockButton.gameObject.SetActive(visible);
+			setShown(_lock, visible);
 		}
 
-		// 잠금 여부를 버튼 색과 아이템 슬롯의 잠금 표시에 함께 반영한다.
 		public void SetLocked(bool locked)
 		{
-			_lockButtonGraphic.color = locked ? LockOnColor : LockOffColor;
-
-			if (_itemSlot != null)
-			{
-				_itemSlot.SetLocked(locked);
-			}
+			_lock.EnableInClassList("btn--green", locked);
+			_lock.EnableInClassList("btn--gray", locked == false);
+			_cell.SetLocked(locked);
 		}
 
-		// 닫힘 대기 — Presenter 의 ShowAsync 가 마지막에 await 한다.
 		public async UniTask WaitForCloseAsync(CancellationToken ct)
 		{
 			_tcs = new UniTaskCompletionSource<bool>();
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
 
-		// 입력(Exit)으로 닫힘을 확정한다.
 		public void CloseFromInput()
 		{
 			if (_tcs != null)
@@ -352,67 +278,58 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────────
+		// ── 내부 ─────────────────────────────────────────────────────────
 
-		// 회색으로 덮어쓰기 전에 프리펩이 지정한 색을 받아 둔다 — 해금 줄을 되돌릴 기준이다.
-		private void cacheGradeTextColors()
+		private BasicLine getBasicLine(int index)
 		{
-			if (_gradeOptions == null)
+			if (index < _basicLines.Count)
 			{
-				return;
+				return _basicLines[index];
 			}
 
-			for (int i = 0; i < _gradeOptions.Length; i++)
-			{
-				GradeOptionView slot = _gradeOptions[i];
-				if (slot == null)
-				{
-					continue;
-				}
+			BasicLine line = new BasicLine();
+			line.root = new VisualElement();
+			line.root.AddToClassList("option-line");
+			line.icon = new VisualElement();
+			line.icon.AddToClassList("option-line__icon");
+			line.text = new Label();
+			line.text.AddToClassList("option-line__text");
+			line.root.Add(line.icon);
+			line.root.Add(line.text);
+			_basicBox.Add(line.root);
 
-				if (slot.optionText != null)
-				{
-					slot.defaultTextColor = slot.optionText.color;
-				}
-
-				if (slot.rangeText != null)
-				{
-					slot.defaultRangeColor = slot.rangeText.color;
-				}
-			}
+			_basicLines.Add(line);
+			return line;
 		}
 
-		private void applyGradeColor(ItemGradeType grade)
+		private GradeLine getGradeLine(int index)
 		{
-			if (_gradeColors == null)
+			if (index < _gradeLines.Count)
 			{
-				return;
+				return _gradeLines[index];
 			}
 
-			// TopBg·Deco2 는 등급을 따르지 않는다 — 프리팹에 칠해 둔 색을 그대로 쓴다.
-			ItemGradeColorTable.GradeColor gc = _gradeColors.Get(grade);
-			_gradeText.color = gc.text;
+			GradeLine line = new GradeLine();
+			line.root = new VisualElement();
+			line.root.AddToClassList("option-line");
+			line.mark = new VisualElement();
+			line.mark.AddToClassList("option-line__mark");
+			line.text = new Label();
+			line.text.AddToClassList("option-line__text");
+			line.range = new Label();
+			line.range.AddToClassList("option-line__range");
+			line.root.Add(line.mark);
+			line.root.Add(line.text);
+			line.root.Add(line.range);
+			_gradeBox.Add(line.root);
+
+			_gradeLines.Add(line);
+			return line;
 		}
 
-		// 스탯 아이콘은 전부 아틀라스에 있으므로 동기 조회로 끝난다(없으면 아이콘만 감춘다).
-		private static void setIcon(Image target, string address)
+		private static void setShown(VisualElement element, bool shown)
 		{
-			if (target == null)
-			{
-				return;
-			}
-
-			Sprite sprite = string.IsNullOrEmpty(address) ? null : ProjectOne.Resources.AtlasManager.Instance.Get(address);
-			target.sprite = sprite;
-			target.enabled = sprite != null;
-		}
-
-		private static void setActive(GameObject go, bool active)
-		{
-			if (go != null)
-			{
-				go.SetActive(active);
-			}
+			element.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
 		private void onEquipClicked()
@@ -443,6 +360,11 @@ namespace ProjectOne.UI
 		private void onExitClicked()
 		{
 			if (OnExitClicked != null) { OnExitClicked.Invoke(); }
+		}
+
+		private void onDimClicked(ClickEvent evt)
+		{
+			onExitClicked();
 		}
 	}
 }

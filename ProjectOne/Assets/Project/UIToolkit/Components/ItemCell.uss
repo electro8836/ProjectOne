@@ -1,0 +1,117 @@
+/* 아이템 칸 (ItemCellView) — 틀은 등급 테두리 색으로 칠한다(View 가 -unity-background-image-tint-color 를 지정).
+   크기는 쓰는 화면이 정한다(.item-grid .item-cell 등). Theme.uss 가 가져온다. */
+
+.item-cell {
+	background-image: url("../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	transition-property: scale;
+	transition-duration: 0.06s;
+}
+
+.item-cell:active {
+	scale: 0.94 0.94;
+}
+
+.item-cell__bg {
+	position: absolute;
+	left: 16px;
+	right: 16px;
+	top: 16px;
+	bottom: 16px;
+	opacity: 0.55;
+}
+
+.item-cell__icon {
+	position: absolute;
+	left: 18px;
+	right: 18px;
+	top: 18px;
+	bottom: 18px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* 분류 배지 — 왼쪽 위 작은 사각. 바탕은 등급색을 따르지 않는 고정색이다 */
+.item-cell__type {
+	background-color: #2A2340;
+	position: absolute;
+	left: 16px;
+	top: 16px;
+	width: 48px;
+	height: 48px;
+	padding: 6px;
+	border-width: 3px;
+	border-color: var(--ink);
+}
+
+.item-cell__type-icon {
+	flex-grow: 1;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.item-cell__lock {
+	position: absolute;
+	right: 10px;
+	top: 8px;
+	width: 36px;
+	height: 44px;
+	background-image: url("../Pixel/icon_lock.png");
+}
+
+.item-cell__equip {
+	position: absolute;
+	right: 4px;
+	top: 4px;
+	padding: 2px 10px 6px 10px;
+	font-size: 36px;
+	color: var(--white);
+	background-image: url("../Pixel/chip_green.png");
+	-unity-slice-left: 3;
+	-unity-slice-right: 3;
+	-unity-slice-top: 3;
+	-unity-slice-bottom: 3;
+	-unity-slice-scale: 4px;
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+.item-cell__level,
+.item-cell__count {
+	position: absolute;
+	bottom: 24px;
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+.item-cell__level {
+	left: 14px;
+}
+
+.item-cell__count {
+	right: 14px;
+}
+
+/* 품질 막대 — 칸 맨 아래, 틀(12px) 안쪽 */
+.item-cell__quality {
+	position: absolute;
+	left: 16px;
+	right: 16px;
+	bottom: 16px;
+	height: 10px;
+	background-color: var(--ink);
+}
+
+.item-cell__quality-fill {
+	height: 100%;
+	width: 0;
+	background-color: var(--gold);
+	border-top-width: 3px;
+	border-top-color: #FFF3A3;
+}

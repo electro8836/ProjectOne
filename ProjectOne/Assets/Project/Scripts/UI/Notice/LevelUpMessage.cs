@@ -1,36 +1,22 @@
-using System.Collections;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Event;
 
 namespace ProjectOne.UI
 {
-	// 마스터리 레벨업 알림. 레벨업 이벤트를 직접 구독한다. 캐릭터 레벨은 없다.
+	// 레벨업 알림(UIPrefab_LevelUpMessage, UI Toolkit). 레이아웃은 UIToolkit/HUD/Notice/LevelUpMessage.uxml.
+	// 숙련도 레벨업 이벤트를 스스로 구독해 띄운다. 작게 시작해 튀어나온 뒤 잠시 머물다 사라진다(USS 전환).
 	//
-	// 새 레벨업이 오면 떠 있던 것을 지우고 바로 새로 띄운다.
-	// 단 **같은 프레임**에 온 것은 뒤에 대기시킨다 — 서버 권위값 반영으로 여러 마스터리가 한 번에 오르면
-	// 앞 메시지가 한 프레임 만에 덮여 보이지 않기 때문이다.
-	//
-	// **루트는 끄지 않고 CanvasGroup 알파로 숨긴다.** 루트를 끄면 코루틴이 멈추고 구독도 무의미해진다.
-	public class LevelUpMessage : MonoBehaviour
+	// 같은 프레임에 여러 번 오면(한 번에 여러 레벨) 마지막 것만 남겨 이어서 보여 준다.
+	public class LevelUpMessage : ToolkitScreen
 	{
-		[SerializeField] private CanvasGroup _canvasGroup;
-		[SerializeField] private TMP_Text _levelUpText;
-		[SerializeField] private TMP_Text _levelText;
-		[SerializeField] private TMP_Text _descText;
-
-		[Header("연출")]
-		[SerializeField] private float _popSeconds = 0.25f;
-		[SerializeField] private float _popOvershoot = 1.15f;
-		[SerializeField] private float _holdSeconds = 2f;
-		[SerializeField] private float _fadeSeconds = 0.5f;
-
-		private const float PopStartScale = 0.5f;
-
 		private const string MasteryDesc = "숙련도 능력이 강화되었습니다!";
 
-		// 표시 1회분 문구
+		private const long PopMs = 250;
+		private const long HoldMs = 2000;
+		private const long FadeMs = 500;
+
 		private struct Entry
 		{
 			public string levelUp;
@@ -38,25 +24,35 @@ namespace ProjectOne.UI
 			public string desc;
 		}
 
-		private Coroutine _playRoutine;
+		private VisualElement _box;
+		private Label _levelUp;
+		private Label _level;
+		private Label _desc;
 
-		// 현재 표시를 시작한 프레임 — 같은 프레임에 온 요청을 대기시키는 기준이다.
+		private IVisualElementScheduledItem _step;
 		private int _shownFrame = -1;
-
-		// 같은 프레임에 온 뒤 순번. 한 칸만 둔다.
+		private bool _playing;
 		private bool _hasPending;
 		private Entry _pending;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_canvasGroup.alpha = 0f;
+			_box = root.Q("levelup");
+			_levelUp = root.Q<Label>("levelup-text");
+			_level = root.Q<Label>("level-text");
+			_desc = root.Q<Label>("desc-text");
 
 			EventManager.Instance.Subscribe<MasteryLevelUpEvent>(onMasteryLevelUp);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			EventManager.Instance.Unsubscribe<MasteryLevelUpEvent>(onMasteryLevelUp);
+			if (IsBound == true)
+			{
+				EventManager.Instance.Unsubscribe<MasteryLevelUpEvent>(onMasteryLevelUp);
+			}
+
+			base.OnDestroy();
 		}
 
 		private void onMasteryLevelUp(MasteryLevelUpEvent evt)
@@ -75,85 +71,63 @@ namespace ProjectOne.UI
 			request(entry);
 		}
 
+		// 같은 프레임에 이미 띄웠으면 다음 차례로 미룬다. 아니면 지금 것을 끊고 새로 띄운다.
 		private void request(Entry entry)
 		{
-			if (_playRoutine != null && Time.frameCount == _shownFrame)
+			if (_playing == true && Time.frameCount == _shownFrame)
 			{
 				_pending = entry;
 				_hasPending = true;
 				return;
 			}
 
-			// 다른 프레임의 새 레벨업 — 떠 있던 것과 그 대기분을 버리고 바로 띄운다.
 			_hasPending = false;
-			if (_playRoutine != null)
-			{
-				StopCoroutine(_playRoutine);
-			}
-
-			_playRoutine = StartCoroutine(play(entry));
+			show(entry);
 		}
 
-		private IEnumerator play(Entry entry)
+		private void show(Entry entry)
 		{
-			while (true)
+			if (_step != null)
 			{
-				apply(entry);
-				_shownFrame = Time.frameCount;
-				_canvasGroup.alpha = 1f;
+				_step.Pause();
+			}
 
-				// 작게 시작해 한 번 넘쳤다가 제 크기로 — 튀어나오는 느낌
-				float half = _popSeconds * 0.5f;
-				float elapsed = 0f;
-				while (elapsed < _popSeconds)
-				{
-					elapsed += Time.unscaledDeltaTime;
+			_levelUp.text = entry.levelUp;
+			_level.text = "레벨 " + entry.level.ToString();
+			_desc.text = entry.desc;
 
-					float scale;
-					if (elapsed < half)
-					{
-						scale = Mathf.Lerp(PopStartScale, _popOvershoot, elapsed / half);
-					}
-					else
-					{
-						scale = Mathf.Lerp(_popOvershoot, 1f, (elapsed - half) / half);
-					}
+			_playing = true;
+			_shownFrame = Time.frameCount;
 
-					transform.localScale = new Vector3(scale, scale, 1f);
-					yield return null;
-				}
+			// 작게 · 투명에서 시작 — 전환 없이 즉시 되돌린 뒤 다음 프레임에 튀어나오게 한다.
+			_box.RemoveFromClassList("levelup--shown");
+			_box.RemoveFromClassList("levelup--fading");
+			_step = _box.schedule.Execute(popIn);
+		}
 
-				transform.localScale = Vector3.one;
+		private void popIn()
+		{
+			_box.AddToClassList("levelup--shown");
+			_step = _box.schedule.Execute(fadeOut).StartingIn(PopMs + HoldMs);
+		}
 
-				yield return new WaitForSecondsRealtime(_holdSeconds);
+		private void fadeOut()
+		{
+			_box.AddToClassList("levelup--fading");
+			_step = _box.schedule.Execute(finish).StartingIn(FadeMs);
+		}
 
-				elapsed = 0f;
-				while (elapsed < _fadeSeconds)
-				{
-					elapsed += Time.unscaledDeltaTime;
-					_canvasGroup.alpha = Mathf.Clamp01(1f - elapsed / _fadeSeconds);
-					yield return null;
-				}
+		private void finish()
+		{
+			_box.RemoveFromClassList("levelup--shown");
+			_box.RemoveFromClassList("levelup--fading");
+			_playing = false;
 
-				_canvasGroup.alpha = 0f;
-
-				if (_hasPending == false)
-				{
-					break;
-				}
-
-				entry = _pending;
+			if (_hasPending == true)
+			{
 				_hasPending = false;
+				show(_pending);
 			}
-
-			_playRoutine = null;
-		}
-
-		private void apply(Entry entry)
-		{
-			_levelUpText.text = entry.levelUp;
-			_levelText.text = "레벨 " + entry.level.ToString();
-			_descText.text = entry.desc;
 		}
 	}
 }

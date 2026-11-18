@@ -1,5 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Event;
 
@@ -7,57 +8,76 @@ namespace ProjectOne.UI
 {
 	// 획득 로그 목록 — 보상이 인벤/지갑에 들어올 때마다 한 줄씩 쌓는다.
 	//
-	// BuffInfo · MapInfo 와 같은 결의 자율 HUD 위젯이다(MVP 를 쓰지 않는다).
+	// HUD 위젯(HudBuffList · HudMapInfo)과 같은 결로 자기 이벤트를 직접 구독한다(MVP 를 쓰지 않는다).
 	//   장비   : 획득 <color=등급색>이름</color>(품질%)
 	//   자동분해 : 자동분해 <color=등급색>이름</color>(품질%)   (환급 재화는 다음 줄에 따로)
 	//   스택   : 획득 <color=등급색>이름</color> x수량   (1개면 수량 생략)
 	//   재화   : 획득 수량 <color=재화색>이름</color>
 	//
-	// 최대 MaxSlots 개까지 두고, 넘치면 가장 오래된 슬롯을 재사용해 맨 아래(최신)로 옮긴다(큐).
-	// 루트 VerticalLayoutGroup 이 ReverseArrangement 라 **첫 번째 형제가 맨 아래**에 놓인다.
-	// 각 로그는 표시 후 일정 시간이 지나면 꺼져 대기 목록으로 돌아간다(파괴하지 않고 재사용).
-	public class SystemLogInfo : MonoBehaviour
+	// UI Toolkit 화면이다(레이아웃 UIToolkit/HUD/SystemLog/SystemLogInfo.uxml). UIManager 가 System 층에 붙인다.
+	// 최대 MaxSlots 줄까지 두고, 넘치면 가장 오래된 줄을 재사용해 맨 아래(최신)로 옮긴다(큐).
+	// 목록이 column-reverse 라 **첫 번째 자식이 맨 아래**에 놓인다.
+	// 각 줄은 표시 후 LifeSeconds 가 지나면 빠져 대기 목록으로 돌아간다(파괴하지 않고 재사용).
+	public class SystemLogInfo : ToolkitScreen
 	{
 		private const int MaxSlots = 10;
+
+		// 표시 후 사라지기까지의 시간(초)
+		private const float LifeSeconds = 5f;
 
 		// 인벤토리 가득 참 안내를 다시 찍기까지의 시간(초)
 		private const float InventoryFullLogCooldown = 3f;
 
-		[SerializeField] private SystemLogSlot _slotPrefab;			// UIPrefab_SystemLogSlot
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
 
-		// 표시 중인 슬롯, 오래된 순서. 앞이 가장 먼저 찍힌 로그다.
-		private readonly Queue<SystemLogSlot> _slots = new Queue<SystemLogSlot>();
+		// 로그 한 줄 — 만료 시각(Time.time)이 지나면 거둔다.
+		private sealed class Line
+		{
+			public Label label;
+			public float expireTime;
+		}
 
-		// 시간이 지나 꺼진 슬롯. 다음 로그에 재사용한다.
-		private readonly Stack<SystemLogSlot> _idle = new Stack<SystemLogSlot>();
+		private VisualElement _list;
+
+		// 표시 중인 줄, 오래된 순서. 앞이 가장 먼저 찍힌 로그다.
+		private readonly Queue<Line> _slots = new Queue<Line>();
+
+		// 시간이 지나 빠진 줄. 다음 로그에 재사용한다.
+		private readonly Stack<Line> _idle = new Stack<Line>();
 
 		private float _nextInventoryFullLogTime;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
+			_list = root.Q("syslog");
+
 			EventManager.Instance.Subscribe<RewardAcquiredEvent>(onRewardAcquired);
 			EventManager.Instance.Subscribe<EquipmentAutoDecomposedEvent>(onEquipmentAutoDecomposed);
 			EventManager.Instance.Subscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
 			EventManager.Instance.Subscribe<InventoryFullEvent>(onInventoryFull);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			EventManager.Instance.Unsubscribe<RewardAcquiredEvent>(onRewardAcquired);
-			EventManager.Instance.Unsubscribe<EquipmentAutoDecomposedEvent>(onEquipmentAutoDecomposed);
-			EventManager.Instance.Unsubscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
-			EventManager.Instance.Unsubscribe<InventoryFullEvent>(onInventoryFull);
+			if (IsBound == true)
+			{
+				EventManager.Instance.Unsubscribe<RewardAcquiredEvent>(onRewardAcquired);
+				EventManager.Instance.Unsubscribe<EquipmentAutoDecomposedEvent>(onEquipmentAutoDecomposed);
+				EventManager.Instance.Unsubscribe<HeroPassExpChangedEvent>(onHeroPassExpChanged);
+				EventManager.Instance.Unsubscribe<InventoryFullEvent>(onInventoryFull);
+			}
+
+			base.OnDestroy();
 		}
 
 		// 만료 시각은 들어온 순서와 같으므로 맨 앞만 보면 된다.
 		private void Update()
 		{
-			while (_slots.Count > 0 && _slots.Peek().ExpireTime <= Time.time)
+			while (_slots.Count > 0 && _slots.Peek().expireTime <= Time.time)
 			{
-				SystemLogSlot slot = _slots.Dequeue();
-				slot.gameObject.SetActive(false);
-				_idle.Push(slot);
+				Line line = _slots.Dequeue();
+				line.label.RemoveFromHierarchy();
+				_idle.Push(line);
 			}
 		}
 
@@ -114,30 +134,33 @@ namespace ProjectOne.UI
 
 		private void addLog(string text)
 		{
-			if (_slotPrefab == null)
+			if (_list == null)
 			{
 				return;
 			}
 
-			SystemLogSlot slot;
+			Line line;
 			if (_slots.Count >= MaxSlots)
 			{
-				slot = _slots.Dequeue();
+				line = _slots.Dequeue();
 			}
 			else if (_idle.Count > 0)
 			{
-				slot = _idle.Pop();
+				line = _idle.Pop();
 			}
 			else
 			{
-				slot = Instantiate(_slotPrefab, this.transform);
+				line = new Line();
+				line.label = new Label();
+				line.label.AddToClassList("syslog__line");
+				line.label.pickingMode = PickingMode.Ignore;
 			}
 
-			// 최신 로그를 맨 아래로 — ReverseArrangement 에서는 첫 번째 형제가 맨 아래다.
-			slot.gameObject.SetActive(true);
-			slot.transform.SetAsFirstSibling();
-			slot.SetText(text);
-			_slots.Enqueue(slot);
+			// 최신 로그를 맨 아래로 — column-reverse 에서는 첫 번째 자식이 맨 아래다.
+			line.label.text = text;
+			line.expireTime = Time.time + LifeSeconds;
+			_list.Insert(0, line.label);
+			_slots.Enqueue(line);
 		}
 
 		private string formatCurrency(RewardAcquiredEvent e)

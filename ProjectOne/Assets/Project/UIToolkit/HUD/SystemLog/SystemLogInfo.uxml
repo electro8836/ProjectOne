@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="SystemLogInfo.uss" />
+
+	<!-- 획득 로그 — 왼쪽 아래에서 위로 쌓인다(최신이 맨 아래). 입력은 받지 않는다 -->
+	<ui:VisualElement class="syslog-layer" picking-mode="Ignore">
+		<ui:VisualElement name="syslog" class="syslog" picking-mode="Ignore" />
+	</ui:VisualElement>
+</ui:UXML>

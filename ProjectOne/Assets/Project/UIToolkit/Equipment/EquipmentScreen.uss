@@ -1,0 +1,274 @@
+/* 장비(인벤토리) 화면 — 도트 스타일 (기준 해상도 1080 x 1920, 세로). 부품·색·글자 효과는 Theme.uss 를 따른다.
+   배치는 기존 UGUI 장비창과 같다: 위 가운데 캐릭터, 양옆 장착 칸 4개씩, 아래 부가 버튼 · 분류 탭 · 가방.
+   글자 크기는 12의 배수만 쓴다(Theme.uss 참고). */
+
+/* 가방만 늘고 줄어든다 — 나머지는 내용보다 작아지지 않게(UI Toolkit 기본 flex-shrink 는 1) */
+.upper,
+.top,
+.extra,
+.tabs,
+.bag__toolbar {
+	flex-shrink: 0;
+}
+
+/* ── 위: 캐릭터 + 장착 칸 ────────────────────────── */
+
+.top {
+	padding: 22px 26px 22px 26px;
+	margin-bottom: 12px;
+}
+
+.top__body {
+	flex-direction: row;
+	height: 680px;
+}
+
+/* 장착 칸 줄 — 벽에서 18px 띄우고, 칸끼리는 12px 만 벌려 가운데로 모은다(위아래에 여유가 남는다) */
+.equip-column {
+	width: 152px;
+	margin: 0 18px;
+	justify-content: center;
+}
+
+.equip-slot {
+	width: 152px;
+	height: 152px;
+	margin: 6px 0;
+	background-image: url("../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	transition-property: scale;
+	transition-duration: 0.45s;
+	transition-timing-function: ease-out-back;
+}
+
+/* 장착/해제 강조 — 크게 시작해 제자리로 줄어든다(전환 없이 1.5 로 키운 뒤 클래스를 떼면 전환이 돈다) */
+.equip-slot--pop {
+	scale: 1.5 1.5;
+	transition-duration: 0s;
+}
+
+/* 빈 칸에 흐리게 보이는 분류 아이콘 */
+.equip-slot__placeholder {
+	position: absolute;
+	left: 40px;
+	right: 40px;
+	top: 40px;
+	bottom: 40px;
+	-unity-background-scale-mode: scale-to-fit;
+	opacity: 0.35;
+}
+
+.equip-slot .item-cell {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+/* 가운데 무대 — 위 이름, 가운데 캐릭터, 아래 레벨·전투력 */
+.stage {
+	flex-grow: 1;
+	align-items: center;
+}
+
+.stage__name-row {
+	flex-direction: row;
+	align-items: center;
+	margin-top: 10px;
+}
+
+/* 이름 양옆 금색 장식선 */
+.stage__ornament {
+	width: 40px;
+	height: 6px;
+	background-color: var(--divider);
+	border-bottom-width: 3px;
+	border-bottom-color: var(--paper-shadow);
+}
+
+.stage__name {
+	margin: 0 16px;
+	font-size: 48px;
+}
+
+.stage__character {
+	flex-grow: 1;
+	align-self: stretch;
+	background-size: contain;
+	background-repeat: no-repeat;
+	scale: 1.3 1.3;	/* 프리뷰 카메라가 여백을 두고 찍어 캐릭터가 작다 */
+}
+
+/* 아래: 레벨(글자만) 위, 전투력 아래 */
+.stage__info {
+	align-items: center;
+	margin-bottom: 14px;
+}
+
+.stage__level {
+	font-size: 36px;
+	margin-bottom: 2px;
+}
+
+.stage__power {
+	font-size: 48px;
+	color: var(--gold);
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+}
+
+/* 보관함 — 기능 버튼 줄 + 위 영역(.upper) 전체를 덮는다 */
+.stash {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	padding: 22px 26px 26px 26px;
+	display: none;
+}
+
+.stash__head {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 10px;
+}
+
+.stash__title {
+	font-size: 48px;
+	margin-left: 6px;
+}
+
+.stash__capacity {
+	flex-grow: 1;
+	margin-left: 18px;
+	font-size: 48px;
+	color: var(--ink-sub);
+}
+
+/* ── 부가 기능 버튼 ──────────────────────────────── */
+
+.extra {
+	flex-direction: row;
+	margin-bottom: 12px;
+}
+
+.extra__button {
+	flex-grow: 1;
+	flex-basis: 0;
+	min-width: 0;
+	margin: 0 6px;
+}
+
+/* ── 분류 탭 ─────────────────────────────────────── */
+
+.tabs {
+	flex-direction: row;
+	padding: 0 8px;
+	margin-bottom: -12px;	/* 탭 아래가 가방 패널 테두리에 겹쳐 붙어 보이게 */
+}
+
+.tab {
+	flex-grow: 1;
+	flex-basis: 0;
+	height: 92px;
+	margin: 0 3px;
+	padding: 0 0 10px 0;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../Pixel/tab_off.png");
+	-unity-slice-left: 5;
+	-unity-slice-right: 5;
+	-unity-slice-top: 5;
+	-unity-slice-bottom: 5;
+	-unity-slice-scale: 4px;
+	font-size: 36px;
+	color: var(--ink-sub);
+	text-shadow: 0 3px 0 var(--paper-shadow);
+	translate: 0 10px;
+	align-items: center;
+	justify-content: center;
+}
+
+/* 선택 탭 — Theme.uss 의 .tab--selected 와 같은 표시(보라 바탕 + 흰 글자) */
+.tab--selected {
+	background-image: url("../Pixel/tab_on.png");
+	-unity-background-image-tint-color: #FFFFFF;
+	color: var(--white);
+	translate: 0 0;
+}
+
+.tab__icon {
+	width: 52px;
+	height: 52px;
+	-unity-background-scale-mode: scale-to-fit;
+	opacity: 0.4;
+}
+
+.tab--selected .tab__icon {
+	opacity: 1;
+}
+
+/* ── 가방 ────────────────────────────────────────── */
+
+.bag {
+	flex-grow: 1;
+	flex-shrink: 1;
+	padding: 22px 26px 26px 26px;
+}
+
+.bag__toolbar {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 8px;
+}
+
+.bag__caption {
+	font-size: 36px;
+	color: var(--ink-sub);
+	margin: 0 12px 0 6px;
+}
+
+.bag__capacity {
+	flex-grow: 1;
+	font-size: 48px;
+}
+
+.bag__button {
+	min-width: 150px;
+	margin-left: 10px;
+}
+
+/* ── 아이템 칸 그리드 ────────────────────────────── */
+
+.item-grid {
+	flex-grow: 1;
+	flex-shrink: 1;
+}
+
+.item-grid .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.item-grid .item-cell {
+	width: 180px;
+	height: 180px;
+	margin: 8px;
+}
+
+/* 장착 칸(152px)은 가방 칸(180px)보다 작다 — 배지도 같은 비율로 줄인다(틀 12px 안쪽은 유지) */
+.equip-slot .item-cell__type {
+	left: 14px;
+	top: 14px;
+	width: 40px;
+	height: 40px;
+	padding: 5px;
+}

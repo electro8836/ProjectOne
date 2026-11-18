@@ -3,26 +3,19 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
-	// 코스튬 목록 창의 View(MVP). 장비창의 CostumeButton 이 창 캔버스에 겹쳐 연다.
-	//
-	// 창 스택에 쌓이는 방식이라 아래의 장비창은 살아 있다 — 이 창을 닫으면 장비창이 그대로 다시 보인다.
-	// 표시와 입력 전달만 담당하고, 무엇을 어떤 색·문구로 깔지는 CostumeInfoPresenter 가 정한다.
-	public class CostumeInfoUI : UIScreen, IView
+	// 코스튬 목록 창의 View(MVP, UI Toolkit). 레이아웃은 UIToolkit/Screens/Costume/CostumeScreen.uxml.
+	// 장비창의 코스튬 버튼이 창 층에 겹쳐 연다 — 창 스택에 쌓이므로 닫으면 아래의 장비창이 다시 보인다.
+	// 표시와 입력 전달만 담당하고, 무엇을 어떤 문구로 깔지는 CostumeInfoPresenter 가 정한다.
+	public class CostumeInfoUI : ToolkitScreen, IView
 	{
-		[Header("탭 / 목록")]
-		[SerializeField] private TabGroup _tabGroup;					// Bottom/TabMenu_Middle (무기/바디)
-		[SerializeField] private RectTransform _gridParent;			// Bottom/ScrollRect/Veiwport/Content/Grid
-		[SerializeField] private CostumeSlot _slotPrefab;			// UIPrefab_CostumeSlot
+		private const int TAB_COUNT = 2;
+
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
-
-		[Header("캐릭터")]
-		[SerializeField] private CharacterPreview _characterPreview;	// Top/Character/UIPrefab_CharacterPreview
-
-		[Header("닫기")]
-		[SerializeField] private UIButton _returnButton;	// Return_Button
+		[SerializeField] private CharacterPreview _characterPreview;	// 같은 오브젝트 — 입어보기 결과를 RenderTexture 로 찍는다
 
 		public event Action<int> OnTabSelected;
 		public event Action<int> OnPreviewClicked;
@@ -30,11 +23,15 @@ namespace ProjectOne.UI
 		public event Action OnReturnClicked;
 
 		private readonly CostumeInfoPresenter _presenter = new CostumeInfoPresenter();
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
+		private readonly List<CostumeCell> _cells = new List<CostumeCell>();
+		private readonly List<UniTask> _bindTasks = new List<UniTask>();
+		private readonly Button[] _tabs = new Button[TAB_COUNT];
 
-		private readonly List<CostumeSlot> _slots = new List<CostumeSlot>();
-		private readonly List<UniTask> _bindTasks = new List<UniTask>();	// 렌더 일괄 대기용
+		private VisualElement _character;
+		private ScrollView _list;
 
-		// Presenter 가 등급 색을 정해야 해서 열어 둔다 (PetInfoUI 와 같은 자리).
+		// Presenter 가 등급 색을 정해야 해서 열어 둔다.
 		public ItemGradeColorTable GradeColors
 		{
 			get { return _gradeColors; }
@@ -46,26 +43,43 @@ namespace ProjectOne.UI
 			get { return true; }
 		}
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_tabGroup.OnTabChanged += onTabChanged;
-			_returnButton.OnClickEvent += onReturnClicked;
+			for (int i = 0; i < TAB_COUNT; i++)
+			{
+				Button tab = root.Q<Button>("tab-" + i);
+				tab.userData = i;
+				tab.RegisterCallback<ClickEvent>(onTabClicked);
+				_tabs[i] = tab;
+			}
+
+			_character = root.Q("character");
+			_list = root.Q<ScrollView>("list");
+			_list.AddManipulator(new ScrollDragManipulator(_list));
+			root.Q<Button>("return-button").clicked += onReturnClicked;
+
+			if (_characterPreview != null)
+			{
+				_characterPreview.OnTextureReady += onCharacterTextureReady;
+			}
 
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			for (int i = 0; i < _slots.Count; i++)
+			if (IsBound == true)
 			{
-				_slots[i].OnPreviewClicked -= onSlotPreviewClicked;
-				_slots[i].OnEquipClicked -= onSlotEquipClicked;
+				if (_characterPreview != null)
+				{
+					_characterPreview.OnTextureReady -= onCharacterTextureReady;
+				}
+
+				_presenter.Dispose();
 			}
 
-			_tabGroup.OnTabChanged -= onTabChanged;
-			_returnButton.OnClickEvent -= onReturnClicked;
-
-			_presenter.Dispose();
+			_icons.ReleaseAll();
+			base.OnDestroy();
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
@@ -85,34 +99,37 @@ namespace ProjectOne.UI
 
 		// ── Presenter → View ──────────────────────────────────────────────
 
-		// Select 는 OnTabChanged 를 발행하지 않는다 — 호출자가 이어서 렌더를 지시한다.
+		// OnTabSelected 를 발행하지 않는다 — 호출자가 이어서 렌더를 지시한다.
 		public void SelectTab(int index)
 		{
-			_tabGroup.Select(index);
+			for (int i = 0; i < TAB_COUNT; i++)
+			{
+				_tabs[i].EnableInClassList("tab--selected", i == index);
+			}
 		}
 
 		// 입어보기 대상을 프리뷰에 넘긴다. -1 이면 그 부위는 실제 착용으로 되돌아간다.
 		public void SetPreviewCostume(int weaponCostumeId, int bodyCostumeId)
 		{
-			_characterPreview.SetPreviewCostume(weaponCostumeId, bodyCostumeId);
+			if (_characterPreview != null)
+			{
+				_characterPreview.SetPreviewCostume(weaponCostumeId, bodyCostumeId);
+			}
 		}
 
-		// 슬롯은 파괴하지 않고 재사용한다 — 탭을 오갈 때마다 Instantiate 하면 GC 가 튄다.
 		public async UniTask RenderListAsync(IReadOnlyList<CostumeSlotData> data, CancellationToken ct)
 		{
 			_bindTasks.Clear();
-
 			for (int i = 0; i < data.Count; i++)
 			{
-				CostumeSlot slot = getOrCreateSlot(i);
-				slot.gameObject.SetActive(true);
-
-				_bindTasks.Add(slot.BindAsync(data[i], ct));
+				CostumeCell cell = getOrCreateCell(i);
+				cell.SetShown(true);
+				_bindTasks.Add(cell.BindAsync(data[i], ct));
 			}
 
-			for (int i = data.Count; i < _slots.Count; i++)
+			for (int i = data.Count; i < _cells.Count; i++)
 			{
-				_slots[i].gameObject.SetActive(false);
+				_cells[i].SetShown(false);
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
@@ -120,30 +137,37 @@ namespace ProjectOne.UI
 
 		// ── 내부 ──────────────────────────────────────────────────────────
 
-		private CostumeSlot getOrCreateSlot(int index)
+		private CostumeCell getOrCreateCell(int index)
 		{
-			if (index < _slots.Count)
+			if (index < _cells.Count)
 			{
-				return _slots[index];
+				return _cells[index];
 			}
 
-			CostumeSlot slot = Instantiate(_slotPrefab, _gridParent);
-			slot.OnPreviewClicked += onSlotPreviewClicked;	// 생성 시 1회만 구독
-			slot.OnEquipClicked += onSlotEquipClicked;
-			_slots.Add(slot);
-
-			return slot;
+			CostumeCell cell = new CostumeCell(_list.contentContainer, _icons);
+			cell.OnPreviewClicked += onCellPreviewClicked;
+			cell.OnEquipClicked += onCellEquipClicked;
+			_cells.Add(cell);
+			return cell;
 		}
 
-		private void onTabChanged(int index)
+		private void onCharacterTextureReady(RenderTexture texture)
 		{
+			_character.style.backgroundImage = new StyleBackground(Background.FromRenderTexture(texture));
+		}
+
+		private void onTabClicked(ClickEvent evt)
+		{
+			int index = (int)((VisualElement)evt.currentTarget).userData;
+			SelectTab(index);
+
 			if (OnTabSelected != null)
 			{
 				OnTabSelected.Invoke(index);
 			}
 		}
 
-		private void onSlotPreviewClicked(CostumeSlot sender)
+		private void onCellPreviewClicked(CostumeCell sender)
 		{
 			if (OnPreviewClicked != null)
 			{
@@ -151,7 +175,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private void onSlotEquipClicked(CostumeSlot sender)
+		private void onCellEquipClicked(CostumeCell sender)
 		{
 			if (OnEquipClicked != null)
 			{

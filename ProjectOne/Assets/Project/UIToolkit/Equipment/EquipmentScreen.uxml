@@ -1,0 +1,105 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../Common/Theme.uss" />
+	<Style src="EquipmentScreen.uss" />
+	<Style src="../Common/Violet.uss" />
+
+	<ui:VisualElement name="screen" class="screen theme-violet">
+
+		<!-- 상단 배너: 판 안에 제목 + 재화 (닫기는 네비게이션 바 탭을 다시 누른다) -->
+		<ui:VisualElement class="header">
+			<ui:VisualElement class="header__frame">
+				<ui:VisualElement class="header__wash" picking-mode="Ignore" />
+				<ui:Label text="장비" class="header__title text-pop" />
+				<!-- 재화 캡슐 최대 3칸 — 보일 재화는 EquipmentToolkitUI 의 _headerCurrencies 가 정하고, 남는 칸은 숨긴다 -->
+				<ui:VisualElement name="header-currencies" class="header__currencies">
+					<ui:VisualElement name="currency-0" class="currency-capsule"><ui:VisualElement class="currency-capsule__icon" picking-mode="Ignore" /><ui:Label text="" class="currency-capsule__text" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:VisualElement name="currency-1" class="currency-capsule"><ui:VisualElement class="currency-capsule__icon" picking-mode="Ignore" /><ui:Label text="" class="currency-capsule__text" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:VisualElement name="currency-2" class="currency-capsule"><ui:VisualElement class="currency-capsule__icon" picking-mode="Ignore" /><ui:Label text="" class="currency-capsule__text" picking-mode="Ignore" /></ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<!-- 기능 버튼 줄 + 캐릭터 영역 — 보관함이 이 묶음 전체를 덮는다 -->
+		<ui:VisualElement class="upper">
+
+			<!-- ── 캐릭터 메뉴 — 캐릭터 영역 위. 버튼마다 색·아이콘으로 구분 ── -->
+			<ui:VisualElement class="extra">
+				<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
+				<ui:Button name="stat-button" text="능력치" class="btn btn--small extra__button extra--stat"><ui:VisualElement class="extra__icon" picking-mode="Ignore" /></ui:Button>
+				<ui:Button name="currency-button" text="재화" class="btn btn--small extra__button extra--currency"><ui:VisualElement class="extra__icon" picking-mode="Ignore" /></ui:Button>
+				<ui:Button name="costume-button" text="코스튬" class="btn btn--small extra__button extra--costume"><ui:VisualElement class="extra__icon" picking-mode="Ignore" /></ui:Button>
+				<ui:Button name="pet-button" text="펫" class="btn btn--small extra__button extra--pet"><ui:VisualElement class="extra__icon" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+
+			<!-- ── 위: 캐릭터 + 양옆 장착 칸 ── -->
+			<ui:VisualElement class="px-paper top">
+
+				<ui:VisualElement class="top__body">
+					<!-- 왼쪽 장착 칸: 무기 · 목걸이 · 반지 · 유물 -->
+					<ui:VisualElement class="equip-column">
+						<ui:VisualElement name="equip-1" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-weapon" picking-mode="Ignore" /></ui:VisualElement>
+						<ui:VisualElement name="equip-7" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-amulet" picking-mode="Ignore" /></ui:VisualElement>
+						<ui:VisualElement name="equip-6" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-ring" picking-mode="Ignore" /></ui:VisualElement>
+						<ui:VisualElement name="equip-8" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-relic" picking-mode="Ignore" /></ui:VisualElement>
+					</ui:VisualElement>
+
+					<!-- 가운데: 이름 → 캐릭터 → 레벨·전투력 -->
+					<ui:VisualElement class="stage">
+						<ui:VisualElement class="stage__name-row">
+							<ui:VisualElement class="stage__ornament" picking-mode="Ignore" />
+							<ui:Label name="nickname" text="" class="stage__name" />
+							<ui:VisualElement class="stage__ornament" picking-mode="Ignore" />
+						</ui:VisualElement>
+						<ui:VisualElement name="character" class="stage__character" picking-mode="Ignore" />
+						<ui:VisualElement class="stage__info">
+							<ui:Label name="hero-level" text="" class="stage__level" />
+							<ui:Label name="battle-power" text="" class="stage__power" />
+						</ui:VisualElement>
+					</ui:VisualElement>
+
+					<!-- 오른쪽 장착 칸: 투구 · 갑옷 · 장갑 · 신발 -->
+					<ui:VisualElement class="equip-column">
+						<ui:VisualElement name="equip-2" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-helmet" picking-mode="Ignore" /></ui:VisualElement>
+						<ui:VisualElement name="equip-3" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-armor" picking-mode="Ignore" /></ui:VisualElement>
+						<ui:VisualElement name="equip-4" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-gloves" picking-mode="Ignore" /></ui:VisualElement>
+						<ui:VisualElement name="equip-5" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-boots" picking-mode="Ignore" /></ui:VisualElement>
+					</ui:VisualElement>
+				</ui:VisualElement>
+
+			</ui:VisualElement>
+
+			<!-- 보관함 — 열면 기능 버튼 줄부터 캐릭터 영역까지 통째로 덮는다 -->
+			<ui:VisualElement name="stash-section" class="px-paper stash">
+				<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
+				<ui:VisualElement class="stash__head">
+					<ui:Label text="보관함" class="stash__title" />
+					<ui:Label name="stash-capacity" text="" class="stash__capacity" />
+					<ui:Button name="stash-close-button" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+				</ui:VisualElement>
+				<ui:ScrollView name="stash-grid" class="item-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<!-- ── 분류 탭 (전체는 글자, 나머지는 분류 아이콘) ── -->
+		<ui:VisualElement class="tabs">
+			<ui:Button name="tab-0" text="전체" class="tab" />
+			<ui:Button name="tab-1" text="" class="tab"><ui:VisualElement class="tab__icon type-weapon" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="tab-2" text="" class="tab"><ui:VisualElement class="tab__icon type-armor" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="tab-3" text="" class="tab"><ui:VisualElement class="tab__icon type-accessory" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="tab-4" text="" class="tab"><ui:VisualElement class="tab__icon type-relic" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="tab-5" text="" class="tab"><ui:VisualElement class="tab__icon type-consumable" picking-mode="Ignore" /></ui:Button>
+		</ui:VisualElement>
+
+		<!-- ── 가방 ── -->
+		<ui:VisualElement class="px-paper bag">
+			<ui:VisualElement class="bag__toolbar">
+				<ui:Label text="가방" class="bag__caption" />
+				<ui:Label name="capacity" text="" class="bag__capacity" />
+				<ui:Button name="sort-button" text="등급순" class="btn btn--small btn--gold bag__button" />
+				<ui:Button name="stash-button" text="보관함" class="btn btn--small btn--gold bag__button" />
+				<ui:Button name="decomposition-button" text="분해" class="btn btn--small btn--red bag__button" />
+			</ui:VisualElement>
+			<ui:ScrollView name="item-grid" class="item-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

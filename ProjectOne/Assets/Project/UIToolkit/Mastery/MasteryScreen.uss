@@ -1,0 +1,403 @@
+/* 마스터리 화면 — 도트 스타일 (기준 해상도 1080 x 1920, 세로). 부품·색·글자 효과는 Theme.uss 를 따른다.
+   모바일 가독성 기준: 본문 36px 이상, 목록 이름 48px, 제목 60~72px, 보조 글자도 30px 아래로 내리지 않는다. */
+
+/* 목록만 늘고 줄어든다 — 나머지는 내용보다 작아지지 않게(UI Toolkit 기본 flex-shrink 는 1) */
+.tabs,
+.info,
+.slots,
+.section-title,
+.section-row,
+.total {
+	flex-shrink: 0;
+}
+
+/* ── 무기 정보 ──────────────────────────────────── */
+
+.info {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 14px;
+}
+
+.info__icon-frame {
+	width: 176px;
+	height: 176px;
+	padding: 18px;	/* 테두리 4칸(16px) 바로 안쪽 — 무기 그림을 크게 */
+	background-image: url("../Pixel/slot_gold.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.info__body {
+	flex-grow: 1;
+	margin-left: 26px;
+}
+
+.info__title-row {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.info__name {
+	font-size: 60px;
+}
+
+.info__level {
+	align-self: center;
+}
+
+/* ── 스킬 칸 6개 ────────────────────────────────── */
+
+.slots {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	padding: 18px 10px 12px 10px;
+	margin-bottom: 8px;
+}
+
+.slots__divider {
+	width: 4px;
+	height: 116px;
+	background-color: var(--divider);
+	border-right-width: 4px;
+	border-right-color: #FFFFFF;
+}
+
+.slot {
+	width: 140px;
+	align-items: center;
+}
+
+.slot__frame {
+	width: 132px;
+	height: 132px;
+	padding: 16px;	/* 테두리 4칸(16px) 바로 안쪽까지 아이콘을 채운다 */
+	background-image: url("../Pixel/slot_tactic.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	transition-property: scale, translate;
+	transition-duration: 0.12s;
+}
+
+.slot--passive .slot__frame {
+	background-image: url("../Pixel/slot_passive.png");
+}
+
+.slot--core .slot__frame {
+	background-image: url("../Pixel/slot_core.png");
+}
+
+.slot__label {
+	margin-top: 4px;
+	font-size: 36px;
+	color: var(--ink-sub);
+	-unity-text-align: middle-center;
+}
+
+.slot:active .slot__frame {
+	translate: 0 4px;
+}
+
+/* 선택한 스킬이 들어 있는 칸 */
+.slot--selected .slot__frame {
+	background-image: url("../Pixel/slot_selected.png");
+}
+
+/* 선택한 스킬을 넣을 수 있는 칸 — 누르면 장착 */
+.slot--target .slot__frame {
+	background-image: url("../Pixel/slot_gold.png");
+	scale: 1.1;
+	translate: 0 -6px;
+}
+
+.slot--target .slot__label {
+	color: var(--gold-dark);
+}
+
+/* ── 스킬 목록 ──────────────────────────────────── */
+
+.list {
+	flex-grow: 1;
+	flex-shrink: 1;
+	min-height: 200px;
+}
+
+.skill-row {
+	flex-direction: row;
+	align-items: center;
+	height: 184px;
+	padding: 18px 28px 24px 18px;
+	margin-bottom: 12px;
+	background-image: url("../Pixel/row.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+	transition-property: translate;
+	transition-duration: 0.06s;
+}
+
+.skill-row:active {
+	translate: 0 4px;
+}
+
+.skill-row__icon-frame {
+	width: 140px;
+	height: 140px;
+	padding: 16px;	/* 테두리 4칸(16px) 바로 안쪽까지 아이콘을 채운다 */
+	background-image: url("../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.skill-row__body {
+	flex-grow: 1;
+	margin-left: 26px;
+	justify-content: center;
+}
+
+.skill-row__name {
+	font-size: 48px;
+	margin-bottom: 8px;
+}
+
+.skill-row__lock {
+	display: none;
+	width: 54px;
+	height: 66px;
+	margin-right: 12px;
+	background-image: url("../Pixel/icon_lock.png");
+}
+
+.skill-row__state {
+	font-size: 36px;
+	color: var(--ink-sub);
+	-unity-text-align: middle-right;
+}
+
+/* 장착 중 — 상태 글자를 초록 칩으로 */
+.skill-row--equipped .skill-row__state {
+	padding: 6px 18px 10px 18px;
+	background-image: url("../Pixel/chip_green.png");
+	-unity-slice-left: 3;
+	-unity-slice-right: 3;
+	-unity-slice-top: 3;
+	-unity-slice-bottom: 3;
+	-unity-slice-scale: 4px;
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+.skill-row--equipped .skill-row__icon-frame {
+	background-image: url("../Pixel/slot_passive.png");
+}
+
+.skill-row--locked {
+	background-image: url("../Pixel/row_locked.png");
+}
+
+.skill-row--locked .skill-row__lock {
+	display: flex;
+}
+
+.skill-row--locked .skill-row__name {
+	color: var(--ink-dim);
+	text-shadow: 0 3px 0 var(--paper-shadow);
+}
+
+.skill-row--locked .icon {
+	-unity-background-image-tint-color: #6E6E6E;
+}
+
+.skill-row--selected {
+	background-image: url("../Pixel/row_selected.png");
+}
+
+/* ── 칸 고르기 안내 ─────────────────────────────── */
+
+.section-row {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	height: 84px;	/* 안내가 떠도 아래가 밀리지 않게 높이 고정 */
+	margin-bottom: 4px;
+}
+
+.section-row .section-title {
+	margin: 0 0 0 6px;
+}
+
+.slot-hint {
+	display: none;
+	flex-direction: row;
+	align-items: center;
+}
+
+.slot-hint--visible {
+	display: flex;
+}
+
+.slot-hint__text {
+	margin-right: 14px;
+	font-size: 36px;
+	color: var(--gold-dark);
+}
+
+/* ── 스킬 상세 팝업 ─────────────────────────────── */
+
+.popup__summary {
+	flex-direction: row;
+	align-items: center;
+	margin: 0 40px 26px 40px;
+}
+
+.popup__icon-frame {
+	width: 192px;
+	height: 192px;
+	padding: 16px;	/* 테두리 4칸(16px) 바로 안쪽까지 아이콘을 채운다 */
+	background-image: url("../Pixel/slot_gold.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.popup__meta {
+	flex-grow: 1;
+	margin-left: 30px;
+}
+
+.popup__chip {
+	font-size: 36px;
+	padding: 2px 20px 10px 20px;
+	margin-bottom: 16px;
+}
+
+.popup__state {
+	font-size: 48px;
+	color: var(--ink-sub);
+}
+
+.popup__desc-box {
+	min-height: 260px;
+	margin: 0 40px 22px 40px;
+	padding: 30px 32px;
+}
+
+.popup__desc {
+	font-size: 48px;
+	color: var(--text);
+	white-space: normal;
+	text-shadow: 0 3px 0 var(--paper-shadow);
+}
+
+.popup__hint {
+	margin: 0 40px 22px 40px;
+	font-size: 36px;
+	color: var(--gold-dark);
+	white-space: normal;
+	-unity-text-align: middle-center;
+}
+
+/* ── 전체 마스터리 ──────────────────────────────── */
+
+.total {
+	margin-bottom: 14px;
+}
+
+.total__title-row {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 12px;
+}
+
+.total__caption {
+	font-size: 48px;
+}
+
+.total__level {
+	align-self: center;
+}
+
+.total__bonus {
+	margin-top: 12px;
+	font-size: 36px;
+	white-space: normal;
+}
+
+.mastery-row {
+	flex-direction: row;
+	align-items: center;
+	padding: 20px 28px 26px 20px;
+	margin-bottom: 12px;
+	background-image: url("../Pixel/row.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+}
+
+.mastery-row--active {
+	background-image: url("../Pixel/row_active.png");
+}
+
+.mastery-row__icon-frame {
+	width: 148px;
+	height: 148px;
+	padding: 18px;	/* 테두리 4칸(16px) 바로 안쪽 — 무기 그림을 크게 */
+	background-image: url("../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.mastery-row--active .mastery-row__icon-frame {
+	background-image: url("../Pixel/slot_gold.png");
+}
+
+.mastery-row__body {
+	flex-grow: 1;
+	margin-left: 26px;
+}
+
+.mastery-row__title-row {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 8px;
+}
+
+.mastery-row__name {
+	font-size: 48px;
+}
+
+.mastery-row__title-row .level-text {
+	align-self: center;
+}
+
+.mastery-row__bonus {
+	margin-top: 10px;
+	font-size: 36px;
+	color: var(--ink-sub);
+}

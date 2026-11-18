@@ -1,0 +1,569 @@
+/* 메인 HUD — 기준 해상도 1080×1920. 배치는 모서리 기준 absolute.
+   전환(translate·opacity)은 클래스로만 건다 — 코드는 클래스를 붙이고 뗄 뿐이다. */
+
+.hud {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+/* 어두운 바탕 위 흰 글자 */
+.hud-text {
+	margin: 0;
+	padding: 0;
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+/* ── 게이지 — 채움 폭은 코드가 % 로 쓴다 ───────────── */
+
+.hud-gauge {
+	height: 52px;
+	background-color: #3C3050;
+	border-width: 4px;
+	border-color: #1E1C36;
+}
+
+.hud-gauge--thin {
+	height: 20px;
+	border-width: 3px;
+}
+
+.hud-gauge__fill {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 0;
+	background-color: #FF453D;
+}
+
+.hud-gauge__fill--exp {
+	background-color: #FF9500;
+}
+
+.hud-gauge__fill--quest {
+	background-color: #20F12A;
+}
+
+.hud-gauge__fill--break {
+	background-color: #F1C220;
+}
+
+.hud-gauge__text {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 2px;
+	-unity-text-align: middle-center;
+}
+
+/* ── 히어로 정보 ───────────────────────────────── */
+
+.hero-info {
+	position: absolute;
+	left: 15px;
+	top: 30px;
+	width: 420px;
+	padding: 12px;
+	background-color: rgba(0, 0, 0, 0.78);
+}
+
+.hero-info .hud-gauge--thin {
+	margin-top: 6px;
+}
+
+.hero-info__row {
+	flex-direction: row;
+	margin-top: 8px;
+}
+
+.hero-info__stat {
+	flex-direction: row;
+	align-items: center;
+	flex-grow: 1;
+	flex-basis: 0;
+}
+
+.hero-info__icon {
+	width: 48px;
+	height: 48px;
+	margin-right: 8px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.hud-icon-level { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Helmet_1.Png"); }
+.hud-icon-power { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Attack.Png"); }
+.hud-icon-mission { background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Mission.png"); }
+.hud-icon-rank { background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Ranking.png"); }
+.hud-icon-pass { background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_PassTicket.png"); }
+.hud-icon-login { background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/ItemIcon_Calendar.png"); }
+
+/* ── 맵 이름 ───────────────────────────────────── */
+
+.map-info {
+	position: absolute;
+	left: 20px;
+	top: 230px;
+	flex-direction: row;
+	align-items: center;
+}
+
+.map-info__icon {
+	width: 52px;
+	height: 52px;
+	margin-right: 8px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* ── 접기 버튼 — 화살표는 펼침이면 접는 쪽을 가리킨다 ─────── */
+
+.hud-fold {
+	margin: 0;
+	padding: 0;
+	width: 72px;
+	height: 72px;
+	border-width: 3px;
+	border-radius: 0;
+	border-color: #0B0E1C;
+	background-color: #161D35;
+	align-items: center;
+	justify-content: center;
+}
+
+.hud-fold:hover:enabled {
+	background-color: #161D35;
+	border-color: #0B0E1C;
+}
+
+.hud-fold:disabled {
+	opacity: 1;
+}
+
+.hud-fold__arrow {
+	width: 44px;
+	height: 44px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Arrow_01.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* ── 퀘스트 ────────────────────────────────────── */
+
+.quest-info {
+	position: absolute;
+	left: 0;
+	top: 300px;
+	flex-direction: row;
+	align-items: flex-start;
+	transition-property: translate;
+	transition-duration: 1s;
+	transition-timing-function: ease-out-cubic;
+}
+
+/* 틀 너비만큼 왼쪽으로 — 접기 버튼만 화면에 남는다 */
+.quest-info--folded {
+	translate: -380px 0;
+}
+
+.quest-frame {
+	width: 380px;
+	padding: 12px 14px 14px 14px;
+	background-color: rgba(0, 0, 0, 0.78);
+	border-width: 3px;
+	border-color: #000000;
+}
+
+.quest-frame--met {
+	border-color: #02FF00;
+}
+
+/* 제목이 길면 "(완료)"는 다음 줄로 — 오른쪽 위 목록 버튼 자리는 비운다 */
+.quest-frame__head {
+	flex-direction: row;
+	flex-wrap: wrap;
+	align-items: center;
+	padding-right: 72px;
+}
+
+.quest-frame__title {
+	margin-right: 8px;
+	color: var(--gold);
+}
+
+.quest-frame__complete {
+	margin-right: 8px;
+	color: #02FF00;
+	display: none;
+}
+
+.quest-frame--met .quest-frame__complete {
+	display: flex;
+}
+
+.quest-frame__desc {
+	margin: 6px 0 10px 0;
+	white-space: normal;
+}
+
+.quest-frame__list {
+	position: absolute;
+	right: 10px;
+	top: 10px;
+	margin: 0;
+	padding: 0;
+	width: 64px;
+	height: 64px;
+	border-width: 3px;
+	border-radius: 0;
+	border-color: #636363;
+	background-color: rgba(0, 0, 0, 0.6);
+}
+
+.quest-frame__list:hover:enabled {
+	background-color: rgba(0, 0, 0, 0.6);
+	border-color: #636363;
+}
+
+.quest-frame--met .quest-frame__list,
+.quest-frame--met .quest-frame__list:hover:enabled {
+	border-color: #02FF00;
+}
+
+.quest-frame__list-icon {
+	flex-grow: 1;
+	margin: 4px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* 퀘스트 접기 화살표 — 펼침이면 왼쪽(접는 쪽) */
+.quest-info .hud-fold__arrow {
+	rotate: 180deg;
+}
+
+.quest-info--folded .hud-fold__arrow {
+	rotate: 0deg;
+}
+
+/* ── 버프 ──────────────────────────────────────── */
+
+.buff-list {
+	position: absolute;
+	left: 15px;
+	top: 600px;
+	width: 600px;
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.buff {
+	width: 108px;
+	margin: 0 4px 8px 0;
+	align-items: center;
+}
+
+.buff__frame {
+	width: 84px;
+	height: 84px;
+	padding: 3px;
+	background-color: #000000;
+	border-width: 3px;
+	border-color: #42FF49;
+}
+
+.buff__icon {
+	flex-grow: 1;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.buff__stack {
+	position: absolute;
+	right: -6px;
+	top: -14px;
+	-unity-text-align: upper-right;
+}
+
+.buff__time {
+	-unity-text-align: middle-center;
+}
+
+/* ── 오른쪽 위: 재화 + 메뉴 ─────────────────────── */
+
+.top-right {
+	position: absolute;
+	right: 10px;
+	top: 10px;
+	flex-direction: row;
+	align-items: center;
+}
+
+.resource {
+	flex-direction: row;
+	align-items: center;
+	width: 230px;
+	height: 64px;
+	margin-right: 12px;
+	padding-right: 16px;
+	background-color: #2D283F;
+	border-width: 3px;
+	border-color: #12111C;
+}
+
+.resource__icon {
+	width: 64px;
+	height: 64px;
+	margin-left: -10px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.resource__text {
+	flex-grow: 1;
+	-unity-text-align: middle-right;
+}
+
+.menu-button {
+	margin: 0;
+	padding: 0;
+	width: 104px;
+	height: 104px;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../../Pixel/btn_gray.png");
+	-unity-slice-left: 5;
+	-unity-slice-right: 5;
+	-unity-slice-top: 5;
+	-unity-slice-bottom: 5;
+	-unity-slice-scale: 4px;
+	align-items: center;
+	justify-content: center;
+}
+
+
+.menu-button:active {
+	translate: 0 4px;
+}
+
+.menu-button__icon {
+	width: 68px;
+	height: 68px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Hamberger.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.hud-badge {
+	position: absolute;
+	right: -6px;
+	top: -6px;
+	width: 36px;
+	height: 36px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Buttons/Alert_Dot_Red.png");
+	-unity-background-scale-mode: scale-to-fit;
+	display: none;
+}
+
+.hud-badge--on {
+	display: flex;
+}
+
+/* ── 사이드바 ──────────────────────────────────── */
+
+.side-bar {
+	position: absolute;
+	right: 10px;
+	top: 150px;
+	align-items: flex-end;
+}
+
+.side-bar__group {
+	margin-top: 12px;
+	transition-property: translate;
+	transition-duration: 1s;
+	transition-timing-function: ease-out-cubic;
+}
+
+.side-bar--folded .side-bar__group {
+	translate: 220px 0;
+}
+
+/* 사이드바 접기 화살표 — 펼침이면 오른쪽(접는 쪽) */
+.side-bar--folded .hud-fold__arrow {
+	rotate: 180deg;
+}
+
+.side-button {
+	margin: 0 0 12px 0;
+	padding: 6px 0 8px 0;
+	width: 180px;
+	border-width: 3px;
+	border-radius: 0;
+	border-color: #0B0E1C;
+	background-color: rgba(21, 20, 40, 0.75);
+	align-items: center;
+}
+
+.side-button:hover:enabled {
+	background-color: rgba(21, 20, 40, 0.75);
+	border-color: #0B0E1C;
+}
+
+.side-button:active {
+	translate: 0 4px;
+}
+
+.side-button__icon {
+	width: 96px;
+	height: 96px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.side-button__label {
+	-unity-text-align: middle-center;
+	white-space: nowrap;
+}
+
+/* ── 보스 배너 ─────────────────────────────────── */
+
+/* 왼쪽 정보열(히어로·퀘스트, ~452px)과 오른쪽 사이드바(~190px) 사이를 채운다 */
+.boss {
+	position: absolute;
+	left: 464px;
+	right: 204px;
+	top: 236px;
+	align-items: stretch;
+	display: none;
+	opacity: 1;
+}
+
+.boss--shown {
+	display: flex;
+}
+
+/* 사망 뒤 사라짐 — 시간은 BossUI 가 잰다 */
+.boss--fading {
+	opacity: 0;
+	transition-property: opacity;
+	transition-duration: 1s;
+}
+
+.boss__name-row {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 6px;
+}
+
+.boss__name {
+	flex-grow: 1;
+	flex-shrink: 1;
+	overflow: hidden;
+}
+
+.boss__icon {
+	width: 48px;
+	height: 48px;
+	margin-right: 8px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Boss.Png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.hud-gauge--boss {
+	height: 60px;
+}
+
+/* 게이지 안 — 수치는 왼쪽, 퍼센트는 오른쪽 */
+.boss__hp-text {
+	left: 12px;
+	-unity-text-align: middle-left;
+}
+
+.boss__percent {
+	right: 12px;
+	left: auto;
+	-unity-text-align: middle-right;
+}
+
+.hud-gauge--immune {
+	border-color: #FFFFFF;
+}
+
+.hud-gauge--immune .hud-gauge__fill {
+	background-color: #40E7FF;
+}
+
+.hud-gauge--stun {
+	border-color: #FFFFFF;
+}
+
+.boss .hud-gauge--thin {
+	margin-top: 4px;
+}
+
+.boss__state {
+	margin-top: 6px;
+	-unity-text-align: middle-center;
+	color: #40E7FF;
+}
+
+/* ── 궁극기 버튼 ───────────────────────────────── */
+
+.ultimate {
+	position: absolute;
+	right: 50px;
+	bottom: 640px;
+	margin: 0;
+	padding: 4px;
+	width: 136px;
+	height: 136px;
+	border-width: 6px;
+	border-radius: 68px;
+	border-color: #000000;
+	background-color: #FFFFFF;
+	overflow: hidden;
+	display: none;
+}
+
+.ultimate:hover:enabled {
+	background-color: #FFFFFF;
+	border-color: #000000;
+}
+
+.ultimate:active {
+	scale: 0.95 0.95;
+}
+
+.ultimate--shown {
+	display: flex;
+}
+
+.ultimate__icon {
+	flex-grow: 1;
+	border-radius: 60px;
+	-unity-background-scale-mode: scale-and-crop;
+}
+
+.ultimate__cooltime {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	border-radius: 68px;
+	background-color: rgba(0, 0, 0, 0.78);
+	align-items: center;
+	justify-content: center;
+	display: none;
+}
+
+.ultimate--cooling .ultimate__cooltime {
+	display: flex;
+}
+
+.ultimate__time {
+	font-size: 48px;
+	-unity-text-outline-width: 2px;
+}

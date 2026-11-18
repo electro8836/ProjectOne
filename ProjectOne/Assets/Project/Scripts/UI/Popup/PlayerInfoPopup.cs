@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Items;
 using ProjectOne.Mastery;
@@ -10,79 +10,96 @@ using ProjectOne.Ranking;
 
 namespace ProjectOne.UI
 {
-	// 플레이어 정보 팝업. UIManager.ShowPlayerInfoPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	//
-	// 넘겨받은 PlayerProfile 스냅샷만 그린다 — 내 정보든 남의 정보든 같은 경로다.
-	// 그려 놓고 끝이라 Presenter 를 두지 않는다. 장비 칸 배치는 EquipmentUI 의 장착 칸과 같은 방식이다.
-	public class PlayerInfoPopup : MonoBehaviour
+	// 다른 플레이어 정보 팝업(UIPrefab_PlayerInfoPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Ranking/PlayerInfoPopup.uxml.
+	// 이름·레벨·마스터리·전투력과 외형(캐릭터 프리뷰), 착용 장비 8칸을 보여 준다.
+	// 장비 칸을 누르면 읽기 전용 장비 팝업을 연다.
+	public class PlayerInfoPopup : ToolkitScreen
 	{
 		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
 
-		[Header("정보")]
-		[SerializeField] private TMP_Text _playerNameText;		// Frame/Top/PlayerNameText
-		[SerializeField] private TMP_Text _heroLevelText;			// HeroLevelText
-		[SerializeField] private TMP_Text _masteryLevelText;		// MasteryLevelText
-		[SerializeField] private TMP_Text _battlePowerText;		// BattlePowerText — 현재 전투력
-		[SerializeField] private TMP_Text _recordBattlePowerText;	// RecordBattlePowerText — 최고 전투력(랭킹 점수)
-		[SerializeField] private CharacterPreview _characterPreview;	// InfoGroup/Character
+		// 장착 칸 — EquipSlotTypes 의 Weapon(1) ~ Relic(8). UXML 의 equip-1 ~ equip-8 과 같은 순서다.
+		private const int EQUIP_SLOT_FIRST = 1;
+		private const int EQUIP_SLOT_LAST = 8;
 
-		[Header("장비")]
-		[SerializeField] private EquippedSlotView[] _equippedSlots;	// InfoGroup/Group_Slot/Slot_Weapon ~ Slot_Boots
-		[SerializeField] private ItemSlot _itemSlotPrefab;				// UIPrefab_ItemSlot
-		[SerializeField] private ItemGradeColorTable _gradeColors;		// 등급 색상 SO
+		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
+		[SerializeField] private CharacterPreview _characterPreview;	// 같은 오브젝트 — 그 플레이어 외형을 찍는다
 
-		[Header("닫기")]
-		[SerializeField] private UIButton _exitButton;			// Frame/ExitButton
-		[SerializeField] private UIButton _dimButton;			// Dim
-
-		[System.Serializable]
-		private class EquippedSlotView
+		private sealed class EquipSlot
 		{
 			public EquipSlotTypes type;
-			public Transform root;	// Slot_XXX 컨테이너
-			[System.NonSerialized] public ItemSlot instance;
-			[System.NonSerialized] public EquipmentInstance equipment;
+			public ItemCellView cell;
+			public EquipmentInstance equipment;
 		}
 
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
+		private readonly List<EquipSlot> _slots = new List<EquipSlot>();
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();
 
+		private Label _name;
+		private Label _heroLevel;
+		private Label _masteryLevel;
+		private Label _power;
+		private Label _bestPower;
+		private VisualElement _character;
 		private UniTaskCompletionSource _tcs;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_exitButton.OnClickEvent += onCloseClicked;
-			_dimButton.OnClickEvent += onCloseClicked;
-		}
+			_name = root.Q<Label>("name");
+			_heroLevel = root.Q<Label>("hero-level");
+			_masteryLevel = root.Q<Label>("mastery-level");
+			_power = root.Q<Label>("power");
+			_bestPower = root.Q<Label>("best-power");
+			_character = root.Q("character");
 
-		private void OnDestroy()
-		{
-			_exitButton.OnClickEvent -= onCloseClicked;
-			_dimButton.OnClickEvent -= onCloseClicked;
-
-			for (int i = 0; i < _equippedSlots.Length; i++)
+			for (int i = EQUIP_SLOT_FIRST; i <= EQUIP_SLOT_LAST; i++)
 			{
-				if (_equippedSlots[i].instance != null)
-				{
-					_equippedSlots[i].instance.OnClicked -= onItemSlotClicked;
-				}
+				EquipSlot slot = new EquipSlot();
+				slot.type = (EquipSlotTypes)i;
+				slot.cell = new ItemCellView(root.Q("equip-" + i), _gradeColors, _icons);
+				slot.cell.Tag = slot;
+				slot.cell.OnClicked += onCellClicked;
+				slot.cell.SetShown(false);
+				_slots.Add(slot);
+			}
+
+			root.Q<Button>("close").clicked += Close;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
+
+			if (_characterPreview != null)
+			{
+				_characterPreview.OnTextureReady += onCharacterTextureReady;
 			}
 		}
 
-		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
+		protected override void OnDestroy()
+		{
+			if (IsBound == true && _characterPreview != null)
+			{
+				_characterPreview.OnTextureReady -= onCharacterTextureReady;
+			}
+
+			_icons.ReleaseAll();
+			base.OnDestroy();
+		}
+
 		public async UniTask ShowAsync(PlayerProfile profile, CancellationToken ct)
 		{
-			_playerNameText.text = profile.playerName;
-			// "현재/최대" — 라벨 문구는 프리펩에 있다.
-			_heroLevelText.text = profile.level.ToString() + "/" + MasteryCatalog.MasteryMaxLevel.ToString();
-			_masteryLevelText.text = profile.masteryLevel.ToString() + "/" + MasteryCatalog.TotalMasteryMaxLevel.ToString();
-			_battlePowerText.text = profile.battlePower.ToString("N0");
-			_recordBattlePowerText.text = profile.bestBattlePower.ToString("N0");
+			_name.text = profile.playerName;
+			_heroLevel.text = profile.level.ToString() + "/" + MasteryCatalog.MasteryMaxLevel.ToString();
+			_masteryLevel.text = profile.masteryLevel.ToString() + "/" + MasteryCatalog.TotalMasteryMaxLevel.ToString();
+			_power.text = profile.battlePower.ToString("N0");
+			_bestPower.text = profile.bestBattlePower.ToString("N0");
 
-			_characterPreview.SetExternalAppearance(profile.weaponCostumeId, profile.bodyCostumeId, profile.equipped[(int)EquipSlotTypes.Weapon]);
+			if (_characterPreview != null)
+			{
+				_characterPreview.SetExternalAppearance(profile.weaponCostumeId, profile.bodyCostumeId, profile.equipped[(int)EquipSlotTypes.Weapon]);
+			}
 
 			await renderEquippedAsync(profile, ct);
 
 			_tcs = new UniTaskCompletionSource();
+			PlayPopupOpen();
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
 
@@ -94,54 +111,43 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────────
-
-		// 빈 칸은 프레임(ItemFrame_Square_02_Empty)만 남긴다. 장비가 있으면 그 위에 슬롯을 덮는다 —
-		// UI 의 앞뒤는 형제 순서로 정해지므로 마지막 자식으로 보낸다.
 		private async UniTask renderEquippedAsync(PlayerProfile profile, CancellationToken ct)
 		{
 			_bindTasks.Clear();
-
-			for (int i = 0; i < _equippedSlots.Length; i++)
+			for (int i = 0; i < _slots.Count; i++)
 			{
-				EquippedSlotView slotView = _equippedSlots[i];
-				EquipmentInstance equipment = profile.equipped[(int)slotView.type];
-				slotView.equipment = equipment;
-
-				if (equipment == null)
+				EquipSlot slot = _slots[i];
+				slot.equipment = profile.equipped[(int)slot.type];
+				if (slot.equipment == null)
 				{
+					slot.cell.SetShown(false);
 					continue;
 				}
 
-				slotView.instance = Instantiate(_itemSlotPrefab, slotView.root);
-				slotView.instance.StretchToParent();
-				slotView.instance.transform.SetAsLastSibling();
-				slotView.instance.OnClicked += onItemSlotClicked;
-
-				// 장착 칸이라 장착중 표시는 중복이다 — 끈다.
-				_bindTasks.Add(slotView.instance.BindEquipmentAsync(equipment, false, _gradeColors, ct));
+				slot.cell.SetShown(true);
+				_bindTasks.Add(slot.cell.BindEquipmentAsync(slot.equipment, false, ct));
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
 		}
 
-		// 남의 장비일 수 있어 인벤토리를 보지 않는 읽기 전용 경로로 연다.
-		// 이 팝업 위에 뜨고, 이 팝업이 닫히면(파괴 토큰) 함께 닫힌다.
-		private void onItemSlotClicked(ItemSlot sender, long uid, int itemId)
+		private void onCellClicked(ItemCellView sender, long uid, int itemId)
 		{
-			for (int i = 0; i < _equippedSlots.Length; i++)
+			EquipSlot slot = sender.Tag as EquipSlot;
+			if (slot == null || slot.equipment == null)
 			{
-				if (_equippedSlots[i].instance != sender)
-				{
-					continue;
-				}
-
-				UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, _equippedSlots[i].equipment, this.GetCancellationTokenOnDestroy()).Forget();
 				return;
 			}
+
+			UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, slot.equipment, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 
-		private void onCloseClicked()
+		private void onCharacterTextureReady(RenderTexture texture)
+		{
+			_character.style.backgroundImage = new StyleBackground(Background.FromRenderTexture(texture));
+		}
+
+		private void onDimClicked(ClickEvent evt)
 		{
 			Close();
 		}

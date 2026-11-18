@@ -2,67 +2,48 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
+using UnityEngine.UIElements;
 using ProjectOne.Mail;
 
 namespace ProjectOne.UI
 {
-	// 메일함 팝업의 View(MVP). UIManager.ShowMailBoxPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	//
-	// 삭제하지 않은 메일을 Grid 에 깔기만 한다 — 메일 열기와 모두 수령은 MailBoxPopupPresenter 의 일이다.
-	public class MailBoxPopup : UIScreen, IView
+	// 우편함 팝업(UIPrefab_MailBoxPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Mail/MailBoxPopup.uxml.
+	// 목록을 그리고 줄 선택·모두 받기를 Presenter 로 올린다. 목록이 준비되면 Reveal 로 보인다.
+	public class MailBoxPopup : ToolkitScreen, IView
 	{
-		[Header("목록")]
-		[SerializeField] private RectTransform _grid;			// Frame/ScrollRect/Viewport/Grid
-		[SerializeField] private MailSlot _slotPrefab;			// UIPrefab_MailSlot
-
-		[Header("버튼")]
-		[SerializeField] private UIButton _allClaimButton;		// Frame/AllClaimButton
-		[SerializeField] private UIButton _exitButton;			// Frame/ExitButton
-		[SerializeField] private UIButton _dimButton;			// Dim
-
 		public event Action<MailData> OnMailSelected;
 		public event Action OnAllClaimRequested;
 
 		private readonly MailBoxPopupPresenter _presenter = new MailBoxPopupPresenter();
-		private readonly List<MailSlot> _slots = new List<MailSlot>();
+		private readonly List<MailCell> _cells = new List<MailCell>();
 
-		private CanvasGroup _canvasGroup;
+		private ScrollView _list;
+		private Label _empty;
+		private Button _allClaimButton;
 		private UniTaskCompletionSource _tcs;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			// 목록이 채워지기 전 빈 칸이 비치지 않도록 숨겨 두고 시작한다.
-			_canvasGroup = GetComponent<CanvasGroup>();
-			if (_canvasGroup == null)
-			{
-				_canvasGroup = gameObject.AddComponent<CanvasGroup>();
-			}
+			_list = root.Q<ScrollView>("list");
+			_list.AddManipulator(new ScrollDragManipulator(_list));
+			_empty = root.Q<Label>("empty");
 
-			setVisible(false);
-
-			_allClaimButton.OnClickEvent += onAllClaimClicked;
-			_exitButton.OnClickEvent += onCloseClicked;
-			_dimButton.OnClickEvent += onCloseClicked;
+			_allClaimButton = root.Q<Button>("all-claim");
+			_allClaimButton.clicked += onAllClaimClicked;
+			root.Q<Button>("close").clicked += Close;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			_allClaimButton.OnClickEvent -= onAllClaimClicked;
-			_exitButton.OnClickEvent -= onCloseClicked;
-			_dimButton.OnClickEvent -= onCloseClicked;
-
-			for (int i = 0; i < _slots.Count; i++)
+			if (IsBound == true)
 			{
-				if (_slots[i] != null)
-				{
-					_slots[i].OnClicked -= onSlotClicked;
-				}
+				_presenter.Dispose();
 			}
 
-			_presenter.Dispose();
+			base.OnDestroy();
 		}
 
 		public CancellationToken GetDestroyToken()
@@ -70,7 +51,6 @@ namespace ProjectOne.UI
 			return this.GetCancellationTokenOnDestroy();
 		}
 
-		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
 		public async UniTask ShowAsync(CancellationToken ct)
 		{
 			await _presenter.ShowAsync(ct);
@@ -79,28 +59,27 @@ namespace ProjectOne.UI
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
 
-		// ── Presenter → View ──────────────────────────────────────────────
-
 		public void RenderMails(IReadOnlyList<MailData> mails)
 		{
 			for (int i = 0; i < mails.Count; i++)
 			{
-				MailSlot slot = getOrCreateSlot(i);
-				slot.gameObject.SetActive(true);
-				slot.Bind(mails[i], MailReadLog.IsRead(mails[i].id));
+				MailCell cell = getOrCreateCell(i);
+				cell.SetShown(true);
+				cell.Bind(mails[i], MailReadLog.IsRead(mails[i].id));
 			}
 
-			for (int i = mails.Count; i < _slots.Count; i++)
+			for (int i = mails.Count; i < _cells.Count; i++)
 			{
-				_slots[i].gameObject.SetActive(false);
+				_cells[i].SetShown(false);
 			}
 
-			_allClaimButton.interactable = mails.Count > 0;
+			_empty.style.display = mails.Count == 0 ? DisplayStyle.Flex : DisplayStyle.None;
+			_allClaimButton.SetEnabled(mails.Count > 0);
 		}
 
 		public void Reveal()
 		{
-			setVisible(true);
+			PlayPopupOpen();
 		}
 
 		public void Close()
@@ -111,30 +90,20 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────────
-
-		private MailSlot getOrCreateSlot(int index)
+		private MailCell getOrCreateCell(int index)
 		{
-			if (index < _slots.Count)
+			if (index < _cells.Count)
 			{
-				return _slots[index];
+				return _cells[index];
 			}
 
-			MailSlot slot = Instantiate(_slotPrefab, _grid);
-			slot.OnClicked += onSlotClicked;
-			_slots.Add(slot);
-
-			return slot;
+			MailCell cell = new MailCell(_list.contentContainer);
+			cell.OnClicked += onCellClicked;
+			_cells.Add(cell);
+			return cell;
 		}
 
-		private void setVisible(bool visible)
-		{
-			_canvasGroup.alpha = visible ? 1f : 0f;
-			_canvasGroup.interactable = visible;
-			_canvasGroup.blocksRaycasts = visible;
-		}
-
-		private void onSlotClicked(MailSlot sender)
+		private void onCellClicked(MailCell sender)
 		{
 			if (OnMailSelected != null)
 			{
@@ -150,7 +119,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private void onCloseClicked()
+		private void onDimClicked(ClickEvent evt)
 		{
 			Close();
 		}

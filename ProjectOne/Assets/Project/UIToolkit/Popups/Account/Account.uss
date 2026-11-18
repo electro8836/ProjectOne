@@ -1,0 +1,79 @@
+/* 계정·닉네임 팝업 */
+
+.account-row {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 20px;
+	padding: 20px 24px;
+}
+
+.account-row__text {
+	flex-grow: 1;
+	flex-shrink: 1;
+	font-size: 36px;
+	white-space: normal;
+}
+
+/* 닉네임 입력란 — 도트 패널 안에 글자 */
+.nickname-input {
+	margin: 0 0 8px 0;
+	height: 120px;
+}
+
+.nickname-input .unity-text-field__input {
+	padding: 0 26px;
+	font-size: 48px;
+	color: var(--text);
+	background-color: rgba(0, 0, 0, 0);
+	border-width: 0;
+	background-image: url("../../Pixel/panel_inset.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+}
+
+.nickname-byte {
+	font-size: 36px;
+	color: var(--ink-sub);
+	-unity-text-align: middle-right;
+}
+
+.nickname-error {
+	font-size: 36px;
+	color: #FF8A80;
+	white-space: normal;
+	margin-bottom: 10px;
+}
+
+.nickname-change {
+	flex-direction: column;
+	padding-top: 6px;
+}
+
+.nickname-change__label {
+	font-size: 48px;
+	color: var(--white);
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+}
+
+.nickname-change__cost {
+	flex-direction: row;
+	align-items: center;
+}
+
+.nickname-change__icon {
+	width: 40px;
+	height: 40px;
+	margin-right: 6px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.nickname-change__value {
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+}

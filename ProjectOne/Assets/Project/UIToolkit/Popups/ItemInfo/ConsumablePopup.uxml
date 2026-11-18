@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="ItemInfo.uss" />
+
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label name="name" text="" class="popup__name text-pop" />
+				<ui:Button name="close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+			<ui:VisualElement class="item-summary popup__body">
+				<ui:VisualElement name="cell" class="item-summary__cell" />
+				<ui:VisualElement class="item-summary__meta">
+					<ui:Label name="grade" text="" class="item-summary__grade" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+			<ui:VisualElement class="px-inset popup-text-box">
+				<ui:Label name="desc" text="" class="popup-text" />
+			</ui:VisualElement>
+			<!-- 수량 조절 + 사용·삭제 (읽기 전용이면 감춘다) -->
+			<ui:VisualElement name="control" class="consumable-control">
+				<ui:VisualElement class="consumable-count">
+					<ui:Button name="minus" text="-" class="btn btn--icon" />
+					<ui:Label name="count" text="1" class="consumable-count__value" />
+					<ui:Button name="plus" text="+" class="btn btn--icon" />
+				</ui:VisualElement>
+				<ui:VisualElement class="popup__buttons">
+					<ui:Button name="delete" text="삭제" class="btn btn--red popup__button" />
+					<ui:Button name="use" text="사용" class="btn btn--green popup__button" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

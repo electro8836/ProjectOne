@@ -1,0 +1,634 @@
+/* 공통 도트 테마 — 9-slice 도트 부품(UIToolkit/Pixel, Tools/pixelui 가 생성)·색·폰트·버튼·게이지.
+   도트 1칸 = 4px(-unity-slice-scale). 부품을 다시 그리려면 Tools/pixelui/generate_pixel_ui.py 를 고친다.
+
+   글꼴: 갈무리11(도트, SIL OFL). 12px 격자로 그려진 폰트라 크기는 12의 배수(36·48·60·72)가 가장 또렷하다.
+   글자 크기는 12의 배수만 쓴다(그 외 크기는 도트가 뭉개져 제목과 다른 글꼴처럼 보인다). 최소 36px.
+   글자 효과 규칙:
+     석판 위 밝은 글자   → 기본(아래로 진한 그림자 한 칸)
+     색 바탕 위 흰 글자  → .text-pop (진한 외곽선 + 아래 그림자) */
+
+@import url("../Components/ItemCell.uss");
+
+:root {
+	--ink: #3B2A33;			/* 흰 글자 외곽선·그림자 */
+	--text: #F4E7C8;		/* 석판 위 기본 글자 */
+	--ink-sub: #B8AE9A;
+	--ink-dim: #6E6A70;
+	--paper-shadow: #12111C;	/* 석판 위 글자 그림자 */
+	--divider: #C9A24A;
+	--gold: #FFD447;
+	--gold-dark: #FFD447;
+	--green: #5CC85A;
+	--green-light: #A4EC7E;
+	--green-dark: #2F8C45;
+	--white: #FFFFFF;
+
+	-unity-font-definition: url("../../Art/UI/Fonts/Galmuri/Galmuri11-Bold.ttf");
+	color: var(--text);
+	font-size: 36px;
+	text-shadow: 0 3px 0 var(--paper-shadow);
+}
+
+/* 색 바탕 위 흰 글자 */
+.text-pop {
+	color: var(--white);
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+}
+
+/* ── 창 공통 틀 — 모든 창이 같은 바탕·제목 배너를 쓴다 (마스터리·장비 …) ── */
+
+.screen {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	padding: 6px 6px 160px 6px;	/* 바탕이 보이는 곳은 최소로. 아래 160px 은 네비게이션 바 자리 */
+	background-color: #000000;
+}
+
+/* 네비게이션 바를 가리는 창 — 아래 여백이 필요 없다 */
+.screen--full {
+	padding-bottom: 6px;
+}
+
+/* 제목 배너: 왼쪽 제목 + 오른쪽 닫기(btn btn--red btn--icon) */
+.header {
+	height: 148px;
+	flex-shrink: 0;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.header__title {
+	font-size: 72px;
+	-unity-text-outline-width: 4px;
+	text-shadow: 0 6px 0 var(--ink);
+}
+
+/* ── 패널 ───────────────────────────────────────── */
+
+.px-paper {
+	background-image: url("../Pixel/panel_paper.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	padding: 30px;
+}
+
+.px-wood {
+	background-image: url("../Pixel/panel_wood.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	padding: 20px 32px;
+}
+
+.px-inset {
+	background-image: url("../Pixel/panel_inset.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+	padding: 16px;
+}
+
+/* ── 버튼 ───────────────────────────────────────── */
+
+.btn {
+	margin: 0;
+	padding: 0 36px 8px 36px;
+	height: 112px;
+	min-width: 220px;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../Pixel/btn_blue.png");
+	-unity-slice-left: 5;
+	-unity-slice-right: 5;
+	-unity-slice-top: 5;
+	-unity-slice-bottom: 5;
+	-unity-slice-scale: 4px;
+	font-size: 48px;
+	color: var(--white);
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+	transition-property: translate;
+	transition-duration: 0.05s;
+}
+
+/* 모바일 게임 — 마우스 hover 표시를 쓰지 않는다.
+   기본 테마의 버튼 hover(.unity-button:hover:enabled)를 같은 강도로 덮어 배경을 그대로 둔다.
+   색 배경·테두리가 있는 버튼은 화면 USS 에서 같은 형태(:hover:enabled)로 자기 색을 다시 지정한다. */
+.unity-button:hover:enabled {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+/* 눌림 — 도트 게임처럼 아래로 꾹 */
+.btn:active {
+	translate: 0 6px;
+	-unity-background-image-tint-color: #D8D8D8;
+}
+
+/* 기본 테마의 눌림 배경(회색)이 도트 이미지 뒤로 비치지 않게 — 기본 규칙보다 강하게 건다 */
+.unity-button.btn:active:enabled {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.btn:disabled {
+	-unity-background-image-tint-color: #9A9A9A;
+	opacity: 0.7;
+}
+
+.btn--green {
+	background-image: url("../Pixel/btn_green.png");
+}
+
+.btn--red {
+	background-image: url("../Pixel/btn_red.png");
+}
+
+.btn--gold {
+	background-image: url("../Pixel/btn_gold.png");
+}
+
+.btn--small {
+	height: 80px;
+	min-width: 130px;
+	padding: 0 24px 6px 24px;
+	font-size: 36px;
+}
+
+/* 정사각 아이콘 버튼 (닫기 X 등) */
+.btn--icon {
+	width: 96px;
+	height: 96px;
+	min-width: 96px;
+	padding: 0 0 8px 0;
+	align-items: center;
+	justify-content: center;
+}
+
+/* 도트 X(11x12 칸) — 1칸 4px */
+.icon-close {
+	width: 44px;
+	height: 48px;
+	background-image: url("../Pixel/icon_close.png");
+}
+
+/* ── 칩 ─────────────────────────────────────────── */
+
+.chip {
+	align-self: flex-start;
+	padding: 6px 16px 10px 16px;
+	background-image: url("../Pixel/chip_blue.png");
+	-unity-slice-left: 3;
+	-unity-slice-right: 3;
+	-unity-slice-top: 3;
+	-unity-slice-bottom: 3;
+	-unity-slice-scale: 4px;
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+.chip--passive {
+	background-image: url("../Pixel/chip_green.png");
+}
+
+.chip--core {
+	background-image: url("../Pixel/chip_orange.png");
+}
+
+.chip--gold {
+	background-image: url("../Pixel/chip_gold.png");
+}
+
+.chip--gray {
+	background-image: url("../Pixel/chip_gray.png");
+}
+
+/* ── 게이지 ─────────────────────────────────────── */
+
+.gauge {
+	height: 60px;
+	padding: 9px;
+	background-image: url("../Pixel/gauge_bg.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 3px;
+}
+
+/* 채움은 텍스처 대신 테두리로 — 폭이 아무리 작아도 모양이 깨지지 않는다 */
+.gauge__fill {
+	height: 100%;
+	width: 0;
+	background-color: var(--green);
+	border-top-width: 8px;
+	border-top-color: var(--green-light);
+	border-bottom-width: 6px;
+	border-bottom-color: var(--green-dark);
+	transition-property: width;
+	transition-duration: 0.3s;
+}
+
+.gauge--gold .gauge__fill {
+	background-color: var(--gold);
+	border-top-color: #FFF3A3;
+	border-bottom-color: #C98D1C;
+}
+
+.gauge__text {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 4px;
+	margin: 0;
+	padding: 0;
+	font-size: 36px;
+	-unity-text-align: middle-center;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+/* ── 팝업 틀 — 딤 + 가운데 창 + 제목 배너 + 아래 버튼 줄. 열 때 .popup--open 을 한 프레임 뒤에 붙인다 ── */
+
+.popup {
+	display: none;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	align-items: center;
+	justify-content: center;
+}
+
+.popup__dim {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-color: rgba(30, 20, 40, 0);
+	transition-property: background-color;
+	transition-duration: 0.15s;
+}
+
+.popup__window {
+	width: 960px;
+	padding: 0 0 40px 0;
+	opacity: 0;
+	scale: 0.85;
+	translate: 0 40px;
+	transition-property: opacity, scale, translate;
+	transition-duration: 0.15s;
+	transition-timing-function: ease-out-back;
+}
+
+.popup--open .popup__dim {
+	background-color: rgba(30, 20, 40, 0.75);	/* 리니어 색 공간이라 수치보다 옅게 보인다 */
+}
+
+.popup--open .popup__window {
+	opacity: 1;
+	scale: 1;
+	translate: 0 0;
+}
+
+.popup__head {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	height: 140px;
+	margin: -4px -4px 30px -4px;
+}
+
+.popup__name {
+	font-size: 60px;
+}
+
+.popup__buttons {
+	flex-direction: row;
+	justify-content: center;
+	margin: 0 40px;
+}
+
+.popup__button {
+	flex-grow: 1;
+	flex-basis: 0;
+	margin: 0 10px;
+	height: 132px;
+	font-size: 60px;
+}
+
+/* ── 공용 배치 조각 ─────────────────────────────── */
+
+.icon {
+	flex-grow: 1;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.page {
+	flex-grow: 1;
+	flex-shrink: 1;
+}
+
+.sheet {
+	flex-grow: 1;
+	flex-shrink: 1;
+	padding: 30px 26px 26px 26px;
+}
+
+.section-title {
+	margin: 4px 0 10px 6px;
+	font-size: 36px;
+	color: var(--ink-sub);
+}
+
+.caption {
+	font-size: 36px;
+	color: var(--ink-sub);
+	margin-bottom: 6px;
+}
+
+/* 레벨 표기 — 배경 없이 숫자만 크게 금색. "Lv."·"/ 최대" 는 코드가 작은 기본색으로 감싼다 */
+.level-text {
+	font-size: 48px;
+	color: var(--gold);
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+}
+
+/* ── 탭 줄 — 종이 패널 위에 붙는 탭. 화면 USS 가 크기를 덮어쓸 수 있다 ── */
+
+.tabs {
+	flex-direction: row;
+	padding: 0 16px;
+	margin-bottom: -12px;	/* 탭 아래가 종이 패널 테두리에 겹쳐 붙어 보이게 */
+}
+
+.tab {
+	flex-grow: 1;
+	flex-basis: 0;
+	height: 104px;
+	margin: 0 6px;
+	padding: 0 0 10px 0;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../Pixel/tab_off.png");
+	-unity-slice-left: 5;
+	-unity-slice-right: 5;
+	-unity-slice-top: 5;
+	-unity-slice-bottom: 5;
+	-unity-slice-scale: 4px;
+	font-size: 48px;
+	color: var(--ink-sub);
+	text-shadow: 0 3px 0 var(--paper-shadow);
+	translate: 0 10px;
+}
+
+/* 선택 탭 — 보라 바탕(tab_on) + 흰 글자로 띄운다. 꺼진 탭은 어둡게 눌러 둔다 */
+.tab--selected {
+	background-image: url("../Pixel/tab_on.png");
+	-unity-background-image-tint-color: #FFFFFF;
+	color: var(--white);
+	text-shadow: 0 3px 0 var(--paper-shadow);
+	translate: 0 0;
+}
+
+.tab:disabled {
+	opacity: 0.5;
+}
+
+/* 추가 버튼 색 */
+.btn--purple {
+	background-image: url("../Pixel/btn_purple.png");
+}
+
+.btn--orange {
+	background-image: url("../Pixel/btn_orange.png");
+}
+
+.btn--gray {
+	background-image: url("../Pixel/btn_gray.png");
+}
+
+/* 툴팁 — 누른 요소 위에 잠깐 뜨는 설명. UIManager.ShowTooltipAsync 가 팝업 층에 붙인다 */
+.tooltip {
+	position: absolute;
+	max-width: 900px;
+	padding: 20px 28px 24px 28px;
+	background-image: url("../Pixel/panel_paper.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	font-size: 36px;
+	white-space: normal;
+	-unity-text-align: middle-center;
+}
+
+/* 비용 1칸 (CostView) — 재화 아이콘 + "x수량" */
+.cost {
+	flex-direction: row;
+	align-items: center;
+	margin: 0 14px;
+}
+
+.cost__icon {
+	width: 60px;
+	height: 60px;
+	margin-right: 6px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.cost__count {
+	font-size: 36px;
+}
+
+/* ── 분류·부위 아이콘 (배경으로 입힌다) ───────────── */
+
+/* 분류 아이콘 — 탭 (UIToolkit/Violet/tabicon_*, 아이템 칸 분류 배지 TypeIcon_* 과는 별개) */
+.type-weapon {
+	background-image: url("../Violet/tabicon_weapon.png");
+}
+
+.type-armor {
+	background-image: url("../Violet/tabicon_armor.png");
+}
+
+.type-accessory {
+	background-image: url("../Violet/tabicon_accessory.png");
+}
+
+.type-relic {
+	background-image: url("../Violet/tabicon_relic.png");
+}
+
+.type-consumable {
+	background-image: url("../Violet/tabicon_consumable.png");
+}
+
+/* 빈 장착 칸의 부위 아이콘 */
+.slot-weapon {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/ItemType/SlotIcon_Weapon.png");
+}
+
+.slot-helmet {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/ItemType/SlotIcon_Helmet.png");
+}
+
+.slot-armor {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/ItemType/SlotIcon_Armor.png");
+}
+
+.slot-gloves {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/ItemType/SlotIcon_Gloves.png");
+}
+
+.slot-boots {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/ItemType/SlotIcon_Boots.png");
+}
+
+.slot-ring {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/ItemType/SlotIcon_Ring.png");
+}
+
+.slot-amulet {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/ItemType/SlotIcon_Amulet.png");
+}
+
+.slot-relic {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/ItemType/SlotIcon_Relic.png");
+}
+
+/* 체크 상자 + 글자 (버튼으로 쓴다). 켜짐은 .check--on */
+.check {
+	flex-direction: row;
+	align-items: center;
+	padding: 0;
+	margin: 0;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+}
+
+
+.check__box {
+	width: 56px;
+	height: 56px;
+	margin-right: 12px;
+	flex-shrink: 0;
+	background-image: url("../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 2px;
+}
+
+.check--on .check__box {
+	background-image: url("../Pixel/slot_gold.png");
+	background-color: var(--green);
+}
+
+.check__label {
+	flex-shrink: 1;
+	font-size: 36px;
+	white-space: normal;
+}
+
+/* 도트 슬라이더 — 홈은 게이지 바탕, 손잡이는 금색 칸 */
+.px-slider {
+	margin: 18px 0 6px 0;
+}
+
+.px-slider .unity-base-slider__tracker {
+	height: 24px;
+	margin-top: -12px;
+	border-width: 0;
+	background-color: var(--paper-shadow);
+}
+
+.px-slider .unity-base-slider__dragger {
+	width: 48px;
+	height: 56px;
+	margin-top: -28px;
+	border-width: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../Pixel/slot_gold.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 2px;
+}
+
+/* 네트워크 딤 (UIManager 가 System 층에 만든다) — 차단막은 늘 입력을 막고, 내용은 지연 뒤 보인다 */
+.net-blocker {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.net-blocker__content {
+	align-items: center;
+	opacity: 0;
+}
+
+.net-blocker--visible {
+	background-color: rgba(10, 8, 18, 0.75);
+}
+
+.net-blocker--visible .net-blocker__content {
+	opacity: 1;
+}
+
+/* 회전 고리 — 한 변만 비운 굵은 테두리를 코드가 돌린다 */
+.net-blocker__spinner {
+	width: 96px;
+	height: 96px;
+	border-width: 12px;
+	border-radius: 48px;
+	border-top-color: var(--gold);
+	border-right-color: var(--gold);
+	border-bottom-color: var(--gold);
+	border-left-color: rgba(0, 0, 0, 0);
+}
+
+.net-blocker__text {
+	margin-top: 24px;
+	max-width: 860px;
+	font-size: 48px;
+	color: var(--white);
+	white-space: normal;
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+}

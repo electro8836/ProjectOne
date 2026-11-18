@@ -1,0 +1,20 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="BoxReward.uss" />
+
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label text="획득 확률" class="popup__name text-pop" />
+				<ui:Button name="close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+			<!-- 등급 탭은 코드가 만든다 -->
+			<ui:VisualElement name="tabs" class="tabs box-tabs popup__body" />
+			<ui:VisualElement class="px-inset box-grid-box popup__body">
+				<ui:ScrollView name="grid" class="box-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,101 @@
+/* 코스튬 화면 — 입어보기 무대 + 무기/의상 탭 + 2열 목록. 부품·색·글자는 Theme.uss 를 따른다. */
+
+.tabs,
+.costume-stage {
+	flex-shrink: 0;
+}
+
+.costume-stage {
+	height: 520px;
+	margin-bottom: 12px;
+	align-items: center;
+	justify-content: center;
+}
+
+.costume-stage__character {
+	width: 100%;
+	height: 100%;
+	background-size: contain;
+	background-repeat: no-repeat;
+	scale: 1.3 1.3;
+}
+
+.costume-list {
+	flex-grow: 1;
+}
+
+.costume-list .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: space-between;
+}
+
+/* 코스튬 칸 */
+.costume-card {
+	width: 49%;
+	align-items: center;
+	padding: 20px 16px 22px 16px;
+	margin-bottom: 14px;
+	background-image: url("../../Pixel/row.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+}
+
+.costume-card--previewing {
+	background-image: url("../../Pixel/row_active.png");
+}
+
+.costume-card--locked .costume-card__icon-frame,
+.costume-card--locked .costume-card__name {
+	opacity: 0.5;
+}
+
+.costume-card__icon-frame {
+	width: 200px;
+	height: 200px;
+	padding: 18px;
+	margin-bottom: 10px;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.costume-card__name {
+	font-size: 48px;
+	-unity-text-align: middle-center;
+}
+
+.costume-card__grade {
+	font-size: 36px;
+	-unity-text-align: middle-center;
+	margin-bottom: 12px;
+}
+
+.costume-card__buttons {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+}
+
+.costume-card__buttons .btn {
+	flex-grow: 1;
+	flex-basis: 0;
+	min-width: 0;
+	margin: 0 6px;
+}
+
+.costume-card__acquisition {
+	flex-grow: 1;
+	flex-basis: 0;
+	font-size: 36px;
+	color: var(--ink-sub);
+	white-space: normal;
+	-unity-text-align: middle-center;
+}

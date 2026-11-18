@@ -1,0 +1,414 @@
+/* 바이올렛 테마 — 툴킷 전환 전 UGUI 탭 색(어두운 보라 / 선택 바이올렛) 기반의 깔끔형.
+   탭·버튼 모양은 Layer Lab GUI Pro-FantasyHero 의 TabMenu 프리펩을 같은 스프라이트·색으로 구운 것이다.
+   창 루트(.screen)에 .theme-violet 를 붙인 화면에만 적용된다. 부품은 UIToolkit/Violet (Tools/pixelui/generate_violet_ui.py).
+   구운 버튼·탭은 쓰는 높이 그대로라 좌우만 9-slice(30px, 배율 1px)로 늘린다. */
+
+.theme-violet.screen {
+	background-color: #1C1730;
+}
+
+.theme-violet {
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* ── 제목 줄 — 화면 좌우·위를 꽉 채운 보라 판(#322958). 왼쪽 바이올렛이 오른쪽으로 길게 녹아들고(header_wash, 900px),
+   판 아래로 그림자를 떨궈(기능 버튼 줄의 .header-shadow) 경계를 낸다. 테두리·장식은 두지 않는다.
+   제목은 48px — 한·영·일 긴 이름도 들어가게, 오른쪽에 재화 캡슐 최대 3칸 ── */
+
+.theme-violet .header {
+	height: auto;
+	background-image: none;
+	margin: -6px -6px 0 -6px;
+	padding: 0;
+}
+
+.theme-violet .header__frame {
+	flex-grow: 1;
+	flex-direction: row;
+	align-items: center;
+	height: 132px;
+	padding: 0 16px 0 40px;
+	background-color: #322958;
+}
+
+.theme-violet .header__wash {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 900px;
+	background-image: url("../Violet/header_wash.png");
+	-unity-background-scale-mode: stretch-to-fill;
+}
+
+/* 판 아래 그림자 — 기능 버튼 줄 맨 위에 깐다(버튼 줄이 제목 판보다 나중에 그려지므로 그 안에 둔다) */
+.header-shadow {
+	display: none;
+}
+
+.theme-violet .header-shadow {
+	display: flex;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 24px;
+	background-image: url("../Violet/header_shadow.png");
+	-unity-background-scale-mode: stretch-to-fill;
+}
+
+.theme-violet .header__title {
+	flex-grow: 1;
+	flex-shrink: 1;
+	font-size: 48px;
+	-unity-text-outline-width: 2px;
+	text-shadow: 0 4px 0 #0A0814;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 재화 캡슐 — 반투명 어두운 둥근 칸 + 보라 테두리. 아이콘 왼쪽, 수량 오른쪽 정렬 */
+.theme-violet .header__currencies {
+	flex-direction: row;
+	flex-shrink: 0;
+}
+
+.theme-violet .currency-capsule {
+	flex-direction: row;
+	align-items: center;
+	width: 196px;
+	height: 56px;
+	margin-left: 10px;
+	padding: 0 18px 0 6px;
+	border-radius: 28px;
+	border-width: 3px;
+	border-color: #6E5CAA;
+	background-color: rgba(14, 10, 28, 0.67);
+}
+
+.theme-violet .currency-capsule__icon {
+	width: 44px;
+	height: 44px;
+	flex-shrink: 0;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.theme-violet .currency-capsule__text {
+	flex-grow: 1;
+	margin: 0;
+	padding: 0;
+	font-size: 36px;
+	color: #FFFFFF;
+	-unity-text-align: middle-right;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* ── 위 영역 — 어두운 남색 회색 면(#252A40) + 캐릭터 뒤 푸른 흰빛. 보라 일색을 피해 제목 판·탭만 보라로 둔다 ── */
+
+.theme-violet .top {
+	background-image: none;
+	background-color: #252A40;
+	margin: 0 -6px;
+}
+
+/* 기능 버튼 줄(제목 아래, 캐릭터 영역 위)·분류 탭 줄 — 위 영역과 같은 면으로 이어
+   제목 아래부터 탭 아래 선까지 한 덩어리로 보이게 한다(화면 여백 6px 까지 덮는다) */
+.theme-violet .extra {
+	background-color: #252A40;
+	margin: 0 -6px;
+	padding: 16px 6px 0 6px;
+}
+
+/* 캐릭터 뒤 빛 — 흰 빛(glow_white)에 배경색과 어울리는 푸른 흰빛을 입힌다 */
+.theme-violet .stage {
+	background-image: url("../Violet/glow_white.png");
+	-unity-background-image-tint-color: #B4C6FF;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* 장착 칸 — 152 → 168px 로 키운다. 4칸 x (168 + 위아래 8) = 704 */
+.theme-violet .top__body {
+	height: 704px;
+}
+
+.theme-violet .equip-column {
+	width: 168px;
+	margin: 0 14px;
+}
+
+.theme-violet .equip-slot {
+	width: 168px;
+	height: 168px;
+	margin: 4px 0;
+}
+
+/* 이름 양옆 장식선은 쓰지 않는다 */
+.theme-violet .stage__ornament {
+	display: none;
+}
+
+.theme-violet .stage__level {
+	color: #A8A2CC;
+}
+
+.theme-violet .stage__power {
+	color: #FFD447;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+/* 보관함 — 기능 버튼 줄·위 영역을 덮으므로 면을 깐다. 두 줄처럼 화면 여백 6px 까지 넓히고, 안쪽 여백은 가방과 같게(32px) 해 칸 줄을 맞춘다 */
+.theme-violet .stash {
+	left: -6px;
+	right: -6px;
+	padding-left: 32px;
+	padding-right: 32px;
+	background-image: none;
+	background-color: #252A40;
+}
+
+.theme-violet .stash__capacity {
+	color: #A8A2CC;
+}
+
+/* ── 버튼 — TabMenu_Middle_01(Nomal) 모양. 위험(분해)만 붉은 색 ── */
+
+.theme-violet .btn {
+	background-image: url("../Violet/btn_face.png");
+	-unity-slice-left: 30;
+	-unity-slice-right: 30;
+	-unity-slice-top: 0;
+	-unity-slice-bottom: 0;
+	-unity-slice-scale: 1px;
+	padding-bottom: 0;
+	color: #CED3FB;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.theme-violet .btn--gold {
+	background-image: url("../Violet/btn_face.png");
+}
+
+.theme-violet .btn--red {
+	background-image: url("../Violet/btn_danger.png");
+	color: #FFFFFF;
+}
+
+/* 켜진 토글 버튼(보관함 열림) — 초록 면으로 상태를 보인다 */
+.theme-violet .btn--on {
+	background-image: url("../Violet/btn_active.png");
+	color: #FFFFFF;
+}
+
+.theme-violet .btn:active {
+	translate: 0 3px;
+	-unity-background-image-tint-color: #C8C8C8;
+}
+
+/* ── 기능 버튼(능력치·재화·코스튬·펫) — 버튼마다 색·아이콘으로 구분한다. 아이콘은 왼쪽, 글자는 남은 칸 가운데 ── */
+
+.theme-violet .extra__button {
+	margin: 0 2px;
+	padding-left: 76px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
+}
+
+.extra__icon {
+	display: none;
+}
+
+.theme-violet .extra__icon {
+	display: flex;
+	position: absolute;
+	left: 22px;
+	top: 14px;
+	width: 52px;
+	height: 52px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.theme-violet .extra--stat {
+	background-image: url("../Violet/btn_stat.png");
+}
+
+.theme-violet .extra--stat .extra__icon {
+	background-image: url("../Violet/extraicon_stat.png");
+}
+
+.theme-violet .extra--currency {
+	background-image: url("../Violet/btn_currency.png");
+}
+
+.theme-violet .extra--currency .extra__icon {
+	background-image: url("../Violet/extraicon_currency.png");
+}
+
+.theme-violet .extra--costume {
+	background-image: url("../Violet/btn_costume.png");
+}
+
+.theme-violet .extra--costume .extra__icon {
+	background-image: url("../Violet/extraicon_costume.png");
+}
+
+.theme-violet .extra--pet {
+	background-image: url("../Violet/btn_pet.png");
+}
+
+.theme-violet .extra--pet .extra__icon {
+	background-image: url("../Violet/extraicon_pet.png");
+}
+
+/* ── 분류 탭 — TabMenu_BottomFlush_02. 선택 탭은 버튼 전체가 바이올렛, 가방 패널 위에 붙는다 ── */
+
+.theme-violet .tabs {
+	background-color: #252A40;
+	padding: 0 12px;
+	margin: 0 -6px;
+}
+
+.theme-violet .tab {
+	background-image: url("../Violet/tab_off.png");
+	-unity-slice-left: 30;
+	-unity-slice-right: 30;
+	-unity-slice-top: 0;
+	-unity-slice-bottom: 0;
+	-unity-slice-scale: 1px;
+	margin: 0 -2px;
+	padding: 0;
+	translate: 0 0;
+	color: #CED3FB;
+}
+
+.theme-violet .tab--selected {
+	background-image: url("../Violet/tab_on.png");
+	color: #FFFFFF;
+}
+
+/* 탭 글자(전체)·아이콘 — 탭 가운데. 도트 글꼴은 글자 위쪽 여백이 적어 위로 쏠려 보여 글자 탭만 아래로 8px 내린다 */
+.theme-violet .tab {
+	-unity-text-align: middle-center;
+}
+
+.theme-violet #tab-0 {
+	padding-top: 8px;
+}
+
+/* 분류 아이콘 — tabicon_*(Icon_Gear 결, generate_violet_ui.py tab_icons). 그림은 Theme.uss 의 .type-* 가 입힌다 */
+.theme-violet .tab__icon {
+	width: 64px;
+	height: 64px;
+	flex-shrink: 0;
+	opacity: 0.7;
+}
+
+.theme-violet .tab--selected .tab__icon {
+	opacity: 1;
+}
+
+/* ── 가방 — 면 하나 ── */
+
+/* 가방 — 화면 여백 6px 까지 좌우로 넓혀 바탕(검은 줄)이 보이지 않게. 안쪽 여백도 6px 늘려 칸 줄 폭(1016)은 그대로 */
+.theme-violet .bag {
+	margin: 0 -6px;
+	padding-left: 32px;
+	padding-right: 32px;
+	background-image: none;
+	background-color: #3A3060;
+	border-top-width: 4px;
+	border-top-color: #6D5ACD;
+}
+
+.theme-violet .bag__caption {
+	color: #FFFFFF;
+}
+
+.theme-violet .bag__capacity {
+	font-size: 36px;
+	color: #A8A2CC;
+}
+
+/* 칸 줄 — 칸 5개가 툴바 양끝(분해 버튼 오른쪽 끝)까지 꽉 차게. 줄 폭 1016 = 칸 196.8 x 5 + 사이 8 x 4.
+   칸 여백 4px 를 줄의 음수 여백으로 상쇄해 양끝을 맞춘다(반올림 넘침을 피해 칸은 196.6) */
+.theme-violet .item-grid {
+	margin: 0 -4px;
+}
+
+.theme-violet .item-grid .item-cell {
+	width: 196.6px;
+	height: 196.6px;
+	margin: 4px;
+}
+
+/* ── 아이템 칸 — 두꺼운 회색조 틀을 등급 틴트(테두리색)로 칠하고, 안쪽은 등급 바탕색 판(item-cell__bg)을 깐다 ── */
+
+.theme-violet .item-cell,
+.theme-violet .equip-slot {
+	background-image: url("../Violet/slot.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+}
+
+/* 빈 장착 칸 — 보라 선 */
+.theme-violet .equip-slot {
+	-unity-background-image-tint-color: #6A5E90;
+}
+
+/* 등급 바탕색 판 — 틀(16px) 바로 안쪽을 채운다 */
+.theme-violet .item-cell__bg {
+	left: 16px;
+	right: 16px;
+	top: 16px;
+	bottom: 16px;
+	opacity: 0.85;
+}
+
+/* 분류 배지 — 고정 바탕(ItemCell.uss) + 진한 테두리. 아이콘이 배지를 거의 채우게 안쪽 여백을 줄인다 */
+.theme-violet .item-cell__type {
+	border-width: 3px;
+	border-color: #0E0B1A;
+	padding: 2px;
+}
+
+/* 레벨·개수 — 도트 글꼴이 또렷하게 24px(12 배수), 외곽선 없이 아래 그림자만 */
+.theme-violet .item-cell__level,
+.theme-violet .item-cell__count {
+	bottom: 26px;
+	font-size: 24px;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.theme-violet .item-cell__level {
+	left: 20px;
+}
+
+.theme-violet .item-cell__count {
+	right: 20px;
+}
+
+/* 장착 칸(168px) — 가방 칸(196.6px)과 같은 모양을 비율만 줄인다(배지 40px) */
+.theme-violet .equip-slot .item-cell__type {
+	padding: 2px;
+}
+
+.theme-violet .equip-slot .item-cell__level,
+.theme-violet .equip-slot .item-cell__count {
+	bottom: 22px;
+}
+
+.theme-violet .equip-slot .item-cell__level {
+	left: 18px;
+}
+
+.theme-violet .equip-slot .item-cell__count {
+	right: 18px;
+}

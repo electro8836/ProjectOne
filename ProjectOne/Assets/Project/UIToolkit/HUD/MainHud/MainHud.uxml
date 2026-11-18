@@ -1,0 +1,120 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="MainHud.uss" />
+
+	<!-- 메인 HUD — 화면 전체를 덮지만 빈 곳은 클릭을 통과시킨다(아래 조이스틱이 받는다) -->
+	<ui:VisualElement name="hud" class="hud" picking-mode="Ignore">
+
+		<!-- 왼쪽 위: 히어로 정보 -->
+		<ui:VisualElement name="hero-info" class="hero-info" picking-mode="Ignore">
+			<ui:VisualElement class="hud-gauge hud-gauge--hp" picking-mode="Ignore">
+				<ui:VisualElement name="hp-fill" class="hud-gauge__fill" picking-mode="Ignore" />
+				<ui:Label name="hp-text" class="hud-gauge__text hud-text" picking-mode="Ignore" />
+			</ui:VisualElement>
+			<ui:VisualElement class="hud-gauge hud-gauge--thin" picking-mode="Ignore">
+				<ui:VisualElement name="exp-fill" class="hud-gauge__fill hud-gauge__fill--exp" picking-mode="Ignore" />
+			</ui:VisualElement>
+			<ui:VisualElement class="hero-info__row" picking-mode="Ignore">
+				<ui:VisualElement class="hero-info__stat" picking-mode="Ignore">
+					<ui:VisualElement class="hero-info__icon hud-icon-level" picking-mode="Ignore" />
+					<ui:Label name="level-text" class="hud-text" picking-mode="Ignore" />
+				</ui:VisualElement>
+				<ui:VisualElement class="hero-info__stat" picking-mode="Ignore">
+					<ui:VisualElement class="hero-info__icon hud-icon-power" picking-mode="Ignore" />
+					<ui:Label name="power-text" class="hud-text" picking-mode="Ignore" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<!-- 맵 이름 (필드·던전) -->
+		<ui:VisualElement name="map-info" class="map-info" picking-mode="Ignore">
+			<ui:VisualElement name="map-icon" class="map-info__icon" picking-mode="Ignore" />
+			<ui:Label name="map-text" class="hud-text" picking-mode="Ignore" />
+		</ui:VisualElement>
+
+		<!-- 현재 퀘스트 — 접으면 틀이 왼쪽 화면 밖으로 밀린다 -->
+		<ui:VisualElement name="quest-info" class="quest-info" picking-mode="Ignore">
+			<ui:VisualElement name="quest-frame" class="quest-frame">
+				<ui:VisualElement class="quest-frame__head" picking-mode="Ignore">
+					<ui:Label name="quest-title" class="quest-frame__title hud-text" picking-mode="Ignore" />
+					<ui:Label name="quest-complete" text="(완료)" class="quest-frame__complete hud-text" picking-mode="Ignore" />
+				</ui:VisualElement>
+				<ui:Label name="quest-desc" class="quest-frame__desc hud-text" picking-mode="Ignore" />
+				<ui:VisualElement class="hud-gauge hud-gauge--thin" picking-mode="Ignore">
+					<ui:VisualElement name="quest-fill" class="hud-gauge__fill hud-gauge__fill--quest" picking-mode="Ignore" />
+				</ui:VisualElement>
+				<ui:Button name="quest-list-button" class="quest-frame__list">
+					<ui:VisualElement class="quest-frame__list-icon hud-icon-mission" picking-mode="Ignore" />
+				</ui:Button>
+			</ui:VisualElement>
+			<ui:Button name="quest-fold" class="hud-fold">
+				<ui:VisualElement name="quest-fold-arrow" class="hud-fold__arrow" picking-mode="Ignore" />
+			</ui:Button>
+		</ui:VisualElement>
+
+		<!-- 내 버프 -->
+		<ui:VisualElement name="buff-list" class="buff-list" picking-mode="Ignore" />
+
+		<!-- 오른쪽 위: 재화 + 메뉴 -->
+		<ui:VisualElement class="top-right" picking-mode="Ignore">
+			<ui:VisualElement class="resource" picking-mode="Ignore">
+				<ui:VisualElement name="gold-icon" class="resource__icon" picking-mode="Ignore" />
+				<ui:Label name="gold-text" class="resource__text hud-text" picking-mode="Ignore" />
+			</ui:VisualElement>
+			<ui:VisualElement class="resource" picking-mode="Ignore">
+				<ui:VisualElement name="dia-icon" class="resource__icon" picking-mode="Ignore" />
+				<ui:Label name="dia-text" class="resource__text hud-text" picking-mode="Ignore" />
+			</ui:VisualElement>
+			<ui:Button name="menu-button" class="menu-button">
+				<ui:VisualElement class="menu-button__icon" picking-mode="Ignore" />
+				<ui:VisualElement name="menu-badge" class="hud-badge" picking-mode="Ignore" />
+			</ui:Button>
+		</ui:VisualElement>
+
+		<!-- 오른쪽 사이드바 (마을·필드) — 접으면 버튼 묶음이 오른쪽 화면 밖으로 밀린다 -->
+		<ui:VisualElement name="side-bar" class="side-bar" picking-mode="Ignore">
+			<ui:Button name="side-fold" class="hud-fold">
+				<ui:VisualElement name="side-fold-arrow" class="hud-fold__arrow" picking-mode="Ignore" />
+			</ui:Button>
+			<ui:VisualElement name="side-group" class="side-bar__group" picking-mode="Ignore">
+				<ui:Button name="side-rank" class="side-button">
+					<ui:VisualElement class="side-button__icon hud-icon-rank" picking-mode="Ignore" />
+					<ui:Label text="랭킹" class="side-button__label hud-text" picking-mode="Ignore" />
+				</ui:Button>
+				<ui:Button name="side-pass" class="side-button">
+					<ui:VisualElement class="side-button__icon hud-icon-pass" picking-mode="Ignore" />
+					<ui:Label text="히어로패스" class="side-button__label hud-text" picking-mode="Ignore" />
+				</ui:Button>
+				<ui:Button name="side-login" class="side-button">
+					<ui:VisualElement class="side-button__icon hud-icon-login" picking-mode="Ignore" />
+					<ui:Label text="출석" class="side-button__label hud-text" picking-mode="Ignore" />
+				</ui:Button>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<!-- 보스 배너 — 왼쪽 정보열과 사이드바 사이. 보스가 나오면 뜨고 죽으면 잠시 뒤 사라진다 -->
+		<ui:VisualElement name="boss" class="boss" picking-mode="Ignore">
+			<ui:VisualElement class="boss__name-row" picking-mode="Ignore">
+				<ui:VisualElement class="boss__icon" picking-mode="Ignore" />
+				<ui:Label name="boss-name" class="boss__name hud-text" picking-mode="Ignore" />
+			</ui:VisualElement>
+			<ui:VisualElement name="boss-hp" class="hud-gauge hud-gauge--boss" picking-mode="Ignore">
+				<ui:VisualElement name="boss-hp-fill" class="hud-gauge__fill" picking-mode="Ignore" />
+				<ui:Label name="boss-hp-text" class="hud-gauge__text boss__hp-text hud-text" picking-mode="Ignore" />
+				<ui:Label name="boss-hp-percent" class="hud-gauge__text boss__percent hud-text" picking-mode="Ignore" />
+			</ui:VisualElement>
+			<ui:VisualElement name="boss-break" class="hud-gauge hud-gauge--thin" picking-mode="Ignore">
+				<ui:VisualElement name="boss-break-fill" class="hud-gauge__fill hud-gauge__fill--break" picking-mode="Ignore" />
+			</ui:VisualElement>
+			<ui:Label name="boss-state" class="boss__state hud-text" picking-mode="Ignore" />
+		</ui:VisualElement>
+
+		<!-- 궁극기 버튼 -->
+		<ui:Button name="ultimate" class="ultimate">
+			<ui:VisualElement name="ultimate-icon" class="ultimate__icon" picking-mode="Ignore" />
+			<ui:VisualElement name="ultimate-cooltime" class="ultimate__cooltime" picking-mode="Ignore">
+				<ui:Label name="ultimate-time" class="ultimate__time hud-text" picking-mode="Ignore" />
+			</ui:VisualElement>
+		</ui:Button>
+	</ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,136 @@
+/* 랭킹·플레이어 정보 팝업 */
+
+.rank-list-box {
+	height: 1000px;
+	margin-bottom: 16px;
+	padding: 12px;
+}
+
+.rank-list {
+	flex-grow: 1;
+}
+
+/* 순위 줄 */
+.rank-row {
+	flex-direction: row;
+	align-items: center;
+	height: 120px;
+	padding: 0 24px 6px 12px;
+	margin-bottom: 10px;
+	background-image: url("../../Pixel/row.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+}
+
+.rank-row--top1 { -unity-background-image-tint-color: #FFD447; }
+.rank-row--top2 { -unity-background-image-tint-color: #D7DEE6; }
+.rank-row--top3 { -unity-background-image-tint-color: #E0965A; }
+
+.rank-row__rank {
+	width: 120px;
+	height: 100px;
+	align-items: center;
+	justify-content: center;
+	margin-right: 16px;
+}
+
+.rank-row__rank-icon {
+	width: 88px;
+	height: 88px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.rank-row__rank-text {
+	font-size: 48px;
+	color: var(--gold);
+}
+
+.rank-row__name {
+	flex-grow: 1;
+	flex-shrink: 1;
+	font-size: 48px;
+	overflow: hidden;
+}
+
+.rank-row__power {
+	font-size: 48px;
+	color: var(--gold);
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+}
+
+.rank-mine {
+	margin-bottom: 30px;
+}
+
+.rank-mine .rank-row {
+	background-image: url("../../Pixel/row_active.png");
+	margin-bottom: 0;
+}
+
+/* 플레이어 정보 */
+.info-body {
+	flex-direction: row;
+	height: 680px;
+	margin-bottom: 20px;
+}
+
+.info-column {
+	width: 152px;
+	justify-content: center;
+}
+
+.info-slot {
+	width: 152px;
+	height: 152px;
+	margin: 6px 0;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.info-slot .item-cell {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+.info-character {
+	flex-grow: 1;
+	background-size: contain;
+	background-repeat: no-repeat;
+	scale: 1.3 1.3;
+}
+
+.info-stats {
+	flex-direction: row;
+	flex-wrap: wrap;
+	padding: 20px 24px;
+	margin-bottom: 30px;
+}
+
+.info-stat {
+	width: 50%;
+	flex-direction: row;
+	justify-content: space-between;
+	padding: 6px 14px;
+}
+
+.info-stat__name {
+	font-size: 36px;
+	color: var(--ink-sub);
+}
+
+.info-stat__value {
+	font-size: 36px;
+	color: var(--gold);
+}

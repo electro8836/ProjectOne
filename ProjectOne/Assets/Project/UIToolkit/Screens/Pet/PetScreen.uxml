@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="PetScreen.uss" />
+
+	<ui:VisualElement name="screen" class="screen screen--full">
+		<ui:VisualElement class="px-wood header">
+			<ui:Label name="title" text="펫" class="header__title text-pop" />
+			<ui:Button name="return-button" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+		</ui:VisualElement>
+
+		<ui:VisualElement class="px-paper sheet">
+			<ui:VisualElement class="pet-toolbar">
+				<ui:Label text="펫 목록" class="caption" />
+				<ui:Button name="sort-button" text="" class="btn btn--gold btn--small" />
+			</ui:VisualElement>
+			<ui:ScrollView name="list" class="pet-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

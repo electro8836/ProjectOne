@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using TMPro;
 using ProjectOne.Dungeon;
@@ -27,7 +27,7 @@ namespace ProjectOne.UI
 
 		// 자리 양보 대상인 보스 배너. MainHUD 안에 살아 다른 프리팹이므로 인스펙터로 이을 수 없다 —
 		// 소유자인 UIManager 에게 물어 Awake 에서 한 번만 잡는다.
-		private BossUI _bossUI;
+		private HudBossBanner _bossUI;
 
 		private Action<DungeonStageStartedEvent> _onStageStarted;
 		private Action<WaveStartedEvent> _onWaveStarted;

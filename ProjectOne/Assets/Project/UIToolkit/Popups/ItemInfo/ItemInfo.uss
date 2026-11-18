@@ -1,0 +1,115 @@
+/* 아이템 정보 팝업(장비·소모품) 공용 */
+
+.item-summary {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 24px;
+}
+
+.item-summary__cell {
+	width: 192px;
+	height: 192px;
+}
+
+.item-summary__cell .item-cell {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+.item-summary__meta {
+	flex-grow: 1;
+	margin-left: 30px;
+}
+
+.item-summary__grade {
+	font-size: 48px;
+}
+
+.item-summary__sub {
+	font-size: 36px;
+	color: var(--ink-sub);
+}
+
+/* 소모품 수량 조절 */
+.consumable-control {
+	padding-bottom: 6px;
+}
+
+.consumable-count {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 20px;
+}
+
+.consumable-count .btn {
+	font-size: 60px;
+}
+
+.consumable-count__value {
+	width: 200px;
+	font-size: 60px;
+	-unity-text-align: middle-center;
+}
+
+/* 장비 정보 */
+.equip-info-scroll {
+	max-height: 1150px;
+	margin-bottom: 20px;
+}
+
+.equip-info-desc {
+	color: var(--ink-sub);
+	margin-bottom: 14px;
+}
+
+.option-box {
+	padding: 16px 20px;
+	margin-bottom: 16px;
+}
+
+.option-line {
+	flex-direction: row;
+	align-items: center;
+	padding: 4px 0;
+}
+
+.option-line__icon {
+	width: 48px;
+	height: 48px;
+	margin-right: 12px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.option-line__mark {
+	width: 28px;
+	height: 28px;
+	margin-right: 14px;
+	border-width: 4px;
+}
+
+.option-line__text {
+	flex-grow: 1;
+	flex-shrink: 1;
+	font-size: 36px;
+	white-space: normal;
+}
+
+.option-line__range {
+	font-size: 36px;
+	color: var(--ink-sub);
+	margin-left: 10px;
+}
+
+.equip-info-buttons__row {
+	flex-direction: row;
+	justify-content: flex-end;
+	margin: 0 40px 14px 40px;
+}
+
+.equip-info-buttons__row .btn {
+	margin-left: 12px;
+}

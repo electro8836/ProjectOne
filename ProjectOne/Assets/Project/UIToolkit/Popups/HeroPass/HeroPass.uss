@@ -1,0 +1,179 @@
+/* 히어로 패스 팝업 */
+
+.pass-header {
+	flex-direction: row;
+	align-items: center;
+	padding: 20px 24px;
+	margin-bottom: 16px;
+}
+
+.pass-header--active {
+	-unity-background-image-tint-color: #C9A0FF;
+}
+
+.pass-header__level-box {
+	width: 150px;
+	align-items: center;
+	margin-right: 20px;
+}
+
+.pass-header__level-caption {
+	font-size: 36px;
+	color: var(--ink-sub);
+}
+
+.pass-header__level {
+	font-size: 72px;
+	color: var(--gold);
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 6px 0 var(--ink);
+}
+
+.pass-header__info {
+	flex-grow: 1;
+}
+
+.pass-header__state {
+	font-size: 48px;
+	margin-bottom: 8px;
+}
+
+.pass-header__remain {
+	font-size: 36px;
+	color: var(--ink-sub);
+	margin-top: 8px;
+}
+
+.pass-columns {
+	flex-direction: row;
+	margin-bottom: 6px;
+}
+
+.pass-columns__label {
+	flex-grow: 1;
+	flex-basis: 0;
+	font-size: 36px;
+	color: var(--ink-sub);
+	-unity-text-align: middle-center;
+}
+
+.pass-columns__label--middle {
+	flex-grow: 0;
+	width: 160px;
+	flex-basis: auto;
+}
+
+.pass-list {
+	height: 980px;
+	margin-bottom: 26px;
+}
+
+/* 레벨 한 줄 */
+.pass-row {
+	flex-direction: row;
+	align-items: center;
+	height: 200px;
+}
+
+.pass-row__middle {
+	width: 160px;
+	height: 100%;
+	align-items: center;
+	justify-content: center;
+}
+
+/* 진행 선 — 줄을 세로로 꿰뚫는다 */
+.pass-row__line {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: 70px;
+	width: 20px;
+	background-color: var(--ink);
+}
+
+.pass-row__line-fill {
+	width: 100%;
+	height: 0;
+	background-color: var(--gold);
+}
+
+.pass-row__level {
+	width: 96px;
+	height: 96px;
+	font-size: 48px;
+	-unity-text-align: middle-center;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 2px;
+	background-color: var(--paper-shadow);
+}
+
+.pass-row--reached .pass-row__level {
+	background-image: url("../../Pixel/slot_gold.png");
+	color: var(--gold);
+}
+
+/* 보상 칸 */
+.pass-reward {
+	flex-grow: 1;
+	flex-basis: 0;
+	height: 176px;
+	margin: 0 10px;
+	align-items: center;
+	justify-content: center;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.pass-reward--advanced {
+	-unity-background-image-tint-color: #C9A0FF;
+}
+
+.pass-reward--claimable {
+	background-image: url("../../Pixel/slot_gold.png");
+	-unity-background-image-tint-color: #FFFFFF;
+}
+
+.pass-reward__icon {
+	width: 112px;
+	height: 112px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.pass-reward__count {
+	position: absolute;
+	right: 20px;
+	bottom: 14px;
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+.pass-reward__check {
+	position: absolute;
+	left: 12px;
+	right: 12px;
+	top: 12px;
+	bottom: 12px;
+	background-color: rgba(20, 16, 30, 0.6);
+}
+
+.pass-row__lock {
+	position: absolute;
+	right: 18px;
+	top: 16px;
+	width: 36px;
+	height: 44px;
+	background-image: url("../../Pixel/icon_lock.png");
+}

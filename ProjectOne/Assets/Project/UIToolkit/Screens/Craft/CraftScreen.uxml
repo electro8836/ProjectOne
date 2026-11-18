@@ -1,0 +1,74 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="CraftScreen.uss" />
+
+	<ui:VisualElement name="screen" class="screen">
+		<ui:VisualElement class="px-wood header">
+			<ui:Label text="제작" class="header__title text-pop" />
+			<ui:Button name="home-button" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+		</ui:VisualElement>
+
+		<!-- 모드 탭: 강화 · 승급 · 전이 -->
+		<ui:VisualElement class="tabs">
+			<ui:Button name="mode-0" text="강화" class="tab" />
+			<ui:Button name="mode-1" text="승급" class="tab" />
+			<ui:Button name="mode-2" text="전이" class="tab" />
+		</ui:VisualElement>
+
+		<ui:VisualElement class="px-paper craft-top">
+			<!-- 강화: 칸 하나 -->
+			<ui:VisualElement name="panel-0" class="craft-panel">
+				<ui:VisualElement class="craft-slots">
+					<ui:VisualElement name="slot-enhance" class="craft-slot"><ui:Label text="장비 선택" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<!-- 승급: 현재 → 승급 후 -->
+			<ui:VisualElement name="panel-1" class="craft-panel">
+				<ui:VisualElement class="craft-slots">
+					<ui:VisualElement name="slot-promote-prev" class="craft-slot"><ui:Label text="장비 선택" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:Label text="▶" class="craft-arrow" />
+					<ui:VisualElement name="slot-promote-next" class="craft-slot craft-slot--preview"><ui:Label text="승급 후" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<!-- 전이: 재료 → 대상 -->
+			<ui:VisualElement name="panel-2" class="craft-panel">
+				<ui:VisualElement class="craft-slots">
+					<ui:VisualElement name="slot-transfer-source" class="craft-slot"><ui:Label text="재료 장비" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:Label text="▶" class="craft-arrow" />
+					<ui:VisualElement name="slot-transfer-target" class="craft-slot"><ui:Label text="대상 장비" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<!-- 비용 · 불가 문구 · 버튼 (모드 공용) -->
+			<ui:VisualElement class="craft-requirement">
+				<ui:Label name="requirement-caption" text="필요 재료" class="caption craft-requirement__caption" />
+				<ui:VisualElement name="cost-row" class="craft-requirement__costs" />
+				<ui:Label name="disable-text" text="" class="craft-requirement__disable" />
+			</ui:VisualElement>
+
+			<ui:VisualElement class="craft-buttons">
+				<ui:Button name="cancel-button" text="취소" class="btn btn--red craft-button" />
+				<ui:Button name="action-button" text="강화" class="btn btn--green craft-button" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<!-- 분류 탭 + 정렬 + 장비 목록 -->
+		<ui:VisualElement class="tabs craft-filter">
+			<ui:Button name="filter-0" text="전체" class="tab" />
+			<ui:Button name="filter-1" text="" class="tab"><ui:VisualElement class="tab__icon type-weapon" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="filter-2" text="" class="tab"><ui:VisualElement class="tab__icon type-armor" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="filter-3" text="" class="tab"><ui:VisualElement class="tab__icon type-accessory" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="filter-4" text="" class="tab"><ui:VisualElement class="tab__icon type-relic" picking-mode="Ignore" /></ui:Button>
+		</ui:VisualElement>
+
+		<ui:VisualElement class="px-paper sheet craft-bag">
+			<ui:VisualElement class="craft-bag__toolbar">
+				<ui:Label text="장비" class="caption" />
+				<ui:Button name="sort-button" text="" class="btn btn--gold btn--small" />
+			</ui:VisualElement>
+			<ui:ScrollView name="grid" class="craft-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

@@ -1,67 +1,64 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
-	// 액트·필드 목록 팝업의 View(MVP). UIManager.ShowActListPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	// 표시와 입력 전달만 담당하고, 어느 액트를 열지·어디로 갈 수 있는지는 ActListPopupPresenter 가 정한다.
-	public class ActListPopup : UIScreen, IView
+	// 구역 목록 팝업(UIPrefab_ActListPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/ActList/ActListPopup.uxml.
+	// 월드 탭을 고르면 그 월드의 구역 줄을 그린다. 갈 수 있는 다른 구역 줄에만 이동 버튼이 있고,
+	// 이동하거나 마을로 돌아가면 이동했다(true)로 닫힌다.
+	public class ActListPopup : ToolkitScreen, IView
 	{
-		[Header("탭")]
-		[SerializeField] private TabGroup _tabGroup;			// Frame/Top/ActTabButtons/Veiwport/Content/Grid
-		[SerializeField] private UITabButton[] _actTabs;		// ActTabButton_01 ~ 05 (Hierarchy 순서와 일대일)
-		[SerializeField] private TMP_Text _actNameText;		// Frame/Top/ActName
-
-		[Header("필드 목록")]
-		[SerializeField] private ScrollRect _fieldScroll;		// Frame/FieldScrollRect
-		[SerializeField] private RectTransform _fieldGrid;	// Frame/FieldScrollRect/Viewport/Content/Grid
-		[SerializeField] private FieldSlot _slotPrefab;		// UIPrefab_FieldSlot
-
-		[Header("마을")]
-		[SerializeField] private UIButton _townButton;		// Frame/Bottom/TownButton
-
-		[Header("닫기")]
-		[SerializeField] private UIButton _exitButton;		// Frame/ExitButton
-		[SerializeField] private UIButton _dimButton;		// Dim
+		// 구역 한 줄 — 번호·이름·이동 버튼. 지금 있는 곳은 강조, 아직 못 가는 곳은 흐리게.
+		private sealed class FieldRow
+		{
+			public VisualElement root;
+			public Label order;
+			public Label name;
+			public Button move;
+			public int fieldId;
+		}
 
 		public event Action<int> OnTabSelected;		// 탭 인덱스
 		public event Action<int> OnMoveRequested;	// 목적지 Field.ID
 		public event Action OnTownRequested;		// 마을 귀환
 
 		private readonly ActListPopupPresenter _presenter = new ActListPopupPresenter();
-		private readonly List<FieldSlot> _slots = new List<FieldSlot>();
+		private readonly List<FieldRow> _rows = new List<FieldRow>();
+		private readonly List<Button> _tabs = new List<Button>();
 
-		// 결과는 "이동했는가" 다. 이동했다면 월드 창까지 닫아야 해서 호출부가 알아야 한다.
+		private VisualElement _tabBar;
+		private Label _actName;
+		private ScrollView _list;
+		private Button _townButton;
+		private int _scrollIndex = -1;
 		private UniTaskCompletionSource<bool> _tcs;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_tabGroup.OnTabChanged += onTabChanged;
-			_exitButton.OnClickEvent += onCloseClicked;
-			_dimButton.OnClickEvent += onCloseClicked;
-			_townButton.OnClickEvent += onTownClicked;
+			_tabBar = root.Q("tabs");
+			_actName = root.Q<Label>("act-name");
+			_list = root.Q<ScrollView>("list");
+			_list.AddManipulator(new ScrollDragManipulator(_list));
+
+			_townButton = root.Q<Button>("town");
+			_townButton.clicked += onTownClicked;
+			root.Q<Button>("close").clicked += Close;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			for (int i = 0; i < _slots.Count; i++)
+			if (IsBound == true)
 			{
-				_slots[i].OnMoveClicked -= onSlotMoveClicked;
+				_presenter.Dispose();
 			}
 
-			_tabGroup.OnTabChanged -= onTabChanged;
-			_exitButton.OnClickEvent -= onCloseClicked;
-			_dimButton.OnClickEvent -= onCloseClicked;
-			_townButton.OnClickEvent -= onTownClicked;
-
-			_presenter.Dispose();
+			base.OnDestroy();
 		}
 
 		public CancellationToken GetDestroyToken()
@@ -69,13 +66,12 @@ namespace ProjectOne.UI
 			return this.GetCancellationTokenOnDestroy();
 		}
 
-		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
-		// 돌려주는 값은 이동으로 닫혔는지 여부다 — 취소로 끝나면 이동하지 않은 것으로 본다.
 		public async UniTask<bool> ShowAsync(CancellationToken ct)
 		{
 			await _presenter.OnOpenAsync(ct);
 
 			_tcs = new UniTaskCompletionSource<bool>();
+			PlayPopupOpen();
 
 			(bool cancelled, bool moved) = await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 			if (cancelled == true)
@@ -86,119 +82,165 @@ namespace ProjectOne.UI
 			return moved;
 		}
 
-		// ── Presenter → View ──────────────────────────────────────────────
-
-		// 데이터가 있는 액트만 남기고 나머지 탭은 끈다. 액트가 늘면 데이터만 늘리면 된다.
+		// 월드 수만큼 탭을 만든다.
 		public void SetTabCount(int count)
 		{
-			for (int i = 0; i < _actTabs.Length; i++)
+			for (int i = 0; i < count; i++)
 			{
-				_actTabs[i].gameObject.SetActive(i < count);
+				Button tab = getTab(i);
+				tab.style.display = DisplayStyle.Flex;
+			}
+
+			for (int i = count; i < _tabs.Count; i++)
+			{
+				_tabs[i].style.display = DisplayStyle.None;
 			}
 		}
 
-		// 마을 귀환 버튼은 필드에서만 의미가 있다 — 마을·던전에서는 끈다.
 		public void SetTownButtonVisible(bool visible)
 		{
-			_townButton.gameObject.SetActive(visible);
+			_townButton.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
+		// 탭만 선택(OnTabSelected 를 발행하지 않음).
 		public void SelectTab(int index)
 		{
-			_tabGroup.Select(index);
+			for (int i = 0; i < _tabs.Count; i++)
+			{
+				_tabs[i].EnableInClassList("tab--selected", i == index);
+			}
 		}
 
 		public void SetActName(string text)
 		{
-			_actNameText.text = text;
+			_actName.text = text;
 		}
 
-		// 슬롯은 파괴하지 않고 재사용한다 — 탭을 오갈 때마다 Instantiate 하면 GC 가 튄다.
 		public void RenderFields(IReadOnlyList<FieldSlotData> data)
 		{
 			for (int i = 0; i < data.Count; i++)
 			{
-				FieldSlot slot = getOrCreateSlot(i);
-				slot.gameObject.SetActive(true);
-				slot.Bind(data[i]);
+				FieldRow row = getOrCreateRow(i);
+				FieldSlotData d = data[i];
+
+				row.root.style.display = DisplayStyle.Flex;
+				row.fieldId = d.fieldId;
+				row.order.text = d.order.ToString();
+				row.name.text = d.name;
+
+				row.root.EnableInClassList("field-row--current", d.current);
+				row.root.EnableInClassList("field-row--locked", d.cleared == false && d.current == false);
+
+				// 이동 버튼은 "갈 수 있는 다른 곳" 에만 둔다.
+				row.move.style.display = (d.cleared == true && d.current == false) ? DisplayStyle.Flex : DisplayStyle.None;
 			}
 
-			for (int i = data.Count; i < _slots.Count; i++)
+			for (int i = data.Count; i < _rows.Count; i++)
 			{
-				_slots[i].gameObject.SetActive(false);
+				_rows[i].root.style.display = DisplayStyle.None;
 			}
 		}
 
-		// index 칸이 뷰포트 맨 위에 오도록 스크롤한다. 끝 칸이라 더 내릴 수 없으면 바닥에서 멈춘다.
+		// 지정한 줄이 보이도록 스크롤한다. 배치가 끝난 다음 프레임에 옮긴다.
 		public void ScrollToSlot(int index)
 		{
-			if (_fieldScroll == null || index < 0 || index >= _slots.Count)
+			if (index < 0 || index >= _rows.Count)
 			{
 				return;
 			}
 
-			// 방금 켠 슬롯은 레이아웃이 아직 안 잡혀 있다 — 위치를 읽기 전에 즉시 재배치한다.
-			RectTransform content = _fieldScroll.content;
-			LayoutRebuilder.ForceRebuildLayoutImmediate(content);
-
-			RectTransform viewport = _fieldScroll.viewport != null ? _fieldScroll.viewport : (RectTransform)_fieldScroll.transform;
-			float scrollable = content.rect.height - viewport.rect.height;
-			if (scrollable <= 0f)
-			{
-				_fieldScroll.verticalNormalizedPosition = 1f;
-				return;
-			}
-
-			// 콘텐츠 윗변에서 슬롯 윗변까지의 거리 — 스케일이 걸려 있어도 콘텐츠 로컬 좌표로 잰다.
-			RectTransform slot = (RectTransform)_slots[index].transform;
-			Vector3 slotTop = content.InverseTransformPoint(slot.TransformPoint(new Vector3(0f, slot.rect.yMax, 0f)));
-			float fromTop = content.rect.yMax - slotTop.y;
-
-			_fieldScroll.StopMovement();
-			_fieldScroll.verticalNormalizedPosition = 1f - Mathf.Clamp01(fromTop / scrollable);
+			_scrollIndex = index;
+			_list.schedule.Execute(applyScroll);
 		}
 
-		// 그냥 닫기 — 닫기 버튼·딤을 눌렀을 때.
 		public void Close()
 		{
 			close(false);
 		}
 
-		// 이동으로 닫기 — 호출부가 월드 창까지 닫도록 결과에 실어 보낸다.
 		public void CloseByMove()
 		{
 			close(true);
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────────
+		// ── 내부 ─────────────────────────────────────────────────────────
 
-		private FieldSlot getOrCreateSlot(int index)
+		private void applyScroll()
 		{
-			if (index < _slots.Count)
+			if (_scrollIndex >= 0 && _scrollIndex < _rows.Count)
 			{
-				return _slots[index];
+				_list.ScrollTo(_rows[_scrollIndex].root);
 			}
-
-			FieldSlot slot = Instantiate(_slotPrefab, _fieldGrid);
-			slot.OnMoveClicked += onSlotMoveClicked;
-			_slots.Add(slot);
-
-			return slot;
 		}
 
-		private void onTabChanged(int index)
+		private Button getTab(int index)
 		{
+			if (index < _tabs.Count)
+			{
+				return _tabs[index];
+			}
+
+			Button tab = new Button();
+			tab.text = "월드 " + (index + 1).ToString();
+			tab.AddToClassList("tab");
+			tab.userData = index;
+			tab.RegisterCallback<ClickEvent>(onTabClicked);
+			_tabBar.Add(tab);
+			_tabs.Add(tab);
+			return tab;
+		}
+
+		private FieldRow getOrCreateRow(int index)
+		{
+			if (index < _rows.Count)
+			{
+				return _rows[index];
+			}
+
+			FieldRow row = new FieldRow();
+			row.root = new VisualElement();
+			row.root.AddToClassList("field-row");
+
+			row.order = new Label();
+			row.order.AddToClassList("field-row__order");
+			row.root.Add(row.order);
+
+			row.name = new Label();
+			row.name.AddToClassList("field-row__name");
+			row.root.Add(row.name);
+
+			row.move = new Button();
+			row.move.text = "이동";
+			row.move.AddToClassList("btn");
+			row.move.AddToClassList("btn--green");
+			row.move.AddToClassList("btn--small");
+			row.move.userData = row;
+			row.move.RegisterCallback<ClickEvent>(onMoveClicked);
+			row.move.AddToClassList("sfx-click");	// 클릭음 대상(UIManager)
+			row.root.Add(row.move);
+
+			_list.contentContainer.Add(row.root);
+			_rows.Add(row);
+			return row;
+		}
+
+		private void onTabClicked(ClickEvent evt)
+		{
+			int index = (int)((VisualElement)evt.currentTarget).userData;
+			SelectTab(index);
+
 			if (OnTabSelected != null)
 			{
 				OnTabSelected.Invoke(index);
 			}
 		}
 
-		private void onSlotMoveClicked(FieldSlot sender, int fieldId)
+		private void onMoveClicked(ClickEvent evt)
 		{
-			if (OnMoveRequested != null)
+			FieldRow row = ((VisualElement)evt.currentTarget).userData as FieldRow;
+			if (row != null && OnMoveRequested != null)
 			{
-				OnMoveRequested.Invoke(fieldId);
+				OnMoveRequested.Invoke(row.fieldId);
 			}
 		}
 
@@ -210,7 +252,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private void onCloseClicked()
+		private void onDimClicked(ClickEvent evt)
 		{
 			Close();
 		}

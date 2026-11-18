@@ -1,0 +1,85 @@
+/* 하단 네비게이션 바 — 화면 맨 아래 160px (창의 .screen 아래 여백과 같다).
+   바이올렛 테마: 탭은 Layer Lab TabMenu_BottomFlush_01 을 같은 스프라이트·색으로 구운 것(UGUI 내비 탭 색).
+   탭은 152px — 바 윗선(4px)과 틈이 보이게 바보다 8px 낮다. 선택하면 색만 바이올렛으로 바뀐다.
+   부품은 UIToolkit/Violet (Tools/pixelui/generate_violet_ui.py). */
+
+.nav {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	justify-content: flex-end;
+}
+
+/* 바 — 윗선 + 아래로 어두워지는 면. 탭은 바닥에 붙는다 */
+.nav__bar {
+	flex-direction: row;
+	align-items: flex-end;
+	height: 160px;
+	padding: 0;
+	background-image: url("../../Violet/nav_bg.png");
+	-unity-slice-top: 1;
+	-unity-slice-scale: 4px;
+}
+
+.nav-tab {
+	flex-grow: 1;
+	flex-basis: 0;
+	height: 152px;
+	margin: 0 -2px;	/* 탭 테두리(4px)를 겹쳐 틈 없이 붙인다 */
+	padding: 0;
+	border-width: 0;
+	border-radius: 0;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../../Violet/navtab_off.png");
+	-unity-slice-left: 30;
+	-unity-slice-right: 30;
+	-unity-slice-top: 0;
+	-unity-slice-bottom: 0;
+	-unity-slice-scale: 1px;
+}
+
+.nav-tab--selected {
+	background-image: url("../../Violet/navtab_on.png");
+}
+
+/* 아이콘 — 크게 두고, 이름이 아래쪽에 겹쳐 얹힌다(아이콘을 가려도 된다) */
+.nav-tab__icon {
+	width: 116px;
+	height: 116px;
+	margin-bottom: 12px;
+	-unity-background-scale-mode: scale-to-fit;
+	opacity: 0.75;
+}
+
+.nav-tab--selected .nav-tab__icon {
+	opacity: 1;
+}
+
+/* 이름 — 아이콘 아래쪽에 겹쳐 항상 보인다. 아이콘 위에서도 읽히게 굵은 외곽선 + 아래 그림자 */
+.nav-tab__label {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 12px;
+	margin: 0;
+	-unity-text-align: middle-center;
+	font-size: 36px;
+	color: #E4E6FF;
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: #0A0814;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.nav-tab--selected .nav-tab__label {
+	color: #FFFFFF;
+}
+
+.nav-icon-shop { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Tabs/Icon_Shop.png"); }
+.nav-icon-bag { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Tabs/Icon_Bag.png"); }
+.nav-icon-world { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Tabs/Icon_World.png"); }
+.nav-icon-mastery { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Tabs/Icon_Mastery.png"); }
+.nav-icon-craft { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Tabs/Icon_Craft.png"); }

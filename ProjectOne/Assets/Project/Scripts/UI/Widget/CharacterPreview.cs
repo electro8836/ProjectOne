@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
@@ -32,7 +33,10 @@ namespace ProjectOne.UI
 		// 프리뷰가 동시에 둘 이상 떠도 서로의 카메라에 찍히지 않도록 슬롯을 하나씩 밀어 쓴다.
 		private static int _slotCounter;
 
-		[SerializeField] private RawImage _target;
+		[SerializeField] private RawImage _target;	// UGUI 화면용. UI Toolkit 화면은 비워 두고 OnTextureReady 로 받는다
+
+		// RenderTexture 가 만들어진 순간 한 번 알린다 — RawImage 가 없는 UI Toolkit 화면이 배경으로 건다.
+		public event Action<RenderTexture> OnTextureReady;
 
 		private RenderTexture _texture;
 		private CharacterPreviewRig _rig;
@@ -162,9 +166,17 @@ namespace ProjectOne.UI
 
 			_rig.Camera.targetTexture = _texture;
 
-			_target.texture = _texture;
-			_target.raycastTarget = false;
-			_target.enabled = true;
+			if (_target != null)
+			{
+				_target.texture = _texture;
+				_target.raycastTarget = false;
+				_target.enabled = true;
+			}
+
+			if (OnTextureReady != null)
+			{
+				OnTextureReady.Invoke(_texture);
+			}
 
 			_rig.SetPreviewCostume(_previewWeaponId, _previewBodyId);
 			if (_useExternal == true)

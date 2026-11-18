@@ -1,0 +1,29 @@
+/* 획득 로그 — 첫 번째 자식이 맨 아래(column-reverse). 코드는 새 줄을 0번에 꽂는다. */
+
+.syslog-layer {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+.syslog {
+	position: absolute;
+	left: 0;
+	bottom: 280px;
+	width: 480px;
+	flex-direction: column-reverse;
+}
+
+.syslog__line {
+	margin: 2px 0 0 0;
+	padding: 2px 15px 4px 15px;
+	background-color: rgba(0, 0, 0, 0.59);
+	font-size: 36px;
+	color: var(--white);
+	white-space: normal;
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}

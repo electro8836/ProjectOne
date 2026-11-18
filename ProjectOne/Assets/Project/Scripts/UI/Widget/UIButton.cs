@@ -97,7 +97,7 @@ namespace ProjectOne.UI
 		}
 
 		// 자기 스케일 트윈만 접는다. DOKill 로 트랜스폼을 통째로 비우면
-		// 같은 오브젝트를 움직이는 남의 연출(예: QuestInfo 의 접기 슬라이드)까지 끊긴다.
+		// 같은 오브젝트를 움직이는 남의 연출(예: 패널 접기 슬라이드)까지 끊긴다.
 		private void killScaleTween()
 		{
 			if (_scaleTween == null)

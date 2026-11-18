@@ -1,0 +1,111 @@
+/* 펫 화면 — 정렬 버튼 + 3열 펫 칸. 부품·색·글자는 Theme.uss 를 따른다. */
+
+.pet-toolbar {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 10px;
+	flex-shrink: 0;
+}
+
+.pet-list {
+	flex-grow: 1;
+}
+
+.pet-list .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+/* 펫 칸 — 바탕은 등급 bg, 틀은 등급 border 로 View 가 칠한다 */
+.pet-card {
+	width: 31.5%;
+	margin: 0 1.5% 14px 0;
+	padding: 16px 12px 20px 12px;
+	align-items: center;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	transition-property: scale;
+	transition-duration: 0.06s;
+}
+
+.pet-card:active {
+	scale: 0.95 0.95;
+}
+
+.pet-card:disabled {
+	opacity: 1;
+}
+
+.pet-card--equipped {
+	background-image: url("../../Pixel/slot_gold.png");
+}
+
+.pet-card__image {
+	width: 200px;
+	height: 200px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.pet-card--locked .pet-card__image {
+	-unity-background-image-tint-color: rgb(40, 34, 60);
+}
+
+.pet-card__level {
+	position: absolute;
+	left: 18px;
+	top: 14px;
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+.pet-card__lock {
+	position: absolute;
+	right: 18px;
+	top: 16px;
+	width: 36px;
+	height: 44px;
+	background-image: url("../../Pixel/icon_lock.png");
+}
+
+.pet-card__equip {
+	position: absolute;
+	right: 10px;
+	top: 10px;
+	padding: 2px 10px 6px 10px;
+	font-size: 36px;
+	color: var(--white);
+	background-image: url("../../Pixel/chip_green.png");
+	-unity-slice-left: 3;
+	-unity-slice-right: 3;
+	-unity-slice-top: 3;
+	-unity-slice-bottom: 3;
+	-unity-slice-scale: 4px;
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+}
+
+.pet-card__name {
+	font-size: 36px;
+	margin-top: 6px;
+	-unity-text-align: middle-center;
+}
+
+.pet-card__bonus-title {
+	font-size: 36px;
+	opacity: 0.7;
+	margin-top: 4px;
+}
+
+.pet-card__bonus {
+	font-size: 36px;
+	white-space: normal;
+	-unity-text-align: middle-center;
+}

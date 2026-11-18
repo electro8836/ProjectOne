@@ -1,0 +1,57 @@
+/* 구역 목록 팝업 */
+
+.act-tabs .tab {
+	font-size: 36px;
+	height: 92px;
+}
+
+.field-list-box {
+	height: 1000px;
+	margin-bottom: 26px;
+	padding: 12px;
+}
+
+.field-list {
+	flex-grow: 1;
+}
+
+.field-row {
+	flex-direction: row;
+	align-items: center;
+	height: 132px;
+	padding: 0 20px 6px 16px;
+	margin-bottom: 10px;
+	background-image: url("../../Pixel/row.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+}
+
+.field-row--current {
+	background-image: url("../../Pixel/row_active.png");
+}
+
+.field-row--locked {
+	background-image: url("../../Pixel/row_locked.png");
+}
+
+.field-row--locked .field-row__order,
+.field-row--locked .field-row__name {
+	color: var(--ink-dim);
+}
+
+.field-row__order {
+	width: 96px;
+	font-size: 48px;
+	color: var(--gold);
+	-unity-text-align: middle-center;
+}
+
+.field-row__name {
+	flex-grow: 1;
+	flex-shrink: 1;
+	font-size: 48px;
+	margin-left: 12px;
+}

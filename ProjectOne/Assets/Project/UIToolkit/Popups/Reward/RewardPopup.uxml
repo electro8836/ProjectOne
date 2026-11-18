@@ -1,0 +1,18 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../Popups.uss" />
+
+	<!-- 획득 보상 — 아무 곳이나(딤·확인) 누르면 닫힌다 -->
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label text="보상 획득" class="popup__name text-pop" />
+			</ui:VisualElement>
+			<ui:ScrollView name="grid" class="popup-grid popup__body" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+			<ui:VisualElement class="popup__buttons">
+				<ui:Button name="confirm" text="확인" class="btn btn--green popup__button" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

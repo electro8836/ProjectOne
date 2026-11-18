@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Mail.uss" />
+
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label text="우편함" class="popup__name text-pop" />
+				<ui:Button name="close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+			<ui:VisualElement class="px-inset mail-list-box popup__body">
+				<ui:ScrollView name="list" class="mail-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+				<ui:Label name="empty" text="받은 우편이 없습니다" class="mail-empty" />
+			</ui:VisualElement>
+			<ui:VisualElement class="popup__buttons">
+				<ui:Button name="all-claim" text="모두 받기" class="btn btn--green popup__button" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

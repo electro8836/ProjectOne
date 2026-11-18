@@ -20,24 +20,6 @@ namespace ProjectOne.UI
 		private const int TAB_WEAPON = 0;
 		private const int TAB_ARMOR = 1;
 
-		// 보유 칸 — 어두운 보라 계열.
-		private static readonly Color OwnedBg = new Color32(0x2C, 0x20, 0x49, 0xFF);
-		private static readonly Color OwnedInnerBorder = new Color32(0x4A, 0x3C, 0x6D, 0xFF);
-		private static readonly Color OwnedBorder = new Color32(0x25, 0x1C, 0x3E, 0xFF);
-
-		// 미보유 칸 — 무채색으로 빠진다.
-		private static readonly Color LockedBg = new Color32(0x3A, 0x3A, 0x3A, 0xFF);
-		private static readonly Color LockedInnerBorder = new Color32(0x60, 0x60, 0x60, 0xFF);
-		private static readonly Color LockedBorder = new Color32(0x3A, 0x3A, 0x3A, 0xFF);
-
-		// 장착 버튼 — 장착 중이면 해제(빨강), 아니면 장착(초록).
-		private static readonly Color EquipColor = new Color32(0x27, 0xAE, 0x60, 0xFF);
-		private static readonly Color UnequipColor = new Color32(0xC0, 0x39, 0x2B, 0xFF);
-
-		// 미리보기 버튼 아이콘 — 지금 무엇을 입어보는 중인지 목록에서 알 수 있게 한다.
-		private static readonly Color PreviewingIconColor = new Color32(0x2C, 0xC5, 0x00, 0xFF);
-		private static readonly Color PreviewIconColor = Color.white;
-
 		private int _currentTab = TAB_WEAPON;
 
 		// 입어보기 중인 코스튬. -1 이면 그 부위는 실제 착용 그대로다.
@@ -237,13 +219,9 @@ namespace ProjectOne.UI
 			data.gradeText = buildGradeText(row);
 			data.acquisitionText = row.Acquisition;
 
-			data.bgColor = owned ? OwnedBg : LockedBg;
-			data.innerBorderColor = owned ? OwnedInnerBorder : LockedInnerBorder;
-			data.borderColor = owned ? OwnedBorder : LockedBorder;
-
-			data.equipButtonColor = equipped ? UnequipColor : EquipColor;
+			data.equipped = equipped;
+			data.previewing = previewing;
 			data.equipLabel = equipped ? "해제" : "장착";
-			data.previewIconColor = previewing ? PreviewingIconColor : PreviewIconColor;
 
 			return data;
 		}

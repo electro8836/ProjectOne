@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<!-- 스킬 목록 1행. 스타일은 MasteryScreen.uss 가 화면 루트에서 내려준다. -->
+	<ui:VisualElement class="skill-row">
+		<ui:VisualElement class="skill-row__icon-frame">
+			<ui:VisualElement name="icon" class="icon" />
+		</ui:VisualElement>
+		<ui:VisualElement class="skill-row__body">
+			<ui:Label name="name" text="" class="skill-row__name" />
+			<ui:Label name="category" text="" class="chip" />
+		</ui:VisualElement>
+		<ui:VisualElement class="skill-row__lock" />
+		<ui:Label name="state" text="" class="skill-row__state" />
+	</ui:VisualElement>
+</ui:UXML>

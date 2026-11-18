@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="NavigationBar.uss" />
+
+	<!-- 하단 네비게이션 바 — 탭 순서는 NavigationBar._tabScreens 와 같다 -->
+	<ui:VisualElement name="nav" class="nav" picking-mode="Ignore">
+		<ui:VisualElement class="nav__bar">
+			<ui:Button name="tab-0" class="nav-tab"><ui:VisualElement class="nav-tab__icon nav-icon-shop" picking-mode="Ignore" /><ui:Label text="상점" class="nav-tab__label" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="tab-1" class="nav-tab"><ui:VisualElement class="nav-tab__icon nav-icon-bag" picking-mode="Ignore" /><ui:Label text="장비" class="nav-tab__label" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="tab-2" class="nav-tab"><ui:VisualElement class="nav-tab__icon nav-icon-world" picking-mode="Ignore" /><ui:Label text="월드" class="nav-tab__label" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="tab-3" class="nav-tab"><ui:VisualElement class="nav-tab__icon nav-icon-mastery" picking-mode="Ignore" /><ui:Label text="숙련도" class="nav-tab__label" picking-mode="Ignore" /></ui:Button>
+			<ui:Button name="tab-4" class="nav-tab"><ui:VisualElement class="nav-tab__icon nav-icon-craft" picking-mode="Ignore" /><ui:Label text="제작" class="nav-tab__label" picking-mode="Ignore" /></ui:Button>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

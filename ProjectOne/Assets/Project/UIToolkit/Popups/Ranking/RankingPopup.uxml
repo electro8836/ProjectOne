@@ -1,0 +1,20 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Ranking.uss" />
+
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label text="전투력 랭킹" class="popup__name text-pop" />
+				<ui:Button name="close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+			<ui:VisualElement class="px-inset rank-list-box popup__body">
+				<ui:ScrollView name="list" class="rank-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+			</ui:VisualElement>
+			<ui:Label text="내 순위" class="section-title popup__body" />
+			<ui:VisualElement name="mine" class="rank-mine popup__body" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

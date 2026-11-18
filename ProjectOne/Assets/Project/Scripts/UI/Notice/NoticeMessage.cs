@@ -1,65 +1,59 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
-	// 유지 후 사라지는 한 줄 알림 — 경고(Alert)·시스템(System) 메시지 공용.
-	//
-	// 여러 개가 겹쳐 오면 대기열에 쌓아 두고, 앞의 것이 완전히 사라진 뒤 다음 것을 띄운다.
-	// 유지 시간만 다르므로(경고 3초 · 시스템 5초) 프리펩에서 _holdSeconds 로 정한다.
-	//
-	// **루트는 끄지 않고 CanvasGroup 알파로 숨긴다.** 루트를 끄면 코루틴이 멈춘다.
-	public class NoticeMessage : MonoBehaviour
+	// 잠깐 떴다가 사라지는 한 줄 알림 (UI Toolkit). 경고(UIPrefab_AlertMessage)·시스템(UIPrefab_SystemMessage)이 같이 쓴다.
+	// 레이아웃은 UIToolkit/HUD/Notice/NoticeMessage.uxml. 위치는 _positionClass(USS), 유지 시간은 _holdSeconds 로 프리펩마다 다르다.
+	// 여러 개가 오면 차례로 뜬다 — 하나가 사라진 뒤 다음이 뜬다.
+	public class NoticeMessage : ToolkitScreen
 	{
-		[SerializeField] private CanvasGroup _canvasGroup;
-		[SerializeField] private TMP_Text _text;
-
-		[Header("연출")]
+		[SerializeField] private string _positionClass = "notice--alert";	// 화면 위치를 정하는 USS 클래스
 		[SerializeField] private float _holdSeconds = 3f;
 		[SerializeField] private float _fadeSeconds = 0.5f;
 
 		private readonly Queue<string> _pending = new Queue<string>();
-		private Coroutine _playRoutine;
+		private VisualElement _notice;
+		private Label _text;
+		private bool _playing;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_canvasGroup.alpha = 0f;
+			_notice = root.Q("notice");
+			_notice.AddToClassList(_positionClass);
+			_notice.style.transitionDuration = new StyleList<TimeValue>(new List<TimeValue> { new TimeValue(_fadeSeconds) });
+			_text = root.Q<Label>("text");
 		}
 
-		// 대기열에 넣는다. 재생 중이 아니면 바로 띄운다.
 		public void Show(string message)
 		{
 			_pending.Enqueue(message);
-
-			if (_playRoutine == null)
+			if (_playing == false)
 			{
-				_playRoutine = StartCoroutine(playQueue());
+				playNext();
 			}
 		}
 
-		private IEnumerator playQueue()
+		private void playNext()
 		{
-			while (_pending.Count > 0)
+			if (_pending.Count == 0)
 			{
-				_text.text = _pending.Dequeue();
-				_canvasGroup.alpha = 1f;
-
-				yield return new WaitForSecondsRealtime(_holdSeconds);
-
-				float elapsed = 0f;
-				while (elapsed < _fadeSeconds)
-				{
-					elapsed += Time.unscaledDeltaTime;
-					_canvasGroup.alpha = Mathf.Clamp01(1f - elapsed / _fadeSeconds);
-					yield return null;
-				}
-
-				_canvasGroup.alpha = 0f;
+				_playing = false;
+				return;
 			}
 
-			_playRoutine = null;
+			_playing = true;
+			_text.text = _pending.Dequeue();
+			_notice.AddToClassList("notice--shown");
+			_notice.schedule.Execute(fadeOut).StartingIn((long)(_holdSeconds * 1000f));
+		}
+
+		// 서서히 사라진 뒤 다음 것을 띄운다.
+		private void fadeOut()
+		{
+			_notice.RemoveFromClassList("notice--shown");
+			_notice.schedule.Execute(playNext).StartingIn((long)(_fadeSeconds * 1000f));
 		}
 	}
 }

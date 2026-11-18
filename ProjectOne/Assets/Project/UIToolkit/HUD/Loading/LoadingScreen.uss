@@ -1,0 +1,28 @@
+/* 로딩 화면 — 타이틀 그림 위 아래쪽에 단계 문구와 진행 게이지 */
+
+.loading {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	justify-content: flex-end;
+	background-color: #191A29;
+	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Image_TitleBg_01.png");
+	-unity-background-scale-mode: scale-and-crop;
+}
+
+.loading__bottom {
+	padding: 0 80px 200px 80px;
+	align-items: stretch;
+}
+
+.loading__phase {
+	font-size: 48px;
+	color: var(--white);
+	-unity-text-align: middle-center;
+	margin-bottom: 20px;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+}

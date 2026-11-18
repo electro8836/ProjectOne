@@ -2,108 +2,102 @@ using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Mail;
 using ProjectOne.Reward;
 
 namespace ProjectOne.UI
 {
-	// 메일 한 통을 여는 팝업. UIManager.ShowMailSlotPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	//
-	// 첨부가 있고 아직 받지 않았으면 수령 버튼만, 그 밖에는 삭제 버튼만 보인다.
-	// 받은 메일은 기기 보관함에 남고, 삭제는 보관함에서 지운다(MailArchive).
-	// 수령·삭제는 메일함이 넘겨준 공급자로 처리한다 — 표시와 버튼 두 개뿐이라 Presenter 를 두지 않는다.
-	public class MailSlotPopup : UIScreen
+	// 메일 한 통 팝업(UIPrefab_MailSlotPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Mail/MailSlotPopup.uxml.
+	// 머리말·본문·첨부를 보여 주고, 받을 첨부가 있으면 받기, 아니면 삭제 버튼을 둔다.
+	public class MailSlotPopup : ToolkitScreen
 	{
-		[Header("내용")]
-		[SerializeField] private TMP_Text _headText;					// HeadText
-		[SerializeField] private TMP_Text _bodyText;					// BodyText
-		[SerializeField] private RectTransform _itemGrid;				// ItemGrid
-		[SerializeField] private ItemSlot _itemSlotPrefab;				// UIPrefab_ItemSlot
-		[SerializeField] private ItemGradeColorTable _gradeColors;		// 등급 색상 SO
+		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
 
-		[Header("버튼")]
-		[SerializeField] private UIButton _claimButton;				// ClaimButton
-		[SerializeField] private UIButton _deleteButton;				// DeleteButton
-		[SerializeField] private UIButton _exitButton;					// ExitButton
-		[SerializeField] private UIButton _dimButton;					// Dim
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
+
+		private Label _head;
+		private Label _body;
+		private VisualElement _attachments;
+		private Button _claimButton;
+		private Button _deleteButton;
 
 		private MailData _mail;
 		private IMailProvider _provider;
-
-		// 수령·삭제 요청 중 중복 입력을 막는다.
 		private bool _isBusy;
-
 		private UniTaskCompletionSource _tcs;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_claimButton.OnClickEvent += onClaimClicked;
-			_deleteButton.OnClickEvent += onDeleteClicked;
-			_exitButton.OnClickEvent += onCloseClicked;
-			_dimButton.OnClickEvent += onCloseClicked;
+			_head = root.Q<Label>("head");
+			_body = root.Q<Label>("body");
+			_attachments = root.Q("attachments");
+
+			_claimButton = root.Q<Button>("claim");
+			_claimButton.clicked += onClaimClicked;
+			_deleteButton = root.Q<Button>("delete");
+			_deleteButton.clicked += onDeleteClicked;
+
+			root.Q<Button>("close").clicked += close;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			_claimButton.OnClickEvent -= onClaimClicked;
-			_deleteButton.OnClickEvent -= onDeleteClicked;
-			_exitButton.OnClickEvent -= onCloseClicked;
-			_dimButton.OnClickEvent -= onCloseClicked;
+			_icons.ReleaseAll();
+			base.OnDestroy();
 		}
 
-		// 내용을 채우고 닫힐 때까지 돌아오지 않는다.
 		public async UniTask ShowAsync(MailData mail, IMailProvider provider, CancellationToken ct)
 		{
 			_mail = mail;
 			_provider = provider;
 
-			_headText.text = "보낸 사람 : " + mail.sender
+			_head.text = "보낸 사람 : " + mail.sender
 				+ "\n편지 제목 : " + mail.title
-				+ "\n받은 날짜 : " + mail.sentAt.ToString(MailSlot.DateFormat);
-			_bodyText.text = mail.body;
+				+ "\n받은 날짜 : " + mail.sentAt.ToString(MailCell.DateFormat);
+			_body.text = mail.body;
 
-			CancellationToken slotCt = this.GetCancellationTokenOnDestroy();
+			CancellationToken cellCt = this.GetCancellationTokenOnDestroy();
 			for (int i = 0; i < mail.attachments.Count; i++)
 			{
-				bindAttachment(mail.attachments[i], slotCt);
+				bindAttachment(mail.attachments[i], cellCt);
 			}
 
+			_attachments.style.display = mail.attachments.Count > 0 ? DisplayStyle.Flex : DisplayStyle.None;
 			applyButtons();
 
 			_tcs = new UniTaskCompletionSource();
+			PlayPopupOpen();
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────
-
-		// 첨부 표시 전용 — OnClicked 를 구독하지 않아 눌러도 반응이 없다.
-		// (SetInteractable(false) 는 비활성 틴트가 입혀져 쓰지 않는다)
 		private void bindAttachment(RewardPreviewItem item, CancellationToken ct)
 		{
-			ItemSlot slot = Instantiate(_itemSlotPrefab, _itemGrid);
+			ItemCellView cell = new ItemCellView(_attachments, _gradeColors, _icons);
 
 			if (item.type == RewardType.Currency)
 			{
-				slot.BindCurrencyAsync(item.currency, item.count, _gradeColors, ct).Forget();
+				cell.BindCurrencyAsync(item.currency, item.count, ct).Forget();
 				return;
 			}
 
 			if (item.equipment != null)
 			{
-				slot.BindEquipmentAsync(item.equipment, false, _gradeColors, ct).Forget();
+				cell.BindEquipmentAsync(item.equipment, false, ct).Forget();
 				return;
 			}
 
-			slot.BindItemAsync(Table_Item.Get(item.itemId), item.count, _gradeColors, ct).Forget();
+			cell.BindItemAsync(Table_Item.Get(item.itemId), item.count, ct).Forget();
 		}
 
+		// 받을 첨부가 남았으면 받기, 아니면(첨부 없음·이미 받음) 삭제.
 		private void applyButtons()
 		{
 			bool claimable = _mail.HasAttachments && _mail.claimed == false;
-			_claimButton.gameObject.SetActive(claimable);
-			_deleteButton.gameObject.SetActive(claimable == false);
+			_claimButton.style.display = claimable ? DisplayStyle.Flex : DisplayStyle.None;
+			_deleteButton.style.display = claimable ? DisplayStyle.None : DisplayStyle.Flex;
 		}
 
 		private void onClaimClicked()
@@ -126,9 +120,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			// 받은 메일은 보관함으로 옮겨져 목록에 남는다 — 버튼을 삭제로 바꾼다.
 			applyButtons();
-
 			await UIManager.Instance.ShowRewardPopupAsync(rewards, ct).SuppressCancellationThrow();
 		}
 
@@ -155,7 +147,7 @@ namespace ProjectOne.UI
 			close();
 		}
 
-		private void onCloseClicked()
+		private void onDimClicked(ClickEvent evt)
 		{
 			close();
 		}

@@ -1,0 +1,35 @@
+/* 재화 목록 팝업 */
+
+.currency-box {
+	height: 900px;
+	margin-bottom: 30px;
+	padding: 12px;
+}
+
+.currency-grid {
+	flex-grow: 1;
+}
+
+.currency-grid .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.currency-cell {
+	width: 25%;
+	height: 200px;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 8px;
+}
+
+.currency-cell__icon {
+	width: 120px;
+	height: 120px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.currency-cell__count {
+	font-size: 36px;
+	margin-top: 6px;
+}

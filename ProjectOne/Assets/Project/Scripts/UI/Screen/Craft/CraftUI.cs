@@ -2,68 +2,28 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
-using DG.Tweening;
-using TMPro;
 using ProjectOne.Items;
 using ProjectOne.Upgrade;
+using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
-	// 제작 화면의 View(MVP). 네비게이션 바의 Craft 탭으로 열린다 (UIPrefab_CraftInfo).
-	// TabMenu_Side 로 강화·승급·전이 모드를 바꾸고, 하단 그리드에서 고른 장비를 모드별 등록 칸에 올린다.
-	// 표시(슬롯 풀/등록 칸/비용)와 입력 전달만 담당하고, 등록·실행 결정은 CraftPresenter 가 한다.
-	public class CraftUI : UIScreen, IView
+	// 제작 화면의 View(MVP, UI Toolkit). 레이아웃은 UIToolkit/Screens/Craft/CraftScreen.uxml.
+	// 네비게이션 바의 Craft 탭으로 열린다 (UIPrefab_CraftInfo).
+	// 모드 탭으로 강화·승급·전이를 바꾸고, 아래 목록에서 고른 장비를 모드별 등록 칸에 올린다.
+	// 표시와 입력 전달만 담당하고, 등록·실행 결정은 CraftPresenter 가 한다.
+	//
+	// 비용·불가 문구·버튼 줄은 세 모드가 함께 쓴다 — Presenter 가 모드별로 알려 준 상태를 기억해 두었다가
+	// 지금 보이는 모드의 것만 그린다.
+	public class CraftUI : ToolkitScreen, IView
 	{
-		[Header("탭")]
-		[SerializeField] private TabGroup _modeTabs;	// TabMenu_Side (강화/승급/전이)
-		[SerializeField] private TabGroup _filterTabs;	// Bottom/TabMenu_Middle (전체/무기/방어구/장신구/유물)
+		private const int MODE_COUNT = 3;
+		private const int FILTER_COUNT = 5;
 
-		[Header("리스트")]
-		[SerializeField] private RectTransform _gridParent;			// Bottom/ScrollRect/Veiwport/Content/Grid
-		[SerializeField] private ItemSlot _slotPrefab;				// UIPrefab_ItemSlot
+		private static readonly string[] ActionLabels = { "강화", "승급", "전이" };
+
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
-		[SerializeField] private CurrencyDisplaySlot _costSlotPrefab;	// UIPrefab_CurrencyDisplaySlot
-
-		[Header("모드 패널")]
-		[SerializeField] private ModePanel _enhancePanel;	// Top/Enhance
-		[SerializeField] private ModePanel _promotePanel;	// Top/Promote
-		[SerializeField] private ModePanel _transferPanel;	// Top/Transfer
-
-		[Header("등록 칸")]
-		[SerializeField] private RegisterSlotView[] _registerSlots;	// ItemRoot, PrevItemRoot, NextItemRoot, SourceItemRoot, TargetItemRoot
-
-		[Header("닫기")]
-		[SerializeField] private UIButton _homeButton;	// Top/HomeButton
-
-		[Header("정렬")]
-		[SerializeField] private UIButton _sortButton;	// Button_Sorting
-		[SerializeField] private TMP_Text _sortLabel;	// Button_Sorting/Text (TMP)
-
-		// 실행 성공 강조 — 커졌다가 제자리로 줄어든다.
-		private const float PopScale = 1.3f;
-		private const float PopUpDuration = 0.15f;
-		private const float PopDownDuration = 0.25f;
-
-		[Serializable]
-		private class ModePanel
-		{
-			public GameObject root;					// Enhance / Promote / Transfer
-			public UIButton actionButton;			// EnhanceButton / PromoteButton / TransferButton
-			public UIButton cancelButton;			// CancelButton
-			public GameObject requirementText;		// Requirement/Text
-			public RectTransform costGrid;			// Requirement/CurrencyGrid
-			public TMP_Text disableText;			// Requirement/DisableText — 전이는 비워 둔다
-			[NonSerialized] public List<CurrencyDisplaySlot> costSlots;
-		}
-
-		[Serializable]
-		private class RegisterSlotView
-		{
-			public CraftSlotRoot type;
-			public Transform root;	// XXXItemRoot 컨테이너
-			[NonSerialized] public ItemSlot instance;
-		}
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action<int> OnModeSelected;
@@ -71,42 +31,109 @@ namespace ProjectOne.UI
 		public event Action<long> OnGridSlotClicked;
 		public event Action<CraftSlotRoot> OnRegisteredSlotClicked;
 		public event Action OnActionClicked;
-		public event Action OnActionHeld;	// 실행 버튼을 누른 채 반복 — 버튼에 _holdRepeat 가 켜진 강화만 발생한다
+		public event Action OnActionHeld;	// 실행 버튼을 누른 채 반복 — 강화만 쓴다
 		public event Action OnCancelClicked;
 		public event Action OnHomeClicked;
 		public event Action OnSortClicked;
 
-		private readonly CraftPresenter _presenter = new CraftPresenter();
-
-		private readonly List<ItemSlot> _slots = new List<ItemSlot>();
-		private readonly List<UniTask> _bindTasks = new List<UniTask>();	// 렌더 일괄 대기용
-
-		private void Awake()
+		// 모드 하나의 비용 영역 상태 — 보이는 모드가 바뀔 때 다시 그린다.
+		private sealed class ModeState
 		{
-			_modeTabs.OnTabChanged += onModeChanged;
-			_filterTabs.OnTabChanged += onFilterChanged;
-			_homeButton.OnClickEvent += onHomeClicked;
-			_sortButton.OnClickEvent += onSortClicked;
-			bindPanelButtons(_enhancePanel);
-			bindPanelButtons(_promotePanel);
-			bindPanelButtons(_transferPanel);
+			public bool visible;
+			public string disableMessage;
+			public readonly List<UpgradeCost> costs = new List<UpgradeCost>();
+			public bool actionInteractable = true;
+			public bool cancelVisible;
+		}
+
+		private sealed class RegisterSlot
+		{
+			public CraftSlotRoot type;
+			public VisualElement root;
+			public VisualElement hint;
+			public ItemCellView cell;
+		}
+
+		private readonly CraftPresenter _presenter = new CraftPresenter();
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
+		private readonly List<UniTask> _bindTasks = new List<UniTask>();
+
+		private readonly Button[] _modeTabs = new Button[MODE_COUNT];
+		private readonly VisualElement[] _panels = new VisualElement[MODE_COUNT];
+		private readonly ModeState[] _modeStates = new ModeState[MODE_COUNT];
+		private readonly Button[] _filterTabs = new Button[FILTER_COUNT];
+		private readonly List<RegisterSlot> _registerSlots = new List<RegisterSlot>();
+		private readonly List<ItemCellView> _gridCells = new List<ItemCellView>();
+		private readonly List<CostView> _costViews = new List<CostView>();
+
+		private CraftMode _shownMode = CraftMode.Enhance;
+		private Label _requirementCaption;
+		private VisualElement _costRow;
+		private Label _disableText;
+		private Button _actionButton;
+		private Button _cancelButton;
+		private HoldRepeatManipulator _hold;
+		private Button _sortButton;
+		private ScrollView _grid;
+
+		protected override void OnBind(VisualElement root)
+		{
+			for (int i = 0; i < MODE_COUNT; i++)
+			{
+				_modeStates[i] = new ModeState();
+				_panels[i] = root.Q("panel-" + i);
+
+				Button tab = root.Q<Button>("mode-" + i);
+				tab.userData = i;
+				tab.RegisterCallback<ClickEvent>(onModeTabClicked);
+				_modeTabs[i] = tab;
+			}
+
+			for (int i = 0; i < FILTER_COUNT; i++)
+			{
+				Button tab = root.Q<Button>("filter-" + i);
+				tab.userData = i;
+				tab.RegisterCallback<ClickEvent>(onFilterTabClicked);
+				_filterTabs[i] = tab;
+			}
+
+			addRegisterSlot(root, "slot-enhance", CraftSlotRoot.Enhance);
+			addRegisterSlot(root, "slot-promote-prev", CraftSlotRoot.PromotePrev);
+			addRegisterSlot(root, "slot-promote-next", CraftSlotRoot.PromoteNext);
+			addRegisterSlot(root, "slot-transfer-source", CraftSlotRoot.TransferSource);
+			addRegisterSlot(root, "slot-transfer-target", CraftSlotRoot.TransferTarget);
+
+			_requirementCaption = root.Q<Label>("requirement-caption");
+			_costRow = root.Q("cost-row");
+			_disableText = root.Q<Label>("disable-text");
+
+			_actionButton = root.Q<Button>("action-button");
+			_actionButton.clicked += onActionClicked;
+			_hold = new HoldRepeatManipulator(onActionHeld);
+			_actionButton.AddManipulator(_hold);
+
+			_cancelButton = root.Q<Button>("cancel-button");
+			_cancelButton.clicked += onCancelClicked;
+
+			_sortButton = root.Q<Button>("sort-button");
+			_sortButton.clicked += onSortClicked;
+			root.Q<Button>("home-button").clicked += onHomeClicked;
+
+			_grid = root.Q<ScrollView>("grid");
+			_grid.AddManipulator(new ScrollDragManipulator(_grid));
 
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			killRegisterTweens();
+			if (IsBound == true)
+			{
+				_presenter.Dispose();
+			}
 
-			_presenter.Dispose();
-
-			_modeTabs.OnTabChanged -= onModeChanged;
-			_filterTabs.OnTabChanged -= onFilterChanged;
-			_homeButton.OnClickEvent -= onHomeClicked;
-			_sortButton.OnClickEvent -= onSortClicked;
-			unbindPanelButtons(_enhancePanel);
-			unbindPanelButtons(_promotePanel);
-			unbindPanelButtons(_transferPanel);
+			_icons.ReleaseAll();
+			base.OnDestroy();
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
@@ -127,287 +154,215 @@ namespace ProjectOne.UI
 
 		// ── Presenter 가 호출하는 표시 API ─────────────────────────────────
 
-		// MonoBehaviour 의 파괴 토큰을 Presenter 에 제공(연속 rebuild 의 취소 기준).
 		public CancellationToken GetDestroyToken()
 		{
 			return this.GetCancellationTokenOnDestroy();
 		}
 
-		// 탭만 선택(OnTabChanged 를 발행하지 않음 — 초기 표시용).
+		// 탭만 선택(OnModeSelected 를 발행하지 않음 — 초기 표시용).
 		public void SelectModeTab(int index)
 		{
-			_modeTabs.Select(index);
+			selectTabs(_modeTabs, index);
 		}
 
 		public void SelectFilterTab(int index)
 		{
-			_filterTabs.Select(index);
+			selectTabs(_filterTabs, index);
 		}
 
-		// 현재 정렬 기준을 버튼 라벨에 표시한다.
 		public void SetSortLabel(string label)
 		{
-			_sortLabel.text = label;
+			_sortButton.text = label;
 		}
 
-		// 해당 모드 패널만 켠다.
+		// 해당 모드 패널만 켜고, 공용 비용·버튼 줄을 그 모드 상태로 다시 그린다.
 		public void ShowMode(CraftMode mode)
 		{
-			_enhancePanel.root.SetActive(mode == CraftMode.Enhance);
-			_promotePanel.root.SetActive(mode == CraftMode.Promote);
-			_transferPanel.root.SetActive(mode == CraftMode.Transfer);
+			_shownMode = mode;
+			for (int i = 0; i < MODE_COUNT; i++)
+			{
+				_panels[i].EnableInClassList("craft-panel--shown", i == (int)mode);
+			}
+
+			_actionButton.text = ActionLabels[(int)mode];
+			applyModeState(GetDestroyToken()).Forget();
 		}
 
-		// 그리드 슬롯 렌더 — 데이터 개수만큼 슬롯을 켜 바인딩, 남는 슬롯은 비활성화(풀 재사용).
 		public async UniTask RenderGridAsync(IReadOnlyList<CraftSlotData> data, CancellationToken ct)
 		{
 			_bindTasks.Clear();
 			for (int i = 0; i < data.Count; i++)
 			{
-				ItemSlot slot = getOrCreateSlot(i);
-				slot.gameObject.SetActive(true);
-
-				_bindTasks.Add(slot.BindEquipmentAsync(data[i].instance, data[i].equipped, _gradeColors, ct));
+				ItemCellView cell = getOrCreateGridCell(i);
+				cell.SetShown(true);
+				_bindTasks.Add(cell.BindEquipmentAsync(data[i].instance, data[i].equipped, ct));
 			}
 
-			for (int i = data.Count; i < _slots.Count; i++)
+			for (int i = data.Count; i < _gridCells.Count; i++)
 			{
-				_slots[i].gameObject.SetActive(false);
+				_gridCells[i].SetShown(false);
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
 		}
 
-		// 등록 칸 렌더 — instance 가 null 이면 비운다.
-		// 빈 칸 프레임(ItemFrame_Empty)은 끄지 않는다 — 그 위에 슬롯을 얹어 겹쳐 보이게 한다 (EquipmentUI 장착 칸과 같은 방식).
-		public async UniTask RenderRegisteredAsync(CraftSlotRoot type, EquipmentInstance instance, CancellationToken ct)
+		// 등록 칸 렌더 — instance 가 null 이면 비운다(빈 틀과 안내 글자만 보인다).
+		public UniTask RenderRegisteredAsync(CraftSlotRoot type, EquipmentInstance instance, CancellationToken ct)
 		{
-			RegisterSlotView slotView = findRegisterSlot(type);
-			if (slotView == null)
+			RegisterSlot slot = findRegisterSlot(type);
+			if (slot == null)
 			{
-				return;
+				return UniTask.CompletedTask;
 			}
 
 			if (instance == null)
 			{
-				clearRegisterSlot(slotView);
-				return;
+				slot.cell.Clear();
+				slot.cell.SetShown(false);
+				setShown(slot.hint, true);
+				return UniTask.CompletedTask;
 			}
 
-			if (slotView.instance == null)
-			{
-				slotView.instance = Instantiate(_slotPrefab, slotView.root);
-				slotView.instance.StretchToParent();
-				slotView.instance.transform.SetAsLastSibling();
-				slotView.instance.OnClicked += onRegisteredSlotClicked;
-			}
+			setShown(slot.hint, false);
+			slot.cell.SetShown(true);
 
-			// 등록 칸에서는 장착 여부를 보여주지 않는다 — 그리드에서 이미 확인하고 올린 것이다.
-			await slotView.instance.BindEquipmentAsync(instance, false, _gradeColors, ct);
+			// 등록 칸에서는 장착 여부를 보여주지 않는다 — 목록에서 이미 확인하고 올린 것이다.
+			return slot.cell.BindEquipmentAsync(instance, false, ct);
 		}
 
-		// 비용 영역 렌더.
-		//   visible 이 false 면 (등록된 것이 없음) 안내·비용·불가 문구를 모두 숨긴다.
-		//   disableMessage 가 있으면 불가 문구만 보이고 안내·비용은 숨긴다.
-		//   그 외에는 안내·비용을 보이고 비용 슬롯을 채운다.
-		public async UniTask RenderRequirementAsync(CraftMode mode, bool visible, IReadOnlyList<UpgradeCost> costs, string disableMessage, CancellationToken ct)
+		// 비용 영역 — visible 이 false 면(등록된 것이 없음) 모두 숨긴다. disableMessage 가 있으면 불가 문구만 보인다.
+		public UniTask RenderRequirementAsync(CraftMode mode, bool visible, IReadOnlyList<UpgradeCost> costs, string disableMessage, CancellationToken ct)
 		{
-			ModePanel panel = getPanel(mode);
-			bool disabled = visible == true && string.IsNullOrEmpty(disableMessage) == false;
-			bool showCosts = visible == true && disabled == false;
-
-			if (panel.disableText != null)
+			ModeState state = _modeStates[(int)mode];
+			state.visible = visible;
+			state.disableMessage = disableMessage;
+			state.costs.Clear();
+			if (costs != null)
 			{
-				panel.disableText.gameObject.SetActive(disabled);
-				if (disabled == true)
+				for (int i = 0; i < costs.Count; i++)
 				{
-					panel.disableText.text = disableMessage;
+					state.costs.Add(costs[i]);
 				}
 			}
 
-			panel.requirementText.SetActive(showCosts);
-			panel.costGrid.gameObject.SetActive(showCosts);
+			if (mode != _shownMode)
+			{
+				return UniTask.CompletedTask;
+			}
 
+			return renderRequirementAsync(state, ct);
+		}
+
+		public void SetActionInteractable(CraftMode mode, bool interactable)
+		{
+			_modeStates[(int)mode].actionInteractable = interactable;
+			if (mode == _shownMode)
+			{
+				_actionButton.SetEnabled(interactable);
+			}
+		}
+
+		public void SetCancelVisible(CraftMode mode, bool visible)
+		{
+			_modeStates[(int)mode].cancelVisible = visible;
+			if (mode == _shownMode)
+			{
+				setShown(_cancelButton, visible);
+			}
+		}
+
+		// 실행 성공 강조 — 크게 키운 상태(전환 없음)에서 다음 프레임에 클래스를 떼어 제자리로 줄어들게 한다.
+		public void PlayPop(CraftSlotRoot type)
+		{
+			RegisterSlot slot = findRegisterSlot(type);
+			if (slot == null)
+			{
+				return;
+			}
+
+			slot.root.AddToClassList("craft-slot--pop");
+			slot.root.schedule.Execute(clearPops);
+		}
+
+		// ── 내부: 표시 ────────────────────────────────────────────────────
+
+		private UniTask applyModeState(CancellationToken ct)
+		{
+			ModeState state = _modeStates[(int)_shownMode];
+			_actionButton.SetEnabled(state.actionInteractable);
+			setShown(_cancelButton, state.cancelVisible);
+			return renderRequirementAsync(state, ct);
+		}
+
+		private async UniTask renderRequirementAsync(ModeState state, CancellationToken ct)
+		{
+			bool disabled = state.visible == true && string.IsNullOrEmpty(state.disableMessage) == false;
+			bool showCosts = state.visible == true && disabled == false;
+
+			setShown(_disableText, disabled);
+			_disableText.text = disabled ? state.disableMessage : string.Empty;
+			setShown(_requirementCaption, showCosts);
+			setShown(_costRow, showCosts);
 			if (showCosts == false)
 			{
 				return;
 			}
 
 			_bindTasks.Clear();
-			for (int i = 0; i < costs.Count; i++)
+			for (int i = 0; i < state.costs.Count; i++)
 			{
-				CurrencyDisplaySlot slot = getOrCreateCostSlot(panel, i);
-				slot.gameObject.SetActive(true);
-
-				_bindTasks.Add(slot.BindAsync(costs[i], ct));
+				CostView view = getOrCreateCost(i);
+				view.SetShown(true);
+				_bindTasks.Add(view.BindAsync(state.costs[i], ct));
 			}
 
-			for (int i = costs.Count; i < panel.costSlots.Count; i++)
+			for (int i = state.costs.Count; i < _costViews.Count; i++)
 			{
-				panel.costSlots[i].gameObject.SetActive(false);
+				_costViews[i].SetShown(false);
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
 		}
 
-		public void SetActionInteractable(CraftMode mode, bool interactable)
+		private void clearPops()
 		{
-			getPanel(mode).actionButton.interactable = interactable;
-		}
-
-		public void SetCancelVisible(CraftMode mode, bool visible)
-		{
-			getPanel(mode).cancelButton.gameObject.SetActive(visible);
-		}
-
-		// 실행 성공 강조. 대상은 XXXItemRoot 컨테이너다 — 안쪽 ItemSlot 은 비울 때 파괴되므로 컨테이너를 키운다.
-		public void PlayPop(CraftSlotRoot type)
-		{
-			RegisterSlotView slotView = findRegisterSlot(type);
-			if (slotView == null)
+			for (int i = 0; i < _registerSlots.Count; i++)
 			{
-				return;
-			}
-
-			Transform root = slotView.root;
-			root.DOKill();
-			root.localScale = Vector3.one;
-
-			Sequence sequence = DOTween.Sequence();
-			sequence.Append(root.DOScale(Vector3.one * PopScale, PopUpDuration).SetEase(Ease.OutQuad));
-			sequence.Append(root.DOScale(Vector3.one, PopDownDuration).SetEase(Ease.OutBack));
-			sequence.SetTarget(root);
-		}
-
-		// ── 내부: 입력 → 이벤트 ────────────────────────────────────────────
-
-		private void onModeChanged(int index)
-		{
-			if (OnModeSelected != null) { OnModeSelected.Invoke(index); }
-		}
-
-		private void onFilterChanged(int index)
-		{
-			if (OnFilterSelected != null) { OnFilterSelected.Invoke(index); }
-		}
-
-		private void onHomeClicked()
-		{
-			if (OnHomeClicked != null) { OnHomeClicked.Invoke(); }
-		}
-
-		private void onSortClicked()
-		{
-			if (OnSortClicked != null) { OnSortClicked.Invoke(); }
-		}
-
-		// 세 패널의 실행·취소 버튼은 모드와 무관하게 같은 이벤트로 올린다 — 어느 모드인지는 Presenter 가 안다.
-		private void onActionClicked()
-		{
-			if (OnActionClicked != null) { OnActionClicked.Invoke(); }
-		}
-
-		private void onActionHeld()
-		{
-			if (OnActionHeld != null) { OnActionHeld.Invoke(); }
-		}
-
-		private void onCancelClicked()
-		{
-			if (OnCancelClicked != null) { OnCancelClicked.Invoke(); }
-		}
-
-		private void onGridSlotClicked(ItemSlot sender, long uid, int itemId)
-		{
-			if (OnGridSlotClicked != null) { OnGridSlotClicked.Invoke(uid); }
-		}
-
-		// 등록 칸 슬롯 클릭 — 어느 칸인지(type)만 올린다. 칸에 무엇이 들어 있는지는 Presenter 가 안다.
-		private void onRegisteredSlotClicked(ItemSlot sender, long uid, int itemId)
-		{
-			if (_registerSlots == null)
-			{
-				return;
-			}
-
-			for (int i = 0; i < _registerSlots.Length; i++)
-			{
-				if (_registerSlots[i].instance == sender)
-				{
-					if (OnRegisteredSlotClicked != null) { OnRegisteredSlotClicked.Invoke(_registerSlots[i].type); }
-					return;
-				}
+				_registerSlots[i].root.RemoveFromClassList("craft-slot--pop");
 			}
 		}
 
-		private void bindPanelButtons(ModePanel panel)
+		private static void selectTabs(Button[] tabs, int index)
 		{
-			panel.actionButton.OnClickEvent += onActionClicked;
-			panel.actionButton.OnHoldEvent += onActionHeld;
-			panel.cancelButton.OnClickEvent += onCancelClicked;
+			for (int i = 0; i < tabs.Length; i++)
+			{
+				tabs[i].EnableInClassList("tab--selected", i == index);
+			}
 		}
 
-		private void unbindPanelButtons(ModePanel panel)
+		private static void setShown(VisualElement element, bool shown)
 		{
-			panel.actionButton.OnClickEvent -= onActionClicked;
-			panel.actionButton.OnHoldEvent -= onActionHeld;
-			panel.cancelButton.OnClickEvent -= onCancelClicked;
+			element.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
-		// ── 내부: 슬롯 풀 / 등록 칸 ────────────────────────────────────────
+		// ── 내부: 풀 / 등록 칸 ────────────────────────────────────────────
 
-		private ItemSlot getOrCreateSlot(int index)
+		private void addRegisterSlot(VisualElement root, string name, CraftSlotRoot type)
 		{
-			if (index < _slots.Count)
-			{
-				return _slots[index];
-			}
-
-			ItemSlot slot = Instantiate(_slotPrefab, _gridParent);
-			slot.OnClicked += onGridSlotClicked;
-			_slots.Add(slot);
-			return slot;
+			RegisterSlot slot = new RegisterSlot();
+			slot.type = type;
+			slot.root = root.Q(name);
+			slot.hint = slot.root.Q(className: "craft-slot__hint");
+			slot.cell = new ItemCellView(slot.root, _gradeColors, _icons);
+			slot.cell.Tag = type;
+			slot.cell.OnClicked += onRegisteredCellClicked;
+			slot.cell.SetShown(false);
+			_registerSlots.Add(slot);
 		}
 
-		private CurrencyDisplaySlot getOrCreateCostSlot(ModePanel panel, int index)
+		private RegisterSlot findRegisterSlot(CraftSlotRoot type)
 		{
-			if (panel.costSlots == null)
-			{
-				panel.costSlots = new List<CurrencyDisplaySlot>();
-			}
-
-			if (index < panel.costSlots.Count)
-			{
-				return panel.costSlots[index];
-			}
-
-			CurrencyDisplaySlot slot = Instantiate(_costSlotPrefab, panel.costGrid);
-			panel.costSlots.Add(slot);
-			return slot;
-		}
-
-		private ModePanel getPanel(CraftMode mode)
-		{
-			switch (mode)
-			{
-			case CraftMode.Promote:
-				return _promotePanel;
-
-			case CraftMode.Transfer:
-				return _transferPanel;
-			}
-
-			return _enhancePanel;
-		}
-
-		private RegisterSlotView findRegisterSlot(CraftSlotRoot type)
-		{
-			if (_registerSlots == null)
-			{
-				return null;
-			}
-
-			for (int i = 0; i < _registerSlots.Length; i++)
+			for (int i = 0; i < _registerSlots.Count; i++)
 			{
 				if (_registerSlots[i].type == type)
 				{
@@ -418,32 +373,93 @@ namespace ProjectOne.UI
 			return null;
 		}
 
-		private void clearRegisterSlot(RegisterSlotView slotView)
+		private ItemCellView getOrCreateGridCell(int index)
 		{
-			if (slotView.instance != null)
+			if (index < _gridCells.Count)
 			{
-				slotView.instance.OnClicked -= onRegisteredSlotClicked;
-				Destroy(slotView.instance.gameObject);
-				slotView.instance = null;
+				return _gridCells[index];
 			}
+
+			ItemCellView cell = new ItemCellView(_grid.contentContainer, _gradeColors, _icons);
+			cell.OnClicked += onGridCellClicked;
+			_gridCells.Add(cell);
+			return cell;
 		}
 
-		// 파괴된 Transform 을 트윈이 붙들지 않도록 화면이 사라질 때 전부 끊는다.
-		private void killRegisterTweens()
+		private CostView getOrCreateCost(int index)
 		{
-			if (_registerSlots == null)
+			if (index < _costViews.Count)
+			{
+				return _costViews[index];
+			}
+
+			CostView view = new CostView(_costRow, _icons);
+			_costViews.Add(view);
+			return view;
+		}
+
+		// ── 내부: 입력 → 이벤트 ────────────────────────────────────────────
+
+		private void onModeTabClicked(ClickEvent evt)
+		{
+			int index = (int)((VisualElement)evt.currentTarget).userData;
+			SelectModeTab(index);
+			if (OnModeSelected != null) { OnModeSelected.Invoke(index); }
+		}
+
+		private void onFilterTabClicked(ClickEvent evt)
+		{
+			int index = (int)((VisualElement)evt.currentTarget).userData;
+			SelectFilterTab(index);
+			if (OnFilterSelected != null) { OnFilterSelected.Invoke(index); }
+		}
+
+		private void onGridCellClicked(ItemCellView sender, long uid, int itemId)
+		{
+			if (OnGridSlotClicked != null) { OnGridSlotClicked.Invoke(uid); }
+		}
+
+		// 등록 칸 클릭 — 어느 칸인지(type)만 올린다. 칸에 무엇이 있는지는 Presenter 가 안다.
+		private void onRegisteredCellClicked(ItemCellView sender, long uid, int itemId)
+		{
+			if (OnRegisteredSlotClicked != null) { OnRegisteredSlotClicked.Invoke((CraftSlotRoot)sender.Tag); }
+		}
+
+		private void onActionClicked()
+		{
+			// 누른 채 반복이 나간 누름이면 뗄 때의 클릭은 건너뛴다.
+			if (_hold.HoldFired == true)
 			{
 				return;
 			}
 
-			for (int i = 0; i < _registerSlots.Length; i++)
+			if (OnActionClicked != null) { OnActionClicked.Invoke(); }
+		}
+
+		// 누른 채 반복은 강화만 쓴다(UGUI 판 Enhance 버튼의 _holdRepeat 와 같다).
+		private void onActionHeld()
+		{
+			if (_shownMode != CraftMode.Enhance)
 			{
-				Transform root = _registerSlots[i].root;
-				if (root != null)
-				{
-					root.DOKill();
-				}
+				return;
 			}
+
+			if (OnActionHeld != null) { OnActionHeld.Invoke(); }
+		}
+
+		private void onCancelClicked()
+		{
+			if (OnCancelClicked != null) { OnCancelClicked.Invoke(); }
+		}
+
+		private void onHomeClicked()
+		{
+			if (OnHomeClicked != null) { OnHomeClicked.Invoke(); }
+		}
+
+		private void onSortClicked()
+		{
+			if (OnSortClicked != null) { OnSortClicked.Invoke(); }
 		}
 	}
 }

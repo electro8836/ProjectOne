@@ -1,43 +1,21 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Shared;
 
 namespace ProjectOne.UI
 {
-	// 일괄 분해 팝업의 View(MVP). UIManager.ShowDecompositionPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	// 조건 표시와 입력 전달만 담당하고, 조건 보관·대상 선정·분해 요청은 DecompositionPopupPresenter 가 한다.
-	public class DecompositionPopup : UIScreen, IView
+	// 일괄 분해 팝업(UIPrefab_DecompositionPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Decomposition/DecompositionPopup.uxml.
+	// 분해할 등급(체크) · 품질 상한(체크 + 슬라이더) · 자동 분해(체크)를 고르고 분해한다.
+	// 선택 상태는 DecompositionPopupPresenter 가 소유하고 View 는 그리기만 한다.
+	public class DecompositionPopup : ToolkitScreen, IView
 	{
-		[Header("등급")]
-		// 슬롯 프리펩. Grid 아래에 등급 수만큼 만든다.
-		[SerializeField] private DecompositionGradeSlot _gradeSlotTemplate;	// UIPrefab_DecompositionGradeSlot
-		[SerializeField] private Transform _gradeSlotParent;				// Frame/Grade/.../Grid
-		[SerializeField] private ItemGradeColorTable _gradeColors;			// 등급 색상 SO
+		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
 
-		[Header("품질")]
-		[SerializeField] private UIButton _qualityCheckButton;	// Frame/Quality/CheckButton
-		[SerializeField] private GameObject _qualityCheckImage;	// Frame/Quality/CheckButton/Image
-		[SerializeField] private Slider _qualitySlider;			// Frame/Quality/Slider
-		[SerializeField] private TMP_Text _qualityTitle;		// Frame/Quality/Title
-
-		[Header("자동 분해")]
-		[SerializeField] private UIButton _autoCheckButton;		// Frame/Auto/CheckButton
-		[SerializeField] private GameObject _autoCheckImage;	// Frame/Auto/CheckButton/Image
-
-		[Header("버튼")]
-		[SerializeField] private UIButton _decompositionButton;	// Frame/Bottom/DecompositionButton
-
-		// 닫기는 ExitButton 과 Dim 두 경로다.
-		[SerializeField] private UIButton _exitButton;	// Frame/ExitButton
-		[SerializeField] private UIButton _dimButton;	// Dim
-
-		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action<ItemGradeType> OnGradeClicked;
 		public event Action OnQualityCheckClicked;
 		public event Action<int> OnQualityChanged;
@@ -46,48 +24,64 @@ namespace ProjectOne.UI
 		public event Action OnExitClicked;
 
 		private readonly DecompositionPopupPresenter _presenter = new DecompositionPopupPresenter();
-		private readonly List<DecompositionGradeSlot> _gradeSlots = new List<DecompositionGradeSlot>();
+		private readonly List<Button> _gradeChecks = new List<Button>();
+
+		private Button _qualityCheck;
+		private SliderInt _qualitySlider;
+		private Label _qualityTitle;
+		private Button _autoCheck;
 		private UniTaskCompletionSource<bool> _tcs;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			buildGradeSlots();
+			VisualElement grades = root.Q("grades");
+			for (int g = (int)ItemGradeType.Normal; g <= (int)ItemGradeType.Mythic; g++)
+			{
+				ItemGradeType grade = (ItemGradeType)g;
+				Button check = createCheck(ItemGradeNames.Get(grade));
+				check.userData = grade;
+				check.RegisterCallback<ClickEvent>(onGradeCheckClicked);
+				check.AddToClassList("sfx-click");	// 클릭음 대상(UIManager)
+				if (_gradeColors != null)
+				{
+					check.Q<Label>().style.color = _gradeColors.Get(grade).text;
+				}
 
-			// 품질은 0.1% 단위의 정수다(0.0 ~ 100.0) — 프리펩 값과 무관하게 여기서 축을 맞춘다.
-			_qualitySlider.wholeNumbers = true;
-			_qualitySlider.minValue = 0f;
-			_qualitySlider.maxValue = EquipmentQuality.Max;
+				grades.Add(check);
+				_gradeChecks.Add(check);
+			}
 
-			_qualityCheckButton.OnClickEvent += onQualityCheckClicked;
-			_qualitySlider.onValueChanged.AddListener(onQualityChanged);
-			_autoCheckButton.OnClickEvent += onAutoCheckClicked;
-			_decompositionButton.OnClickEvent += onDecompositionClicked;
-			_exitButton.OnClickEvent += onExitClicked;
-			_dimButton.OnClickEvent += onExitClicked;
+			_qualityCheck = root.Q<Button>("quality-check");
+			_qualityCheck.clicked += onQualityCheckClicked;
+			_qualityTitle = root.Q<Label>("quality-title");
+			_qualitySlider = root.Q<SliderInt>("quality-slider");
+			_qualitySlider.lowValue = 0;
+			_qualitySlider.highValue = EquipmentQuality.Max;
+			_qualitySlider.RegisterValueChangedCallback(onQualitySliderChanged);
+
+			_autoCheck = root.Q<Button>("auto-check");
+			_autoCheck.clicked += onAutoCheckClicked;
+
+			root.Q<Button>("decompose").clicked += onDecompositionClicked;
+			root.Q<Button>("close").clicked += onExitClicked;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			_presenter.Dispose();
-
-			for (int i = 0; i < _gradeSlots.Count; i++)
+			if (IsBound == true)
 			{
-				_gradeSlots[i].OnClicked -= onGradeClicked;
+				_presenter.Dispose();
 			}
 
-			_qualityCheckButton.OnClickEvent -= onQualityCheckClicked;
-			_qualitySlider.onValueChanged.RemoveListener(onQualityChanged);
-			_autoCheckButton.OnClickEvent -= onAutoCheckClicked;
-			_decompositionButton.OnClickEvent -= onDecompositionClicked;
-			_exitButton.OnClickEvent -= onExitClicked;
-			_dimButton.OnClickEvent -= onExitClicked;
+			base.OnDestroy();
 		}
 
-		// UIManager 가 인스턴스화 직후 호출해 팝업이 닫힐 때까지 기다린다.
 		public UniTask ShowAsync(CancellationToken ct)
 		{
+			PlayPopupOpen();
 			return _presenter.ShowAsync(ct);
 		}
 
@@ -96,15 +90,13 @@ namespace ProjectOne.UI
 			return this.GetCancellationTokenOnDestroy();
 		}
 
-		// ── Presenter 가 호출하는 표시 API ─────────────────────────────────
-
 		public void SetGradeChecked(ItemGradeType grade, bool value)
 		{
-			for (int i = 0; i < _gradeSlots.Count; i++)
+			for (int i = 0; i < _gradeChecks.Count; i++)
 			{
-				if (_gradeSlots[i].Grade == grade)
+				if ((ItemGradeType)_gradeChecks[i].userData == grade)
 				{
-					_gradeSlots[i].SetChecked(value);
+					_gradeChecks[i].EnableInClassList("check--on", value);
 					return;
 				}
 			}
@@ -112,22 +104,20 @@ namespace ProjectOne.UI
 
 		public void SetQualityChecked(bool value)
 		{
-			_qualityCheckImage.SetActive(value);
+			_qualityCheck.EnableInClassList("check--on", value);
 		}
 
-		// 슬라이더 위치와 안내 문구를 함께 맞춘다. 슬라이더는 알림 없이 옮긴다 — 표시가 입력으로 되돌아오지 않게.
 		public void SetQuality(int quality)
 		{
 			_qualitySlider.SetValueWithoutNotify(quality);
-			_qualityTitle.text = "아이템의 품질 <color=green>" + EquipmentQuality.Format(quality) + "%</color> 이하 분해";
+			_qualityTitle.text = "아이템의 품질 <color=#7BE07A>" + EquipmentQuality.Format(quality) + "%</color> 이하 분해";
 		}
 
 		public void SetAutoChecked(bool value)
 		{
-			_autoCheckImage.SetActive(value);
+			_autoCheck.EnableInClassList("check--on", value);
 		}
 
-		// 닫힘 대기 — Presenter 의 ShowAsync 가 마지막에 await 한다.
 		public async UniTask WaitForCloseAsync(CancellationToken ct)
 		{
 			_tcs = new UniTaskCompletionSource<bool>();
@@ -142,22 +132,27 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────────
-
-		// Normal ~ Mythic 한 칸씩 프리펩으로 만든다.
-		private void buildGradeSlots()
+		// 체크 상자 + 글자 버튼 (Theme.uss 의 .check).
+		private static Button createCheck(string text)
 		{
-			for (int g = (int)ItemGradeType.Normal; g <= (int)ItemGradeType.Mythic; g++)
-			{
-				DecompositionGradeSlot slot = Instantiate(_gradeSlotTemplate, _gradeSlotParent);
-				slot.Bind((ItemGradeType)g, _gradeColors);
-				slot.OnClicked += onGradeClicked;
-				_gradeSlots.Add(slot);
-			}
+			Button check = new Button();
+			check.AddToClassList("check");
+
+			VisualElement box = new VisualElement();
+			box.AddToClassList("check__box");
+			box.pickingMode = PickingMode.Ignore;
+			check.Add(box);
+
+			Label label = new Label(text);
+			label.AddToClassList("check__label");
+			label.pickingMode = PickingMode.Ignore;
+			check.Add(label);
+			return check;
 		}
 
-		private void onGradeClicked(ItemGradeType grade)
+		private void onGradeCheckClicked(ClickEvent evt)
 		{
+			ItemGradeType grade = (ItemGradeType)((VisualElement)evt.currentTarget).userData;
 			if (OnGradeClicked != null) { OnGradeClicked.Invoke(grade); }
 		}
 
@@ -166,9 +161,9 @@ namespace ProjectOne.UI
 			if (OnQualityCheckClicked != null) { OnQualityCheckClicked.Invoke(); }
 		}
 
-		private void onQualityChanged(float value)
+		private void onQualitySliderChanged(ChangeEvent<int> evt)
 		{
-			if (OnQualityChanged != null) { OnQualityChanged.Invoke(Mathf.RoundToInt(value)); }
+			if (OnQualityChanged != null) { OnQualityChanged.Invoke(evt.newValue); }
 		}
 
 		private void onAutoCheckClicked()
@@ -184,6 +179,11 @@ namespace ProjectOne.UI
 		private void onExitClicked()
 		{
 			if (OnExitClicked != null) { OnExitClicked.Invoke(); }
+		}
+
+		private void onDimClicked(ClickEvent evt)
+		{
+			onExitClicked();
 		}
 	}
 }

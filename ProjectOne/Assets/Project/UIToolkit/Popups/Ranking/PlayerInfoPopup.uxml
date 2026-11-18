@@ -1,0 +1,39 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Ranking.uss" />
+
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label name="name" text="" class="popup__name text-pop" />
+				<ui:Button name="close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+
+			<!-- 장비 8칸 + 가운데 캐릭터 (장비창과 같은 배치) -->
+			<ui:VisualElement class="info-body popup__body">
+				<ui:VisualElement class="info-column">
+					<ui:VisualElement name="equip-1" class="info-slot" />
+					<ui:VisualElement name="equip-7" class="info-slot" />
+					<ui:VisualElement name="equip-6" class="info-slot" />
+					<ui:VisualElement name="equip-8" class="info-slot" />
+				</ui:VisualElement>
+				<ui:VisualElement name="character" class="info-character" picking-mode="Ignore" />
+				<ui:VisualElement class="info-column">
+					<ui:VisualElement name="equip-2" class="info-slot" />
+					<ui:VisualElement name="equip-3" class="info-slot" />
+					<ui:VisualElement name="equip-4" class="info-slot" />
+					<ui:VisualElement name="equip-5" class="info-slot" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<ui:VisualElement class="px-inset info-stats popup__body">
+				<ui:VisualElement class="info-stat"><ui:Label text="레벨" class="info-stat__name" /><ui:Label name="hero-level" text="" class="info-stat__value" /></ui:VisualElement>
+				<ui:VisualElement class="info-stat"><ui:Label text="마스터리" class="info-stat__name" /><ui:Label name="mastery-level" text="" class="info-stat__value" /></ui:VisualElement>
+				<ui:VisualElement class="info-stat"><ui:Label text="전투력" class="info-stat__name" /><ui:Label name="power" text="" class="info-stat__value" /></ui:VisualElement>
+				<ui:VisualElement class="info-stat"><ui:Label text="최고 전투력" class="info-stat__name" /><ui:Label name="best-power" text="" class="info-stat__value" /></ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

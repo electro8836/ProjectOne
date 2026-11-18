@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="Notice.uss" />
+	<ui:VisualElement class="notice-layer" picking-mode="Ignore">
+		<ui:VisualElement name="notice" class="notice" picking-mode="Ignore">
+			<ui:Label name="text" text="" class="notice__text" picking-mode="Ignore" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

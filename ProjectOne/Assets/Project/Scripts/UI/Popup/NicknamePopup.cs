@@ -1,8 +1,8 @@
-using System.Collections;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
+using EDT;
 using ProjectOne.Currency;
 using ProjectOne.Network;
 using ProjectOne.Ranking;
@@ -10,64 +10,59 @@ using ProjectOne.Shared;
 
 namespace ProjectOne.UI
 {
-	// 닉네임 변경 팝업. UIManager.ShowNicknamePopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	//
-	// 입력 검사는 서버와 같은 규칙(NicknameRules)으로 미리 하고, 중복·비용 차감은 서버가 확정한다.
-	// 첫 변경은 무료, 그 뒤로는 다이아가 모자라면 변경 버튼을 누를 수 없다.
-	public class NicknamePopup : UIScreen
+	// 닉네임 변경 팝업(UIPrefab_NicknamePopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Account/NicknamePopup.uxml.
+	// 입력 길이(byte)를 실시간으로 보여 주고, 규칙 검사 → 서버 요청 → 성공 시 프로필·재화 반영 후 닫는다.
+	// 실패 사유는 입력란 아래에 잠깐 띄웠다가 숨긴다.
+	public class NicknamePopup : ToolkitScreen
 	{
-		// 실패 사유를 보여 주는 시간(초).
-		private const float ErrorShowSeconds = 5f;
+		private const long ErrorShowMs = 5000;
 
-		[Header("닫기")]
-		[SerializeField] private UIButton _dimButton;		// Dimmed
-		[SerializeField] private UIButton _cancelButton;	// Frame/BottomButtons/Button_Cancel
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
 
-		[Header("입력")]
-		[SerializeField] private TMP_InputField _input;	// Frame/Input
-		[SerializeField] private TMP_Text _byteText;		// Frame/ByteText
-		[SerializeField] private TMP_Text _errorText;		// Frame/ErrorText — 실패 사유. 잠깐 띄웠다가 숨긴다
-
-		[Header("변경")]
-		[SerializeField] private UIButton _changeButton;	// Frame/BottomButtons/Button_Change
-		[SerializeField] private TMP_Text _costText;		// Button_Change/Group/CostText
-		[SerializeField] private GameObject _costIcon;	// Button_Change/Group/Icon — 무료일 때는 숨긴다
+		private TextField _input;
+		private Label _byteText;
+		private Label _errorText;
+		private Button _changeButton;
+		private Label _costText;
+		private VisualElement _costIcon;
+		private IVisualElementScheduledItem _errorHide;
 
 		private UniTaskCompletionSource _tcs;
-		private Coroutine _errorRoutine;
 		private bool _isRequesting;
 		private bool _isDestroyed;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			// 프리펩 기본 문구가 비치지 않도록 숨긴 채로 시작한다.
-			_errorText.gameObject.SetActive(false);
+			_input = root.Q<TextField>("input");
+			_input.RegisterValueChangedCallback(onInputChanged);
+			_byteText = root.Q<Label>("byte");
+			_errorText = root.Q<Label>("error");
+			_errorText.style.display = DisplayStyle.None;
 
-			// Frame 은 Bg 가 레이캐스트를 흡수하므로, Dimmed 까지 내려오는 클릭은 곧 "팝업 밖을 눌렀다"는 뜻이다.
-			_dimButton.OnClickEvent += onCloseClicked;
-			_cancelButton.OnClickEvent += onCloseClicked;
-			_changeButton.OnClickEvent += onChangeClicked;
-			_input.onValueChanged.AddListener(onInputChanged);
+			_changeButton = root.Q<Button>("change");
+			_changeButton.clicked += onChangeClicked;
+			_costText = root.Q<Label>("cost");
+			_costIcon = root.Q("cost-icon");
+
+			root.Q<Button>("cancel").clicked += Close;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
 			_isDestroyed = true;
-
-			_dimButton.OnClickEvent -= onCloseClicked;
-			_cancelButton.OnClickEvent -= onCloseClicked;
-			_changeButton.OnClickEvent -= onChangeClicked;
-			_input.onValueChanged.RemoveListener(onInputChanged);
+			_icons.ReleaseAll();
+			base.OnDestroy();
 		}
 
-		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
 		public async UniTask ShowAsync(CancellationToken ct)
 		{
 			_tcs = new UniTaskCompletionSource();
 
-			_input.SetTextWithoutNotify(string.Empty);
+			_input.SetValueWithoutNotify(string.Empty);
 			refreshByteText(0);
 			refreshCost();
+			PlayPopupOpen();
 
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
@@ -80,75 +75,74 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// ── 표시 ──────────────────────────────────────────────────────
+		// ── 표시 ─────────────────────────────────────────────────────────
 
-		// 최소 길이에 못 미치는 동안은 현재 값을 빨갛게 보인다.
+		// 최소 길이 미만이면 숫자를 빨갛게.
 		private void refreshByteText(int bytes)
 		{
 			if (bytes < NicknameRules.MinBytes)
 			{
-				_byteText.text = $"<color=red>{bytes}</color>/{NicknameRules.MaxBytes}byte";
+				_byteText.text = $"<color=#FF6B6B>{bytes}</color>/{NicknameRules.MaxBytes}byte";
 				return;
 			}
 
 			_byteText.text = $"{bytes}/{NicknameRules.MaxBytes}byte";
 		}
 
-		// 비용 표시와 변경 버튼 — 다이아가 모자라면 누를 수 없다.
+		// 첫 변경은 무료, 이후는 재화. 모자라면 버튼을 잠근다.
 		private void refreshCost()
 		{
 			int cost = NicknameRules.GetCost(MyPlayerProfile.NicknameChangeCount);
 			if (cost <= 0)
 			{
 				_costText.text = "최초 무료";
-				_costIcon.SetActive(false);
-				_changeButton.interactable = true;
+				_costIcon.style.display = DisplayStyle.None;
+				_changeButton.SetEnabled(true);
 				return;
 			}
 
 			_costText.text = cost.ToString();
-			_costIcon.SetActive(true);
-			_changeButton.interactable = (CurrencyManager.Instance.GetAmount(NicknameRules.CostCurrency) >= cost);
+			_costIcon.style.display = DisplayStyle.Flex;
+			Table_Currency.Row row = Table_Currency.Get(NicknameRules.CostCurrency);
+			_icons.SetAsync(_costIcon, (row != null) ? row.Icon : string.Empty, this.GetCancellationTokenOnDestroy()).Forget();
+			_changeButton.SetEnabled(CurrencyManager.Instance.GetAmount(NicknameRules.CostCurrency) >= cost);
 		}
 
-		// 실패 사유를 띄우고 ErrorShowSeconds 뒤에 숨긴다.
-		// 떠 있는 동안 다시 불리면 앞선 타이머를 끊고 새로 센다 — 앞선 타이머가 새 문구를 일찍 꺼 버리지 않는다.
 		private void showError(string message)
 		{
-			if (_errorRoutine != null)
+			_errorText.text = message;
+			_errorText.style.display = DisplayStyle.Flex;
+
+			if (_errorHide != null)
 			{
-				StopCoroutine(_errorRoutine);
+				_errorHide.Pause();
 			}
 
-			_errorText.text = message;
-			_errorText.gameObject.SetActive(true);
-			_errorRoutine = StartCoroutine(hideErrorAfterDelay());
+			_errorHide = _errorText.schedule.Execute(hideError).StartingIn(ErrorShowMs);
 		}
 
-		// 일시정지(timeScale 0) 중에도 사라지도록 실제 시간으로 센다.
-		private IEnumerator hideErrorAfterDelay()
+		private void hideError()
 		{
-			yield return new WaitForSecondsRealtime(ErrorShowSeconds);
-
-			_errorText.gameObject.SetActive(false);
-			_errorRoutine = null;
+			_errorText.style.display = DisplayStyle.None;
+			_errorHide = null;
 		}
 
-		// ── 입력 ──────────────────────────────────────────────────────
+		// ── 입력 ─────────────────────────────────────────────────────────
 
-		// 최대 길이를 넘는 글자는 받지 않는다.
-		private void onInputChanged(string value)
+		// 최대 길이를 넘는 입력은 잘라 되돌린다.
+		private void onInputChanged(ChangeEvent<string> evt)
 		{
+			string value = evt.newValue ?? string.Empty;
 			string trimmed = NicknameRules.TrimToMaxBytes(value);
 			if (trimmed.Length != value.Length)
 			{
-				_input.SetTextWithoutNotify(trimmed);
+				_input.SetValueWithoutNotify(trimmed);
 			}
 
 			refreshByteText(NicknameRules.GetByteCount(trimmed));
 		}
 
-		private void onCloseClicked()
+		private void onDimClicked(ClickEvent evt)
 		{
 			Close();
 		}
@@ -160,8 +154,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			string nickname = _input.text;
-
+			string nickname = _input.value;
 			NicknameError error = NicknameRules.Validate(nickname);
 			if (error != NicknameError.None)
 			{
@@ -177,11 +170,11 @@ namespace ProjectOne.UI
 
 			ChangeNicknameRequest request = new ChangeNicknameRequest();
 			request.nickname = nickname;
+
 			_isRequesting = true;
 			NetworkManager.Instance.RequestChangeNickname(request, onChanged);
 		}
 
-		// 변경과 차감은 서버에 이미 저장됐다 — 팝업이 먼저 닫혔어도 로컬 값은 맞춘다.
 		private void onChanged(bool success, ChangeNicknameResponse data, string error)
 		{
 			_isRequesting = false;
@@ -212,30 +205,33 @@ namespace ProjectOne.UI
 			Close();
 		}
 
-		// ── 안내 문구 ─────────────────────────────────────────────────
-
 		private static string toMessage(NicknameError error)
 		{
 			switch (error)
 			{
 				case NicknameError.TooShort:
 					return $"닉네임은 {NicknameRules.MinBytes}byte 이상이어야 합니다.";
+
 				case NicknameError.TooLong:
 					return $"닉네임은 {NicknameRules.MaxBytes}byte 이하여야 합니다.";
+
 				case NicknameError.InvalidChar:
 					return "공백이나 특수문자는 사용할 수 없습니다.";
+
 				case NicknameError.StartsWithDigit:
 					return "첫 글자에는 숫자를 사용할 수 없습니다.";
+
 				case NicknameError.BanWord:
 					return "사용할 수 없는 단어가 포함되어 있습니다.";
+
 				case NicknameError.BadWord:
 					return "욕설이나 비속어는 사용할 수 없습니다.";
+
 				default:
 					return string.Empty;
 			}
 		}
 
-		// 서버 거절 사유(NicknameRules.Error*) → 안내 문구.
 		private static string toMessage(string serverError)
 		{
 			if (serverError == NicknameRules.ErrorDuplicated)

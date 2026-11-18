@@ -1,78 +1,62 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Reward;
-using TMPro;
-using UnityEngine;
-using UnityEngine.UI;
 
 namespace ProjectOne.UI
 {
-	// 상자 확률표 팝업의 View(MVP). UIManager.ShowBoxRewardPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
-	//
-	// 등급마다 탭 하나를 쓰고, 그 등급으로 나올 수 있는 아이템을 확률과 함께 깐다.
-	// 어떤 등급이 존재하는지·무엇을 깔지는 BoxRewardPresenter 가 정한다.
-	public class BoxRewardPopup : UIScreen, IView
+	// 상자 확률표 팝업(UIPrefab_BoxRewardPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/BoxReward/BoxRewardPopup.uxml.
+	// 등급별 탭으로 나눠, 나올 수 있는 아이템 칸 아래에 확률을 적는다.
+	public class BoxRewardPopup : ToolkitScreen, IView
 	{
-		[Header("탭")]
-		[SerializeField] private TabGroup _tabGroup;			// Frame/Bg/Top/TabButtons
-		[SerializeField] private UITabButton[] _tabButtons;		// TabButton_01 ~ 06 (Hierarchy 순서와 일대일)
-
-		[Header("목록")]
-		[SerializeField] private ScrollRect _scrollRect;		// Frame/ScrollRect
-		[SerializeField] private RectTransform _grid;			// Frame/ScrollRect/Viewport/Content/Grid
-		[SerializeField] private ItemPoolSlot _slotPrefab;		// UIPrefab_ItemPoolSlot
-		[SerializeField] private ItemSlot _itemSlotPrefab;		// UIPrefab_ItemSlot
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
-
-		[Header("닫기")]
-		[SerializeField] private UIButton _exitButton;			// Frame/ExitButton
-		[SerializeField] private UIButton _dimButton;			// Dim
 
 		public event Action<int> OnTabSelected;	// 탭 인덱스
 
+		// 아이템 칸 + 확률 1칸.
+		private sealed class PoolCell
+		{
+			public VisualElement root;
+			public ItemCellView cell;
+			public Label chance;
+		}
+
 		private readonly BoxRewardPresenter _presenter = new BoxRewardPresenter();
-		private readonly List<ItemPoolSlot> _slots = new List<ItemPoolSlot>();
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
+		private readonly List<PoolCell> _cells = new List<PoolCell>();
+		private readonly List<Button> _tabs = new List<Button>();
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();
 
-		private CanvasGroup _canvasGroup;
+		private VisualElement _tabBar;
+		private ScrollView _grid;
 		private UniTaskCompletionSource _tcs;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			// 첫 렌더가 끝나기 전 빈 칸이 비치지 않도록 숨겨 두고 시작한다.
-			_canvasGroup = GetComponent<CanvasGroup>();
-			if (_canvasGroup == null)
-			{
-				_canvasGroup = gameObject.AddComponent<CanvasGroup>();
-			}
+			_tabBar = root.Q("tabs");
+			_grid = root.Q<ScrollView>("grid");
+			_grid.AddManipulator(new ScrollDragManipulator(_grid));
 
-			setVisible(false);
-
-			if (_tabGroup != null)
-			{
-				_tabGroup.OnTabChanged += onTabChanged;
-			}
-
-			_exitButton.OnClickEvent += onCloseClicked;
-			_dimButton.OnClickEvent += onCloseClicked;
+			root.Q<Button>("close").clicked += Close;
+			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			if (_tabGroup != null)
+			if (IsBound == true)
 			{
-				_tabGroup.OnTabChanged -= onTabChanged;
+				_presenter.Dispose();
 			}
 
-			_exitButton.OnClickEvent -= onCloseClicked;
-			_dimButton.OnClickEvent -= onCloseClicked;
-
-			_presenter.Dispose();
+			_icons.ReleaseAll();
+			base.OnDestroy();
 		}
 
 		public CancellationToken GetDestroyToken()
@@ -80,7 +64,6 @@ namespace ProjectOne.UI
 			return this.GetCancellationTokenOnDestroy();
 		}
 
-		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
 		public async UniTask ShowAsync(int rewardGroupId, CancellationToken ct)
 		{
 			await _presenter.ShowAsync(rewardGroupId, ct);
@@ -89,70 +72,54 @@ namespace ProjectOne.UI
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
 
-		// ── Presenter → View ──────────────────────────────────────────────
-
-		// 나올 수 있는 등급만 앞에서부터 채우고 남는 탭은 끈다.
+		// 등급 수만큼 탭을 만들고 등급 이름을 단다.
 		public void SetGrades(IReadOnlyList<ItemGradeType> grades)
 		{
-			if (_tabButtons == null)
+			for (int i = 0; i < grades.Count; i++)
 			{
-				return;
+				Button tab = getTab(i);
+				tab.text = ItemGradeNames.Get(grades[i]);
+				tab.style.display = DisplayStyle.Flex;
 			}
 
-			for (int i = 0; i < _tabButtons.Length; i++)
+			for (int i = grades.Count; i < _tabs.Count; i++)
 			{
-				UITabButton button = _tabButtons[i];
-				if (button == null)
-				{
-					continue;
-				}
-
-				bool used = i < grades.Count;
-				button.gameObject.SetActive(used);
-
-				if (used == true)
-				{
-					button.SetLabel(ItemGradeNames.Get(grades[i]));
-				}
+				_tabs[i].style.display = DisplayStyle.None;
 			}
 		}
 
+		// 탭만 선택(OnTabSelected 를 발행하지 않음).
 		public void SelectTab(int index)
 		{
-			if (_tabGroup != null)
+			for (int i = 0; i < _tabs.Count; i++)
 			{
-				_tabGroup.Select(index);
+				_tabs[i].EnableInClassList("tab--selected", i == index);
 			}
 		}
 
 		public async UniTask RenderAsync(IReadOnlyList<RewardChance> chances, CancellationToken ct)
 		{
 			_bindTasks.Clear();
-
 			for (int i = 0; i < chances.Count; i++)
 			{
-				ItemPoolSlot slot = getOrCreateSlot(i);
-				slot.gameObject.SetActive(true);
-
-				_bindTasks.Add(slot.BindAsync(chances[i], _itemSlotPrefab, _gradeColors, ct));
+				PoolCell pool = getOrCreateCell(i);
+				pool.root.style.display = DisplayStyle.Flex;
+				pool.chance.text = (chances[i].chance * 100f).ToString("0.##", CultureInfo.InvariantCulture) + "%";
+				_bindTasks.Add(bindCell(pool.cell, chances[i], ct));
 			}
 
-			for (int i = chances.Count; i < _slots.Count; i++)
+			for (int i = chances.Count; i < _cells.Count; i++)
 			{
-				_slots[i].gameObject.SetActive(false);
+				_cells[i].root.style.display = DisplayStyle.None;
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
-
-			if (_scrollRect != null)
-			{
-				_scrollRect.verticalNormalizedPosition = 1f;
-			}
+			_grid.scrollOffset = Vector2.zero;
 		}
 
 		public void Reveal()
 		{
-			setVisible(true);
+			PlayPopupOpen();
 		}
 
 		public void Close()
@@ -163,36 +130,72 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────────
-
-		private ItemPoolSlot getOrCreateSlot(int index)
+		private static UniTask bindCell(ItemCellView cell, RewardChance chance, CancellationToken ct)
 		{
-			if (index < _slots.Count)
+			if (chance.equipment != null)
 			{
-				return _slots[index];
+				return cell.BindEquipmentAsync(chance.equipment, false, ct);
 			}
 
-			ItemPoolSlot slot = Instantiate(_slotPrefab, _grid);
-			_slots.Add(slot);
-			return slot;
+			Table_Item.Row row = Table_Item.Get(chance.itemId);
+			if (row == null)
+			{
+				cell.SetShown(false);
+				return UniTask.CompletedTask;
+			}
+
+			cell.SetShown(true);
+			return cell.BindItemAsync(row, 0, ct);
 		}
 
-		private void setVisible(bool visible)
+		private Button getTab(int index)
 		{
-			_canvasGroup.alpha = visible ? 1f : 0f;
-			_canvasGroup.interactable = visible;
-			_canvasGroup.blocksRaycasts = visible;
+			if (index < _tabs.Count)
+			{
+				return _tabs[index];
+			}
+
+			Button tab = new Button();
+			tab.AddToClassList("tab");
+			tab.userData = index;
+			tab.RegisterCallback<ClickEvent>(onTabClicked);
+			_tabBar.Add(tab);
+			_tabs.Add(tab);
+			return tab;
 		}
 
-		private void onTabChanged(int index)
+		private PoolCell getOrCreateCell(int index)
 		{
+			if (index < _cells.Count)
+			{
+				return _cells[index];
+			}
+
+			PoolCell pool = new PoolCell();
+			pool.root = new VisualElement();
+			pool.root.AddToClassList("pool-cell");
+			pool.cell = new ItemCellView(pool.root, _gradeColors, _icons);
+			pool.chance = new Label();
+			pool.chance.AddToClassList("pool-cell__chance");
+			pool.root.Add(pool.chance);
+			_grid.contentContainer.Add(pool.root);
+
+			_cells.Add(pool);
+			return pool;
+		}
+
+		private void onTabClicked(ClickEvent evt)
+		{
+			int index = (int)((VisualElement)evt.currentTarget).userData;
+			SelectTab(index);
+
 			if (OnTabSelected != null)
 			{
 				OnTabSelected.Invoke(index);
 			}
 		}
 
-		private void onCloseClicked()
+		private void onDimClicked(ClickEvent evt)
 		{
 			Close();
 		}

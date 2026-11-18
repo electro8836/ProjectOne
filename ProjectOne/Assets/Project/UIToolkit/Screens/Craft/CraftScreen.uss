@@ -1,0 +1,151 @@
+/* 제작 화면 — 모드 탭(강화·승급·전이) + 등록 칸·비용·버튼 + 분류 탭과 장비 목록. 부품·색·글자는 Theme.uss 를 따른다. */
+
+.tabs,
+.craft-top {
+	flex-shrink: 0;
+}
+
+.craft-top {
+	margin-bottom: 12px;
+	padding: 30px 30px 26px 30px;
+}
+
+.craft-panel {
+	display: none;
+}
+
+.craft-panel--shown {
+	display: flex;
+}
+
+.craft-slots {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	height: 280px;
+}
+
+/* 등록 칸 — 빈 틀 위에 아이템 칸을 겹쳐 얹는다 */
+.craft-slot {
+	width: 220px;
+	height: 220px;
+	align-items: center;
+	justify-content: center;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	transition-property: scale;
+	transition-duration: 0.3s;
+	transition-timing-function: ease-out-back;
+}
+
+.craft-slot--pop {
+	scale: 1.3 1.3;
+	transition-duration: 0s;
+}
+
+.craft-slot--preview {
+	opacity: 0.85;
+}
+
+.craft-slot__hint {
+	font-size: 36px;
+	color: var(--ink-dim);
+	white-space: normal;
+	-unity-text-align: middle-center;
+}
+
+.craft-slot .item-cell {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+.craft-arrow {
+	font-size: 60px;
+	color: var(--gold);
+	margin: 0 40px;
+}
+
+.craft-requirement {
+	align-items: center;
+	min-height: 150px;
+	justify-content: center;
+}
+
+.craft-requirement__costs {
+	flex-direction: row;
+	justify-content: center;
+	flex-wrap: wrap;
+}
+
+.craft-requirement__disable {
+	font-size: 36px;
+	color: #FF8A80;
+	white-space: normal;
+	-unity-text-align: middle-center;
+}
+
+.craft-buttons {
+	flex-direction: row;
+	justify-content: center;
+	margin-top: 10px;
+}
+
+.craft-button {
+	flex-grow: 1;
+	flex-basis: 0;
+	margin: 0 10px;
+	font-size: 48px;
+}
+
+/* 분류 탭 (아이콘) */
+.craft-filter .tab {
+	height: 92px;
+	font-size: 36px;
+	align-items: center;
+	justify-content: center;
+}
+
+.tab__icon {
+	width: 52px;
+	height: 52px;
+	-unity-background-scale-mode: scale-to-fit;
+	opacity: 0.55;
+}
+
+.tab--selected .tab__icon {
+	opacity: 1;
+}
+
+.craft-bag {
+	padding: 22px 26px 26px 26px;
+}
+
+.craft-bag__toolbar {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 8px;
+	flex-shrink: 0;
+}
+
+.craft-grid {
+	flex-grow: 1;
+}
+
+.craft-grid .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.craft-grid .item-cell {
+	width: 180px;
+	height: 180px;
+	margin: 8px;
+}

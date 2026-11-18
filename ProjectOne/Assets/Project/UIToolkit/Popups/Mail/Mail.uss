@@ -1,0 +1,99 @@
+/* 우편함·우편 팝업 */
+
+.mail-list-box {
+	height: 1000px;
+	margin-bottom: 26px;
+	padding: 12px;
+}
+
+.mail-list {
+	flex-grow: 1;
+}
+
+.mail-empty {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	font-size: 36px;
+	color: var(--ink-sub);
+	-unity-text-align: middle-center;
+}
+
+/* 목록 줄 */
+.mail-row {
+	flex-direction: row;
+	align-items: center;
+	padding: 16px 20px 20px 16px;
+	margin-bottom: 10px;
+	background-image: url("../../Pixel/row.png");
+	-unity-slice-left: 4;
+	-unity-slice-right: 4;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 4px;
+}
+
+.mail-row--read {
+	opacity: 0.55;
+}
+
+.mail-row__state {
+	width: 112px;
+	height: 112px;
+	padding: 12px;
+	margin-right: 20px;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 2px;
+}
+
+.mail-row__check {
+	position: absolute;
+	right: -6px;
+	bottom: -6px;
+	width: 44px;
+	height: 44px;
+	background-color: var(--green);
+	border-width: 4px;
+	border-color: var(--ink);
+	border-radius: 22px;
+}
+
+.mail-row__text {
+	flex-grow: 1;
+	flex-shrink: 1;
+}
+
+.mail-row__title {
+	font-size: 48px;
+}
+
+.mail-row__sender,
+.mail-row__date {
+	font-size: 36px;
+	color: var(--ink-sub);
+}
+
+/* 메일 한 통 */
+.mail-head {
+	font-size: 36px;
+	margin-bottom: 16px;
+}
+
+.mail-attachments {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	margin-bottom: 20px;
+}
+
+.mail-attachments .item-cell {
+	width: 168px;
+	height: 168px;
+	margin: 8px;
+}

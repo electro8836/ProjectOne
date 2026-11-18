@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="Notice.uss" />
+	<ui:VisualElement class="notice-layer" picking-mode="Ignore">
+		<ui:VisualElement name="levelup" class="levelup" picking-mode="Ignore">
+			<ui:Label name="levelup-text" text="" class="levelup__title" picking-mode="Ignore" />
+			<ui:Label name="level-text" text="" class="levelup__level" picking-mode="Ignore" />
+			<ui:Label name="desc-text" text="" class="levelup__desc" picking-mode="Ignore" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

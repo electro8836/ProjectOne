@@ -1,0 +1,115 @@
+/* 출석 팝업 — 주간 4열(큰 칸), 월간 6열(작은 칸) */
+
+/* 탭이 창 위에 붙도록 창과 탭을 한 묶음으로 띄운다 — 등장 전환은 이 묶음에 건다 */
+.daily-window {
+	width: 960px;
+	opacity: 0;
+	scale: 0.85;
+	translate: 0 40px;
+	transition-property: opacity, scale, translate;
+	transition-duration: 0.15s;
+	transition-timing-function: ease-out-back;
+}
+
+.popup--open .daily-window {
+	opacity: 1;
+	scale: 1;
+	translate: 0 0;
+}
+
+/* 묶음이 전환을 맡으므로 안쪽 창은 바로 보인다 */
+.daily-frame {
+	width: 100%;
+	opacity: 1;
+	scale: 1;
+	translate: 0 0;
+}
+
+.daily-tabs {
+	padding: 0 20px;
+}
+
+.daily-grid {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+	margin-bottom: 20px;
+}
+
+.daily-cell {
+	width: 200px;
+	height: 200px;
+	margin: 8px;
+	align-items: center;
+	justify-content: center;
+	background-image: url("../../Pixel/slot_empty.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+}
+
+.daily-cell--focus {
+	background-image: url("../../Pixel/slot_gold.png");
+}
+
+.daily-cell--claimable {
+	-unity-background-image-tint-color: #A4EC7E;
+}
+
+.daily-cell__day {
+	position: absolute;
+	top: 14px;
+	left: 18px;
+	font-size: 36px;
+	color: var(--gold);
+}
+
+.daily-cell__icon {
+	width: 104px;
+	height: 104px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.daily-cell__count {
+	position: absolute;
+	right: 18px;
+	bottom: 14px;
+	font-size: 36px;
+	color: var(--white);
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 3px 0 var(--ink);
+}
+
+/* 이름은 칸에 비해 길다 — 감추고, 칸을 누르면 툴팁으로 보인다 */
+.daily-cell__name {
+	display: none;
+}
+
+.daily-cell__check {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-color: rgba(20, 16, 30, 0.6);
+}
+
+/* 월간 — 6열 작은 칸, 이름은 숨긴다 */
+.daily-grid--month .daily-cell {
+	width: 132px;
+	height: 150px;
+	margin: 6px;
+}
+
+.daily-grid--month .daily-cell__icon {
+	width: 72px;
+	height: 72px;
+}
+
+.daily-grid--month .daily-cell__count {
+	bottom: 8px;
+	right: 10px;
+}

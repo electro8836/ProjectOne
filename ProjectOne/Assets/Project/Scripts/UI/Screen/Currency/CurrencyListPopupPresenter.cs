@@ -89,7 +89,7 @@ namespace ProjectOne.UI
 
 		// 재화는 이름·설명뿐이라 정식 정보 팝업을 열지 않는다 — 누른 칸 위에 뜨는 툴팁으로 끝낸다
 		// (던전 결과창·상점의 재화 슬롯과 같은 처리).
-		private void onSlotClicked(EDT.Currency currency, RectTransform anchor)
+		private void onSlotClicked(EDT.Currency currency, UnityEngine.UIElements.VisualElement anchor)
 		{
 			EDT.Table_Currency.Row row = EDT.Table_Currency.Get(currency);
 			if (row == null)
@@ -97,7 +97,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			UIManager.Instance.ShowSimplePopupAsync(row.Name + "\n" + row.Desc, anchor, view.GetDestroyToken()).Forget();
+			UIManager.Instance.ShowTooltipAsync(row.Name + "\n" + row.Desc, anchor, view.GetDestroyToken()).Forget();
 		}
 
 		private void onResourceChanged(ResourceChangeEvent evt)

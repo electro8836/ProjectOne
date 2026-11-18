@@ -1,0 +1,38 @@
+/* 상자 확률표 팝업 */
+
+.box-tabs .tab {
+	font-size: 36px;
+	height: 92px;
+}
+
+.box-grid-box {
+	height: 1000px;
+	margin-bottom: 30px;
+	padding: 12px;
+}
+
+.box-grid {
+	flex-grow: 1;
+}
+
+.box-grid .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.pool-cell {
+	width: 25%;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.pool-cell .item-cell {
+	width: 168px;
+	height: 168px;
+}
+
+.pool-cell__chance {
+	font-size: 36px;
+	color: var(--gold);
+	margin-top: 4px;
+}

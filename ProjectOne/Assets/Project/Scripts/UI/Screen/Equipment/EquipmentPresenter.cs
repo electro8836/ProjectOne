@@ -33,7 +33,7 @@ namespace ProjectOne.UI
 
 	// 장비 화면 Presenter — 분류 탭 상태와 Model(Account) 조회를 담당하고, View 에 렌더 데이터를 넘긴다.
 	// 화면 닫힘 시 장착 변경(dirty)을 서버에 1회 flush 한다.
-	public sealed class EquipmentPresenter : Presenter<EquipmentUI>
+	public sealed class EquipmentPresenter : Presenter<IEquipmentView>
 	{
 		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
 		private const string CONSUMABLE_POPUP_ADDRESS = "UIPrefab_ConsumablePopup";
@@ -81,7 +81,7 @@ namespace ProjectOne.UI
 		//
 		// 장비 변경 이벤트를 쓰지 않는 이유: Loadout.setSlotValue 는 PresetChangeEvent 를
 		// reapplyHero() **앞에서** 발행하므로, 그 핸들러에서 히어로 스탯을 읽으면 Aspect 재적용 전
-		// 값이 나온다. Version 은 재적용이 끝난 뒤 반드시 올라간다 (HUD 의 HeroInfo 와 같은 방식).
+		// 값이 나온다. Version 은 재적용이 끝난 뒤 반드시 올라간다 (HUD 의 HudHeroInfo 와 같은 방식).
 		private int _lastStatVersion = -1;
 		private int _lastBattlePower = -1;
 
@@ -89,7 +89,6 @@ namespace ProjectOne.UI
 		{
 			view.OnTabSelected += onTabSelected;
 			view.OnSlotClicked += onSlotClicked;
-			view.OnHomeClicked += onHomeClicked;
 			view.OnStatClicked += onStatClicked;
 			view.OnCurrencyClicked += onCurrencyClicked;
 			view.OnPetClicked += onPetClicked;
@@ -118,7 +117,6 @@ namespace ProjectOne.UI
 
 			view.OnTabSelected -= onTabSelected;
 			view.OnSlotClicked -= onSlotClicked;
-			view.OnHomeClicked -= onHomeClicked;
 			view.OnStatClicked -= onStatClicked;
 			view.OnCurrencyClicked -= onCurrencyClicked;
 			view.OnPetClicked -= onPetClicked;
@@ -216,10 +214,16 @@ namespace ProjectOne.UI
 			rebuild();
 		}
 
-		// 보관함 버튼 — 보관함 패널을 열고 보관함 모드로 들어간다.
+		// 보관함 버튼 — 토글. 닫혀 있으면 보관함 패널을 열고 보관함 모드로 들어가고, 열려 있으면 닫는다.
 		// 보관함은 장비 전용이라 소모품 탭을 감추고, 소모품 탭을 보던 중이면 전체 탭으로 옮긴다.
 		private void onStashClicked()
 		{
+			if (_stashMode == true)
+			{
+				onStashCloseClicked();
+				return;
+			}
+
 			_stashMode = true;
 			view.SetStashVisible(true);
 			view.SetConsumableTabVisible(false);
@@ -247,12 +251,6 @@ namespace ProjectOne.UI
 		private void onDecompositionClicked()
 		{
 			UIManager.Instance.ShowDecompositionPopupAsync(view.GetDestroyToken()).Forget();
-		}
-
-		// 창을 닫는다. 마지막 창이면 WindowClosedEvent 가 발행되어 네비게이션 바의 탭 선택도 함께 풀린다.
-		private void onHomeClicked()
-		{
-			UIManager.Instance.CloseWindowAsync().Forget();
 		}
 
 		// 능력치 버튼 — 히어로의 최종 스탯 팝업을 상위 캔버스에 연다.
@@ -324,7 +322,9 @@ namespace ProjectOne.UI
 		// 대표 레벨 = 장착 무기의 마스터리 레벨. Account 만 보므로 이벤트 발행 순서와 무관하다.
 		private void refreshLevel()
 		{
-			view.RenderLevel(Account.Instance.Mastery.RepresentativeLevel);
+			Table_WeaponMastery.Row mastery = Account.Instance.Mastery.CurrentMastery;
+			string weaponName = (mastery != null) ? mastery.Name : string.Empty;
+			view.RenderLevel(weaponName, Account.Instance.Mastery.RepresentativeLevel);
 		}
 
 		// 살아있는 히어로. 장비창은 마을에서 주로 열리지만 MainHUD 의 화면 열기 버튼으로

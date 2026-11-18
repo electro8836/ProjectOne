@@ -1,0 +1,114 @@
+/* 알림 메시지 — 화면 위에 떠 있는 글 상자들. 입력은 받지 않는다. */
+
+.notice-layer {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	align-items: center;
+}
+
+/* 잠깐 떴다 사라지는 한 줄 — 위치는 프리펩마다 다른 클래스 */
+.notice {
+	position: absolute;
+	max-width: 960px;
+	padding: 18px 40px 24px 40px;
+	background-color: rgba(18, 17, 28, 0.85);
+	border-width: 4px;
+	border-color: #3A4280;
+	opacity: 0;
+	transition-property: opacity;
+}
+
+.notice--shown {
+	opacity: 1;
+	transition-duration: 0s;
+}
+
+.notice--alert {
+	top: 820px;
+}
+
+.notice--system {
+	top: 260px;
+}
+
+.notice__text {
+	font-size: 36px;
+	color: var(--white);
+	white-space: normal;
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 1px;
+	-unity-text-outline-color: var(--ink);
+}
+
+/* 제한 메시지 — 숨길 때까지 떠 있다 */
+.warning {
+	position: absolute;
+	top: 980px;
+	max-width: 760px;
+	padding: 20px 44px 26px 44px;
+	background-color: rgba(60, 12, 16, 0.9);
+	border-width: 4px;
+	border-color: #FF6B6B;
+}
+
+.warning__text {
+	font-size: 36px;
+	color: #FFD0D0;
+	white-space: normal;
+	-unity-text-align: middle-center;
+}
+
+/* 레벨업 — 작게 시작해 튀어나온 뒤 사라진다 */
+.levelup {
+	position: absolute;
+	top: 440px;
+	align-items: center;
+	padding: 26px 60px 32px 60px;
+	background-image: url("../../Pixel/panel_wood.png");
+	-unity-slice-left: 6;
+	-unity-slice-right: 6;
+	-unity-slice-top: 6;
+	-unity-slice-bottom: 6;
+	-unity-slice-scale: 4px;
+	opacity: 0;
+	scale: 0.5 0.5;
+	transition-property: opacity, scale;
+	transition-duration: 0s;
+}
+
+.levelup--shown {
+	opacity: 1;
+	scale: 1 1;
+	transition-duration: 0.25s;
+	transition-timing-function: ease-out-back;
+}
+
+.levelup--fading {
+	opacity: 0;
+	transition-duration: 0.5s;
+	transition-timing-function: linear;
+}
+
+.levelup__title {
+	font-size: 60px;
+	color: var(--gold);
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+	text-shadow: 0 4px 0 var(--ink);
+}
+
+.levelup__level {
+	font-size: 48px;
+	color: var(--white);
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: var(--ink);
+}
+
+.levelup__desc {
+	font-size: 36px;
+	color: var(--text);
+	margin-top: 6px;
+}

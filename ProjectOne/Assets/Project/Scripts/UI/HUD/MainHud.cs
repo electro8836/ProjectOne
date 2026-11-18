@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Threading;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
@@ -45,98 +48,129 @@ namespace ProjectOne.UI
 		}
 	}
 
-	// 게임 전역 HUD 의 View(MVP).
+	// 게임 전역 HUD 의 View(MVP, UI Toolkit). 레이아웃은 UIToolkit/HUD/MainHud/MainHud.uxml.
 	//
-	// **씬별 HUD 를 두지 않는다.** 이 하나가 씬을 가로질러 살아 있고, 어디서 무엇을 보일지는
-	// ContextGroup 가시성으로 정한다. 던전 전용 위젯(웨이브·보스바·나가기)도 여기 그룹으로 들어온다.
+	// **씬별 HUD 를 두지 않는다.** 이 하나가 씬을 가로질러 HUD 층(Layer)에 붙어 있고, 어디서 무엇을 보일지는
+	// ContextGroup 가시성으로 정한다. 조이스틱은 UGUI 라 따로 떨어진 프리펩(UIPrefab_Joystick)이다.
 	//
-	// View 는 그리기와 입력 전달만 한다. 데이터 조회·판단은 MainHudPresenter 가 갖는다 (Passive View).
-	public class MainHud : UIScreen, IView
+	// 메뉴·맥락은 Presenter 가 지시하고(Passive View), 히어로 정보·버프·보스 배너처럼 자기 이벤트를 직접 받는
+	// 위젯은 Hud* 클래스로 나눠 이 화면이 만들고 갱신(Tick)·정리한다.
+	public class MainHud : ToolkitScreen, IView
 	{
-		// 맥락별로 보일 오브젝트 묶음.
-		//
-		// 어떤 버튼이 어디서 보이는지를 **인스펙터가 소유한다.** UI 를 재구성해도 코드를 고치지 않는다.
+		// 맥락별로 보일 요소 묶음 — 어떤 요소가 어디서 보이는지를 인스펙터가 소유한다.
 		[Serializable]
 		public class ContextGroup
 		{
 			[Tooltip("이 묶음이 보일 맥락(복수 선택 가능)")]
 			public HudContext contexts;
 
-			public GameObject[] objects;
+			[Tooltip("UXML 요소 이름(name)")]
+			public string[] elementNames;
+
+			public ContextGroup()
+			{
+			}
+
+			public ContextGroup(HudContext contexts, string elementName)
+			{
+				this.contexts = contexts;
+				this.elementNames = new string[] { elementName };
+			}
 		}
 
 		[Header("맥락별 표시 묶음")]
-		[SerializeField] private ContextGroup[] _contextGroups;
-
-		// 체력·레벨·전투력은 HeroInfo 가, 버프 목록은 BuffInfo 가 전담한다 —
-		// 같은 캔버스에 두면 그쪽 갱신이 HUD 전체 리빌드로 번진다.
-
-		// 화면 열기 버튼 — 비워두면 자식에서 자동 수집한다. 사용자가 UI 를 재구성해도 배열을 다시 채울 필요가 없다.
-		[Header("화면 열기 버튼 (비우면 자식에서 자동 수집)")]
-		[SerializeField] private ScreenOpenButton[] _screenButtons;
-
-		// 개발용 이동 버튼 — 비워두면 자식에서 자동 수집한다.
-		[Header("개발용 이동 버튼 (비우면 자식에서 자동 수집)")]
-		[SerializeField] private DevWarpButton[] _warpButtons;
-
-		// 메뉴 팝업을 여는 버튼. 창(Window)이 아니라 팝업이라 ScreenOpenButton 경로를 타지 않는다.
-		[Header("메뉴")]
-		[SerializeField] private UIButton _menuButton;
-		[SerializeField] private GameObject _menuBadge;	// MenuButton/Badge — 지금은 미확인 메일과 같이 켜진다
-
-		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────
-		public event Action<UIScreenId> OnScreenRequested;
+		[SerializeField] private ContextGroup[] _contextGroups =
+		{
+			new ContextGroup(HudContext.Field | HudContext.Dungeon, "map-info"),
+			new ContextGroup(HudContext.Town | HudContext.Field, "side-bar")
+		};
 
 		// 메뉴 팝업 요청 — 어떻게 여는지는 Presenter 가 정한다.
 		public event Action OnMenuRequested;
 
-		// 이동 요청 — 목적지는 Table_Map.ID. 어디로 갈지는 Presenter 가 판단한다.
-		public event Action<int> OnWarpRequested;
-
 		private readonly MainHudPresenter _presenter = new MainHudPresenter();
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
 
-		private void Awake()
+		private VisualElement _root;
+		private VisualElement _menuBadge;
+
+		private HudResourceBar _resourceBar;
+		private HudHeroInfo _heroInfo;
+		private HudMapInfo _mapInfo;
+		private HudQuestInfo _questInfo;
+		private HudBuffList _buffList;
+		private HudSideBar _sideBar;
+		private HudBossBanner _bossBanner;
+		private HudUltimateButton _ultimateButton;
+
+		// 보스 배너 — 던전 HUD 가 자리를 비켜줄지 판단할 때 UIManager 를 거쳐 읽는다.
+		public HudBossBanner BossBanner
 		{
-			collectScreenButtons();
-			bindScreenButtons();
+			get { return _bossBanner; }
+		}
 
-			collectWarpButtons();
-			bindWarpButtons();
+		protected override void OnBind(VisualElement root)
+		{
+			_root = root;
+			_menuBadge = root.Q("menu-badge");
+			root.Q<Button>("menu-button").clicked += onMenuButtonClicked;
 
-			if (_menuButton != null)
-			{
-				_menuButton.OnClickEvent += onMenuButtonClicked;
-			}
+			CancellationToken ct = this.GetCancellationTokenOnDestroy();
+			_resourceBar = new HudResourceBar(root, _icons, ct);
+			_heroInfo = new HudHeroInfo(root);
+			_mapInfo = new HudMapInfo(root, _icons, ct);
+			_questInfo = new HudQuestInfo(root, ct);
+			_buffList = new HudBuffList(root, _icons, ct);
+			_sideBar = new HudSideBar(root, ct);
+			_bossBanner = new HudBossBanner(root);
+			_ultimateButton = new HudUltimateButton(root, _icons, ct);
 
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			_presenter.Dispose();
-			unbindScreenButtons();
-			unbindWarpButtons();
-
-			if (_menuButton != null)
+			if (IsBound == true)
 			{
-				_menuButton.OnClickEvent -= onMenuButtonClicked;
+				_presenter.Dispose();
+				_resourceBar.Dispose();
+				_heroInfo.Dispose();
+				_mapInfo.Dispose();
+				_questInfo.Dispose();
+				_buffList.Dispose();
+				_bossBanner.Dispose();
+				_ultimateButton.Dispose();
+				_icons.ReleaseAll();
 			}
+
+			base.OnDestroy();
+		}
+
+		private void Update()
+		{
+			if (IsBound == false)
+			{
+				return;
+			}
+
+			float deltaTime = Time.deltaTime;
+			_heroInfo.Tick();
+			_buffList.Tick(deltaTime);
+			_bossBanner.Tick();
+			_ultimateButton.Tick(deltaTime);
 		}
 
 		// ── 표시 (Presenter 가 지시) ───────────────────────────────────
 
 		public void SetMenuBadge(bool visible)
 		{
-			if (_menuBadge != null)
-			{
-				_menuBadge.SetActive(visible);
-			}
+			_menuBadge.EnableInClassList("hud-badge--on", visible);
 		}
 
-		// 맥락에 맞지 않는 묶음을 숨긴다. 레이드에서 가이드 버튼을 감추는 장치가 이것이다.
+		// 맥락에 맞지 않는 묶음을 숨긴다.
 		public void ApplyContext(HudContext context)
 		{
-			if (_contextGroups == null)
+			if (_contextGroups == null || _root == null)
 			{
 				return;
 			}
@@ -144,124 +178,33 @@ namespace ProjectOne.UI
 			for (int i = 0; i < _contextGroups.Length; i++)
 			{
 				ContextGroup group = _contextGroups[i];
-				if (group == null || group.objects == null)
+				if (group == null || group.elementNames == null)
 				{
 					continue;
 				}
 
-				bool visible = (group.contexts & context) != 0;
-				for (int n = 0; n < group.objects.Length; n++)
+				DisplayStyle display = ((group.contexts & context) != 0) ? DisplayStyle.Flex : DisplayStyle.None;
+				for (int n = 0; n < group.elementNames.Length; n++)
 				{
-					if (group.objects[n] != null)
+					VisualElement element = _root.Q(group.elementNames[n]);
+					if (element == null)
 					{
-						group.objects[n].SetActive(visible);
+						Debug.LogError($"[MainHud] 맥락 묶음의 요소를 찾지 못했습니다: {group.elementNames[n]}");
+						continue;
 					}
+
+					element.style.display = display;
 				}
 			}
 		}
 
 		// ── 입력 ──────────────────────────────────────────────────────
 
-		// 비활성 자식까지 훑는다 — 맥락으로 꺼 둔 버튼도 나중에 켜지면 동작해야 한다.
-		private void collectScreenButtons()
-		{
-			if (_screenButtons != null && _screenButtons.Length > 0)
-			{
-				return;
-			}
-
-			_screenButtons = this.GetComponentsInChildren<ScreenOpenButton>(true);
-		}
-
-		private void bindScreenButtons()
-		{
-			for (int i = 0; i < _screenButtons.Length; i++)
-			{
-				if (_screenButtons[i] != null)
-				{
-					_screenButtons[i].OnClicked += onScreenButtonClicked;
-				}
-			}
-		}
-
-		private void unbindScreenButtons()
-		{
-			if (_screenButtons == null)
-			{
-				return;
-			}
-
-			for (int i = 0; i < _screenButtons.Length; i++)
-			{
-				if (_screenButtons[i] != null)
-				{
-					_screenButtons[i].OnClicked -= onScreenButtonClicked;
-				}
-			}
-		}
-
-		private void onScreenButtonClicked(UIScreenId id)
-		{
-			if (OnScreenRequested != null)
-			{
-				OnScreenRequested.Invoke(id);
-			}
-		}
-
 		private void onMenuButtonClicked()
 		{
 			if (OnMenuRequested != null)
 			{
 				OnMenuRequested.Invoke();
-			}
-		}
-
-
-		// ── 이동 ──────────────────────────────────────────────────────
-
-		// 화면 열기 버튼과 같은 방식 — 비활성 자식까지 훑는다.
-		private void collectWarpButtons()
-		{
-			if (_warpButtons != null && _warpButtons.Length > 0)
-			{
-				return;
-			}
-
-			_warpButtons = this.GetComponentsInChildren<DevWarpButton>(true);
-		}
-
-		private void bindWarpButtons()
-		{
-			for (int i = 0; i < _warpButtons.Length; i++)
-			{
-				if (_warpButtons[i] != null)
-				{
-					_warpButtons[i].OnClicked += onWarpButtonClicked;
-				}
-			}
-		}
-
-		private void unbindWarpButtons()
-		{
-			if (_warpButtons == null)
-			{
-				return;
-			}
-
-			for (int i = 0; i < _warpButtons.Length; i++)
-			{
-				if (_warpButtons[i] != null)
-				{
-					_warpButtons[i].OnClicked -= onWarpButtonClicked;
-				}
-			}
-		}
-
-		private void onWarpButtonClicked(int mapId)
-		{
-			if (OnWarpRequested != null)
-			{
-				OnWarpRequested.Invoke(mapId);
 			}
 		}
 	}

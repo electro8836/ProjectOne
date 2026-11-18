@@ -1,0 +1,62 @@
+/* 팝업 공용 내용 조각 — 틀(.popup·.popup__window·.popup__head·.popup__buttons)은 Theme.uss, 팝업별 배치는 각 팝업 USS. */
+
+/* 창 안쪽 본문 여백 */
+.popup__body {
+	margin: 0 40px;
+}
+
+/* 세로 메뉴 버튼 */
+.popup-menu__button {
+	height: 120px;
+	margin-bottom: 16px;
+	font-size: 48px;
+}
+
+/* 우편 등 알림 점 */
+.badge {
+	position: absolute;
+	right: 18px;
+	top: 14px;
+	width: 28px;
+	height: 28px;
+	background-color: #FF5A4E;
+	border-width: 4px;
+	border-color: var(--ink);
+	border-radius: 14px;
+}
+
+/* 아이템 칸 격자 (보상 목록 등) */
+.popup-grid {
+	max-height: 900px;
+}
+
+.popup-grid .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.popup-grid .item-cell {
+	width: 168px;
+	height: 168px;
+	margin: 8px;
+}
+
+/* 본문 상자 + 글 */
+.popup-text-box {
+	margin: 0 40px 26px 40px;
+	padding: 28px 32px;
+}
+
+.popup-text {
+	font-size: 36px;
+	white-space: normal;
+}
+
+.popup-hint {
+	margin: 0 40px 20px 40px;
+	font-size: 36px;
+	color: var(--ink-sub);
+	white-space: normal;
+	-unity-text-align: middle-center;
+}

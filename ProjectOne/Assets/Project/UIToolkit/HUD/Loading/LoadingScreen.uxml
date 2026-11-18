@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="LoadingScreen.uss" />
+	<ui:VisualElement class="loading">
+		<ui:VisualElement class="loading__bottom">
+			<ui:Label name="phase-text" text="Loading..." class="loading__phase" />
+			<ui:VisualElement class="gauge gauge--gold loading__gauge">
+				<ui:VisualElement name="progress-fill" class="gauge__fill" />
+				<ui:Label name="progress-text" text="0%" class="gauge__text" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>
