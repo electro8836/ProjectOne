@@ -101,6 +101,7 @@ namespace ProjectOne.UI
 			data.desc = "모든 보상을 수령하고 모든 우편을 삭제 합니다.\n계속하시겠습니까?";
 			data.button1Text = "아니오";
 			data.button2Text = "예";
+			data.isDanger = true;
 
 			// 아니오·닫기·Dim 은 팝업만 닫는다.
 			(bool confirmCancelled, CommonPopupResult result) = await UIManager.Instance.ShowCommonPopupAsync(data, ct).SuppressCancellationThrow();

@@ -74,9 +74,14 @@
 	-unity-slice-top: 3;
 	-unity-slice-bottom: 3;
 	-unity-slice-scale: 4px;
-	-unity-text-outline-width: 1px;
 	-unity-text-outline-color: var(--ink);
 	text-shadow: 0 3px 0 var(--ink);
+}
+
+/* 장착 글자 — 크기·색·그림자는 판(.item-cell__equip)에서 물려받는다 */
+.item-cell__equip-text {
+	padding: 0;
+	margin: 0;
 }
 
 .item-cell__level,
@@ -85,7 +90,6 @@
 	bottom: 24px;
 	font-size: 36px;
 	color: var(--white);
-	-unity-text-outline-width: 1px;
 	-unity-text-outline-color: var(--ink);
 	text-shadow: 0 3px 0 var(--ink);
 }

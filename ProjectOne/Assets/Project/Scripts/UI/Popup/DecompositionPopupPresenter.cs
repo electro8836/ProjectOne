@@ -94,6 +94,7 @@ namespace ProjectOne.UI
 
 			CommonPopupData data;
 			data.title = "분해";
+			data.isDanger = true;
 
 			if (_targets.Count == 0)
 			{

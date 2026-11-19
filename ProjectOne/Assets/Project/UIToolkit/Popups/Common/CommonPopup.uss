@@ -12,3 +12,37 @@
 	white-space: normal;
 	-unity-text-align: middle-center;
 }
+
+/* ── 바이올렛 테마 — 틀은 아이템 정보 팝업과 같다(회색 제목 줄·회색 몸통·프레임 없는 X). Violet.uss 다음에 읽어 같은 우선순위에서 이긴다 ── */
+
+/* 제목 줄 — 등급 박스가 없어 아래 여백과 높이를 줄인다 */
+.theme-violet .common-popup__head {
+	min-height: 120px;
+	margin-bottom: 36px;
+}
+
+.theme-violet .common-popup__head .item-head__name {
+	font-size: 56px;
+}
+
+/* 본문 — 아이템 설명 판과 같은 진한 회색 */
+.theme-violet .common-popup__desc-box {
+	margin: 0 32px 32px 32px;
+	background-image: none;
+	background-color: #26272C;
+	border-width: 0;
+}
+
+.theme-violet .common-popup__desc {
+	font-size: 44px;
+	color: #E4E5EA;
+}
+
+/* 진행 버튼 — 장착과 같은 초록. 되돌릴 수 없는 확인(분해·삭제)은 장비 화면 분해 버튼과 같은 빨강 */
+.theme-violet .common-popup__confirm {
+	background-image: url("../../Violet/btn_equip.png");
+}
+
+.theme-violet .common-popup__confirm--danger {
+	background-image: url("../../Violet/btn_danger_large.png");
+}

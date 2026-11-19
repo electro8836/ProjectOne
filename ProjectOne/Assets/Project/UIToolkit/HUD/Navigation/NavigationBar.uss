@@ -1,6 +1,7 @@
 /* 하단 네비게이션 바 — 화면 맨 아래 160px (창의 .screen 아래 여백과 같다).
    바이올렛 테마: 탭은 Layer Lab TabMenu_BottomFlush_01 을 같은 스프라이트·색으로 구운 것(UGUI 내비 탭 색).
-   탭은 152px — 바 윗선(4px)과 틈이 보이게 바보다 8px 낮다. 선택하면 색만 바이올렛으로 바뀐다.
+   탭은 152px — 바 윗선(4px)과 틈이 보이게 바보다 8px 낮다. 위 모서리를 깎지 않아 탭끼리 틈 없이 붙는다.
+   선택한 탭은 바이올렛으로 바뀌며 바 높이(160px)에 딱 맞게 솟고 아이콘·이름이 같은 비율(1.08배)로 커진다.
    부품은 UIToolkit/Violet (Tools/pixelui/generate_violet_ui.py). */
 
 .nav {
@@ -43,6 +44,7 @@
 }
 
 .nav-tab--selected {
+	height: 160px;
 	background-image: url("../../Violet/navtab_on.png");
 }
 
@@ -52,14 +54,14 @@
 	height: 116px;
 	margin-bottom: 12px;
 	-unity-background-scale-mode: scale-to-fit;
-	opacity: 0.75;
 }
 
 .nav-tab--selected .nav-tab__icon {
-	opacity: 1;
+	margin-bottom: 16px;
+	scale: 1.08 1.08;
 }
 
-/* 이름 — 아이콘 아래쪽에 겹쳐 항상 보인다. 아이콘 위에서도 읽히게 굵은 외곽선 + 아래 그림자 */
+/* 이름 — 아이콘 아래쪽에 겹쳐 항상 보인다. 공통 외곽선(2px) + 도트 1칸(36px → 3px) 아래 그림자 */
 .nav-tab__label {
 	position: absolute;
 	left: 0;
@@ -69,13 +71,13 @@
 	-unity-text-align: middle-center;
 	font-size: 36px;
 	color: #E4E6FF;
-	-unity-text-outline-width: 3px;
-	-unity-text-outline-color: #0A0814;
-	text-shadow: 0 4px 0 #0A0814;
+	text-shadow: 0 3px 0 #0A0814;
+	-unity-font-style: bold;	/* 공통 외곽선(2px)에 깎이는 획을 합성 볼드로 보충 */
 }
 
 .nav-tab--selected .nav-tab__label {
 	color: #FFFFFF;
+	scale: 1.08 1.08;
 }
 
 .nav-icon-shop { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Tabs/Icon_Shop.png"); }

@@ -2,6 +2,11 @@
    배치는 기존 UGUI 장비창과 같다: 위 가운데 캐릭터, 양옆 장착 칸 4개씩, 아래 부가 버튼 · 분류 탭 · 가방.
    글자 크기는 12의 배수만 쓴다(Theme.uss 참고). */
 
+/* 장비 화면 글자는 전부 Pretendard ExtraBold — 작은 레벨 글자까지 또렷하게 */
+.screen {
+	-unity-font-definition: url("../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
 /* 가방만 늘고 줄어든다 — 나머지는 내용보다 작아지지 않게(UI Toolkit 기본 flex-shrink 는 1) */
 .upper,
 .top,
@@ -118,7 +123,6 @@
 .stage__power {
 	font-size: 48px;
 	color: var(--gold);
-	-unity-text-outline-width: 2px;
 	-unity-text-outline-color: var(--ink);
 	text-shadow: 0 4px 0 var(--ink);
 }

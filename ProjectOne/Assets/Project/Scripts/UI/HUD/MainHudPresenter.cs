@@ -95,6 +95,7 @@ namespace ProjectOne.UI
 			data.desc = "게임을 종료하시겠습니까?";
 			data.button1Text = "아니오";
 			data.button2Text = "예";
+			data.isDanger = false;
 
 			// 아니오·닫기·Dim 은 팝업만 닫는다.
 			(bool cancelled, CommonPopupResult result) = await UIManager.Instance.ShowCommonPopupAsync(data, ct).SuppressCancellationThrow();

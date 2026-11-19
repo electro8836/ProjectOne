@@ -9,11 +9,26 @@
 
 .theme-violet {
 	text-shadow: 0 3px 0 #0A0814;
+	-unity-text-outline-width: 0;	/* 어두운 바탕에 고정된 글자는 외곽선 없이 그림자만 */
+}
+
+/* 바탕이 밝거나 바뀌는 곳만 공통 외곽선(2px)을 다시 켠다 — 색 버튼, 선택 탭, 아이콘 위에 겹치는 칸 글자, 등급색 제목 줄 */
+.theme-violet .btn--red,
+.theme-violet .btn--green,
+.theme-violet .btn--on,
+.theme-violet .extra__button,
+.theme-violet .popup__button,
+.theme-violet #stash,
+.theme-violet .tab--selected,
+.theme-violet .item-cell,
+.theme-violet .item-head {
+	-unity-text-outline-width: 2px;
+	-unity-font-style: bold;	/* 외곽선은 획 안쪽도 반을 덮어 글자를 가늘게 만든다 — 합성 볼드로 그만큼 획을 두껍게 */
 }
 
 /* ── 제목 줄 — 화면 좌우·위를 꽉 채운 보라 판(#322958). 왼쪽 바이올렛이 오른쪽으로 길게 녹아들고(header_wash, 900px),
    판 아래로 그림자를 떨궈(기능 버튼 줄의 .header-shadow) 경계를 낸다. 테두리·장식은 두지 않는다.
-   제목은 48px — 한·영·일 긴 이름도 들어가게, 오른쪽에 재화 캡슐 최대 3칸 ── */
+   제목은 60px — 한·영·일 긴 이름도 들어가게(넘치면 말줄임), 오른쪽에 재화 캡슐 최대 3칸 ── */
 
 .theme-violet .header {
 	height: auto;
@@ -60,9 +75,8 @@
 .theme-violet .header__title {
 	flex-grow: 1;
 	flex-shrink: 1;
-	font-size: 48px;
-	-unity-text-outline-width: 2px;
-	text-shadow: 0 4px 0 #0A0814;
+	font-size: 60px;
+	text-shadow: 0 5px 0 #0A0814;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
@@ -101,7 +115,6 @@
 	font-size: 36px;
 	color: #FFFFFF;
 	-unity-text-align: middle-right;
-	-unity-text-outline-width: 0;
 	text-shadow: 0 3px 0 #0A0814;
 }
 
@@ -150,12 +163,11 @@
 }
 
 .theme-violet .stage__level {
-	color: #A8A2CC;
+	color: #CFCAEE;
 }
 
 .theme-violet .stage__power {
 	color: #FFD447;
-	-unity-text-outline-width: 0;
 	text-shadow: 0 4px 0 #0A0814;
 }
 
@@ -184,7 +196,6 @@
 	-unity-slice-scale: 1px;
 	padding-bottom: 0;
 	color: #CED3FB;
-	-unity-text-outline-width: 0;
 	text-shadow: 0 3px 0 #0A0814;
 }
 
@@ -214,8 +225,6 @@
 	margin: 0 2px;
 	padding-left: 76px;
 	color: #FFFFFF;
-	-unity-text-outline-width: 2px;
-	-unity-text-outline-color: #0A0814;
 }
 
 .extra__icon {
@@ -325,11 +334,13 @@
 }
 
 .theme-violet .bag__caption {
+	font-size: 48px;
 	color: #FFFFFF;
+	text-shadow: 0 4px 0 #0A0814;
 }
 
 .theme-violet .bag__capacity {
-	font-size: 36px;
+	font-size: 40px;
 	color: #A8A2CC;
 }
 
@@ -345,70 +356,276 @@
 	margin: 4px;
 }
 
-/* ── 아이템 칸 — 두꺼운 회색조 틀을 등급 틴트(테두리색)로 칠하고, 안쪽은 등급 바탕색 판(item-cell__bg)을 깐다 ── */
+/* ── 아이템 칸 — 두툼한 둥근 틀(slot_round, 회색조)을 등급 테두리색으로 틴트하고,
+   안쪽은 가운데가 가장 밝은 등급 바탕 판(cell_glow, 등급 바탕색 틴트)을 깐다.
+   틀은 위 10px · 옆 11px · 아래 15px — 아래가 두꺼워 칸이 살짝 솟아 보인다. 내용물은 이 안쪽에 맞춘다 ── */
 
 .theme-violet .item-cell,
 .theme-violet .equip-slot {
-	background-image: url("../Violet/slot.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
+	background-image: url("../Violet/slot_round.png");
+	-unity-slice-left: 32;
+	-unity-slice-right: 32;
+	-unity-slice-top: 32;
+	-unity-slice-bottom: 32;
+	-unity-slice-scale: 1px;
 }
 
-/* 빈 장착 칸 — 보라 선 */
+/* 빈 장착 칸 — 보라 틀 */
 .theme-violet .equip-slot {
 	-unity-background-image-tint-color: #6A5E90;
 }
 
-/* 등급 바탕색 판 — 틀(16px) 바로 안쪽을 채운다 */
+/* 등급 바탕 판 — 틀 바로 안쪽. 색은 View 가 틴트(-unity-background-image-tint-color)로 칠한다 */
 .theme-violet .item-cell__bg {
-	left: 16px;
-	right: 16px;
-	top: 16px;
-	bottom: 16px;
-	opacity: 0.85;
+	left: 11px;
+	right: 11px;
+	top: 10px;
+	bottom: 15px;
+	opacity: 1;
+	border-radius: 12px;
+	background-image: url("../Violet/cell_glow.png");
+	-unity-background-scale-mode: stretch-to-fill;
 }
 
-/* 분류 배지 — 고정 바탕(ItemCell.uss) + 진한 테두리. 아이콘이 배지를 거의 채우게 안쪽 여백을 줄인다 */
+/* 장비 아이콘 — 틀 안쪽에서 레벨·품질 막대 자리를 남기고 가운데 */
+.theme-violet .item-cell__icon {
+	left: 22px;
+	right: 22px;
+	top: 18px;
+	bottom: 30px;
+}
+
+/* 분류 배지 — 틀 안쪽 왼쪽 위 모서리에 딱 붙인다. 고정 바탕(ItemCell.uss) + 진한 테두리,
+   왼쪽 위는 틀 안쪽 모서리(반지름 12px)와 같게, 반대쪽 아래 모서리만 살짝 둥글게 */
 .theme-violet .item-cell__type {
+	left: 11px;
+	top: 10px;
 	border-width: 3px;
 	border-color: #0E0B1A;
+	border-top-left-radius: 12px;
+	border-top-right-radius: 3px;
+	border-bottom-left-radius: 3px;
+	border-bottom-right-radius: 10px;
 	padding: 2px;
 }
 
-/* 레벨·개수 — 도트 글꼴이 또렷하게 24px(12 배수), 외곽선 없이 아래 그림자만 */
+/* 잠금 — 어두운 둥근 사각 배지 안 빨간 자물쇠(icon_lock, 2배로 구움). 틀 안쪽 오른쪽 위 모서리에 붙인다 */
+.theme-violet .item-cell__lock {
+	right: 11px;
+	top: 10px;
+	width: 40px;
+	height: 40px;
+	background-image: url("../Violet/icon_lock.png");
+}
+
+/* 레벨·개수 — 어두운 둥근 배지 위 32px ExtraBold(Theme.uss) + 공통 외곽선 2px + 아래 그림자 3px.
+   밝은 아이콘 위에서도 읽힌다 */
 .theme-violet .item-cell__level,
 .theme-violet .item-cell__count {
-	bottom: 26px;
-	font-size: 24px;
-	-unity-text-outline-width: 0;
+	bottom: 28px;
+	padding: 0 10px 2px 10px;
+	border-radius: 10px;
+	background-color: rgba(10, 8, 20, 0.7);
+	font-size: 32px;
 	text-shadow: 0 3px 0 #0A0814;
 }
 
+/* 장착 표시 — 어두운 배지 안 초록 E(icon_equip). 오른쪽 위 모서리에 붙이고, 잠금이 함께 있으면 잠금이 그 아래로 내려간다 */
+.theme-violet .item-cell__equip {
+	right: 11px;
+	top: 10px;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	background-image: url("../Violet/icon_equip.png");
+	-unity-slice-left: 0;
+	-unity-slice-right: 0;
+	-unity-slice-top: 0;
+	-unity-slice-bottom: 0;
+}
+
+.theme-violet .item-cell__equip-text {
+	display: none;
+}
+
+.theme-violet .item-cell--equipped .item-cell__lock {
+	top: 54px;
+}
+
 .theme-violet .item-cell__level {
-	left: 20px;
+	left: 15px;
 }
 
 .theme-violet .item-cell__count {
-	right: 20px;
+	right: 15px;
 }
 
-/* 장착 칸(168px) — 가방 칸(196.6px)과 같은 모양을 비율만 줄인다(배지 40px) */
+/* 품질 막대 — 틀 아랫변 바로 위에 얇게 */
+.theme-violet .item-cell__quality {
+	left: 15px;
+	right: 15px;
+	bottom: 18px;
+	height: 8px;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.theme-violet .item-cell__quality-fill {
+	border-top-width: 2px;
+}
+
+/* 장착 칸(168px) — 가방 칸과 같은 틀·자리, 배지는 40px(EquipmentScreen.uss)라 자물쇠도 같은 비율로 줄인다 */
 .theme-violet .equip-slot .item-cell__type {
+	left: 11px;
+	top: 10px;
 	padding: 2px;
 }
 
-.theme-violet .equip-slot .item-cell__level,
-.theme-violet .equip-slot .item-cell__count {
-	bottom: 22px;
+.theme-violet .equip-slot .item-cell__lock {
+	width: 34px;
+	height: 34px;
 }
 
-.theme-violet .equip-slot .item-cell__level {
-	left: 18px;
+/* ── 아이템 정보 팝업 — 제목 줄만 등급색(판·아래 선·등급 박스는 ItemInfoPopup 이 칠한다), 아래 본문은 등급과 무관한 회색.
+   장착 초록·강화 주황·닫기는 프레임 없는 X ── */
+
+.theme-violet .popup__window {
+	padding-bottom: 24px;		/* 버튼 줄 아래 여백 — 스크롤 칸 아래 여백(24px)과 같게 */
+	background-image: none;
+	background-color: #313338;
+	border-width: 4px;
+	border-color: #44464E;
 }
 
-.theme-violet .equip-slot .item-cell__count {
-	right: 18px;
+.theme-violet .popup__head {
+	background-image: none;
+	background-color: #44464E;
+}
+
+.theme-violet .popup__name {
+	text-shadow: 0 5px 0 #0A0814;
+}
+
+/* 제목 줄 — 높이를 줄이고 이름을 정가운데에. 아래 선(6px) 가운데에 등급 박스가 걸쳐 절반이 본문으로 내려온다.
+   이름은 한 줄 60px — 안 들어가는 긴 이름은 ItemInfoPopup 이 48px(--medium)·36px(--small)로 줄인다(양옆 120px 은 X 자리) */
+.theme-violet .item-head {
+	height: auto;
+	min-height: 136px;
+	padding: 12px 120px 12px 120px;
+	margin-bottom: 52px;
+	justify-content: center;
+	border-bottom-width: 6px;
+	border-bottom-color: #5E6068;
+}
+
+.theme-violet .item-head__name {
+	flex-grow: 1;
+	font-size: 60px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	text-shadow: 0 5px 0 #0A0814;
+}
+
+.theme-violet .item-head__name--medium {
+	font-size: 48px;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.theme-violet .item-head__name--small {
+	font-size: 36px;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* 등급 박스 — 36px 글자(박스 높이 57px). 60px 이름과 겹치지 않게 박스 가운데를 아래 선(6px) 가운데보다 8px 아래에 둔다.
+   모서리는 둥글게, 폭은 최소 220px — 더 긴 등급 이름·다른 언어는 글자만큼 늘어난다 */
+.theme-violet .item-head__grade {
+	position: absolute;
+	left: 50%;
+	bottom: -41px;
+	translate: -50% 0;
+	min-width: 220px;
+	padding: 2px 32px 6px 32px;
+	border-radius: 18px;
+	font-size: 36px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	border-width: 3px;
+	border-color: #0A0814;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* 닫기 X — 프레임 없이 X 만, 제목 줄 오른쪽 세로 가운데.
+   가운데 정렬은 위 여백(-높이/2)으로 한다 — translate 로 하면 누를 때의 눌림 연출(.btn:active translate)이 덮어써 아래로 튄다 */
+.theme-violet .item-head__close {
+	position: absolute;
+	right: 12px;
+	top: 50%;
+	margin-top: -48px;
+	background-image: none;
+}
+
+.theme-violet .popup__window .section-title {
+	color: #F2F2F5;
+}
+
+/* 설명 판 — 옵션 상자와 같은 회색. 짧아도 2줄 높이(줄 48px x 2 + 위아래 여백 40), 길면 내용만큼 늘어난다 */
+.theme-violet .equip-info-desc {
+	color: #C8C9CF;
+	min-height: 136px;
+	padding: 18px 22px 22px 22px;
+	margin-bottom: 20px;
+	background-color: #26272C;
+}
+
+.theme-violet .option-box {
+	background-image: none;
+	background-color: #26272C;
+	border-width: 0;
+}
+
+/* 큰 버튼 — 112px 로 구운 면, 48px 글자는 도트 1칸(4px) 그림자.
+   외곽선은 공통 2px(Theme.uss :root) */
+.theme-violet .popup__button {
+	height: 112px;
+	font-size: 48px;
+	color: #FFFFFF;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.theme-violet #equip {
+	background-image: url("../Violet/btn_equip.png");
+}
+
+.theme-violet #enchant {
+	background-image: url("../Violet/btn_enchant.png");
+}
+
+/* 보관함 이동 — 창 밖 아래 88px 버튼(#D45012). 36px 글자는 도트 1칸(3px) 그림자 */
+.theme-violet #stash {
+	background-image: url("../Violet/btn_stash.png");
+	color: #FFFFFF;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* 닫기 X 아이콘 — Icon_Close_02 를 본뜬 크림색 X(외곽선·그림자 포함 58x62).
+   그림자 몫 4px 때문에 X 몸통이 그림 가운데보다 2px 위라, 위 여백 4px 로 내려 가운데에 맞춘다 */
+.theme-violet .icon-close {
+	width: 58px;
+	height: 62px;
+	margin-top: 4px;
+	background-image: url("../Violet/icon_close.png");
+}
+
+/* 딤 — 뒤 화면을 더 어둡게 눌러 팝업을 띄운다 */
+.theme-violet.popup--open .popup__dim {
+	background-color: rgba(4, 2, 10, 0.96);
+}
+
+/* 잠금 켜짐 — 초록 */
+.theme-violet .btn--green {
+	background-image: url("../Violet/btn_active.png");
+	color: #FFFFFF;
 }

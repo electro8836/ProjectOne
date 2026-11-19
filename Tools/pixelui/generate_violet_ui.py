@@ -113,14 +113,33 @@ def layer(canvas, sprite, color, place, simple=False, corner=1.0):
 	canvas.alpha_composite(img, (int(round(cx - w / 2)), int(round(cy - h / 2))))
 
 
-# 내비 탭 — TabMenu_BottomFlush_01
+# 내비 탭 — TabMenu_BottomFlush_01. 깎인 위 모서리는 네모로 채워 이웃 탭과 틈 없이 붙인다
 def nav_tab(name, height, bg, light, shadow):
 	c = Image.new('RGBA', (BAKE_WIDTH, height))
 	layer(c, 'Tab_BottomFlush_01_White_Bg', bg, ('stretch', -0.13, -0.61, 0, 0))
 	layer(c, 'Tab_BottomFlush_01_White_Light', light, ('top', -8.19, 20, 0, -14.07))
 	layer(c, 'Tab_BottomFlush_01_White_InnerShadow', shadow, ('stretch', -8.19, -17.19, 0, -8.29))
 	layer(c, 'Tab_BottomFlush_01_White_Border', '#151428', ('stretch', -0.13, -0.61, 0, 0))
+	square_top_corners(c, 4, '#151428')
 	save(c, name)
+
+
+# 위 두 모서리의 깎인 부분을 네모로 채운다 — 테두리(굵기 thick)는 그대로 두르고, 안쪽은 모서리 바로 옆 열을 이어 칠한다
+def square_top_corners(c, thick, border):
+	W, H = c.size
+	px = c.load()
+	bc = hexc(border)
+	cw = 0
+	while cw < W // 2 and px[cw, 0][3] == 0:
+		cw += 1
+	cw += thick		# 깎인 대각선 테두리까지 덮는다
+	for y in range(min(cw, H)):
+		for x in range(cw):
+			for (tx, sx) in ((x, cw), (W - 1 - x, W - 1 - cw)):
+				if y < thick or x < thick:
+					px[tx, y] = bc
+				else:
+					px[tx, y] = px[sx, y]
 
 
 # 분류 탭 — TabMenu_BottomFlush_02 (위쪽 파인 장식 Deco 는 빼고 윗변을 일자로 둔다)
@@ -143,6 +162,78 @@ def middle(name, height, bg, inner, border='#151428', glow=None, corner=1.0):
 		layer(c, 'Tab_Middle_01_White_Glow', glow, ('stretch', -46.24, -10, 0, 0.15), simple=True)
 	layer(c, 'Tab_Middle_01_White_Border', border, ('stretch', 0.23, 0, 0, 0), corner=corner)
 	save(c, name)
+
+
+# ── 둥근 아이템 칸 — 두툼한 회색조 틀(등급 테두리색으로 틴트)과 등급 바탕 그라데이션(등급 바탕색으로 틴트) ──
+# 틀은 아랫변이 더 두꺼운 블록(위 10px · 옆 11px · 아래 15px)이라 칸이 살짝 솟아 보인다.
+# 회색 값 = 틴트에 곱해질 밝기: 바깥 테두리 어둡게, 몸통은 위가 밝고 아래가 어둡게, 안쪽 선은 어둡게.
+# 96px 로 굽고 USS 에서 9-slice(32px, 배율 1px)로 늘린다. 4배로 그려 줄여 가장자리를 부드럽게 한다.
+SLOT_SIZE = 96
+SLOT_RADIUS = 24
+SLOT_INSET = (11, 10, 11, 15)	# 왼, 위, 오른, 아래 — 안쪽(바탕 판) 경계
+SS = 4
+
+
+def rr_depth(x, y, l, t, r, b, rad):
+	# 둥근 사각형 안쪽 깊이(양수 = 안). 경계까지의 거리
+	cx = min(max(x, l + rad), r - rad)
+	cy = min(max(y, t + rad), b - rad)
+	if (x < l + rad or x > r - rad) and (y < t + rad or y > b - rad):
+		return rad - ((x - cx) ** 2 + (y - cy) ** 2) ** 0.5
+	return min(x - l, r - x, y - t, b - y)
+
+
+def slot_round():
+	n = SLOT_SIZE * SS
+	img = Image.new('RGBA', (n, n))
+	px = img.load()
+	il, it, ir, ib = [v * SS for v in SLOT_INSET]
+	rad = SLOT_RADIUS * SS
+	irad = (SLOT_RADIUS - 12) * SS
+	for y in range(n):
+		for x in range(n):
+			fx, fy = x + 0.5, y + 0.5
+			d = rr_depth(fx, fy, 0, 0, n, n, rad)
+			if d <= 0:
+				continue
+			di = rr_depth(fx, fy, il, it, n - ir, n - ib, irad)
+			if di > 2 * SS:
+				continue		# 안쪽은 비운다(바탕 판이 채운다)
+			if di > 0:
+				v = 0.30		# 안쪽 선
+			elif d < 3 * SS:
+				v = 0.22		# 바깥 테두리
+			else:
+				v = 1.0 - 0.42 * (fy / n)	# 몸통 — 위 밝게, 아래 어둡게
+				# 위·아래 변에만 — 9-slice 로 늘어나는 옆변 가운데(32~64px)는 건드리지 않는다
+				if d < 6 * SS and fy < n / 3:
+					v = 1.0		# 위쪽 빛 테두리
+				if di > -2 * SS and fy > n * 2 / 3:
+					v *= 0.85	# 아래쪽 안쪽 그늘
+			g = int(round(255 * v))
+			px[x, y] = (g, g, g, 255)
+	save(img.resize((SLOT_SIZE, SLOT_SIZE), Image.LANCZOS), 'slot_round')
+
+
+# 등급 바탕 — 가운데가 가장 밝고 바깥으로 은은하게 어두워지는 둥근 판(흰색 → 62%)
+def cell_glow():
+	size = 128
+	n = size * SS
+	img = Image.new('RGBA', (n, n))
+	px = img.load()
+	rad = 12 * SS
+	half = n / 2
+	maxr = (2 ** 0.5) * half
+	for y in range(n):
+		for x in range(n):
+			fx, fy = x + 0.5, y + 0.5
+			if rr_depth(fx, fy, 0, 0, n, n, rad) <= 0:
+				continue
+			r = (((fx - half) ** 2 + (fy - half) ** 2) ** 0.5) / maxr
+			v = 1.0 - 0.38 * (r ** 1.4)
+			g = int(round(255 * v))
+			px[x, y] = (g, g, g, 255)
+	save(img.resize((size, size), Image.LANCZOS), 'cell_glow')
 
 
 # 아이템 칸 — 두꺼운 틀(12x12, slice 4, 4px 배율 = 16px), 네 모서리는 45도로 깎는다.
@@ -268,6 +359,73 @@ GEAR_HI = (240, 238, 255, 255)
 GEAR_MID = (204, 197, 233, 255)
 GEAR_SHADE = (130, 125, 182, 255)
 GEAR_OUTLINE = 26		# 512 기준 외곽선 두께
+
+
+# 닫기 X — Layer Lab Icon_Close_02(끝이 둥근 굵은 크림색 X)를 52px 로 줄이고, 밝은 빨강 버튼 위에서도 읽히게
+# 진한 외곽선(3px) + 아래 그림자(4px)를 두른다. 그림자 몫까지 포함해 58x62 로 굽는다(아이콘이 버튼 가운데에 오도록 USS 가 크기를 맞춘다).
+def close_icon():
+	size, line, drop = 52, 3, 4
+	src = Image.open(os.path.join(GEAR, 'Icon_Close_02.png')).convert('RGBA').resize((size, size), Image.LANCZOS)
+	alpha = src.split()[3]
+	w, h = size + line * 2, size + line * 2 + drop
+	out = Image.new('RGBA', (w, h))
+	dark = Image.new('RGBA', (size, size), (10, 8, 20, 255))
+	for dy in range(-line, line + drop + 1):
+		for dx in range(-line, line + 1):
+			if dx * dx + min(dy, line) ** 2 > line * line + 1:
+				continue
+			out.paste(dark, (line + dx, line + dy), alpha)
+	out.alpha_composite(src, (line, line))
+	save(out, 'icon_close')
+
+
+# 잠금·장착 표시 — 분류 배지와 같은 어두운 둥근 사각 배지(40px) 안에 기호를 넣는다.
+# 잠금은 빨간 자물쇠(PictoIcon_Lock, 몸통 윗줄 광택), 장착은 초록 E. 2배(80px)로 구워 USS 에서 40px 로 쓴다
+PICTO_ICONS = os.path.join(ROOT, 'ProjectOne', 'Assets', 'ThirdParty', 'Layer Lab', 'GUI Pro-FantasyHero', 'ResourcesData', 'Sptites', 'Components', 'Icon_PictoIcons', '256')
+PRETENDARD_EXTRABOLD = os.path.join(ROOT, 'ProjectOne', 'Assets', 'Project', 'Art', 'UI', 'Fonts', 'Pretendard', 'Pretendard-ExtraBold.ttf')
+MARK_SCALE = 2
+MARK_SIZE = 40 * MARK_SCALE
+
+
+def mark_badge():
+	from PIL import ImageDraw
+	s = MARK_SCALE
+	out = Image.new('RGBA', (MARK_SIZE, MARK_SIZE))
+	d = ImageDraw.Draw(out)
+	d.rounded_rectangle((0, 0, MARK_SIZE - 1, MARK_SIZE - 1), radius=9 * s, fill=(10, 8, 20, 255))
+	d.rounded_rectangle((3 * s, 3 * s, MARK_SIZE - 3 * s - 1, MARK_SIZE - 3 * s - 1), radius=7 * s, fill=(42, 35, 64, 255))
+	return out
+
+
+def lock_icon():
+	from PIL import ImageChops, ImageDraw
+	src = Image.open(os.path.join(PICTO_ICONS, 'PictoIcon_Lock.Png')).convert('RGBA')
+	src = src.crop(src.getbbox())
+	h = 29 * MARK_SCALE
+	w = round(h * src.width / src.height)
+	alpha = src.resize((w, h), Image.LANCZOS).split()[3]
+	glyph = Image.new('RGBA', (w, h), (240, 64, 72, 255))
+	glyph.putalpha(alpha)
+	shine = Image.new('RGBA', (w, h), (255, 140, 140, 255))
+	band = Image.new('L', (w, h), 0)
+	ImageDraw.Draw(band).rectangle((0, round(h * 0.45), w, round(h * 0.62)), fill=255)
+	shine.putalpha(ImageChops.multiply(alpha, band))
+	glyph.alpha_composite(shine)
+	out = mark_badge()
+	out.alpha_composite(glyph, ((MARK_SIZE - w) // 2, (MARK_SIZE - h) // 2))
+	save(out, 'icon_lock')
+
+
+def equip_icon():
+	from PIL import ImageDraw, ImageFont
+	out = mark_badge()
+	d = ImageDraw.Draw(out)
+	font = ImageFont.truetype(PRETENDARD_EXTRABOLD, 31 * MARK_SCALE)
+	box = d.textbbox((0, 0), 'E', font=font)
+	x = (MARK_SIZE - (box[2] - box[0])) / 2 - box[0]
+	y = (MARK_SIZE - (box[3] - box[1])) / 2 - box[1]
+	d.text((x, y), 'E', font=font, fill=(92, 222, 140, 255))
+	save(out, 'icon_equip')
 
 
 def gear(name):
@@ -465,13 +623,16 @@ def main():
 	os.makedirs(OUT, exist_ok=True)
 	print('Violet UI -> ' + OUT)
 	slot()
+	slot_round()
+	cell_glow()
 	nav_bg()
 	header_wash()
 	header_shadow()
 	glow_white()
 	# 내비 탭 — 152px(바 윗선이 보이게 160 보다 8 낮게), 선택은 색만 바뀐다
+	# 내비 탭 — 모서리를 깎지 않아 탭끼리 틈 없이 붙는다. 선택 탭은 바 높이(160px)에 딱 맞게 솟는다
 	nav_tab('navtab_off', 152, '#3B304E', '#565076', '#332B47')
-	nav_tab('navtab_on', 152, '#7550D2', '#8F8FFF', '#593DA1')
+	nav_tab('navtab_on', 160, '#7550D2', '#8F8FFF', '#593DA1')
 	# 분류 탭 — 92px
 	flush_tab('tab_off', 92, '#2D2344', '#392E53', None)
 	flush_tab('tab_on', 92, '#6D5ACD', '#8D78E1', '#9A7EF4')
@@ -489,6 +650,16 @@ def main():
 	middle('btn_danger', 80, '#9A2E36', '#C04A4E', '#2A0A0E')
 	# 켜진 토글 버튼(보관함 열림) — 일반 버튼 모양에 초록
 	middle('btn_active', 80, '#2F8A52', '#4CB474')
+	# 아이템 정보 팝업 — 큰 버튼 112px(장착 #53C596·강화 #A7C553), 창 밖 아래 보관함 이동 88px(#D45012), 닫기는 프레임 없는 Icon_Close_02 X.
+	# 안쪽 테두리는 같은 색을 28% 밝게
+	middle('btn_equip', 112, '#53C596', '#83D5B3')
+	middle('btn_enchant', 112, '#A7C553', '#BFD583')
+	middle('btn_stash', 88, '#D45012', '#E08154')
+	# 공용 확인 팝업의 위험 확인(분해·삭제) — 장비 화면 분해 버튼(btn_danger)과 같은 색을 112px 로
+	middle('btn_danger_large', 112, '#9A2E36', '#C04A4E', '#2A0A0E')
+	close_icon()
+	lock_icon()
+	equip_icon()
 
 
 if __name__ == '__main__':

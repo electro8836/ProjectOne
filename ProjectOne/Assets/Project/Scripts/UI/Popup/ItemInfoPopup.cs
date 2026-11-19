@@ -60,10 +60,21 @@ namespace ProjectOne.UI
 		private Button _decompose;
 		private Button _lock;
 		private ItemCellView _cell;
+		private ScrollView _scroll;
+
+		// 제목 줄 이름이 한 줄에 들어가는 폭 — 한글 1칸 기준(공백은 0.3칸, 영숫자는 0.6칸).
+		// 제목 칸 폭 약 720px, 한글 1칸 ≈ 글자 크기의 0.85배. 60px 로 넘치면 48px(--medium),
+		// 48px 로도 넘치면 36px(--small)로 줄인다
+		private const float TITLE_WIDTH_LARGE = 13.5f;
+		private const float TITLE_WIDTH_MEDIUM = 17f;
+		private VisualElement _head;
+		private VisualElement _window;
 		private UniTaskCompletionSource<bool> _tcs;
 
 		protected override void OnBind(VisualElement root)
 		{
+			_head = root.Q("head");
+			_window = root.Q(null, "popup__window");
 			_name = root.Q<Label>("name");
 			_grade = root.Q<Label>("grade");
 			_level = root.Q<Label>("level");
@@ -85,8 +96,8 @@ namespace ProjectOne.UI
 			_lock = root.Q<Button>("lock");
 			_lock.clicked += onLockClicked;
 
-			ScrollView scroll = root.Q<ScrollView>("scroll");
-			scroll.AddManipulator(new ScrollDragManipulator(scroll));
+			_scroll = root.Q<ScrollView>("scroll");
+			_scroll.AddManipulator(new ScrollDragManipulator(_scroll));
 
 			root.Q<Button>("close").clicked += onExitClicked;
 			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
@@ -133,15 +144,25 @@ namespace ProjectOne.UI
 		public void SetInfo(Table_Item.Row row, ItemGradeType grade, int level, int maxLevel, int quality)
 		{
 			_name.text = row.Name;
+			float titleWidth = getTitleWidth(row.Name);
+			_name.EnableInClassList("item-head__name--medium", titleWidth > TITLE_WIDTH_LARGE && titleWidth <= TITLE_WIDTH_MEDIUM);
+			_name.EnableInClassList("item-head__name--small", titleWidth > TITLE_WIDTH_MEDIUM);
 			_grade.text = ItemGradeNames.Get(grade);
 			if (_gradeColors != null)
 			{
-				_grade.style.color = _gradeColors.Get(grade).text;
+				// 제목 줄은 등급색 — 판은 진한 색, 아래 선과 등급 박스는 밝은 색
+				ItemGradeColorTable.GradeColor colors = _gradeColors.Get(grade);
+				_head.style.backgroundColor = colors.bg;
+				_head.style.borderBottomColor = colors.border;
+				_grade.style.backgroundColor = colors.border;
 			}
 
 			_level.text = "레벨: " + level + "/" + maxLevel;
 			_quality.text = "품질 : " + ProjectOne.Shared.EquipmentQuality.Format(quality) + "%";
 			_desc.text = row.Desc;
+
+			// 다른 장비를 열면 정보 덩어리를 맨 위부터 보인다
+			_scroll.scrollOffset = Vector2.zero;
 		}
 
 		public void RenderBasicOptions(IReadOnlyList<OptionLine> lines)
@@ -205,10 +226,10 @@ namespace ProjectOne.UI
 			_gradeBox.style.display = shown > 0 ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
-		// 레벨은 위에 따로 적으므로 칸의 레벨 표시는 끈다.
-		public async UniTask BindItemSlotAsync(EquipmentInstance instance, bool equipped, CancellationToken ct)
+		// 레벨은 위에 따로 적으므로 칸의 레벨 표시는 끈다. 장착 여부는 아래 장착/장착해제 버튼이 알려 주므로 칸의 장착 표시도 쓰지 않는다.
+		public async UniTask BindItemSlotAsync(EquipmentInstance instance, CancellationToken ct)
 		{
-			await _cell.BindEquipmentAsync(instance, equipped, ct);
+			await _cell.BindEquipmentAsync(instance, false, ct);
 			_cell.HideLevel();
 		}
 
@@ -232,9 +253,11 @@ namespace ProjectOne.UI
 			_enchant.text = label;
 		}
 
+		// 보관 버튼은 창 밖 아래에 붙는다 — 보일 때는 창을 그만큼 올려 덩어리 전체를 화면 가운데에 둔다.
 		public void SetStashVisible(bool visible)
 		{
 			setShown(_stash, visible);
+			_window.EnableInClassList("popup__window--stash", visible);
 		}
 
 		public void SetStashInteractable(bool interactable)
@@ -330,6 +353,30 @@ namespace ProjectOne.UI
 		private static void setShown(VisualElement element, bool shown)
 		{
 			element.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
+		}
+
+		// Pretendard 에서 글자가 차지하는 폭(한글 1칸 기준) — 공백은 0.3칸, 영숫자·기호는 0.6칸
+		private static float getTitleWidth(string text)
+		{
+			float width = 0f;
+			for (int i = 0; i < text.Length; i++)
+			{
+				char ch = text[i];
+				if (ch == ' ')
+				{
+					width += 0.3f;
+				}
+				else if (ch < 0x1100)
+				{
+					width += 0.6f;
+				}
+				else
+				{
+					width += 1f;
+				}
+			}
+
+			return width;
 		}
 
 		private void onEquipClicked()

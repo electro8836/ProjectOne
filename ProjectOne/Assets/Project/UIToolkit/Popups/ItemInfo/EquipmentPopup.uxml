@@ -2,25 +2,37 @@
 	<Style src="../../Common/Theme.uss" />
 	<Style src="../Popups.uss" />
 	<Style src="ItemInfo.uss" />
+	<Style src="../../Common/Violet.uss" />
 
-	<ui:VisualElement name="popup" class="popup">
+	<ui:VisualElement name="popup" class="popup theme-violet">
 		<ui:VisualElement name="dim" class="popup__dim" />
 		<ui:VisualElement class="px-paper popup__window">
-			<ui:VisualElement class="px-wood popup__head">
-				<ui:Label name="name" text="" class="popup__name text-pop" />
-				<ui:Button name="close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			<!-- 제목 줄 — 가운데 장비 이름, 아래 선 가운데에 등급 박스(절반이 아래로 걸친다), 오른쪽 X(프레임 없음).
+			     판·선·박스 색은 등급에 따라 ItemInfoPopup 이 칠한다 -->
+			<ui:VisualElement name="head" class="px-wood popup__head item-head">
+				<ui:Label name="name" text="" class="popup__name item-head__name" />
+				<ui:Label name="grade" text="" class="item-head__grade" picking-mode="Ignore" />
+				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
 			</ui:VisualElement>
 
-			<ui:ScrollView name="scroll" class="equip-info-scroll popup__body" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden">
+			<!-- 요약(고정) — 아이콘 · 등급 · 레벨 · 품질 · 잠금/분해 -->
+			<ui:VisualElement class="popup__body">
 				<ui:VisualElement class="item-summary">
 					<ui:VisualElement name="cell" class="item-summary__cell" />
 					<ui:VisualElement class="item-summary__meta">
-						<ui:Label name="grade" text="" class="item-summary__grade" />
 						<ui:Label name="level" text="" class="item-summary__sub" />
 						<ui:Label name="quality" text="" class="item-summary__sub" />
 					</ui:VisualElement>
-					<ui:Button name="lock" text="잠금" class="btn btn--small btn--gray" />
+					<!-- 오른쪽 위: 잠금, 그 아래 분해(잠그면 숨는다) -->
+					<ui:VisualElement class="item-summary__actions">
+						<ui:Button name="lock" text="잠금" class="btn btn--small btn--gray" />
+						<ui:Button name="decompose" text="분해" class="btn btn--red btn--small" />
+					</ui:VisualElement>
 				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<!-- 설명 · 기본 옵션 · 등급 옵션 — 한 덩어리로 스크롤. 짧으면 내용만큼, 길면 최대 높이에서 스크롤된다 -->
+			<ui:ScrollView name="scroll" class="equip-info-scroll popup__body" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden">
 				<ui:Label name="desc" text="" class="popup-text equip-info-desc" />
 				<ui:Label text="기본 옵션" class="section-title" />
 				<ui:VisualElement name="basic-options" class="px-inset option-box" />
@@ -29,15 +41,15 @@
 			</ui:ScrollView>
 
 			<ui:VisualElement name="buttons" class="equip-info-buttons">
-				<ui:VisualElement class="equip-info-buttons__row">
-					<ui:Button name="decompose" text="분해" class="btn btn--red btn--small" />
-					<ui:Button name="stash" text="보관" class="btn btn--small" />
-				</ui:VisualElement>
 				<ui:VisualElement class="popup__buttons">
-					<ui:Button name="enchant" text="강화" class="btn btn--gold popup__button" />
 					<ui:Button name="equip" text="장착" class="btn btn--green popup__button" />
+					<ui:Button name="enchant" text="강화" class="btn btn--gold popup__button" />
 				</ui:VisualElement>
 			</ui:VisualElement>
+
+			<!-- 보관함 모드에서만 — 창 프레임 밖 아래 가운데에 띄운 작은 버튼(보관함으로 이동 / 인벤토리로 이동).
+			     창의 자식이라 팝업 등장·퇴장 연출을 함께 탄다 -->
+			<ui:Button name="stash" text="보관" class="btn equip-info-stash" />
 		</ui:VisualElement>
 	</ui:VisualElement>
 </ui:UXML>

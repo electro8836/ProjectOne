@@ -41,6 +41,8 @@ namespace ProjectOne.UI
 			{
 				_button2.text = data.button2Text;
 			}
+
+			_button2.EnableInClassList("common-popup__confirm--danger", data.isDanger);
 		}
 
 		protected override CommonPopupResult CancelledResult

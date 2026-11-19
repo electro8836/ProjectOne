@@ -37,6 +37,7 @@ namespace ProjectOne.UI
 			target.RegisterCallback<PointerMoveEvent>(onPointerMove, TrickleDown.TrickleDown);
 			target.RegisterCallback<PointerUpEvent>(onPointerUp, TrickleDown.TrickleDown);
 			target.RegisterCallback<ClickEvent>(onClick, TrickleDown.TrickleDown);
+			target.RegisterCallback<WheelEvent>(onWheel, TrickleDown.TrickleDown);
 		}
 
 		protected override void UnregisterCallbacksFromTarget()
@@ -45,6 +46,7 @@ namespace ProjectOne.UI
 			target.UnregisterCallback<PointerMoveEvent>(onPointerMove, TrickleDown.TrickleDown);
 			target.UnregisterCallback<PointerUpEvent>(onPointerUp, TrickleDown.TrickleDown);
 			target.UnregisterCallback<ClickEvent>(onClick, TrickleDown.TrickleDown);
+			target.UnregisterCallback<WheelEvent>(onWheel, TrickleDown.TrickleDown);
 		}
 
 		// 세로로 밀 수 있는 거리. 내용이 보이는 영역보다 작으면 0 이다.
@@ -132,6 +134,19 @@ namespace ProjectOne.UI
 
 			_pointerId = PointerId.invalidPointerId;
 			_isDragging = false;
+		}
+
+		// 마우스 휠 — 스크롤 범위 안으로만 옮긴다. ScrollView 기본 처리에 맡기면 터치용 Elastic 이 휠에도 걸려
+		// 끝에서 범위 밖으로 밀렸다가 튕겨 돌아오며 목록이 떨린다.
+		private void onWheel(WheelEvent evt)
+		{
+			float offsetY = Mathf.Clamp(_scrollView.scrollOffset.y + evt.delta.y * _scrollView.mouseWheelScrollSize, 0f, maxOffset());
+			if (offsetY != _scrollView.scrollOffset.y)
+			{
+				_scrollView.scrollOffset = new Vector2(_scrollView.scrollOffset.x, offsetY);
+			}
+
+			evt.StopPropagation();
 		}
 
 		private void onClick(ClickEvent evt)

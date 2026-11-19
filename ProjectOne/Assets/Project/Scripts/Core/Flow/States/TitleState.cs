@@ -79,6 +79,7 @@ namespace ProjectOne.Flow
 			data.desc = PendingNotice;
 			data.button1Text = NetworkMessages.Confirm;
 			data.button2Text = string.Empty;
+			data.isDanger = false;
 			PendingNotice = null;
 
 			await UIManager.Instance.ShowCommonPopupAsync(data, ct);

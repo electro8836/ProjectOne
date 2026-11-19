@@ -129,7 +129,7 @@ namespace ProjectOne.UI
 			view.RenderGradeOptions(_gradeLines);
 
 			// 아이콘 로드가 끝난 뒤 한 번에 표시
-			await view.BindItemSlotAsync(instance, isEquipped(), ct);
+			await view.BindItemSlotAsync(instance, ct);
 			view.Reveal();
 
 			await view.WaitForCloseAsync(ct);
@@ -199,6 +199,7 @@ namespace ProjectOne.UI
 			data.desc = "아이템분해시 소모한 등급과 강화에 따라 일부 재화를 얻을 수 있습니다.";
 			data.button1Text = "취소";
 			data.button2Text = "분해";
+			data.isDanger = true;
 
 			// 취소·닫기·Dim 은 확인 팝업만 닫는다.
 			(bool cancelled, CommonPopupResult result) = await UIManager.Instance.ShowCommonPopupAsync(data, ct).SuppressCancellationThrow();

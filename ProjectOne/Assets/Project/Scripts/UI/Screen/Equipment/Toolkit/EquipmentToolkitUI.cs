@@ -177,6 +177,7 @@ namespace ProjectOne.UI
 		}
 
 		// 탭만 선택(OnTabSelected 를 발행하지 않음 — 초기 표시용).
+		// 탭이 바뀌면 목록을 맨 위로 되돌린다 — 긴 목록에서 내려 둔 위치가 짧은 목록에 남으면 칸이 화면 밖에 있어 빈 목록처럼 보인다.
 		public void SelectTab(int index)
 		{
 			_selectedTab = index;
@@ -184,6 +185,9 @@ namespace ProjectOne.UI
 			{
 				_tabs[i].EnableInClassList("tab--selected", i == index);
 			}
+
+			_itemGrid.scrollOffset = Vector2.zero;
+			_stashGrid.scrollOffset = Vector2.zero;
 		}
 
 		public UniTask RenderGridAsync(IReadOnlyList<ItemSlotData> data, CancellationToken ct)
@@ -218,10 +222,10 @@ namespace ProjectOne.UI
 			await UniTask.WhenAll(_iconTasks).SuppressCancellationThrow();
 		}
 
-		// "대검 Lv.12" — 장착 무기의 마스터리 레벨. 무기가 없으면 감춘다.
+		// "대검 레벨 12" — 장착 무기의 마스터리 레벨. 무기가 없으면 감춘다.
 		public void RenderLevel(string weaponName, int masteryLevel)
 		{
-			_level.text = (masteryLevel > 0) ? weaponName + " Lv." + masteryLevel.ToString() : string.Empty;
+			_level.text = (masteryLevel > 0) ? weaponName + " 레벨 " + masteryLevel.ToString() : string.Empty;
 			_level.style.display = (masteryLevel > 0) ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 

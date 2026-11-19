@@ -33,6 +33,16 @@
 	color: var(--ink-sub);
 }
 
+/* 잠금(위) + 분해(아래) — 요약 줄 오른쪽 위에 붙인다 */
+.item-summary__actions {
+	align-self: flex-start;
+	align-items: stretch;
+}
+
+.item-summary__actions .btn {
+	margin-bottom: 12px;
+}
+
 /* 소모품 수량 조절 */
 .consumable-control {
 	padding-bottom: 6px;
@@ -55,10 +65,11 @@
 	-unity-text-align: middle-center;
 }
 
-/* 장비 정보 */
+/* 장비 정보 — 설명·옵션이 한 덩어리로 스크롤된다. 높이는 고정이라 팝업 전체 크기가 장비마다 같고, 넘치는 내용은 스크롤로 본다 */
 .equip-info-scroll {
-	max-height: 1150px;
-	margin-bottom: 20px;
+	height: 720px;
+	flex-shrink: 0;
+	margin-bottom: 24px;
 }
 
 .equip-info-desc {
@@ -104,12 +115,20 @@
 	margin-left: 10px;
 }
 
-.equip-info-buttons__row {
-	flex-direction: row;
-	justify-content: flex-end;
-	margin: 0 40px 14px 40px;
+/* 보관함 이동 — 창 아래 28px 띄워 가운데에. 장착·강화(112px · 48px 글자)보다 작게 88px · 36px 글자.
+   가운데 정렬은 왼쪽 여백(-폭/2)으로 한다 — translate 로 하면 누를 때의 눌림 연출(.btn:active translate)이 덮어써 옆으로 튄다 */
+.equip-info-stash {
+	position: absolute;
+	top: 100%;
+	left: 50%;
+	margin-left: -220px;
+	width: 440px;
+	height: 88px;
+	margin-top: 28px;
+	font-size: 36px;
 }
 
-.equip-info-buttons__row .btn {
-	margin-left: 12px;
+/* 보관 버튼이 보일 때 — 창 + 버튼 덩어리가 화면 가운데에 오도록 아래 여백(28 + 88)을 잡아 창을 올린다 */
+.popup__window--stash {
+	margin-bottom: 116px;
 }

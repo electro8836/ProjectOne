@@ -1,11 +1,12 @@
 /* 공통 도트 테마 — 9-slice 도트 부품(UIToolkit/Pixel, Tools/pixelui 가 생성)·색·폰트·버튼·게이지.
    도트 1칸 = 4px(-unity-slice-scale). 부품을 다시 그리려면 Tools/pixelui/generate_pixel_ui.py 를 고친다.
 
-   글꼴: 갈무리11(도트, SIL OFL). 12px 격자로 그려진 폰트라 크기는 12의 배수(36·48·60·72)가 가장 또렷하다.
-   글자 크기는 12의 배수만 쓴다(그 외 크기는 도트가 뭉개져 제목과 다른 글꼴처럼 보인다). 최소 36px.
+   글꼴: Pretendard(SIL OFL). 본문은 SemiBold, 제목·버튼·강조 글자는 ExtraBold(파일 끝 규칙).
+   30px 보다 작은 글자는 외곽선에 획이 먹혀 뭉개지므로 ExtraBold 로 쓴다.
    글자 효과 규칙:
      석판 위 밝은 글자   → 기본(아래로 진한 그림자 한 칸)
-     색 바탕 위 흰 글자  → .text-pop (진한 외곽선 + 아래 그림자) */
+     색 바탕 위 흰 글자  → .text-pop (흰 글자 + 아래 그림자)
+   외곽선은 모든 글자 공통 2px(:root) — 화면마다 굵기를 따로 정하지 않는다 */
 
 @import url("../Components/ItemCell.uss");
 
@@ -23,7 +24,11 @@
 	--green-dark: #2F8C45;
 	--white: #FFFFFF;
 
-	-unity-font-definition: url("../../Art/UI/Fonts/Galmuri/Galmuri11-Bold.ttf");
+	-unity-font-definition: url("../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");	/* 본문 — Pretendard SemiBold (SIL OFL) */
+	/* 모든 글자에 같은 얇은 외곽선 — 바탕이 밝든 어둡든 읽히게. 굵기는 여기 한 곳에서만 정한다(색은 화면별로 바꿔도 된다).
+	   2px 보다 굵으면 획 사이가 메워져 뭉개진다 */
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
 	color: var(--text);
 	font-size: 36px;
 	text-shadow: 0 3px 0 var(--paper-shadow);
@@ -32,7 +37,6 @@
 /* 색 바탕 위 흰 글자 */
 .text-pop {
 	color: var(--white);
-	-unity-text-outline-width: 3px;
 	-unity-text-outline-color: var(--ink);
 	text-shadow: 0 4px 0 var(--ink);
 }
@@ -66,7 +70,6 @@
 
 .header__title {
 	font-size: 72px;
-	-unity-text-outline-width: 4px;
 	text-shadow: 0 6px 0 var(--ink);
 }
 
@@ -120,7 +123,6 @@
 	-unity-slice-scale: 4px;
 	font-size: 48px;
 	color: var(--white);
-	-unity-text-outline-width: 2px;
 	-unity-text-outline-color: var(--ink);
 	text-shadow: 0 4px 0 var(--ink);
 	transition-property: translate;
@@ -199,7 +201,6 @@
 	-unity-slice-scale: 4px;
 	font-size: 36px;
 	color: var(--white);
-	-unity-text-outline-width: 1px;
 	-unity-text-outline-color: var(--ink);
 	text-shadow: 0 3px 0 var(--ink);
 }
@@ -263,7 +264,6 @@
 	font-size: 36px;
 	-unity-text-align: middle-center;
 	color: var(--white);
-	-unity-text-outline-width: 1px;
 	-unity-text-outline-color: var(--ink);
 	text-shadow: 0 3px 0 var(--ink);
 }
@@ -373,7 +373,6 @@
 .level-text {
 	font-size: 48px;
 	color: var(--gold);
-	-unity-text-outline-width: 2px;
 	-unity-text-outline-color: var(--ink);
 	text-shadow: 0 4px 0 var(--ink);
 }
@@ -629,6 +628,23 @@
 	color: var(--white);
 	white-space: normal;
 	-unity-text-align: middle-center;
-	-unity-text-outline-width: 2px;
 	-unity-text-outline-color: var(--ink);
+}
+
+/* 제목·버튼·강조 글자 — Pretendard ExtraBold. 아이템 칸 숫자는 작아서 굵어야 외곽선에 묻히지 않는다 */
+.btn,
+.tab,
+.header__title,
+.popup__name,
+.item-head__grade,
+.section-title,
+.nav-tab__label,
+.stage__name,
+.stage__power,
+.bag__caption,
+.stash__title,
+.item-cell__level,
+.item-cell__count,
+.item-cell__equip {
+	-unity-font-definition: url("../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }

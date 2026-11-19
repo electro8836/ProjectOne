@@ -25,7 +25,7 @@ namespace ProjectOne.UI
 		private readonly VisualElement _type;
 		private readonly VisualElement _typeIcon;
 		private readonly VisualElement _lock;
-		private readonly Label _equip;
+		private readonly VisualElement _equip;
 		private readonly Label _level;
 		private readonly Label _count;
 		private readonly VisualElement _quality;
@@ -72,7 +72,12 @@ namespace ProjectOne.UI
 			_typeIcon.pickingMode = PickingMode.Ignore;
 			_type.Add(_typeIcon);
 			_lock = addChild("item-cell__lock");
-			_equip = addLabel("item-cell__equip", "장착");
+			// 장착 표시 — 판(테마가 칩·배지로 칠함) 안에 글자. 바이올렛 테마는 글자를 감추고 E 배지 그림만 쓴다
+			_equip = addChild("item-cell__equip");
+			Label equipText = new Label("장착");
+			equipText.AddToClassList("item-cell__equip-text");
+			equipText.pickingMode = PickingMode.Ignore;
+			_equip.Add(equipText);
 			_level = addLabel("item-cell__level", string.Empty);
 			_count = addLabel("item-cell__count", string.Empty);
 			_quality = addChild("item-cell__quality");
@@ -97,7 +102,7 @@ namespace ProjectOne.UI
 			SetLocked(instance.locked);
 
 			setShown(_level, true);
-			_level.text = "Lv." + instance.level;
+			_level.text = "레벨 " + instance.level;
 			setShown(_count, false);
 
 			setShown(_quality, true);
@@ -166,6 +171,7 @@ namespace ProjectOne.UI
 		public void SetEquipped(bool equipped)
 		{
 			setShown(_equip, equipped);
+			_root.EnableInClassList("item-cell--equipped", equipped);	// 바이올렛 테마는 장착 표시가 있으면 잠금을 그 아래로 내린다
 		}
 
 		public void SetLocked(bool locked)
@@ -225,6 +231,7 @@ namespace ProjectOne.UI
 			ItemGradeColorTable.GradeColor gc = _colors.Get(grade);
 			_root.style.unityBackgroundImageTintColor = gc.border;
 			_bg.style.backgroundColor = gc.bg;
+			_bg.style.unityBackgroundImageTintColor = gc.bg;	// 바탕 판이 그라데이션 이미지인 테마(바이올렛)는 틴트로 칠한다
 		}
 
 		// 분류 배지 — 바탕은 등급과 무관한 고정색(ItemCell.uss). 아이콘은 Atlas_Icon 에 상주하므로 동기로 바로 입힌다. 분류가 없으면(재료·수집품) 배지를 감춘다.
