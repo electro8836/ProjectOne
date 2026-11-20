@@ -19,7 +19,7 @@ namespace ProjectOne.UI
 	{
 		private const float RefreshInterval = 0.1f;
 
-		// 버프 1칸 — 아이콘 + 중첩 수(오른쪽 위) + 남은 시간(아래).
+		// 버프 1칸 — 아이콘 + 중첩 수(윗변 가운데) + 남은 시간(아랫변 가운데), 전부 칸 안에 겹친다.
 		private sealed class Cell
 		{
 			public VisualElement root;
@@ -141,7 +141,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 가장 큰 단위 하나만 — 칸 아래 한 줄에 들어가야 한다.
+		// 가장 큰 단위 하나만 — 75 폭 칸 아랫변에 들어가야 한다.
 		private static string formatRemain(int totalSeconds)
 		{
 			if (totalSeconds >= 86400)
@@ -174,18 +174,13 @@ namespace ProjectOne.UI
 			cell.root.AddToClassList("buff");
 			cell.root.pickingMode = PickingMode.Ignore;
 
-			VisualElement frame = new VisualElement();
-			frame.AddToClassList("buff__frame");
-			frame.pickingMode = PickingMode.Ignore;
-			cell.root.Add(frame);
-
 			cell.icon = new VisualElement();
 			cell.icon.AddToClassList("buff__icon");
 			cell.icon.pickingMode = PickingMode.Ignore;
-			frame.Add(cell.icon);
+			cell.root.Add(cell.icon);
 
 			cell.stack = createLabel("buff__stack");
-			frame.Add(cell.stack);
+			cell.root.Add(cell.stack);
 
 			cell.time = createLabel("buff__time");
 			cell.root.Add(cell.time);
