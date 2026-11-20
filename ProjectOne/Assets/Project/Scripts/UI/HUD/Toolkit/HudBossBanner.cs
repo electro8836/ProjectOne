@@ -20,11 +20,11 @@ namespace ProjectOne.UI
 		private readonly VisualElement _hud;
 		private readonly VisualElement _banner;
 		private readonly Label _name;
-		private readonly VisualElement _hpGauge;
+		private readonly Label _level;
 		private readonly VisualElement _hpFill;
 		private readonly Label _hpText;
 		private readonly Label _hpPercent;
-		private readonly VisualElement _breakGauge;
+		private readonly VisualElement _breakRow;
 		private readonly VisualElement _breakFill;
 		private readonly Label _state;
 
@@ -53,11 +53,11 @@ namespace ProjectOne.UI
 			_hud = root.Q("hud");
 			_banner = root.Q("boss");
 			_name = root.Q<Label>("boss-name");
-			_hpGauge = root.Q("boss-hp");
+			_level = root.Q<Label>("boss-level");
 			_hpFill = root.Q("boss-hp-fill");
 			_hpText = root.Q<Label>("boss-hp-text");
 			_hpPercent = root.Q<Label>("boss-hp-percent");
-			_breakGauge = root.Q("boss-break");
+			_breakRow = root.Q("boss-break-row");
 			_breakFill = root.Q("boss-break-fill");
 			_state = root.Q<Label>("boss-state");
 
@@ -136,7 +136,7 @@ namespace ProjectOne.UI
 
 			float ratio = (max > 0f) ? Mathf.Clamp01(hp / max) : 0f;
 			_hpFill.style.width = Length.Percent(ratio * 100f);
-			_hpText.text = Mathf.CeilToInt(hp).ToString() + " / " + Mathf.CeilToInt(max).ToString();
+			_hpText.text = Mathf.CeilToInt(hp).ToString("N0") + " / " + Mathf.CeilToInt(max).ToString("N0");
 
 			int percent = Mathf.RoundToInt(ratio * 100f);
 			if (percent != _lastPercent)
@@ -183,12 +183,13 @@ namespace ProjectOne.UI
 			_breakFill.style.width = Length.Percent(ratio * 100f);
 		}
 
-		// 면역 우선 — 둘 다 걸려 있으면 면역 문구를 보여준다.
+		// 면역 우선 — 둘 다 걸려 있으면 면역 문구·칩을 보여준다(USS 에서 면역 칩 규칙이 뒤에 있어 이긴다).
 		// 브레이크 테두리는 무적이 아니라 기절을 본다 — 패턴 전환(무적) 중에 켜지면 안 된다.
+		// 클래스(boss--immune / boss--stun)가 게이지 색·테두리와 상태 칩 표시·아이콘을 바꾼다.
 		private void applyStateVisual(bool invincible, bool breakStun)
 		{
-			_hpGauge.EnableInClassList("hud-gauge--immune", invincible);
-			_breakGauge.EnableInClassList("hud-gauge--stun", breakStun);
+			_banner.EnableInClassList("boss--immune", invincible);
+			_banner.EnableInClassList("boss--stun", breakStun);
 
 			if (invincible == true)
 			{
@@ -235,7 +236,7 @@ namespace ProjectOne.UI
 
 			_boss = evt.Unit;
 			_break = (_boss != null) ? _boss.GetComponent<MonsterBreak>() : null;
-			_breakGauge.style.display = (_break != null) ? DisplayStyle.Flex : DisplayStyle.None;
+			_breakRow.style.display = (_break != null) ? DisplayStyle.Flex : DisplayStyle.None;
 
 			// 새 보스는 이전 보스와 수치가 같을 수 있다 — 캐시를 비워 첫 갱신을 보장한다.
 			_lastHp = -1f;
@@ -245,6 +246,7 @@ namespace ProjectOne.UI
 			_stateInitialized = false;
 
 			_name.text = row.Name;
+			_level.text = (_boss != null) ? $"레벨 {_boss.Level}" : string.Empty;
 
 			if (_boss != null)
 			{

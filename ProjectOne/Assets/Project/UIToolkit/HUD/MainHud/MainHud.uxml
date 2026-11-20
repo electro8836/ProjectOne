@@ -70,21 +70,35 @@
 			</ui:Button>
 		</ui:VisualElement>
 
-		<!-- 보스 배너 — 가운데 위(윗줄 바로 아래). 보스가 나오면 뜨고 죽으면 잠시 뒤 사라진다 -->
+		<!-- 보스 배너 — 가운데 위(윗줄 바로 아래). 보스가 나오면 뜨고 죽으면 잠시 뒤 사라진다.
+		     모서리 깎은 남색 판(체력 게이지 + 번개 아이콘 브레이크 게이지) 위쪽 가운데에 탭(보스 아이콘 + 이름 + 레벨)이 걸치고,
+		     무적·브레이크 기절 중에는 판 아래에 아이콘 칩으로 상태 설명이 뜬다 -->
 		<ui:VisualElement name="boss" class="boss" picking-mode="Ignore">
-			<ui:VisualElement class="boss__name-row" picking-mode="Ignore">
-				<ui:VisualElement class="boss__icon" picking-mode="Ignore" />
-				<ui:Label name="boss-name" class="boss__name hud-text" picking-mode="Ignore" />
+			<ui:VisualElement class="boss__panel" picking-mode="Ignore">
+				<ui:VisualElement name="boss-hp" class="boss__hp" picking-mode="Ignore">
+					<ui:VisualElement name="boss-hp-fill" class="boss__hp-fill" picking-mode="Ignore" />
+					<ui:Label name="boss-hp-text" class="boss__hp-text" picking-mode="Ignore" />
+					<ui:Label name="boss-hp-percent" class="boss__percent" picking-mode="Ignore" />
+				</ui:VisualElement>
+				<ui:VisualElement name="boss-break-row" class="boss__break-row" picking-mode="Ignore">
+					<ui:VisualElement class="boss__break-icon" picking-mode="Ignore" />
+					<ui:VisualElement name="boss-break" class="boss__break" picking-mode="Ignore">
+						<ui:VisualElement name="boss-break-fill" class="boss__break-fill" picking-mode="Ignore" />
+					</ui:VisualElement>
+				</ui:VisualElement>
 			</ui:VisualElement>
-			<ui:VisualElement name="boss-hp" class="hud-gauge hud-gauge--boss" picking-mode="Ignore">
-				<ui:VisualElement name="boss-hp-fill" class="hud-gauge__fill" picking-mode="Ignore" />
-				<ui:Label name="boss-hp-text" class="hud-gauge__text boss__hp-text hud-text" picking-mode="Ignore" />
-				<ui:Label name="boss-hp-percent" class="hud-gauge__text boss__percent hud-text" picking-mode="Ignore" />
+			<!-- 탭은 판보다 뒤에 둬야 판 윗테두리를 덮는다 -->
+			<ui:VisualElement class="boss__tab-row" picking-mode="Ignore">
+				<ui:VisualElement class="boss__tab" picking-mode="Ignore">
+					<ui:VisualElement class="boss__icon" picking-mode="Ignore" />
+					<ui:Label name="boss-name" class="boss__name" picking-mode="Ignore" />
+					<ui:Label name="boss-level" class="boss__level" picking-mode="Ignore" />
+				</ui:VisualElement>
 			</ui:VisualElement>
-			<ui:VisualElement name="boss-break" class="hud-gauge hud-gauge--thin" picking-mode="Ignore">
-				<ui:VisualElement name="boss-break-fill" class="hud-gauge__fill hud-gauge__fill--break" picking-mode="Ignore" />
+			<ui:VisualElement name="boss-state-chip" class="boss__state" picking-mode="Ignore">
+				<ui:VisualElement class="boss__state-icon" picking-mode="Ignore" />
+				<ui:Label name="boss-state" class="boss__state-text" picking-mode="Ignore" />
 			</ui:VisualElement>
-			<ui:Label name="boss-state" class="boss__state hud-text" picking-mode="Ignore" />
 		</ui:VisualElement>
 
 		<!-- 궁극기 버튼 -->
