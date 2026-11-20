@@ -15,15 +15,20 @@ namespace ProjectOne.UI
 	//   재화   : 획득 수량 <color=재화색>이름</color>
 	//
 	// UI Toolkit 화면이다(레이아웃 UIToolkit/HUD/SystemLog/SystemLogInfo.uxml). UIManager 가 System 층에 붙인다.
-	// 최대 MaxSlots 줄까지 두고, 넘치면 가장 오래된 줄을 재사용해 맨 아래(최신)로 옮긴다(큐).
+	// 최대 MaxSlots 줄까지 두고, 넘치면 가장 오래된 줄을 재사용해 맨 아래(최신)로 옮긴다.
 	// 목록이 column-reverse 라 **첫 번째 자식이 맨 아래**에 놓인다.
 	// 각 줄은 표시 후 LifeSeconds 가 지나면 빠져 대기 목록으로 돌아간다(파괴하지 않고 재사용).
+	// 재화는 종류마다 한 줄로 합산한다 — 그 줄이 떠 있는 동안 같은 재화가 또 들어오면 수량을 더하고
+	// 맨 아래로 옮기며 수명을 CurrencyLifeSeconds 로 다시 채운다. 그 시간 안에 안 들어오면 사라진다.
 	public class SystemLogInfo : ToolkitScreen
 	{
 		private const int MaxSlots = 10;
 
 		// 표시 후 사라지기까지의 시간(초)
 		private const float LifeSeconds = 5f;
+
+		// 재화 합산 줄의 수명(초) — 같은 재화를 얻을 때마다 다시 채운다
+		private const float CurrencyLifeSeconds = 10f;
 
 		// 인벤토리 가득 참 안내를 다시 찍기까지의 시간(초)
 		private const float InventoryFullLogCooldown = 3f;
@@ -35,12 +40,15 @@ namespace ProjectOne.UI
 		{
 			public Label label;
 			public float expireTime;
+			public bool isCurrency;			// 재화 합산 줄이면 true
+			public EDT.Currency currency;
+			public long currencyCount;		// 지금까지 합산한 수량
 		}
 
 		private VisualElement _list;
 
-		// 표시 중인 줄, 오래된 순서. 앞이 가장 먼저 찍힌 로그다.
-		private readonly Queue<Line> _slots = new Queue<Line>();
+		// 표시 중인 줄, 오래된 순서(맨 위 → 맨 아래). 재화 줄은 수명이 갱신되므로 만료 순서와 같지 않다.
+		private readonly List<Line> _slots = new List<Line>();
 
 		// 시간이 지나 빠진 줄. 다음 로그에 재사용한다.
 		private readonly Stack<Line> _idle = new Stack<Line>();
@@ -70,12 +78,19 @@ namespace ProjectOne.UI
 			base.OnDestroy();
 		}
 
-		// 만료 시각은 들어온 순서와 같으므로 맨 앞만 보면 된다.
+		// 재화 줄은 수명이 갱신되어 만료 순서가 섞인다 — 최대 MaxSlots 줄이라 전부 훑는다.
 		private void Update()
 		{
-			while (_slots.Count > 0 && _slots.Peek().expireTime <= Time.time)
+			float now = Time.time;
+			for (int i = _slots.Count - 1; i >= 0; i--)
 			{
-				Line line = _slots.Dequeue();
+				if (_slots[i].expireTime > now)
+				{
+					continue;
+				}
+
+				Line line = _slots[i];
+				_slots.RemoveAt(i);
 				line.label.RemoveFromHierarchy();
 				_idle.Push(line);
 			}
@@ -85,7 +100,13 @@ namespace ProjectOne.UI
 
 		private void onRewardAcquired(RewardAcquiredEvent e)
 		{
-			string text = (e.Type == RewardType.Currency) ? formatCurrency(e) : formatItem(e);
+			if (e.Type == RewardType.Currency)
+			{
+				addCurrencyLog(e);
+				return;
+			}
+
+			string text = formatItem(e);
 			if (text == null)
 			{
 				return;
@@ -134,15 +155,69 @@ namespace ProjectOne.UI
 
 		private void addLog(string text)
 		{
+			addLine(text, LifeSeconds);
+		}
+
+		// 같은 재화 줄이 떠 있으면 수량을 더해 맨 아래로 옮기고, 없으면 새 줄을 낸다.
+		private void addCurrencyLog(RewardAcquiredEvent e)
+		{
+			Table_Currency.Row row = Table_Currency.Get(e.Currency);
+			if (row == null)
+			{
+				Debug.LogError($"[SystemLogInfo] Table_Currency.Get({e.Currency}) == null");
+				return;
+			}
+
+			Line line = findCurrencyLine(e.Currency);
+			if (line == null)
+			{
+				line = addLine(formatCurrency(row, e.Count), CurrencyLifeSeconds);
+				if (line == null)
+				{
+					return;
+				}
+
+				line.isCurrency = true;
+				line.currency = e.Currency;
+				line.currencyCount = e.Count;
+				return;
+			}
+
+			line.currencyCount += e.Count;
+			line.label.text = formatCurrency(row, line.currencyCount);
+			line.expireTime = Time.time + CurrencyLifeSeconds;
+
+			// 맨 아래(최신)로 — column-reverse 에서는 첫 번째 자식이 맨 아래다.
+			_slots.Remove(line);
+			_slots.Add(line);
+			_list.Insert(0, line.label);
+		}
+
+		private Line findCurrencyLine(EDT.Currency currency)
+		{
+			for (int i = 0; i < _slots.Count; i++)
+			{
+				if (_slots[i].isCurrency == true && _slots[i].currency == currency)
+				{
+					return _slots[i];
+				}
+			}
+
+			return null;
+		}
+
+		private Line addLine(string text, float lifeSeconds)
+		{
 			if (_list == null)
 			{
-				return;
+				return null;
 			}
 
 			Line line;
 			if (_slots.Count >= MaxSlots)
 			{
-				line = _slots.Dequeue();
+				line = _slots[0];
+				_slots.RemoveAt(0);
 			}
 			else if (_idle.Count > 0)
 			{
@@ -158,21 +233,16 @@ namespace ProjectOne.UI
 
 			// 최신 로그를 맨 아래로 — column-reverse 에서는 첫 번째 자식이 맨 아래다.
 			line.label.text = text;
-			line.expireTime = Time.time + LifeSeconds;
+			line.expireTime = Time.time + lifeSeconds;
+			line.isCurrency = false;
 			_list.Insert(0, line.label);
-			_slots.Enqueue(line);
+			_slots.Add(line);
+			return line;
 		}
 
-		private string formatCurrency(RewardAcquiredEvent e)
+		private static string formatCurrency(Table_Currency.Row row, long amount)
 		{
-			Table_Currency.Row row = Table_Currency.Get(e.Currency);
-			if (row == null)
-			{
-				Debug.LogError($"[SystemLogInfo] Table_Currency.Get({e.Currency}) == null");
-				return null;
-			}
-
-			string count = e.Count.ToString("N0");
+			string count = amount.ToString("N0");
 
 			// TextColor 가 비어 있으면 색 태그 없이 기본 색으로 찍는다.
 			if (string.IsNullOrEmpty(row.TextColor) == true)

@@ -1,4 +1,5 @@
-/* 획득 로그 — 첫 번째 자식이 맨 아래(column-reverse). 코드는 새 줄을 0번에 꽂는다. */
+/* 획득 로그 — 첫 번째 자식이 맨 아래(column-reverse). 코드는 새 줄을 0번에 꽂는다.
+   줄마다 남색 띠(알파 235, 60% 지점부터 오른쪽 끝까지 smoothstep 으로 옅어짐 — 꺾이는 경계가 보이지 않게) + 왼쪽 보라 줄. 줄 사이 틈 없이 붙인다. */
 
 .syslog-layer {
 	position: absolute;
@@ -12,17 +13,23 @@
 	position: absolute;
 	left: 0;
 	bottom: 280px;
-	width: 480px;
+	width: 500px;
 	flex-direction: column-reverse;
 }
 
 .syslog__line {
-	margin: 2px 0 0 0;
-	padding: 2px 15px 4px 15px;
-	background-color: rgba(0, 0, 0, 0.59);
-	font-size: 36px;
+	min-height: 46px;
+	margin: 0;
+	padding: 4px 20px 4px 16px;
+	background-image: url("../../Violet/syslog_band.png");
+	-unity-background-scale-mode: stretch-to-fill;
+	border-left-width: 4px;
+	border-left-color: #6E5CAA;
+	font-size: 30px;
 	color: var(--white);
 	white-space: normal;
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 3px 0 var(--ink);
+	-unity-text-align: middle-left;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 var(--ink);
 }
