@@ -25,6 +25,16 @@ namespace ProjectOne.Unit.AI
 
 		public void Tick(UnitBase self, Blackboard bb, float dt)
 		{
+			// 필드보스 구역 — 히어로가 구역 밖이면 타겟을 잡지도 움직이지도 않는다.
+			// 싸운 흔적이 남은 보스는 필드 스포너가 회수해 새로 스폰한다(선공 보스가 밖의 히어로를 잡아 재스폰을 반복하지 않게 여기서 멈춘다).
+			// 보스는 리쉬(자리 이탈 복귀)를 하지 않는다 — 구역이 그 역할을 한다.
+			Monster monster = self as Monster;
+			if (monster != null && monster.BossArea != null && monster.IsHeroInBossArea() == false)
+			{
+				self.Mover.Stop();
+				return;
+			}
+
 			// 스킬/평타 모션이 도는 동안은 그 자리에서 마친다 — 이동도 판단도 하지 않는다
 			SkillContainer sc = self.SkillContainer;
 			if (sc != null && sc.IsInAction == true)
@@ -38,24 +48,6 @@ namespace ProjectOne.Unit.AI
 			if (_runner.Tick(self) == true)
 			{
 				self.Mover.Stop();
-				return;
-			}
-
-			// 자리에서 너무 벗어났으면 걸어서 복귀하지 않고 스폰 위치로 순간이동해 처음 상태로 되돌린다.
-			// 몬스터가 아닌 보스(없지만 방어)는 일반 복귀를 탄다.
-			Monster monster = self as Monster;
-			if (monster != null)
-			{
-				Vector2 fromAnchor = self.CachedPos - bb.Anchor;
-				if (fromAnchor.sqrMagnitude > bb.LeashRange * bb.LeashRange)
-				{
-					monster.ResetToSpawnOrigin();
-					self.Mover.Stop();
-					return;
-				}
-			}
-			else if (MonsterAiCommon.TickLeash(self, bb) == true)
-			{
 				return;
 			}
 

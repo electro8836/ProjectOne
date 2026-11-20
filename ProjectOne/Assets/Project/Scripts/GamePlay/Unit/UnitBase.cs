@@ -618,6 +618,8 @@ namespace ProjectOne.Unit
 			// 풀 재사용 — 이전 생의 모션 잠금이 남아 조준이 굳는 것을 막는다
 			if (_skillContainer != null)
 			{
+				// 캐스팅도 끊는다 — 남으면 IsCasting 이 켜진 채라 범위 표시(SkillIndicator)가 계속 떠 있다(보스 구역 초기화).
+				_skillContainer.CancelCasting();
 				_skillContainer.CancelAction();
 
 				// Die() 를 거치지 않고 회수되는 경로(스테이지 정리 등)도 있으므로 여기서 한 번 더 비운다.

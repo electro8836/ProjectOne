@@ -10,10 +10,10 @@ namespace ProjectOne.UI
 	// 메인 HUD 보스 배너.
 	// - 보스 몬스터(Table_Monster.MonsterType == Boss) 등장 시 후보로 모으고, 어느 보스를 띄울지는 Tick 에서 정한다
 	//   (이웃 구역도 함께 활성돼 필드보스가 여럿 살아 있을 수 있다 — 띄울 조건을 만족하는 보스 하나만 붙잡는다)
-	//   · 필드보스: 히어로가 스폰 위치 EnterRadius 안에 들어오면 뜬다. ExitRadius 밖으로 나가면 0.25초 동안 사라진다
-	//     (경계에서 깜빡이지 않게 나가는 반경을 넓게 둔다). 보스가 최근 EngageHoldSeconds 안에 피해를 입었으면 반경 밖이어도 유지한다
+	//   · 필드보스: 히어로가 보스 구역(맵의 BossArea) 안에 들어오면 뜨고, 밖으로 나가면 0.25초 동안 사라진다
+	//     (구역 밖에서는 보스가 초기화되고 피해를 받지 않으므로 싸움도 구역 안에서만 일어난다)
 	//   · 그 밖의 보스(던전 등 보스 전용 스테이지): 등장 즉시 뜬다
-	// - 이미 죽은 보스는 추적하지 않으므로 반경 안에 들어와도 뜨지 않는다
+	// - 이미 죽은 보스는 추적하지 않으므로 구역 안에 들어와도 뜨지 않는다
 	// - 체력은 UnitBase.HpChanged 로 갱신 (게이지 / 현재·최대 수치 / 퍼센트)
 	// - 버프 상태(피해 면역·브레이크 기절)는 부착/해제 이벤트가 없어 Tick 에서 폴링한다
 	// - 보스 사망 시 USS 전환으로 0.25초 동안 사라진다
@@ -21,9 +21,6 @@ namespace ProjectOne.UI
 	public sealed class HudBossBanner
 	{
 		private const long FadeMs = 250;
-		private const float EnterRadius = 10f;
-		private const float ExitRadius = 13f;
-		private const float EngageHoldSeconds = 5f;
 
 		private readonly VisualElement _hud;
 		private readonly VisualElement _banner;
@@ -40,15 +37,11 @@ namespace ProjectOne.UI
 		private UnitBase _boss;
 		// 살아 있는 보스 후보 — 스폰 이벤트로 넣고 사망·회수 시 뺀다.
 		private readonly List<UnitBase> _candidates = new List<UnitBase>(4);
-		// 반경 판정 기준 — 히어로는 스폰 이벤트로 잡는다.
-		private UnitBase _hero;
 		// 보스의 브레이크 컴포넌트 — 스폰 시 1회만 잡는다(풀 개체라 수명 내내 유지된다).
 		private MonsterBreak _break;
 		private IVisualElementScheduledItem _fadeStep;
 		private bool _showing;
 		private bool _fading;
-		// 보스가 마지막으로 피해를 입은 시각 — 반경 밖에서 원거리로 싸우는 동안 배너를 유지한다.
-		private float _lastEngageTime = float.NegativeInfinity;
 
 		private float _lastHp = -1f;
 		private float _lastMaxHp = -1f;
@@ -92,7 +85,6 @@ namespace ProjectOne.UI
 			}
 
 			_boss = null;
-			_hero = null;
 			_candidates.Clear();
 		}
 
@@ -168,27 +160,14 @@ namespace ProjectOne.UI
 
 		private bool wantVisible(UnitBase boss)
 		{
-			// 필드보스가 아니면 보스 전용 스테이지다 — 거리와 상관없이 띄운다.
+			// 구역이 없으면 보스 전용 스테이지다 — 위치와 상관없이 띄운다.
 			Monster monster = boss as Monster;
-			if (monster == null || monster.FieldBossSpawnId == 0)
+			if (monster == null || monster.BossArea == null)
 			{
 				return true;
 			}
 
-			bool attached = (boss == _boss);
-			if (attached == true && Time.time - _lastEngageTime < EngageHoldSeconds)
-			{
-				return true;
-			}
-
-			if (_hero == null || _hero.isActiveAndEnabled == false)
-			{
-				return false;
-			}
-
-			float radius = (attached == true && _showing == true && _fading == false) ? ExitRadius : EnterRadius;
-			Vector2 toOrigin = (Vector2)(_hero.transform.position - monster.SpawnOrigin);
-			return toOrigin.sqrMagnitude <= radius * radius;
+			return monster.IsHeroInBossArea();
 		}
 
 		// 배너를 이 보스에 붙인다 — 이름·레벨·게이지를 새로 채운다.
@@ -209,7 +188,6 @@ namespace ProjectOne.UI
 			_lastPercent = -1;
 			_lastBreakRatio = -1f;
 			_stateInitialized = false;
-			_lastEngageTime = float.NegativeInfinity;
 
 			Table_Monster.Row row = Table_Monster.Get(_boss.GetTableID());
 			_name.text = (row != null) ? row.Name : string.Empty;
@@ -236,12 +214,6 @@ namespace ProjectOne.UI
 
 		private void onBossHpChanged(UnitBase unit)
 		{
-			// 줄었을 때만 교전으로 본다 — 리쉬 리셋·회복으로 늘어난 것은 싸움이 아니다.
-			if (_lastHp >= 0f && _boss != null && _boss.Vitals.Hp < _lastHp)
-			{
-				_lastEngageTime = Time.time;
-			}
-
 			refreshHp();
 		}
 
@@ -346,12 +318,6 @@ namespace ProjectOne.UI
 
 		private void onUnitSpawned(UnitSpawnedEvent evt)
 		{
-			if (evt.UnitType == UnitType.Hero)
-			{
-				_hero = evt.Unit;
-				return;
-			}
-
 			if (evt.UnitType != UnitType.Monster)
 			{
 				return;

@@ -1,7 +1,9 @@
-﻿using EDT;
+﻿using System.Collections.Generic;
+using EDT;
 using UnityEngine;
 using ProjectOne.Combat;
 using ProjectOne.Event;
+using ProjectOne.Map;
 using ProjectOne.Utils;
 
 namespace ProjectOne.Unit
@@ -31,6 +33,10 @@ namespace ProjectOne.Unit
 		public int FieldBossFieldId { get; private set; }
 		public int FieldBossSpawnId { get; private set; }
 
+		// 필드보스 구역 — 히어로가 이 안에 있을 때만 싸울 수 있다. 밖이면 보스는 초기화되고 피해를 받지 않는다.
+		// 필드보스만 갖는다. null 이면 구역 규칙이 없다(던전 보스·일반 몬스터).
+		public BossArea BossArea { get; private set; }
+
 		// 브레이크 게이지 — 엘리트/보스만 가진다. MonsterPool 이 등급을 보고 붙여 준다.
 		private MonsterBreak _break;
 
@@ -50,12 +56,16 @@ namespace ProjectOne.Unit
 			}
 		}
 
-		// 리쉬 이탈 리셋 — 스폰 위치로 순간이동해 갓 스폰한 상태(체력·버프·브레이크·AI 페이즈)로 되돌린다.
-		// 풀을 거치지 않는 제자리 재스폰이라 스폰 이벤트는 나가지 않는다(보스 배너는 체력 갱신으로 가득 찬다).
-		public void ResetToSpawnOrigin()
+		// 싸운 흔적이 있는가 — 깨어났거나 타겟을 잡았거나 체력이 깎였다.
+		// 페이즈·브레이크는 피해로만 진행되므로 체력으로 함께 잡힌다. 필드 스포너가 보스 재스폰 여부를 이걸로 본다.
+		public bool HasFought()
 		{
-			OnSpawnReset(SpawnOrigin);
-			SetSpawnOrigin(SpawnOrigin);
+			if (_brain != null && (_brain.Blackboard.Provoked == true || _brain.Blackboard.Target != null))
+			{
+				return true;
+			}
+
+			return _vitals != null && _vitals.Hp < _stats.GetStat(Stat.Stat_MaxHp);
 		}
 
 		// 원형 정보 주입 — 풀 생성 시 1회. 레벨과 달리 스폰마다 바뀌지 않는다.
@@ -71,12 +81,35 @@ namespace ProjectOne.Unit
 			SpawnRewardGroupId = groupId;
 			FieldBossFieldId = 0;
 			FieldBossSpawnId = 0;
+			BossArea = null;
 		}
 
-		public void SetFieldBoss(int fieldId, int spawnId)
+		public void SetFieldBoss(int fieldId, int spawnId, BossArea area)
 		{
 			FieldBossFieldId = fieldId;
 			FieldBossSpawnId = spawnId;
+			BossArea = area;
+		}
+
+		// 살아 있는 히어로가 보스 구역 안에 있는가. 구역이 없으면 false.
+		public bool IsHeroInBossArea()
+		{
+			if (BossArea == null || UnitManager.HasInstance == false)
+			{
+				return false;
+			}
+
+			IReadOnlyList<UnitBase> heroes = UnitManager.Instance.GetByType(UnitType.Hero);
+			for (int i = 0; i < heroes.Count; i++)
+			{
+				UnitBase hero = heroes[i];
+				if (hero != null && hero.IsDead == false && BossArea.Contains(hero.CachedPos) == true)
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		// 브레이크 컴포넌트 주입 — 풀 생성 시 1회. 일반 몬스터는 null 로 남는다.
@@ -87,6 +120,12 @@ namespace ProjectOne.Unit
 
 		public void TakeDamage(in DamageInfo info)
 		{
+			// 구역 밖에서 넣는 피해는 무시한다 — 맞자마자 초기화되며 피해 숫자만 깜빡이는 것을 막는다.
+			if (BossArea != null && IsHeroInBossArea() == false)
+			{
+				return;
+			}
+
 			if (IsDead == false && _animator != null && info.IsPeriodic == false)
 			{
 				_animator.TriggerHitFlash();

@@ -41,6 +41,7 @@ namespace ProjectOne.Field
 			public RespawnType respawnType;	// MonsterSpawn.RespawnType — DailyReset 이면 06시 리젠 + 남은 시간 라벨
 			public int spawnId;			// MonsterSpawn 행 ID — 필드보스(DailyReset) 처치 기록의 키
 			public Vector3 origin;
+			public BossArea bossArea;	// 필드보스(DailyReset) 구역 — 스폰 포인트에 붙은 BossArea
 
 			public int instanceId;		// 살아있는 개체. 0이면 비어 있음
 			public Monster monster;		// 살아있는 개체 — 구역이 비활성될 때 풀로 걷는다
@@ -222,6 +223,17 @@ namespace ProjectOne.Field
 					slot.spawnId = row.ID;
 					slot.labelTitle = labelTitle;
 					slot.origin = resolveOrigin(point);
+					if (row.RespawnType == RespawnType.DailyReset)
+					{
+						// 필드보스는 반경 무작위 없이 항상 스폰 포인트 그 자리에 뜬다(최초 스폰·리젠·구역 이탈 재스폰 모두).
+						slot.origin = point.Position;
+						slot.bossArea = point.GetComponent<BossArea>();
+						if (slot.bossArea == null)
+						{
+							Debug.LogError($"[FieldMonsterSpawner] 필드보스 스폰 포인트(그룹 {point.SpawnGroupId})에 BossArea 가 없습니다 — 맵 프리팹에 구역을 붙여야 합니다.", point);
+						}
+					}
+
 					_slots.Add(slot);
 				}
 			}
@@ -324,7 +336,7 @@ namespace ProjectOne.Field
 			// 필드보스 표시 — 처치 보상이 배치 정산 대신 FieldBossKill 로 간다. Field.ID 와 Map.ID 는 같다.
 			if (slot.respawnType == RespawnType.DailyReset)
 			{
-				monster.SetFieldBoss(slot.key.MapId, slot.spawnId);
+				monster.SetFieldBoss(slot.key.MapId, slot.spawnId, slot.bossArea);
 			}
 		}
 
@@ -371,6 +383,34 @@ namespace ProjectOne.Field
 		private void Update()
 		{
 			spawnReadySlots();
+			respawnAbandonedBosses();
+		}
+
+		// 히어로가 보스 구역을 벗어났는데 보스에 싸운 흔적이 있으면 회수하고 그 자리에 새로 스폰한다.
+		// 고칠 곳을 하나씩 되돌리는 대신 스폰 경로를 그대로 타서 갓 스폰한 상태로 만든다.
+		// 회수는 처치가 아니다 — 처치 기록·보상·리젠 대기가 생기지 않는다(removeZone 과 같은 경로).
+		private void respawnAbandonedBosses()
+		{
+			for (int i = 0; i < _slots.Count; i++)
+			{
+				Slot slot = _slots[i];
+				Monster monster = slot.monster;
+				if (slot.bossArea == null || monster == null || slot.instanceId <= 0 || monster.IsDead == true)
+				{
+					continue;
+				}
+
+				if (monster.IsHeroInBossArea() == true || monster.HasFought() == false)
+				{
+					continue;
+				}
+
+				_byInstance.Remove(slot.instanceId);
+				slot.instanceId = 0;
+				slot.monster = null;
+				MonsterSpawnManager.Instance.Despawn(monster);
+				spawn(slot);
+			}
 		}
 	}
 }
