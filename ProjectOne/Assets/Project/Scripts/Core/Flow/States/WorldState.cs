@@ -4,6 +4,7 @@ using UnityEngine.SceneManagement;
 using ProjectOne.Field;
 using ProjectOne.Loading;
 using ProjectOne.Network;
+using ProjectOne.Skill;
 
 namespace ProjectOne.Flow
 {
@@ -50,6 +51,8 @@ namespace ProjectOne.Flow
 
 		public UniTask ExitAsync()
 		{
+			// 씬이 내려가기 전에 히어로 쿨타임을 보관한다 — 마을·다른 필드로 가면 이어받고, 던전 입장이면 버린다.
+			HeroCooldownCarry.Capture();
 			return UniTask.CompletedTask;
 		}
 

@@ -102,11 +102,18 @@
 		</ui:VisualElement>
 
 		<!-- 궁극기 버튼 -->
-		<ui:Button name="ultimate" class="ultimate">
-			<ui:VisualElement name="ultimate-icon" class="ultimate__icon" picking-mode="Ignore" />
-			<ui:VisualElement name="ultimate-cooltime" class="ultimate__cooltime" picking-mode="Ignore">
-				<ui:Label name="ultimate-time" class="ultimate__time hud-text" picking-mode="Ignore" />
-			</ui:VisualElement>
-		</ui:Button>
+		<!-- 칸(슬롯)째 숨긴다 — AUTO 칩이 원 밖으로 나오므로 버튼의 원형 클리핑 밖에 둔다 -->
+		<ui:VisualElement name="ultimate-slot" class="ultimate-slot" picking-mode="Ignore">
+			<!-- 임시 — 설정 화면이 생기면 그쪽으로 옮긴다 -->
+			<ui:Button name="ultimate-auto-toggle" text="자동 전환" class="ultimate-slot__toggle hud-text" />
+			<ui:Button name="ultimate" class="ultimate">
+				<ui:VisualElement class="ultimate__face" picking-mode="Ignore">
+					<ui:VisualElement name="ultimate-icon" class="ultimate__icon" picking-mode="Ignore" />
+					<ui:VisualElement name="ultimate-cooltime" class="ultimate__cooltime" picking-mode="Ignore" />
+					<ui:Label name="ultimate-time" class="ultimate__time hud-text" picking-mode="Ignore" />
+				</ui:VisualElement>
+			</ui:Button>
+			<ui:Label name="ultimate-auto" text="AUTO" class="ultimate-slot__auto hud-text" picking-mode="Ignore" />
+		</ui:VisualElement>
 	</ui:VisualElement>
 </ui:UXML>

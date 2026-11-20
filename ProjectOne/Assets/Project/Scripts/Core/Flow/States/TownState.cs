@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine.SceneManagement;
 using ProjectOne.Loading;
 using ProjectOne.Network;
+using ProjectOne.Skill;
 using ProjectOne.Town;
 using ProjectOne.UI;
 
@@ -55,6 +56,8 @@ namespace ProjectOne.Flow
 
 		public UniTask ExitAsync()
 		{
+			// 씬이 내려가기 전에 히어로 쿨타임을 보관한다 — 필드로 가면 이어받고, 던전 입장이면 버린다.
+			HeroCooldownCarry.Capture();
 			return UniTask.CompletedTask;
 		}
 

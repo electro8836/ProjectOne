@@ -75,6 +75,10 @@ namespace ProjectOne.Unit
 			HeroAspectRegistry.Instance.Register(_petAspect);
 			HeroAspectRegistry.Instance.ApplyAll(hero);
 
+			// 마을·필드 이동으로 새로 만든 히어로면 이전 히어로의 쿨타임을 이어받는다(던전 입장은 보관분이 비어 있다).
+			// 보유 스킬은 MasteryAspect 가 등록하므로 ApplyAll 이후여야 한다.
+			HeroCooldownCarry.Restore(hero.SkillContainer);
+
 			// 장비/레벨 등 최대치 변동 스탯이 모두 적용된 뒤 현재 게이지를 최대치로 재충전
 			hero.Vitals.InitHp();
 

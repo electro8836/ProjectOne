@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using ProjectOne.Dungeon;
 using ProjectOne.Loading;
 using ProjectOne.Network;
+using ProjectOne.Skill;
 using ProjectOne.UI;
 
 namespace ProjectOne.Flow
@@ -25,6 +26,9 @@ namespace ProjectOne.Flow
 
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
+			// 던전은 쿨타임 초기화 상태로 시작한다 — 마을·필드에서 보관한 쿨타임을 버린다.
+			HeroCooldownCarry.Clear();
+
 			if (LoadingManager.Instance.IsShowing == false)
 			{
 				await LoadingManager.Instance.ShowAsync(LoadingFlow.ToDungeon, ct);

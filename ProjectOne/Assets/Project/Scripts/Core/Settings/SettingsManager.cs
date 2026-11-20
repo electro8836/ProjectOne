@@ -21,6 +21,9 @@ namespace ProjectOne.Settings
 		// 기본공격 사거리 원 표시 여부 변경 알림
 		public event System.Action<bool> AttackRangeCircleChanged;
 
+		// 궁극기 자동 사용 여부 변경 알림
+		public event System.Action<bool> UltimateAutoChanged;
+
 		public SettingsManager()
 		{
 		}
@@ -99,6 +102,31 @@ namespace ProjectOne.Settings
 			if (FloatingJoystickChanged != null)
 			{
 				FloatingJoystickChanged(enabled);
+			}
+		}
+
+		public bool UseUltimateAuto
+		{
+			get
+			{
+				EnsureLoaded();
+				return _data.useUltimateAuto;
+			}
+		}
+
+		public void SetUseUltimateAuto(bool enabled)
+		{
+			EnsureLoaded();
+			if (_data.useUltimateAuto == enabled)
+			{
+				return;
+			}
+
+			_data.useUltimateAuto = enabled;
+			Save();
+			if (UltimateAutoChanged != null)
+			{
+				UltimateAutoChanged(enabled);
 			}
 		}
 

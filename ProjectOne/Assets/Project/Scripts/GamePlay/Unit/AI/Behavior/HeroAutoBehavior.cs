@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using EDT;
+using ProjectOne.Settings;
 using ProjectOne.Skill;
 
 namespace ProjectOne.Unit.AI
@@ -15,6 +16,7 @@ namespace ProjectOne.Unit.AI
 	// SetFacing 으로 덮어써서 이동과 조준을 분리한다.
 	//
 	// 고유스킬(Special)은 HUD 버튼 수동이므로 castSpecial=false.
+	// 궁극기는 기본이 HUD 버튼 수동이고, 자동 사용 설정이 켜져 있을 때만 다른 스킬보다 먼저 시도한다.
 	public sealed class HeroAutoBehavior : IAiBehavior
 	{
 		public void Tick(UnitBase self, Blackboard bb, float dt)
@@ -25,6 +27,12 @@ namespace ProjectOne.Unit.AI
 			}
 
 			aimAtNearest(self);
+
+			if (SettingsManager.Instance.UseUltimateAuto == true && SkillSelector.TryCastUltimate(self) == true)
+			{
+				return;
+			}
+
 			SkillSelector.Select(self, false);
 		}
 

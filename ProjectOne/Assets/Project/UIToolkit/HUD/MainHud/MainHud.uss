@@ -726,14 +726,51 @@
 	background-image: url("../../Violet/icon_shield.png");
 }
 
-/* ── 궁극기 버튼 ───────────────────────────────── */
+/* ── 궁극기 칸 ─────────────────────────────────
+   검은 테(6) + 흰 테(4) 안에 원형으로 자른 스킬 아이콘.
+   쿨타임은 남은 만큼 부채꼴로 덮는다(코드가 그린다) — 12시부터 시계방향으로 밝아진다.
+   AUTO 칩은 표시 전용이다(누르지 않는다) — 켜고 끄기는 설정(지금은 위쪽 임시 토글)에서 한다. */
 
-.ultimate {
+.ultimate-slot {
 	position: absolute;
 	right: 50px;
-	bottom: 640px;
+	bottom: 626px;
+	width: 136px;
+	align-items: center;
+	display: none;
+}
+
+.ultimate-slot--shown {
+	display: flex;
+}
+
+/* 임시 토글 — 설정 화면이 생기면 없앤다 */
+.ultimate-slot__toggle {
+	margin: 0 0 10px 0;
+	padding: 0 12px;
+	height: 40px;
+	border-width: 3px;
+	border-radius: 8px;
+	border-color: #000000;
+	background-color: #26223A;
+	font-size: 20px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 2px;
+	text-shadow: 0 2px 0 var(--ink);
+}
+
+.ultimate-slot__toggle:hover:enabled {
+	background-color: #26223A;
+	border-color: #000000;
+}
+
+.ultimate-slot__toggle:active {
+	scale: 0.95 0.95;
+}
+
+.ultimate {
 	margin: 0;
-	padding: 4px;
+	padding: 0;
 	width: 136px;
 	height: 136px;
 	border-width: 6px;
@@ -741,7 +778,6 @@
 	border-color: #000000;
 	background-color: #FFFFFF;
 	overflow: hidden;
-	display: none;
 }
 
 .ultimate:hover:enabled {
@@ -753,13 +789,26 @@
 	scale: 0.95 0.95;
 }
 
-.ultimate--shown {
-	display: flex;
+/* 흰 테 안쪽 원 — 여기서 아이콘·딤을 원형으로 자른다 */
+.ultimate__face {
+	position: absolute;
+	left: 4px;
+	right: 4px;
+	top: 4px;
+	bottom: 4px;
+	border-radius: 58px;
+	overflow: hidden;
+	align-items: center;
+	justify-content: center;
 }
 
 .ultimate__icon {
-	flex-grow: 1;
-	border-radius: 60px;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	border-radius: 58px;
 	-unity-background-scale-mode: scale-and-crop;
 }
 
@@ -769,17 +818,36 @@
 	right: 0;
 	top: 0;
 	bottom: 0;
-	border-radius: 68px;
-	background-color: rgba(0, 0, 0, 0.78);
-	align-items: center;
-	justify-content: center;
-	display: none;
-}
-
-.ultimate--cooling .ultimate__cooltime {
-	display: flex;
 }
 
 .ultimate__time {
 	font-size: 48px;
+	display: none;
+}
+
+.ultimate--cooling .ultimate__time {
+	display: flex;
+}
+
+/* 원 아래 테에 걸치는 AUTO 칩 — 꺼짐은 어두운 회색, 켜짐은 보라 */
+.ultimate-slot__auto {
+	margin-top: -16px;
+	width: 84px;
+	height: 30px;
+	border-width: 3px;
+	border-radius: 15px;
+	border-color: #000000;
+	background-color: #26223A;
+	color: #968FAA;
+	font-size: 18px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 2px;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.ultimate-slot__auto--on {
+	background-color: #7C4DFF;
+	border-color: #000000;
+	color: #FFFFFF;
 }

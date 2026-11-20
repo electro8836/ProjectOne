@@ -191,6 +191,55 @@ namespace ProjectOne.Skill
 			}
 		}
 
+		// 남은 쿨타임을 전부 내보낸다 — 등록된 스킬과 해제돼 보관 중인 스킬(무기 교체 등) 모두.
+		// 씬 전환으로 히어로가 새로 만들어질 때 쿨타임을 이어 주려고 HeroCooldownCarry 가 쓴다.
+		public void ExportCooldowns(Dictionary<EDT.Skill, float> remaining)
+		{
+			remaining.Clear();
+			for (int i = 0; i < _ordered.Count; i++)
+			{
+				if (_ordered[i].RemainingCooldown > 0f)
+				{
+					remaining[_ordered[i].Id] = _ordered[i].RemainingCooldown;
+				}
+			}
+
+			Dictionary<EDT.Skill, float>.Enumerator e = _retainedCooldownEnds.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				float left = e.Current.Value - _clock;
+				if (left > 0f)
+				{
+					remaining[e.Current.Key] = left;
+				}
+			}
+		}
+
+		// 내보낸 쿨타임을 이어받는다 — elapsed 는 내보낸 뒤 흐른 시간이다.
+		// 등록된 스킬은 바로 적용하고, 아직 없는 스킬은 보관해 두었다가 등록될 때 이어받는다.
+		public void ImportCooldowns(Dictionary<EDT.Skill, float> remaining, float elapsed)
+		{
+			Dictionary<EDT.Skill, float>.Enumerator e = remaining.GetEnumerator();
+			while (e.MoveNext() == true)
+			{
+				float left = e.Current.Value - elapsed;
+				if (left <= 0f)
+				{
+					continue;
+				}
+
+				SkillRuntime rt;
+				if (_byId.TryGetValue(e.Current.Key, out rt) == true)
+				{
+					rt.RestoreCooldown(left);
+				}
+				else
+				{
+					_retainedCooldownEnds[e.Current.Key] = _clock + left;
+				}
+			}
+		}
+
 		// 리졸브가 무효화된 뒤 등록된 스킬의 사이클 값만 다시 읽는다.
 		// 런타임을 재생성하지 않는 이유 — 진행 중인 쿨타임이 날아가면 장비 교체가 쿨타임 리셋 수단이 된다.
 		public void RefreshFromResolve()

@@ -10,5 +10,7 @@ namespace ProjectOne.Settings
 		public bool showAttackRangeCircle = true;
 		// 조이스틱 유동성(floating) 사용 여부 — true 면 누른 위치로 배경이 이동, false 면 고정
 		public bool useFloatingJoystick = true;
+		// 궁극기 자동 사용 — true 면 히어로 AI 가 전투 중(평타 사거리 안에 적) 궁극기를 쿨타임마다 쓴다
+		public bool useUltimateAuto = false;
 	}
 }

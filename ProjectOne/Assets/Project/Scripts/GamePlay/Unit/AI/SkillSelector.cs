@@ -37,6 +37,43 @@ namespace ProjectOne.Unit.AI
 			TryBasicAttack(self, sc);
 		}
 
+		// 궁극기 자동 시전 — 자동 사용이 켜진 히어로 AI 가 부른다. 시전했으면 true.
+		// 다른 스킬과 같은 전투 판정(평타 사거리 안에 적)을 쓰고, 탐색 범위가 있는 궁극기는 그 범위 안에도 적이 있어야 쓴다.
+		// 탐색 범위가 없는 궁극기(ScanType None — 자기 강화·소환 등)는 전투 판정만 본다.
+		public static bool TryCastUltimate(UnitBase self)
+		{
+			SkillContainer sc = self.SkillContainer;
+			if (sc == null || HasEnemyInBasicRange(self, sc) == false)
+			{
+				return false;
+			}
+
+			IReadOnlyList<EDT.Skill> all = sc.GetAll();
+			for (int i = 0; i < all.Count; i++)
+			{
+				ResolvedSkill resolved = self.Resolve(all[i]);
+				if (resolved == null || resolved.IsValid == false || resolved.Row.SkillCategory != SkillCategoryTypes.Ultimate)
+				{
+					continue;
+				}
+
+				// 궁극기 칸은 하나다 — 처음 찾은 것이 전부다.
+				if (SkillContainer.IsDirectCastable(resolved.Row.CastingType) == false || sc.IsOnCooldown(all[i]) == true)
+				{
+					return false;
+				}
+
+				if (resolved.Row.ScanType != SkillScanTypes.None && HasEnemyInRange(self, resolved.Row) == false)
+				{
+					return false;
+				}
+
+				return sc.TryCast(all[i]);
+			}
+
+			return false;
+		}
+
 		// 순서가 정해진 행동 1개를 시도한다 — 보스가 페이즈 행동 순서를 쓸 때 이 경로를 탄다.
 		// SelectFrom 과 달리 평타도 순서의 한 칸이고, 차례가 아닌 스킬로 폴백하지 않는다(쿨다운이면 기다린다).
 		// invalid 는 이 스킬을 영영 쓸 수 없다는 뜻이다(미등록·조건 발동형 등) — 호출자가 건너뛰어 교착을 막는다.
