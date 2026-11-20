@@ -41,8 +41,20 @@ namespace ProjectOne.Unit.AI
 				return;
 			}
 
-			// 자리에서 너무 벗어났으면 전투를 접고 복귀한다
-			if (MonsterAiCommon.TickLeash(self, bb) == true)
+			// 자리에서 너무 벗어났으면 걸어서 복귀하지 않고 스폰 위치로 순간이동해 처음 상태로 되돌린다.
+			// 몬스터가 아닌 보스(없지만 방어)는 일반 복귀를 탄다.
+			Monster monster = self as Monster;
+			if (monster != null)
+			{
+				Vector2 fromAnchor = self.CachedPos - bb.Anchor;
+				if (fromAnchor.sqrMagnitude > bb.LeashRange * bb.LeashRange)
+				{
+					monster.ResetToSpawnOrigin();
+					self.Mover.Stop();
+					return;
+				}
+			}
+			else if (MonsterAiCommon.TickLeash(self, bb) == true)
 			{
 				return;
 			}

@@ -50,6 +50,14 @@ namespace ProjectOne.Unit
 			}
 		}
 
+		// 리쉬 이탈 리셋 — 스폰 위치로 순간이동해 갓 스폰한 상태(체력·버프·브레이크·AI 페이즈)로 되돌린다.
+		// 풀을 거치지 않는 제자리 재스폰이라 스폰 이벤트는 나가지 않는다(보스 배너는 체력 갱신으로 가득 찬다).
+		public void ResetToSpawnOrigin()
+		{
+			OnSpawnReset(SpawnOrigin);
+			SetSpawnOrigin(SpawnOrigin);
+		}
+
 		// 원형 정보 주입 — 풀 생성 시 1회. 레벨과 달리 스폰마다 바뀌지 않는다.
 		public void SetMonsterType(MonsterType type)
 		{
