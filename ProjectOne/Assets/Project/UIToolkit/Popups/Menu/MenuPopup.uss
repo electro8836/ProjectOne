@@ -1,0 +1,122 @@
+/* 메뉴 팝업 — 오른쪽 위 어두운 판 + 아이콘 격자(5열). 딤은 투명(판 밖 누르면 닫기 용도만). */
+
+.menu-popup.popup--open .popup__dim {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+/* 판 — 칸 104×124 × 5열 + 좌우 여백 14 */
+.menu-grid {
+	position: absolute;
+	right: 8px;
+	top: 16px;
+	width: 554px;
+	flex-direction: row;
+	flex-wrap: wrap;
+	padding: 18px 14px 16px 14px;
+	background-color: #0E0B1C;	/* 리니어 색 공간이라 반투명은 수치보다 훨씬 옅게 보여 불투명으로 둔다 */
+	border-width: 3px;
+	border-color: #6E5CAA;
+	border-radius: 10px;
+	opacity: 0;
+	translate: 0 -16px;
+	transition-property: opacity, translate;
+	transition-duration: 0.12s;
+	transition-timing-function: ease-out;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.popup--open .menu-grid {
+	opacity: 1;
+	translate: 0 0;
+}
+
+/* 칸 — Button 기본 모양을 걷어낸다 */
+.menu-grid__item,
+.menu-grid__item:hover,
+.menu-grid__item:active {
+	width: 104px;
+	height: 124px;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	align-items: center;
+	justify-content: center;
+}
+
+.menu-grid__item {
+	transition-property: scale;
+	transition-duration: 0.06s;
+}
+
+.menu-grid__item:active {
+	scale: 0.92 0.92;
+}
+
+.menu-grid__icon {
+	width: 64px;
+	height: 64px;
+	margin-bottom: 6px;
+	-unity-background-scale-mode: scale-to-fit;
+	-unity-background-image-tint-color: #E2DAFC;
+}
+
+.menu-grid__icon--quest { background-image: url("../../Violet/menuicon_quest.png"); }
+.menu-grid__icon--ranking { background-image: url("../../Violet/menuicon_ranking.png"); }
+.menu-grid__icon--pass { background-image: url("../../Violet/menuicon_pass.png"); }
+.menu-grid__icon--daily { background-image: url("../../Violet/menuicon_daily.png"); }
+.menu-grid__icon--mail { background-image: url("../../Violet/menuicon_mail.png"); }
+.menu-grid__icon--afk { background-image: url("../../Violet/menuicon_afk.png"); }
+.menu-grid__icon--account { background-image: url("../../Violet/menuicon_account.png"); }
+.menu-grid__icon--setting { background-image: url("../../Violet/menuicon_setting.png"); }
+.menu-grid__icon--quit { background-image: url("../../Violet/menuicon_quit.png"); }
+
+.menu-grid__label {
+	padding: 0;
+	margin: 0;
+	font-size: 21px;
+	color: #E2DAFC;
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 #0A0814;
+	white-space: nowrap;
+}
+
+/* 닫기 — 첫 줄 맨 오른쪽 칸의 빨간 네모 */
+.menu-grid__close,
+.menu-grid__close:hover,
+.menu-grid__close:active {
+	width: 76px;
+	height: 76px;
+	margin: 0;
+	padding: 0;
+	background-color: #541C28;
+	border-width: 3px;
+	border-color: #E84C58;
+	border-radius: 8px;
+	align-items: center;
+	justify-content: center;
+}
+
+.menu-grid__close:active {
+	scale: 0.92 0.92;
+}
+
+.menu-grid__close-icon {
+	width: 50px;
+	height: 50px;
+	background-image: url("../../Violet/menuicon_close.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* 안 읽은 우편 점 — 아이콘 오른쪽 위 */
+.menu-grid__badge {
+	position: absolute;
+	right: -12px;
+	top: -10px;
+	width: 26px;
+	height: 26px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Buttons/Alert_Dot_Red.png");
+	-unity-background-scale-mode: scale-to-fit;
+}

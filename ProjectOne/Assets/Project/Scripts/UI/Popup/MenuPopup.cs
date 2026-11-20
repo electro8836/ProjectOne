@@ -12,7 +12,11 @@ namespace ProjectOne.UI
 		None = 0,
 		Mail,
 		Quit,
-		Account
+		Account,
+		Ranking,
+		HeroPass,
+		DailyBonus,
+		Quest
 	}
 
 	// 메인 메뉴 팝업(UIPrefab_MenuPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Menu/MenuPopup.uxml.
@@ -30,9 +34,13 @@ namespace ProjectOne.UI
 
 			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
 			root.Q<Button>("close").clicked += onCloseClicked;
+			root.Q<Button>("quest").clicked += onQuestClicked;
 			root.Q<Button>("setting").clicked += onSettingClicked;
 			root.Q<Button>("account").clicked += onAccountClicked;
 			root.Q<Button>("mail").clicked += onMailClicked;
+			root.Q<Button>("ranking").clicked += onRankingClicked;
+			root.Q<Button>("pass").clicked += onPassClicked;
+			root.Q<Button>("daily").clicked += onDailyClicked;
 			root.Q<Button>("afk").clicked += onAfkClicked;
 			root.Q<Button>("quit").clicked += onQuitClicked;
 		}
@@ -68,6 +76,12 @@ namespace ProjectOne.UI
 			Close();
 		}
 
+		private void onQuestClicked()
+		{
+			_result = MenuPopupResult.Quest;
+			Close();
+		}
+
 		private void onMailClicked()
 		{
 			_result = MenuPopupResult.Mail;
@@ -77,6 +91,24 @@ namespace ProjectOne.UI
 		private void onQuitClicked()
 		{
 			_result = MenuPopupResult.Quit;
+			Close();
+		}
+
+		private void onRankingClicked()
+		{
+			_result = MenuPopupResult.Ranking;
+			Close();
+		}
+
+		private void onPassClicked()
+		{
+			_result = MenuPopupResult.HeroPass;
+			Close();
+		}
+
+		private void onDailyClicked()
+		{
+			_result = MenuPopupResult.DailyBonus;
 			Close();
 		}
 

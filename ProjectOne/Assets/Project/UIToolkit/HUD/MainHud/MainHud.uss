@@ -42,14 +42,6 @@
 	background-color: #FF453D;
 }
 
-.hud-gauge__fill--exp {
-	background-color: #FF9500;
-}
-
-.hud-gauge__fill--quest {
-	background-color: #20F12A;
-}
-
 .hud-gauge__fill--break {
 	background-color: #F1C220;
 }
@@ -63,53 +55,122 @@
 	-unity-text-align: middle-center;
 }
 
-/* ── 히어로 정보 ───────────────────────────────── */
+/* ── 히어로 정보 — 레벨 원(지름 92, 테두리 고리가 경험치)이 체력바 왼쪽 끝을 덮는다.
+   체력바(46) + 아래 전투력 탭(42, 6 겹침)을 합친 높이가 원 높이에 맞게 가운데 정렬 ── */
 
 .hero-info {
 	position: absolute;
-	left: 15px;
-	top: 30px;
-	width: 420px;
-	padding: 12px;
-	background-color: rgba(0, 0, 0, 0.78);
+	left: 20px;
+	top: 24px;
+	width: 426px;
+	height: 92px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }
 
-.hero-info .hud-gauge--thin {
-	margin-top: 6px;
+.hero-info .hud-text {
+	-unity-text-outline-width: 0;
+	text-shadow: 0 3px 0 #0A0814;
 }
 
-.hero-info__row {
-	flex-direction: row;
-	margin-top: 8px;
+/* 원 중심(46)부터 시작 — 왼쪽 절반은 원 아래로 들어간다 */
+.hero-info__bars {
+	position: absolute;
+	left: 46px;
+	right: 0;
+	top: 5px;
+	height: 82px;
 }
 
-.hero-info__stat {
+.hero-info .hud-gauge--hp {
+	height: 46px;
+	overflow: hidden;
+	border-width: 3px;
+	border-radius: 8px;
+	border-color: #0A0814;
+	background-color: rgba(10, 8, 20, 0.75);
+}
+
+/* 위쪽 밝은 띠로 입체감 */
+.hero-info .hud-gauge__fill {
+	background-color: #E8484E;
+	border-top-width: 11px;
+	border-color: #FF848A;
+	border-top-right-radius: 5px;
+	border-bottom-right-radius: 5px;
+}
+
+/* 수치는 원 오른쪽에 보이는 부분의 가운데 */
+.hero-info__hp-text {
+	left: 46px;
+	font-size: 28px;
+}
+
+/* 전투력 탭 — 체력바 아래에 6px 숨어 들어가 붙는다 */
+.hero-info__power {
+	position: absolute;
+	left: 30px;
+	right: 0;
+	top: 40px;
+	height: 42px;
+	padding: 6px 0 3px 30px;
 	flex-direction: row;
 	align-items: center;
-	flex-grow: 1;
-	flex-basis: 0;
+	border-width: 0 3px 3px 3px;
+	border-radius: 10px;
+	border-color: #0A0814;
+	background-color: #252A40;
 }
 
-.hero-info__icon {
-	width: 48px;
-	height: 48px;
+.hero-info__power-icon {
+	width: 24px;
+	height: 22px;
 	margin-right: 8px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Attack.Png");
+	-unity-background-image-tint-color: #FFD447;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
-.hud-icon-level { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Helmet_1.Png"); }
-.hud-icon-power { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Attack.Png"); }
-.hud-icon-mission { background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Mission.png"); }
-.hud-icon-rank { background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Ranking.png"); }
-.hud-icon-pass { background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_PassTicket.png"); }
-.hud-icon-login { background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/ItemIcon_Calendar.png"); }
+.hero-info .hero-info__power-text {
+	font-size: 24px;
+	color: #FFD447;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* 레벨 원 — 진한 원 위에 고리(HudHeroInfo 가 그린다), 안쪽 보라 원에 레벨 숫자 */
+.hero-info__ring {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 92px;
+	height: 92px;
+	border-radius: 46px;
+	background-color: #0A0814;
+	align-items: center;
+	justify-content: center;
+}
+
+.hero-info__ring-core {
+	width: 66px;
+	height: 66px;
+	border-width: 2px;
+	border-radius: 33px;
+	border-color: #0A0814;
+	background-color: #322958;
+	align-items: center;
+	justify-content: center;
+}
+
+.hero-info__level {
+	font-size: 33px;
+	-unity-text-align: middle-center;
+}
 
 /* ── 맵 이름 ───────────────────────────────────── */
 
 .map-info {
 	position: absolute;
-	left: 20px;
-	top: 230px;
+	right: 24px;
+	top: 336px;	/* 오른쪽 위 미니맵 자리(메뉴 버튼 아래로 40px 띄운 144~324) 밑 */
 	flex-direction: row;
 	align-items: center;
 }
@@ -121,132 +182,160 @@
 	-unity-background-scale-mode: scale-to-fit;
 }
 
-/* ── 접기 버튼 — 화살표는 펼침이면 접는 쪽을 가리킨다 ─────── */
+/* ── 퀘스트 — 왼쪽 위(히어로 정보 아래). 보스 배너가 뜨면 숨는다(.hud--boss). 버튼이 카드 오른쪽에 붙는다.
+   접으면 카드 폭(403)에서 버튼이 겹친 3px 을 뺀 만큼 왼쪽으로 밀어 버튼만 남긴다 ── */
 
-.hud-fold {
+.quest-info {
+	position: absolute;
+	left: -3px;
+	top: 250px;
+	flex-direction: row;
+	align-items: center;
+	transition-property: translate;
+	transition-duration: 0.35s;
+	transition-timing-function: ease-out-cubic;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.quest-info--folded {
+	translate: -400px 0;
+}
+
+/* 카드 — 왼쪽 테두리는 화면 밖(left -3) */
+.quest-frame {
+	width: 403px;
+	height: 154px;
+	padding: 10px 16px 0 21px;
+	background-color: #1C2836;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-top-right-radius: 12px;
+	border-bottom-right-radius: 12px;
+}
+
+.quest-frame__head {
+	flex-direction: row;
+	align-items: center;
+	height: 32px;
+}
+
+.quest-frame__icon {
+	width: 34px;
+	height: 34px;
+	margin-right: 4px;
+	flex-shrink: 0;
+	background-image: url("../../Violet/menuicon_quest.png");
+	-unity-background-scale-mode: scale-to-fit;
+	-unity-background-image-tint-color: #FFDC6E;
+}
+
+.quest-frame__title,
+.quest-frame__desc,
+.quest-frame__label,
+.quest-frame__count {
 	margin: 0;
 	padding: 0;
-	width: 72px;
-	height: 72px;
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 20px 안팎 글자는 외곽선이 획을 먹어 가늘고 뭉개진다 */
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.quest-frame__title {
+	flex-shrink: 1;
+	font-size: 26px;
+	color: #FFDC6E;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+/* 내용 — 최대 2줄, 넘치면 말줄임 */
+.quest-frame__desc {
+	height: 52px;
+	margin-top: 4px;
+	font-size: 20px;
+	color: #E4EEF6;
+	white-space: normal;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.quest-frame__progress {
+	flex-direction: row;
+	justify-content: space-between;
+	margin-top: 6px;
+}
+
+.quest-frame__label {
+	font-size: 19px;
+	color: #FFFFFF;
+}
+
+.quest-frame__count {
+	font-size: 19px;
+	color: #FFFFFF;
+}
+
+.quest-frame__bar {
+	height: 10px;
+	margin-top: 4px;
+	background-color: #0E1620;
+	border-width: 2px;
+	border-color: #0A0814;
+	border-radius: 5px;
+}
+
+.quest-frame__fill {
+	height: 100%;
+	width: 0;
+	background-color: #46BEF0;
+	border-radius: 3px;
+}
+
+/* 접기 버튼 — 카드 오른쪽 테두리에 3px 겹쳐 붙는다. 펼침이면 꺾쇠가 왼쪽(접는 쪽) */
+.quest-tab,
+.quest-tab:hover:enabled,
+.quest-tab:disabled {
+	margin: 0 0 0 -3px;
+	padding: 0;
+	width: 64px;
+	height: 110px;
+	opacity: 1;
+	background-color: #2C3E52;
 	border-width: 3px;
-	border-radius: 0;
-	border-color: #0B0E1C;
-	background-color: #161D35;
+	border-color: #0A0814;
+	border-radius: 10px;
 	align-items: center;
 	justify-content: center;
 }
 
-.hud-fold:hover:enabled {
-	background-color: #161D35;
-	border-color: #0B0E1C;
-}
-
-.hud-fold:disabled {
-	opacity: 1;
-}
-
-.hud-fold__arrow {
-	width: 44px;
-	height: 44px;
-	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Arrow_01.png");
+.quest-tab__arrow {
+	width: 28px;
+	height: 40px;
+	background-image: url("../../Violet/icon_chevron.png");
 	-unity-background-scale-mode: scale-to-fit;
-}
-
-/* ── 퀘스트 ────────────────────────────────────── */
-
-.quest-info {
-	position: absolute;
-	left: 0;
-	top: 300px;
-	flex-direction: row;
-	align-items: flex-start;
-	transition-property: translate;
-	transition-duration: 1s;
-	transition-timing-function: ease-out-cubic;
-}
-
-/* 틀 너비만큼 왼쪽으로 — 접기 버튼만 화면에 남는다 */
-.quest-info--folded {
-	translate: -380px 0;
-}
-
-.quest-frame {
-	width: 380px;
-	padding: 12px 14px 14px 14px;
-	background-color: rgba(0, 0, 0, 0.78);
-	border-width: 3px;
-	border-color: #000000;
-}
-
-.quest-frame--met {
-	border-color: #02FF00;
-}
-
-/* 제목이 길면 "(완료)"는 다음 줄로 — 오른쪽 위 목록 버튼 자리는 비운다 */
-.quest-frame__head {
-	flex-direction: row;
-	flex-wrap: wrap;
-	align-items: center;
-	padding-right: 72px;
-}
-
-.quest-frame__title {
-	margin-right: 8px;
-	color: var(--gold);
-}
-
-.quest-frame__complete {
-	margin-right: 8px;
-	color: #02FF00;
-	display: none;
-}
-
-.quest-frame--met .quest-frame__complete {
-	display: flex;
-}
-
-.quest-frame__desc {
-	margin: 6px 0 10px 0;
-	white-space: normal;
-}
-
-.quest-frame__list {
-	position: absolute;
-	right: 10px;
-	top: 10px;
-	margin: 0;
-	padding: 0;
-	width: 64px;
-	height: 64px;
-	border-width: 3px;
-	border-radius: 0;
-	border-color: #636363;
-	background-color: rgba(0, 0, 0, 0.6);
-}
-
-.quest-frame__list:hover:enabled {
-	background-color: rgba(0, 0, 0, 0.6);
-	border-color: #636363;
-}
-
-.quest-frame--met .quest-frame__list,
-.quest-frame--met .quest-frame__list:hover:enabled {
-	border-color: #02FF00;
-}
-
-.quest-frame__list-icon {
-	flex-grow: 1;
-	margin: 4px;
-	-unity-background-scale-mode: scale-to-fit;
-}
-
-/* 퀘스트 접기 화살표 — 펼침이면 왼쪽(접는 쪽) */
-.quest-info .hud-fold__arrow {
 	rotate: 180deg;
 }
 
-.quest-info--folded .hud-fold__arrow {
+.quest-info--folded .quest-tab__arrow {
 	rotate: 0deg;
+}
+
+/* 목표 달성 — 카드 테두리·게이지, 버튼 바탕·테두리가 초록. 글자색은 그대로 */
+.quest-info--met .quest-frame {
+	border-color: #5CF08C;
+	border-width: 4px;
+	padding: 9px 15px 0 20px;
+}
+
+.quest-info--met .quest-frame__fill {
+	background-color: #5CF08C;
+}
+
+.quest-info--met .quest-tab,
+.quest-info--met .quest-tab:hover:enabled,
+.quest-info--met .quest-tab:disabled {
+	background-color: #38BE6E;
+	border-color: #5CF08C;
 }
 
 /* ── 버프 ──────────────────────────────────────── */
@@ -291,67 +380,72 @@
 	-unity-text-align: middle-center;
 }
 
-/* ── 오른쪽 위: 재화 + 메뉴 ─────────────────────── */
+/* ── 오른쪽 위: 재화 + 메뉴 — 왼쪽 위 전투력 탭과 같은 남색 판(#252A40) + 진한 테두리.
+   세로 가운데를 히어로 정보 원 중심과 맞춘다 ── */
 
 .top-right {
 	position: absolute;
-	right: 10px;
-	top: 10px;
+	right: 20px;
+	top: 28px;
 	flex-direction: row;
 	align-items: center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }
 
 .resource {
 	flex-direction: row;
 	align-items: center;
-	width: 230px;
-	height: 64px;
+	width: 184px;
+	height: 56px;
 	margin-right: 12px;
-	padding-right: 16px;
-	background-color: #2D283F;
+	padding: 0 14px 0 10px;
+	background-color: #252A40;
 	border-width: 3px;
-	border-color: #12111C;
+	border-radius: 10px;
+	border-color: #0A0814;
 }
 
 .resource__icon {
-	width: 64px;
-	height: 64px;
-	margin-left: -10px;
+	width: 40px;
+	height: 40px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
 .resource__text {
 	flex-grow: 1;
+	font-size: 30px;
 	-unity-text-align: middle-right;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 3px 0 #0A0814;
 }
 
 .menu-button {
 	margin: 0;
 	padding: 0;
-	width: 104px;
-	height: 104px;
-	border-width: 0;
-	border-radius: 0;
-	background-color: rgba(0, 0, 0, 0);
-	background-image: url("../../Pixel/btn_gray.png");
-	-unity-slice-left: 5;
-	-unity-slice-right: 5;
-	-unity-slice-top: 5;
-	-unity-slice-bottom: 5;
-	-unity-slice-scale: 4px;
+	width: 76px;
+	height: 76px;
+	border-width: 3px;
+	border-radius: 12px;
+	border-color: #0A0814;
+	background-color: #252A40;
 	align-items: center;
 	justify-content: center;
 }
 
+.menu-button:hover:enabled {
+	background-color: #252A40;
+	border-color: #0A0814;
+}
 
 .menu-button:active {
 	translate: 0 4px;
 }
 
+/* 원본 128px 안 그림은 90x76 — 그림 높이가 34px 가 되게 칸을 키운다 */
 .menu-button__icon {
-	width: 68px;
-	height: 68px;
-	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Hamberger.png");
+	width: 58px;
+	height: 58px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Menu.Png");
 	-unity-background-scale-mode: scale-to-fit;
 }
 
@@ -370,70 +464,15 @@
 	display: flex;
 }
 
-/* ── 사이드바 ──────────────────────────────────── */
-
-.side-bar {
-	position: absolute;
-	right: 10px;
-	top: 150px;
-	align-items: flex-end;
-}
-
-.side-bar__group {
-	margin-top: 12px;
-	transition-property: translate;
-	transition-duration: 1s;
-	transition-timing-function: ease-out-cubic;
-}
-
-.side-bar--folded .side-bar__group {
-	translate: 220px 0;
-}
-
-/* 사이드바 접기 화살표 — 펼침이면 오른쪽(접는 쪽) */
-.side-bar--folded .hud-fold__arrow {
-	rotate: 180deg;
-}
-
-.side-button {
-	margin: 0 0 12px 0;
-	padding: 6px 0 8px 0;
-	width: 180px;
-	border-width: 3px;
-	border-radius: 0;
-	border-color: #0B0E1C;
-	background-color: rgba(21, 20, 40, 0.75);
-	align-items: center;
-}
-
-.side-button:hover:enabled {
-	background-color: rgba(21, 20, 40, 0.75);
-	border-color: #0B0E1C;
-}
-
-.side-button:active {
-	translate: 0 4px;
-}
-
-.side-button__icon {
-	width: 96px;
-	height: 96px;
-	-unity-background-scale-mode: scale-to-fit;
-}
-
-.side-button__label {
-	-unity-text-align: middle-center;
-	white-space: nowrap;
-}
-
 /* ── 보스 배너 ─────────────────────────────────── */
 
-/* 왼쪽 정보열(히어로·퀘스트, ~452px)과 오른쪽 사이드바(~190px) 사이를 채운다 */
+/* 가운데 위 — 윗줄(히어로 정보·재화, ~116px) 바로 아래. 높이는 상태 글까지 ~188px(130~318).
+   떠 있는 동안 HUD 루트에 hud--boss 가 붙어 미니맵·퀘스트가 숨는다 */
 .boss {
 	position: absolute;
-	left: 464px;
-	right: 204px;
-	top: 236px;
+	left: 220px;
+	right: 220px;
+	top: 130px;
 	align-items: stretch;
 	display: none;
 	opacity: 1;
@@ -441,6 +480,12 @@
 
 .boss--shown {
 	display: flex;
+}
+
+/* 보스 배너 자리를 쓰는 동안 숨기는 것들 — 미니맵(지금은 맵 이름)·퀘스트. 입력도 받지 않는다 */
+.hud--boss .map-info,
+.hud--boss .quest-info {
+	visibility: hidden;
 }
 
 /* 사망 뒤 사라짐 — 시간은 BossUI 가 잰다 */

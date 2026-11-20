@@ -85,6 +85,22 @@ namespace ProjectOne.UI
 			{
 				await UIManager.Instance.ShowAccountPopupAsync(ct);
 			}
+			else if (result == MenuPopupResult.Ranking)
+			{
+				await UIManager.Instance.ShowRankingPopupAsync(ct);
+			}
+			else if (result == MenuPopupResult.HeroPass)
+			{
+				await UIManager.Instance.ShowHeroPassPopupAsync(ct);
+			}
+			else if (result == MenuPopupResult.DailyBonus)
+			{
+				await UIManager.Instance.ShowDailyBonusPopupAsync(ct);
+			}
+			else if (result == MenuPopupResult.Quest)
+			{
+				await UIManager.Instance.ShowQuestListPopupAsync(ct);
+			}
 		}
 
 		// 잘못 눌러 꺼지지 않도록 한 번 더 확인받는다.

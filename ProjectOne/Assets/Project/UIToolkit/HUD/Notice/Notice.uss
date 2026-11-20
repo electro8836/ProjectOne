@@ -30,8 +30,18 @@
 	top: 820px;
 }
 
+/* 시스템 메시지 — 맨 위 층(System)이라 다른 UI 와 겹쳐도 가려지지 않는다. 대신 겹친 UI 와 섞여 보이지 않게
+   화면 폭 전체의 띠(가운데 진한 검정, 좌우 끝으로 옅어짐, 위아래 금색 선)를 깐다 */
 .notice--system {
 	top: 260px;
+	left: 0;
+	right: 0;
+	max-width: none;
+	padding: 26px 40px 30px 40px;
+	border-width: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../../Violet/notice_band.png");
+	-unity-background-scale-mode: stretch-to-fill;
 }
 
 .notice__text {

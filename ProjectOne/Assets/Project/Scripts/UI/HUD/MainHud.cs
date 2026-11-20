@@ -81,8 +81,7 @@ namespace ProjectOne.UI
 		[Header("맥락별 표시 묶음")]
 		[SerializeField] private ContextGroup[] _contextGroups =
 		{
-			new ContextGroup(HudContext.Field | HudContext.Dungeon, "map-info"),
-			new ContextGroup(HudContext.Town | HudContext.Field, "side-bar")
+			new ContextGroup(HudContext.Field | HudContext.Dungeon, "map-info")
 		};
 
 		// 메뉴 팝업 요청 — 어떻게 여는지는 Presenter 가 정한다.
@@ -99,7 +98,6 @@ namespace ProjectOne.UI
 		private HudMapInfo _mapInfo;
 		private HudQuestInfo _questInfo;
 		private HudBuffList _buffList;
-		private HudSideBar _sideBar;
 		private HudBossBanner _bossBanner;
 		private HudUltimateButton _ultimateButton;
 
@@ -121,7 +119,6 @@ namespace ProjectOne.UI
 			_mapInfo = new HudMapInfo(root, _icons, ct);
 			_questInfo = new HudQuestInfo(root, ct);
 			_buffList = new HudBuffList(root, _icons, ct);
-			_sideBar = new HudSideBar(root, ct);
 			_bossBanner = new HudBossBanner(root);
 			_ultimateButton = new HudUltimateButton(root, _icons, ct);
 

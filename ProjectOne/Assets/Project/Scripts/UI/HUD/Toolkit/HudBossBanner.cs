@@ -11,11 +11,13 @@ namespace ProjectOne.UI
 	// - 체력은 UnitBase.HpChanged 로 갱신 (게이지 / 현재·최대 수치 / 퍼센트)
 	// - 버프 상태(피해 면역·브레이크 기절)는 부착/해제 이벤트가 없어 Tick 에서 폴링한다
 	// - 보스 사망 시 DeathHoldMs 유지 후 USS 전환으로 1초 동안 사라진다
+	// - 떠 있는 동안 HUD 루트에 hud--boss 를 붙여 같은 자리를 쓰는 미니맵·퀘스트를 숨긴다
 	public sealed class HudBossBanner
 	{
 		private const long DeathHoldMs = 3000;
 		private const long FadeMs = 1000;
 
+		private readonly VisualElement _hud;
 		private readonly VisualElement _banner;
 		private readonly Label _name;
 		private readonly VisualElement _hpGauge;
@@ -48,6 +50,7 @@ namespace ProjectOne.UI
 
 		public HudBossBanner(VisualElement root)
 		{
+			_hud = root.Q("hud");
 			_banner = root.Q("boss");
 			_name = root.Q<Label>("boss-name");
 			_hpGauge = root.Q("boss-hp");
@@ -279,6 +282,7 @@ namespace ProjectOne.UI
 			stopFade();
 			_banner.RemoveFromClassList("boss--fading");
 			_banner.AddToClassList("boss--shown");
+			_hud.AddToClassList("hud--boss");
 			_showing = true;
 		}
 
@@ -287,6 +291,7 @@ namespace ProjectOne.UI
 			stopFade();
 			_banner.RemoveFromClassList("boss--shown");
 			_banner.RemoveFromClassList("boss--fading");
+			_hud.RemoveFromClassList("hud--boss");
 			_showing = false;
 		}
 

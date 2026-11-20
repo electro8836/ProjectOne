@@ -147,7 +147,7 @@ public abstract class UIPopup<TArgs, TResult> : ToolkitScreen
 | `HoldRepeatManipulator` | 누르고 있으면 반복 클릭 | 수량 증감 버튼 |
 | `ScrollDragManipulator` | 드래그 스크롤 + 드래그 뒤 클릭 막기 | 스크롤 목록 |
 | `…Cell` / `…Row` | 화면 전용 목록 칸(상점 상품·코스튬·펫·우편·랭킹·퀘스트·출석·패스) | 각 화면 |
-| `Hud…` | 메인 HUD 위젯(재화·히어로 정보·맵·퀘스트·버프·사이드바·보스 배너·궁극기) | 메인 HUD |
+| `Hud…` | 메인 HUD 위젯(재화·히어로 정보·맵·퀘스트·버프·보스 배너·궁극기) | 메인 HUD |
 
 - 아이콘은 `ToolkitIconLoader` 로 Addressable 스프라이트를 개별 로드하고, 화면이 닫힐 때 일괄 Release 한다. 화면 하나가 로더 하나를 갖고 컴포넌트에 넘긴다.
 - 컴포넌트 안에서 매 프레임 갱신하지 않는다. 값이 바뀔 때만 다시 그린다.

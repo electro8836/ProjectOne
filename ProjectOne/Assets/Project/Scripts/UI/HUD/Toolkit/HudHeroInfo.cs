@@ -10,6 +10,7 @@ using ProjectOne.UserData;
 namespace ProjectOne.UI
 {
 	// 메인 HUD 왼쪽 위 히어로 정보 — 체력 / 숙련도 경험치 / 레벨(장착 무기의 숙련도) / 전투력.
+	// 경험치는 레벨 원 테두리의 고리로 그린다(12시에서 시계 방향).
 	//
 	// 자기 이벤트를 직접 구독하는 HUD 위젯이다. 체력·레벨·경험치는 이벤트로, 전투력은 스탯 버전 폴링(Tick)으로 갱신한다.
 	// 값이 바뀌었을 때만 요소에 쓴다 — 체력은 피격마다 변한다.
@@ -17,7 +18,7 @@ namespace ProjectOne.UI
 	{
 		private readonly VisualElement _hpFill;
 		private readonly Label _hpText;
-		private readonly VisualElement _expFill;
+		private readonly VisualElement _levelRing;
 		private readonly Label _levelText;
 		private readonly Label _powerText;
 
@@ -29,6 +30,13 @@ namespace ProjectOne.UI
 		private int _lastMasteryLevel = -1;
 		private float _lastExpRatio = -1f;
 
+		// 경험치 고리 — 원 테두리(진한 3px) 안쪽 10px 띠. 바탕 띠 위에 경험치만큼 칠한다.
+		private const float RING_WIDTH = 10f;
+		private const float RING_INSET = 3f;
+		private static readonly Color RING_TRACK_COLOR = new Color32(40, 34, 70, 255);
+		private static readonly Color RING_FILL_COLOR = new Color32(155, 123, 255, 255);
+		private float _expRatio;
+
 		// 전투력은 전용 이벤트가 없어 스탯 버전으로 감지한다 — Version 은 Aspect 재적용이 끝난 뒤 반드시 올라간다.
 		private int _lastStatVersion = -1;
 		private int _lastBattlePower = -1;
@@ -37,7 +45,8 @@ namespace ProjectOne.UI
 		{
 			_hpFill = root.Q("hp-fill");
 			_hpText = root.Q<Label>("hp-text");
-			_expFill = root.Q("exp-fill");
+			_levelRing = root.Q("level-ring");
+			_levelRing.generateVisualContent += onDrawLevelRing;
 			_levelText = root.Q<Label>("level-text");
 			_powerText = root.Q<Label>("power-text");
 
@@ -52,6 +61,7 @@ namespace ProjectOne.UI
 
 		public void Dispose()
 		{
+			_levelRing.generateVisualContent -= onDrawLevelRing;
 			EventManager.Instance.Unsubscribe<UnitSpawnedEvent>(onUnitSpawned);
 			EventManager.Instance.Unsubscribe<MasteryExpChangeEvent>(onMasteryExpChanged);
 			EventManager.Instance.Unsubscribe<MasteryChangeEvent>(onMasteryChanged);
@@ -119,7 +129,7 @@ namespace ProjectOne.UI
 			}
 
 			_lastMasteryLevel = masteryLevel;
-			_levelText.text = (masteryLevel > 0) ? "Lv." + masteryLevel.ToString() : string.Empty;
+			_levelText.text = (masteryLevel > 0) ? masteryLevel.ToString() : string.Empty;
 		}
 
 		// 레벨이 같아도 경험치는 계속 오르므로 레벨과 따로 비교한다.
@@ -141,7 +151,38 @@ namespace ProjectOne.UI
 			}
 
 			_lastExpRatio = ratio;
-			_expFill.style.width = Length.Percent(ratio * 100f);
+			_expRatio = ratio;
+			_levelRing.MarkDirtyRepaint();
+		}
+
+		private void onDrawLevelRing(MeshGenerationContext context)
+		{
+			Rect rect = _levelRing.contentRect;
+			Vector2 center = rect.center;
+			float radius = Mathf.Min(rect.width, rect.height) * 0.5f - RING_INSET - RING_WIDTH * 0.5f;
+			if (radius <= 0f)
+			{
+				return;
+			}
+
+			Painter2D painter = context.painter2D;
+			painter.lineWidth = RING_WIDTH;
+			painter.lineCap = LineCap.Butt;
+
+			painter.strokeColor = RING_TRACK_COLOR;
+			painter.BeginPath();
+			painter.Arc(center, radius, Angle.Degrees(0f), Angle.Degrees(360f));
+			painter.Stroke();
+
+			if (_expRatio <= 0f)
+			{
+				return;
+			}
+
+			painter.strokeColor = RING_FILL_COLOR;
+			painter.BeginPath();
+			painter.Arc(center, radius, Angle.Degrees(-90f), Angle.Degrees(-90f + 360f * _expRatio));
+			painter.Stroke();
 		}
 
 		// 현재 레벨 구간의 진행도. 테이블 값이 누적치라 구간을 떼어낸다. 다음 레벨이 없으면(만렙) 꽉 채운다.
