@@ -1,5 +1,3 @@
-using System.Threading;
-using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UIElements;
 using EDT;
@@ -11,19 +9,11 @@ namespace ProjectOne.UI
 	// 마을에서 숨기는 것은 MainHud 의 맥락 묶음이 맡는다.
 	public sealed class HudMapInfo
 	{
-		private const string FieldIconAddress = "Icon_Field";
-
-		private readonly VisualElement _icon;
 		private readonly Label _text;
-		private readonly ToolkitIconLoader _icons;
-		private readonly CancellationToken _ct;
 
-		public HudMapInfo(VisualElement root, ToolkitIconLoader icons, CancellationToken ct)
+		public HudMapInfo(VisualElement root)
 		{
-			_icon = root.Q("map-icon");
 			_text = root.Q<Label>("map-text");
-			_icons = icons;
-			_ct = ct;
 
 			EventManager.Instance.Subscribe<ZoneChangedEvent>(onZoneChanged);
 			EventManager.Instance.Subscribe<DungeonStageStartedEvent>(onDungeonStageStarted);
@@ -71,7 +61,6 @@ namespace ProjectOne.UI
 			}
 
 			_text.text = zone.WorldID.ToString() + "-" + zone.Order.ToString() + " " + zone.Name;
-			_icons.SetAsync(_icon, FieldIconAddress, _ct).Forget();
 		}
 
 		private void showDungeon(EDT.Dungeon dungeonType, int stage)
@@ -84,7 +73,6 @@ namespace ProjectOne.UI
 			}
 
 			_text.text = dungeon.Name + " - " + stage.ToString();
-			_icons.SetAsync(_icon, dungeon.Icon, _ct).Forget();
 		}
 	}
 }

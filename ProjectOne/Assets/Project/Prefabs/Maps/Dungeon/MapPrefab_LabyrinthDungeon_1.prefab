@@ -674625,6 +674625,7 @@ GameObject:
   - component: {fileID: 267550255797843505}
   - component: {fileID: 5720683924405473360}
   - component: {fileID: 3678481377553498482}
+  - component: {fileID: 5291490434157245830}
   m_Layer: 0
   m_Name: MapPrefab_LabyrinthDungeon_1
   m_TagString: Untagged
@@ -674684,6 +674685,21 @@ MonoBehaviour:
   _exitArea: {fileID: 834103129369245873}
   _fireWall: {fileID: 5981219106327817915}
   _exitCurtain: {fileID: 0}
+--- !u!114 &5291490434157245830
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3745918416661406950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 991220da25741074eb7738674477b3b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Map.MinimapImage
+  _texture: {fileID: 2800000, guid: 3b1a9d5a45030f842a9f0acf7854c5db, type: 3}
+  _localMin: {x: -7.68, y: -16.64}
+  _localMax: {x: 10.24, y: 174.08}
 --- !u!1 &3860659525961844602
 GameObject:
   m_ObjectHideFlags: 0

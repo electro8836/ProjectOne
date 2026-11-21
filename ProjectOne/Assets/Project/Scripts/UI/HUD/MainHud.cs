@@ -100,6 +100,7 @@ namespace ProjectOne.UI
 		private HudBuffList _buffList;
 		private HudBossBanner _bossBanner;
 		private HudUltimateButton _ultimateButton;
+		private HudMinimap _minimap;
 
 		// 보스 배너 — 던전 HUD 가 자리를 비켜줄지 판단할 때 UIManager 를 거쳐 읽는다.
 		public HudBossBanner BossBanner
@@ -116,11 +117,12 @@ namespace ProjectOne.UI
 			CancellationToken ct = this.GetCancellationTokenOnDestroy();
 			_resourceBar = new HudResourceBar(root, _icons, ct);
 			_heroInfo = new HudHeroInfo(root);
-			_mapInfo = new HudMapInfo(root, _icons, ct);
+			_mapInfo = new HudMapInfo(root);
 			_questInfo = new HudQuestInfo(root, ct);
 			_buffList = new HudBuffList(root, _icons, ct);
 			_bossBanner = new HudBossBanner(root);
 			_ultimateButton = new HudUltimateButton(root, _icons, ct);
+			_minimap = new HudMinimap(root, _icons, ct);
 
 			_presenter.Initialize(this);
 		}
@@ -137,6 +139,7 @@ namespace ProjectOne.UI
 				_buffList.Dispose();
 				_bossBanner.Dispose();
 				_ultimateButton.Dispose();
+				_minimap.Dispose();
 				_icons.ReleaseAll();
 			}
 
@@ -155,6 +158,7 @@ namespace ProjectOne.UI
 			_buffList.Tick(deltaTime);
 			_bossBanner.Tick();
 			_ultimateButton.Tick(deltaTime);
+			_minimap.Tick(deltaTime);
 		}
 
 		// ── 표시 (Presenter 가 지시) ───────────────────────────────────

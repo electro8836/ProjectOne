@@ -1,0 +1,11 @@
+/* 월드맵 팝업 — 지도 전체가 본문에 맞춰 들어간다(MapView.FitPixelsPerUnit) */
+
+.worldmap-body {
+	height: 1100px;
+	margin-bottom: 30px;
+	padding: 12px;
+}
+
+.worldmap-view {
+	flex-grow: 1;
+}

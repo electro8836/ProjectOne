@@ -59009,6 +59009,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5124411143596725843}
   - component: {fileID: 7596180050244560904}
+  - component: {fileID: 3428590602992957903}
   m_Layer: 0
   m_Name: MapPrefab_Town
   m_TagString: Untagged
@@ -59053,6 +59054,21 @@ MonoBehaviour:
   _obstacleMap: {fileID: 1598742993684013073}
   _blockMap: {fileID: 2208756287431138147}
   DEV_ShowDrawGizmos: 0
+--- !u!114 &3428590602992957903
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8225876925287669750}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 991220da25741074eb7738674477b3b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Map.MinimapImage
+  _texture: {fileID: 2800000, guid: 97defed39adbb364f90aee0c33dc42f1, type: 3}
+  _localMin: {x: -27.501919, y: -19.37395}
+  _localMax: {x: 23.698078, y: 24.146051}
 --- !u!1 &8403649913743537611
 GameObject:
   m_ObjectHideFlags: 0

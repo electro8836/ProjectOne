@@ -1,0 +1,20 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/MapView.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="WorldMap.uss" />
+
+	<!-- 월드맵 — 지금 있는 곳(필드면 월드 전체, 마을·던전이면 그 맵)의 지도 전체를 보여 준다. 보기 전용 -->
+	<ui:VisualElement name="popup" class="popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head">
+				<ui:Label name="title" text="지도" class="popup__name text-pop" />
+				<ui:Button name="close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+			<ui:VisualElement class="px-inset popup__body worldmap-body">
+				<ui:VisualElement name="map" class="map-view worldmap-view" picking-mode="Ignore" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

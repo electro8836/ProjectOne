@@ -47911,6 +47911,7 @@ GameObject:
   m_Component:
   - component: {fileID: 267550255797843505}
   - component: {fileID: 5720683924405473360}
+  - component: {fileID: 2188935564959708636}
   m_Layer: 0
   m_Name: MapPrefab_RiftDungeon_1
   m_TagString: Untagged
@@ -47956,6 +47957,21 @@ MonoBehaviour:
   _obstacleMap: {fileID: 1085836538243910374}
   _blockMap: {fileID: 3360327906852575037}
   DEV_ShowDrawGizmos: 0
+--- !u!114 &2188935564959708636
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3745918416661406950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 991220da25741074eb7738674477b3b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Map.MinimapImage
+  _texture: {fileID: 2800000, guid: da783cf48c90c0f40aaa8fd1392f500a, type: 3}
+  _localMin: {x: -23.039999, y: -15.36}
+  _localMax: {x: 24.960001, y: 17.279999}
 --- !u!1 &3894235343015467636
 GameObject:
   m_ObjectHideFlags: 0

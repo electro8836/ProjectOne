@@ -156,21 +156,182 @@
 	-unity-text-align: middle-center;
 }
 
-/* ── 맵 이름 ───────────────────────────────────── */
+/* ── 미니맵 — 메뉴 버튼 아래(144~369) 225px 원. 맵 이미지가 없는 곳에서는 숨는다(--shown 없음).
+   시안 D6-S(흑철 금박, Shared/Design/UI미니맵_시안_D6S확정.png)를 크기 시안(UI미니맵_크기125_시안.png)대로 1.25배 했다.
+   링 16px = 검정 4 + 쇠 7 + 안쪽 쇠 3 + 검정 2. 확장 버튼은 원 왼쪽 아래, 줌 +/- 는 원 오른쪽에 반쯤 걸친다 ── */
 
-.map-info {
+.minimap {
 	position: absolute;
 	right: 24px;
-	top: 336px;	/* 오른쪽 위 미니맵 자리(메뉴 버튼 아래로 40px 띄운 144~324) 밑 */
-	flex-direction: row;
+	top: 144px;
+	width: 225px;
+	height: 225px;
+	display: none;
+}
+
+.minimap--shown {
+	display: flex;
+}
+
+/* 겹친 원 — 바깥 원이 padding 만큼 안쪽 원을 둘러 링 한 겹이 된다 */
+.minimap__ring {
+	flex-grow: 1;
+	border-radius: 113px;
+}
+
+.minimap__ring--ink {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	padding: 4px;
+	background-color: #0A0814;
+}
+
+.minimap__ring--iron {
+	padding: 7px;
+	background-color: #4A4650;
+}
+
+.minimap__ring--iron-dark {
+	padding: 3px;
+	background-color: #222026;
+}
+
+.minimap__ring--inner-ink {
+	padding: 2px;
+	background-color: #0A0814;
+}
+
+.minimap__view {
+	flex-grow: 1;
+	border-radius: 113px;
+}
+
+/* 버튼 — 검정 테(border) + 금 테(배경 + padding) + 흑회 판(face). 비활성은 반투명 대신 회색으로 바꾼다 */
+.minimap__button {
+	position: absolute;
+	margin: 0;
+	padding: 4px;
+	width: 58px;
+	height: 58px;
+	border-width: 4px;
+	border-radius: 29px;
+	border-color: #0A0814;
+	background-color: #B8964A;
+}
+
+.minimap__button:hover:enabled {
+	background-color: #B8964A;
+	border-color: #0A0814;
+}
+
+.minimap__button:active {
+	translate: 0 4px;
+}
+
+/* 기본 버튼의 비활성 반투명(opacity)을 끄고 색으로만 구분한다 */
+.minimap__button:disabled {
+	opacity: 1;
+	background-color: #545868;
+}
+
+.minimap__face {
+	flex-grow: 1;
+	border-radius: 21px;
+	background-color: #18171C;
+	align-items: center;
+	justify-content: center;
+}
+
+.minimap__button:disabled .minimap__face {
+	opacity: 1;
+	background-color: #3A3D4A;
+}
+
+/* 아이콘 연보라 채움이 회색이 되도록 어둡게 곱한다(외곽선은 원래 어두워 그대로 보인다) */
+.minimap__button:disabled .minimap__icon {
+	opacity: 1;
+	-unity-background-image-tint-color: #8A8796;
+}
+
+/* 아래 맵 이름 판과 겹치지 않게 원 왼쪽 아래 곡선 위에 둔다 */
+.minimap__button--expand {
+	left: -8px;
+	bottom: 18px;
+}
+
+.minimap__button--zoom-in {
+	right: -20px;
+	top: 84px;
+}
+
+.minimap__button--zoom-out {
+	right: -20px;
+	top: 146px;
+}
+
+/* Icon_Plus / Icon_Minus(44x47) — 버튼 지름의 62% 높이 */
+.minimap__icon {
+	width: 34px;
+	height: 36px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* Icon_Expand 는 그림 중심 기준 정사각형(52) — 원 중심에 오고, 외곽 끝이 반지름 20px(시안 18px 비율)에 닿는 크기 */
+.minimap__icon--expand {
+	width: 42px;
+	height: 42px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Expand.png");
+}
+
+.minimap__icon--plus {
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Plus.png");
+}
+
+.minimap__icon--minus {
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Minus.png");
+}
+
+/* ── 맵 이름 ───────────────────────────────────── */
+
+/* 미니맵 원(144~369) 아래쪽에 18px 걸쳐 붙는다(351~406). 칸 가운데 = 원 가운데(오른쪽에서 136.5).
+   칸을 원보다 넓게(오른쪽 0 ~ 폭 273) 잡아 긴 이름도 화면 밖으로 나가지 않게 하고, 그보다 길면 말줄임 */
+.map-info {
+	position: absolute;
+	right: 0;
+	top: 351px;
+	width: 273px;
 	align-items: center;
 }
 
-.map-info__icon {
-	width: 52px;
-	height: 52px;
-	margin-right: 8px;
-	-unity-background-scale-mode: scale-to-fit;
+/* 한 겹 판 — 검정 테(border) + 바랜 금 테(배경 + padding) + 흑회 판(글자) */
+.map-info__box {
+	padding: 4px;
+	max-width: 273px;
+	height: 55px;
+	border-width: 4px;
+	border-radius: 15px;
+	border-color: #0A0814;
+	background-color: #B8964A;
+}
+
+.map-info__text {
+	margin: 0;
+	padding: 0 22px;
+	flex-grow: 1;
+	border-radius: 10px;
+	background-color: #18171C;
+	color: #FFFFFF;
+	font-size: 30px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* ── 퀘스트 — 왼쪽 위(히어로 정보 아래). 보스 배너가 뜨면 숨는다(.hud--boss). 버튼이 카드 오른쪽에 붙는다.
@@ -488,7 +649,8 @@
 	display: flex;
 }
 
-/* 보스 배너 자리를 쓰는 동안 숨기는 것들 — 미니맵(지금은 맵 이름)·퀘스트. 입력도 받지 않는다 */
+/* 보스 배너 자리를 쓰는 동안 숨기는 것들 — 미니맵·맵 이름·퀘스트. 입력도 받지 않는다 */
+.hud--boss .minimap,
 .hud--boss .map-info,
 .hud--boss .quest-info {
 	visibility: hidden;

@@ -56504,6 +56504,7 @@ GameObject:
   - component: {fileID: 1070878042015508703}
   - component: {fileID: 4960164295103593691}
   - component: {fileID: 2243069857228578893}
+  - component: {fileID: 5843597809879007008}
   m_Layer: 0
   m_Name: MapPrefab_World_1
   m_TagString: Untagged
@@ -56559,6 +56560,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Map.WorldMap
   _worldId: 1
+--- !u!114 &5843597809879007008
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8227897316587231637}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 991220da25741074eb7738674477b3b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Map.MinimapImage
+  _texture: {fileID: 2800000, guid: a1e700347458e8043b832a4db9ac1dc8, type: 3}
+  _localMin: {x: -0.64, y: -0.64}
+  _localMax: {x: 107.52, y: 19.84}
 --- !u!1 &8434580443097349474
 GameObject:
   m_ObjectHideFlags: 0

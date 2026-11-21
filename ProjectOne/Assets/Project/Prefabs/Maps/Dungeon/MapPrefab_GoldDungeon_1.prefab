@@ -1231,6 +1231,7 @@ GameObject:
   m_Component:
   - component: {fileID: 267550255797843505}
   - component: {fileID: 119983088559141146}
+  - component: {fileID: 6734605647444036075}
   m_Layer: 0
   m_Name: MapPrefab_GoldDungeon_1
   m_TagString: Untagged
@@ -1275,6 +1276,21 @@ MonoBehaviour:
   _obstacleMap: {fileID: 1085836538243910374}
   _blockMap: {fileID: 2905656723161900577}
   DEV_ShowDrawGizmos: 0
+--- !u!114 &6734605647444036075
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3745918416661406950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 991220da25741074eb7738674477b3b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Map.MinimapImage
+  _texture: {fileID: 2800000, guid: f5aebf7f565647c41b6dbcacb6930f77, type: 3}
+  _localMin: {x: -7.04, y: -5.76}
+  _localMax: {x: 7.04, y: 6.3999996}
 --- !u!1 &3894235343015467636
 GameObject:
   m_ObjectHideFlags: 0
