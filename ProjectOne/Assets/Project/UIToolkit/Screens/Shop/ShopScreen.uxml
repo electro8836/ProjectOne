@@ -1,17 +1,29 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
 	<Style src="ShopScreen.uss" />
 
-	<ui:VisualElement name="screen" class="screen">
-		<ui:VisualElement class="px-wood header">
-			<ui:Label text="상점" class="header__title text-pop" />
-			<ui:Button name="home-button" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+	<ui:VisualElement name="screen" class="screen theme-violet">
+		<!-- 상단 배너: 장비 화면과 같은 보라 판 + 번짐 + 재화 캡슐 (닫기는 네비게이션 바 탭을 다시 누른다) -->
+		<ui:VisualElement class="header">
+			<ui:VisualElement class="header__frame">
+				<ui:VisualElement class="header__wash" picking-mode="Ignore" />
+				<ui:Label text="상점" class="header__title" />
+				<ui:VisualElement name="header-currencies" class="header__currencies">
+					<ui:VisualElement name="currency-0" class="currency-capsule"><ui:VisualElement class="currency-capsule__icon" picking-mode="Ignore" /><ui:Label text="" class="currency-capsule__text" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:VisualElement name="currency-1" class="currency-capsule"><ui:VisualElement class="currency-capsule__icon" picking-mode="Ignore" /><ui:Label text="" class="currency-capsule__text" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:VisualElement name="currency-2" class="currency-capsule"><ui:VisualElement class="currency-capsule__icon" picking-mode="Ignore" /><ui:Label text="" class="currency-capsule__text" picking-mode="Ignore" /></ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
 		</ui:VisualElement>
 
 		<!-- 탭은 ShopCategory 수만큼 코드가 만든다 -->
-		<ui:VisualElement name="tabs" class="tabs" />
+		<ui:VisualElement class="shop-tabs-wrap">
+			<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
+			<ui:VisualElement name="tabs" class="tabs" />
+		</ui:VisualElement>
 
-		<ui:VisualElement class="px-paper sheet">
+		<ui:VisualElement class="sheet">
 			<ui:ScrollView name="list" class="shop-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
 		</ui:VisualElement>
 	</ui:VisualElement>

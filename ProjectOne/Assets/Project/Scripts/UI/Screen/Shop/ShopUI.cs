@@ -14,13 +14,19 @@ namespace ProjectOne.UI
 	//
 	// 탭은 ShopCategory 테이블이 정한다. 목록은 그룹 제목 아래에 그 그룹의 상품을 쌓는 구조를 반복한다 —
 	// 낱개 상품 그룹은 3열 그리드에, 나머지는 한 건이 화면 폭을 통째로 쓴다.
+	// 닫기는 네비게이션 바의 상점 탭을 다시 누른다(장비 화면과 같다).
 	public class ShopUI : ToolkitScreen, IView
 	{
+		// 가치 말풍선 강조 — 이 간격마다 빛 띠가 지나가고 살짝 커졌다 돌아온다.
+		private const long BUBBLE_INTERVAL_MS = 2600;
+		private const long BUBBLE_PULSE_MS = 180;
+		private const long BUBBLE_SHINE_MS = 900;
+
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
+		[SerializeField] private EDT.Currency[] _headerCurrencies = { EDT.Currency.Gold, EDT.Currency.Dia, EDT.Currency.Ruby };	// 제목 줄 재화 캡슐(최대 3)
 
 		public event Action<int> OnTabChanged;
 		public event Action<int> OnBuyClicked;
-		public event Action OnHomeClicked;
 
 		private readonly ShopPresenter _presenter = new ShopPresenter();
 		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
@@ -42,13 +48,18 @@ namespace ProjectOne.UI
 		private VisualElement _tabBar;
 		private readonly List<Button> _tabs = new List<Button>();
 		private ScrollView _list;
+		private HeaderCurrencyBar _currencyBar;
+
+		// 지금 강조 중인 가치 말풍선 — 연출이 끝나면 클래스를 걷는다.
+		private readonly List<VisualElement> _bubbles = new List<VisualElement>();
 
 		protected override void OnBind(VisualElement root)
 		{
 			_tabBar = root.Q("tabs");
 			_list = root.Q<ScrollView>("list");
 			_list.AddManipulator(new ScrollDragManipulator(_list));
-			root.Q<Button>("home-button").clicked += onHomeClicked;
+			_currencyBar = new HeaderCurrencyBar(root.Q("header-currencies"), _headerCurrencies, _icons, GetDestroyToken());
+			root.schedule.Execute(onBubbleTick).Every(BUBBLE_INTERVAL_MS);
 
 			_presenter.Initialize(this);
 		}
@@ -58,6 +69,7 @@ namespace ProjectOne.UI
 			if (IsBound == true)
 			{
 				_presenter.Dispose();
+				_currencyBar.Dispose();
 			}
 
 			_icons.ReleaseAll();
@@ -141,7 +153,9 @@ namespace ProjectOne.UI
 				int gridOrder = 0;
 				for (int i = 0; i < goods.Count; i++)
 				{
-					ShopProductCell cell = acquireCell(toKind(goods[i].GoodsType));
+					ShopCellKind kind = toKind(goods[i].GoodsType);
+					ShopProductCell cell = acquireCell(kind);
+					cell.SetColor(getColorKey(category, kind, i));
 					if (useGrid == true)
 					{
 						place(cell.Root, grid, gridOrder);
@@ -197,9 +211,48 @@ namespace ProjectOne.UI
 
 				case GoodsType.NoAd:
 					return ShopCellKind.NoAd;
+
+				case GoodsType.InventorySlot:
+				case GoodsType.StashSlot:
+					return ShopCellKind.Expand;
 			}
 
 			return ShopCellKind.Single;
+		}
+
+		// 카드 바탕 색 — 패스는 금색, 패키지는 분홍·청록 번갈아, 상자는 등급 순(보라·파랑·회색).
+		// 낱개는 분류 색(재화 칸은 ShopProductCell 이 재화 종류 색으로 덮어쓴다).
+		private static string getColorKey(ShopCategory category, ShopCellKind kind, int indexInGroup)
+		{
+			switch (kind)
+			{
+				case ShopCellKind.Pass:
+					return "gold";
+
+				case ShopCellKind.Package:
+					return (indexInGroup % 2 == 0) ? "pink" : "teal";
+
+				case ShopCellKind.Box:
+					return (indexInGroup == 0) ? "purple" : (indexInGroup == 1 ? "blue" : "gray");
+
+				case ShopCellKind.NoAd:
+				case ShopCellKind.Expand:
+					return "gray";
+			}
+
+			switch (category)
+			{
+				case ShopCategory.Pet:
+					return "green";
+
+				case ShopCategory.Costume:
+					return "pink";
+
+				case ShopCategory.Currency:
+					return "blue";
+			}
+
+			return "purple";
 		}
 
 		private Button getTab(int index)
@@ -344,11 +397,54 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private void onHomeClicked()
+		// ── 내부: 가치 말풍선 강조 ────────────────────────────────────────
+
+		// 보이는 말풍선마다 빛 띠를 흘리고 살짝 키운다 — 잠시 뒤 키운 것을 되돌리고, 빛 띠 위치를 되감는다.
+		private void onBubbleTick()
 		{
-			if (OnHomeClicked != null)
+			_bubbles.Clear();
+
+			CellPool pool;
+			if (_pools.TryGetValue(ShopCellKind.Single, out pool) == false)
 			{
-				OnHomeClicked.Invoke();
+				return;
+			}
+
+			for (int i = 0; i < pool.cursor; i++)
+			{
+				VisualElement bubble = pool.cells[i].Bonus;
+				if (bubble == null)
+				{
+					continue;
+				}
+
+				bubble.AddToClassList("shop-bubble--shine");
+				bubble.AddToClassList("shop-bubble--pulse");
+				_bubbles.Add(bubble);
+			}
+
+			if (_bubbles.Count == 0)
+			{
+				return;
+			}
+
+			_list.schedule.Execute(onBubblePulseEnd).StartingIn(BUBBLE_PULSE_MS);
+			_list.schedule.Execute(onBubbleShineEnd).StartingIn(BUBBLE_SHINE_MS);
+		}
+
+		private void onBubblePulseEnd()
+		{
+			for (int i = 0; i < _bubbles.Count; i++)
+			{
+				_bubbles[i].RemoveFromClassList("shop-bubble--pulse");
+			}
+		}
+
+		private void onBubbleShineEnd()
+		{
+			for (int i = 0; i < _bubbles.Count; i++)
+			{
+				_bubbles[i].RemoveFromClassList("shop-bubble--shine");
 			}
 		}
 	}

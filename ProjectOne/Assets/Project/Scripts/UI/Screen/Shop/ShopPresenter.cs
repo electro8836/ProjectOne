@@ -33,7 +33,6 @@ namespace ProjectOne.UI
 		{
 			view.OnTabChanged += onTabChanged;
 			view.OnBuyClicked += onBuyClicked;
-			view.OnHomeClicked += onHomeClicked;
 		}
 
 		protected override void OnDispose()
@@ -49,7 +48,6 @@ namespace ProjectOne.UI
 
 			view.OnTabChanged -= onTabChanged;
 			view.OnBuyClicked -= onBuyClicked;
-			view.OnHomeClicked -= onHomeClicked;
 		}
 
 		public override UniTask OnOpenAsync(CancellationToken ct)
@@ -302,11 +300,6 @@ namespace ProjectOne.UI
 		}
 
 		// 창을 닫는다. 마지막 창이면 WindowClosedEvent 가 발행되어 네비게이션 바의 탭 선택도 함께 풀린다.
-		private void onHomeClicked()
-		{
-			UIManager.Instance.CloseWindowAsync().Forget();
-		}
-
 		// ── 렌더 ──────────────────────────────────────────────────────────
 
 		// 아이콘 로드가 await 라 탭을 빠르게 연타하면 렌더가 겹친다 — 직전 렌더는 취소한다.

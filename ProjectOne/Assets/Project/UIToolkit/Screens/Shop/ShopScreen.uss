@@ -1,210 +1,489 @@
-/* 상점 화면 — 카테고리 탭 + 그룹별 상품 목록. 부품·색·글자는 Theme.uss 를 따른다. */
+/* 상점 화면 — 바이올렛 테마(제목 판 · 탭 · 가방 판은 장비 화면과 같다) + 캐주얼 스티커 카드.
+   시안: Shared/Design/UI상점_D_최종_시안.png · UI상점_D_가치강조_애니.gif
+   부품 그림: UIToolkit/Shop (카드 바탕 · 광택 버튼 · 리본 · 말풍선 · 돋보기 · 히어로 패스 배너) */
+
+/* ── 탭 줄 · 목록 판 ── */
+
+.shop-tabs-wrap {
+	margin: 0 -6px;
+}
+
+.theme-violet .shop-tabs-wrap .tabs {
+	margin: 0;
+	padding-top: 12px;
+}
 
 .tab {
 	font-size: 36px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.sheet {
+	flex-grow: 1;
+	margin: 0 -6px;
+	padding: 0 26px;
+	background-color: #3A3060;
+	border-top-width: 4px;
+	border-top-color: #6D5ACD;
 }
 
 .shop-list {
 	flex-grow: 1;
 }
 
+.shop-list .unity-scroll-view__content-container {
+	padding-bottom: 30px;
+}
+
 .shop-group-title {
-	margin: 18px 0 12px 6px;
-	font-size: 48px;
-	color: var(--gold);
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 4px 0 var(--ink);
+	margin: 22px 0 16px 6px;
+	font-size: 44px;
+	color: #FFFFFF;
+	text-shadow: 0 4px 0 #0A0814;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }
 
 /* 낱개 상품 3열 */
 .shop-grid {
 	flex-direction: row;
 	flex-wrap: wrap;
-	justify-content: flex-start;
+	margin: 0 -1%;
 }
 
-/* ── 상품 칸 공통 ───────────────────────────────── */
+/* ── 카드 공통 — 검정 테(아래 두껍게 = 그림자) 안에 흰 테 + 색 바탕 그림 ── */
 
 .shop-card {
-	padding: 20px;
-	margin-bottom: 16px;
+	margin-bottom: 34px;
+	border-width: 4px 4px 10px 4px;
+	border-color: #0A0814;
+	border-radius: 28px;
 }
 
+.shop-card__face {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	border-width: 6px;
+	border-color: #FFFFFF;
+	border-radius: 24px;
+	-unity-background-scale-mode: scale-and-crop;
+	background-image: url("../../Shop/card_purple.png");
+}
+
+.shop-card--c-gold .shop-card__face { background-image: url("../../Shop/card_gold.png"); }
+.shop-card--c-pink .shop-card__face { background-image: url("../../Shop/card_pink.png"); }
+.shop-card--c-teal .shop-card__face { background-image: url("../../Shop/card_teal.png"); }
+.shop-card--c-purple .shop-card__face { background-image: url("../../Shop/card_purple.png"); }
+.shop-card--c-blue .shop-card__face { background-image: url("../../Shop/card_blue.png"); }
+.shop-card--c-gray .shop-card__face { background-image: url("../../Shop/card_gray.png"); }
+.shop-card--c-yellow .shop-card__face { background-image: url("../../Shop/card_yellow.png"); }
+.shop-card--c-red .shop-card__face { background-image: url("../../Shop/card_red.png"); }
+.shop-card--c-green .shop-card__face { background-image: url("../../Shop/card_green.png"); }
+
+/* 이름 — 굵은 흰 글자 + 검정 외곽선 + 아래 그림자 */
 .shop-card__title {
-	font-size: 36px;
-	-unity-text-align: middle-center;
+	font-size: 52px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: #0A0814;
+	text-shadow: 0 5px 0 #0A0814;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.shop-card__desc {
+	margin-top: 6px;
+	font-size: 28px;
+	color: #FFF8EE;
+	text-shadow: 0 2px 0 #0A0814;
 	white-space: normal;
 }
 
-.shop-card__limit {
-	font-size: 36px;
-	color: var(--ink-sub);
-	-unity-text-align: middle-center;
-}
+/* ── 구매 버튼 — 카드 맨 아래 가운데. 그림(광택 버튼)은 좌우 40px 9-slice, 아래 8px 는 그림자 ── */
 
-.shop-card__buy {
-	min-width: 0;
-	height: 96px;
-	padding: 0 16px 8px 16px;
+.shop-buy {
+	position: absolute;
+	bottom: 26px;
+	left: 50%;
+	width: 380px;
+	height: 88px;
+	margin: 0 0 0 -190px;
+	padding: 0 0 12px 0;
 	flex-direction: row;
 	align-items: center;
 	justify-content: center;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../../Shop/btn_green.png");
+	-unity-slice-left: 40;
+	-unity-slice-right: 40;
+	-unity-slice-top: 0;
+	-unity-slice-bottom: 0;
 }
 
-.shop-card__price-icon {
-	width: 48px;
-	height: 48px;
+.shop-buy:hover {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.shop-buy:active {
+	translate: 0 4px;
+}
+
+.shop-buy--gold {
+	background-image: url("../../Shop/btn_gold.png");
+}
+
+.shop-buy--violet {
+	background-image: url("../../Shop/btn_violet.png");
+}
+
+.shop-buy:disabled {
+	opacity: 1;
+	background-image: url("../../Shop/btn_disabled.png");
+}
+
+.shop-buy__icon {
+	width: 46px;
+	height: 46px;
 	margin-right: 8px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
-.shop-card__price {
-	font-size: 36px;
-	color: var(--white);
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 3px 0 var(--ink);
+.shop-buy__price {
+	font-size: 40px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: #0A0814;
+	text-shadow: 0 3px 0 #0A0814;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }
 
-/* ── 낱개 (3열 그리드) ─────────────────────────── */
+/* ── 리본 · 구매 횟수 · 돋보기 ── */
 
-.shop-card--single {
-	width: 31.5%;
-	margin-right: 1.5%;
-	align-items: stretch;
+.shop-ribbon {
+	position: absolute;
+	left: -16px;
+	top: 20px;
+	height: 62px;
+	padding: 0 24px 12px 22px;
+	-unity-text-align: middle-center;
+	font-size: 28px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
+	text-shadow: 0 2px 0 #0A0814;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	background-image: url("../../Shop/ribbon_red.png");
+	-unity-slice-left: 24;
+	-unity-slice-right: 16;
+	-unity-slice-top: 0;
+	-unity-slice-bottom: 0;
+}
+
+.shop-ribbon--violet {
+	background-image: url("../../Shop/ribbon_violet.png");
+}
+
+.shop-count {
+	position: absolute;
+	top: 26px;
+	right: 26px;
+	height: 48px;
+	padding: 0 20px;
+	border-radius: 24px;
+	border-width: 2px;
+	border-color: rgba(255, 255, 255, 0.24);
+	background-color: rgba(10, 8, 20, 0.75);
+	-unity-text-align: middle-center;
+	font-size: 26px;
+	color: #EBE8FA;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.shop-count--lack {
+	color: #FF7A7A;
+}
+
+/* 돋보기가 있는 카드 — 구매 횟수는 그 왼쪽 */
+.shop-card--has-info .shop-count {
+	right: 118px;
+}
+
+.shop-info {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	width: 96px;
+	height: 102px;
+	padding: 0;
+	margin: 0;
+	border-width: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../../Shop/btn_magnifier.png");
+}
+
+.shop-info:hover {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.shop-info:active {
+	translate: 0 3px;
+}
+
+/* ── 낱개(3열 칸) — 위 이름, 가운데 그림, 수량, 버튼 위 가치 말풍선, 맨 아래 버튼 ── */
+
+.shop-card--tile {
+	width: 31.3%;
+	height: 460px;
+	margin: 0 1% 26px 1%;
+	align-items: center;
+}
+
+.shop-card--tile .shop-card__title {
+	margin-top: 18px;
+	font-size: 32px;
+	-unity-text-outline-width: 2px;
+	text-shadow: 0 3px 0 #0A0814;
 }
 
 .shop-card__media {
-	height: 200px;
+	width: 160px;
+	height: 140px;
+	margin-top: 2px;
 	align-items: center;
 	justify-content: center;
-	margin: 8px 0;
 }
 
 .shop-card__currency {
-	width: 180px;
-	height: 180px;
+	width: 160px;
+	height: 140px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
 .shop-card__item {
-	width: 180px;
-	height: 180px;
+	width: 140px;
+	height: 140px;
 }
 
 .shop-card__amount {
-	font-size: 48px;
-	color: var(--gold);
-	-unity-text-align: middle-center;
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 4px 0 var(--ink);
+	margin-top: -4px;
+	font-size: 44px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: #0A0814;
+	text-shadow: 0 4px 0 #0A0814;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }
 
-/* 보너스 — 칸 오른쪽 위 모서리 밖으로 걸쳐 이름을 가리지 않는다 */
-.shop-card__bonus {
+.shop-card--tile .shop-buy {
+	left: 18px;
+	right: 18px;
+	width: auto;
+	margin-left: 0;
+}
+
+/* 가치 말풍선 — 버튼 바로 위 가운데, 꼬리가 버튼을 가리킨다. 주기적으로 빛 띠가 지나가고 살짝 커진다(ShopUI) */
+.shop-bubble {
 	position: absolute;
-	top: -18px;
-	right: -10px;
-}
-
-.shop-card--single {
-	margin-top: 14px;
-}
-
-/* ── 넓은 칸 (상자·패키지·패스·광고 제거) ──────── */
-
-.shop-card__row {
-	flex-direction: row;
+	left: 0;
+	right: 0;
+	bottom: 100px;
 	align-items: center;
 }
 
-.shop-card__icon-frame {
-	width: 200px;
-	height: 200px;
-	padding: 18px;
-	margin-right: 24px;
-	background-image: url("../../Pixel/slot_gold.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+.shop-bubble__body {
+	height: 48px;
+	padding: 0 20px;
+	justify-content: center;
+	overflow: hidden;
+	background-image: url("../../Shop/bubble_body.png");
+	-unity-slice-left: 24;
+	-unity-slice-right: 24;
+	-unity-slice-top: 0;
+	-unity-slice-bottom: 0;
+	transition-property: scale;
+	transition-duration: 0.18s;
+	transition-timing-function: ease-out;
 }
 
-.shop-card__text {
-	flex-grow: 1;
-	flex-shrink: 1;
-	align-items: flex-start;
+.shop-bubble__text {
+	font-size: 26px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }
 
-.shop-card--wide .shop-card__title {
-	font-size: 48px;
-	-unity-text-align: middle-left;
-	margin-bottom: 8px;
+.shop-bubble__tail {
+	width: 32px;
+	height: 18px;
+	margin-top: -3px;
+	background-image: url("../../Shop/bubble_tail.png");
 }
 
-.shop-card--wide .shop-card__limit {
-	-unity-text-align: middle-left;
+.shop-bubble__shine {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -40%;
+	width: 48px;
+	background-image: url("../../Shop/shine.png");
+	-unity-background-scale-mode: stretch-to-fill;
 }
 
-.shop-card__desc {
-	font-size: 36px;
-	color: var(--ink-sub);
-	white-space: normal;
-	margin-bottom: 8px;
+.shop-bubble--shine .shop-bubble__shine {
+	left: 120%;
+	transition-property: left;
+	transition-duration: 0.6s;
+	transition-timing-function: ease-in-out;
 }
 
-.shop-card__package {
-	flex-direction: row;
-	flex-wrap: wrap;
-	margin: 12px 0;
+.shop-bubble--pulse .shop-bubble__body {
+	scale: 1.1 1.1;
 }
 
-.shop-card__package .item-cell {
-	width: 160px;
-	height: 160px;
-	margin: 6px;
+/* ── 가로 카드(보물상자 · 광고 제거 · 칸 확장) — 왼쪽 그림, 오른쪽 이름 · 설명, 맨 아래 가운데 버튼 ── */
+
+.shop-card--row {
+	height: 320px;
+	padding: 40px 30px 0 280px;
 }
 
-.shop-card__buttons {
-	flex-direction: row;
-	align-items: center;
-	justify-content: flex-end;
-	margin-top: 14px;
+.shop-card__art {
+	position: absolute;
+	left: 46px;
+	top: 26px;
+	width: 190px;
+	height: 190px;
+	-unity-background-scale-mode: scale-to-fit;
 }
 
-.shop-card__buttons .btn {
-	margin-left: 12px;
+.shop-card--row .shop-card__title {
+	margin-right: 200px;
 }
 
-.shop-card--wide .shop-card__buy {
-	min-width: 260px;
-}
-
-/* 자동분해 체크 */
+/* 자동분해 — 왼쪽 아래(그림 밑) 작은 체크 */
 .shop-card__check {
+	position: absolute;
+	left: 40px;
+	bottom: 44px;
 	flex-direction: row;
 	align-items: center;
-	margin-right: auto;
+	margin: 0;
 	padding: 0;
 	border-width: 0;
 	background-color: rgba(0, 0, 0, 0);
-	font-size: 36px;
-	color: var(--text);
+	font-size: 28px;
+	color: #FFFFFF;
+	text-shadow: 0 2px 0 #0A0814;
 }
 
 .shop-card__check-box {
-	width: 48px;
-	height: 48px;
+	width: 40px;
+	height: 40px;
 	margin-right: 10px;
-	background-image: url("../../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 2px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 10px;
+	background-color: #FFFFFF;
 }
 
 .shop-card__check-box--on {
-	background-image: url("../../Pixel/slot_gold.png");
-	background-color: var(--green);
+	background-color: #5CD668;
+}
+
+/* ── 히어로 패스 — 주력 상품: 높은 카드, 위 배너 그림(로고 + 보상 부채꼴), 이름 · 설명, 맨 아래 버튼 ── */
+
+.shop-card--pass {
+	height: 560px;
+	align-items: center;
+}
+
+.shop-card__banner {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 330px;
+	background-image: url("../../Shop/pass_banner.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.shop-card--pass .shop-card__title {
+	margin-top: 286px;
+	font-size: 64px;
+	-unity-text-outline-width: 4px;
+	text-shadow: 0 6px 0 #0A0814;
+}
+
+.shop-card--pass .shop-card__desc {
+	-unity-text-align: middle-center;
+	font-size: 30px;
+}
+
+/* ── 패키지 — 왼쪽 위 그림, 이름 · 구성 수, 가운데 구성 칸(누르면 아이템 정보), 맨 아래 버튼 ── */
+
+.shop-card--package {
+	height: 474px;
+	padding: 48px 30px 0 300px;
+}
+
+.shop-card--package .shop-card__title {
+	margin-right: 170px;
+}
+
+.shop-card__package-art {
+	position: absolute;
+	left: 36px;
+	top: 12px;
+	width: 230px;
+	height: 190px;
+}
+
+.shop-card__package-main {
+	position: absolute;
+	left: 40px;
+	top: 0;
+	width: 160px;
+	height: 160px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.shop-card__package-sub {
+	position: absolute;
+	width: 100px;
+	height: 100px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.shop-card__package-sub--a {
+	left: 0;
+	top: 60px;
+	rotate: 20deg;
+}
+
+.shop-card__package-sub--b {
+	left: 140px;
+	top: 96px;
+}
+
+.shop-card__package {
+	position: absolute;
+	left: 26px;
+	right: 26px;
+	top: 210px;
+	flex-direction: row;
+	justify-content: center;
+}
+
+.shop-card__package .item-cell {
+	width: 116px;
+	height: 116px;
+	margin: 0 10px;
 }
