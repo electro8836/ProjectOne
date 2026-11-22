@@ -370,9 +370,53 @@
 	-unity-slice-scale: 1px;
 }
 
-/* 빈 장착 칸 — 보라 틀 */
+/* 빈 장착 칸 — 보라 틀. 틀(slot_round) 안쪽은 비어 있어 어두운 면을 깐다(제작 등록 칸과 같다) */
 .theme-violet .equip-slot {
 	-unity-background-image-tint-color: #6A5E90;
+	border-radius: 24px;
+	background-color: #191C2C;
+}
+
+/* 빈 칸 부위 아이콘 — 분류 탭 아이콘 결의 단색 그림(sloticon_*, generate_violet_ui.py slot_icons).
+   크기는 칸(168px)의 약 57%(96px), 틀 아랫변이 윗변보다 5px 두꺼워 안쪽 가운데에 맞춰 3px 올린다 */
+.theme-violet .equip-slot__placeholder {
+	left: 36px;
+	right: 36px;
+	top: 33px;
+	bottom: 39px;
+	opacity: 0.45;
+}
+
+.theme-violet .slot-weapon {
+	background-image: url("../Violet/sloticon_weapon.png");
+}
+
+.theme-violet .slot-helmet {
+	background-image: url("../Violet/sloticon_helmet.png");
+}
+
+.theme-violet .slot-armor {
+	background-image: url("../Violet/sloticon_armor.png");
+}
+
+.theme-violet .slot-gloves {
+	background-image: url("../Violet/sloticon_gloves.png");
+}
+
+.theme-violet .slot-boots {
+	background-image: url("../Violet/sloticon_boots.png");
+}
+
+.theme-violet .slot-ring {
+	background-image: url("../Violet/sloticon_ring.png");
+}
+
+.theme-violet .slot-amulet {
+	background-image: url("../Violet/sloticon_amulet.png");
+}
+
+.theme-violet .slot-relic {
+	background-image: url("../Violet/sloticon_relic.png");
 }
 
 /* 등급 바탕 판 — 틀 바로 안쪽. 색은 View 가 틴트(-unity-background-image-tint-color)로 칠한다 */

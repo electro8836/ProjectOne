@@ -21,9 +21,14 @@ namespace ProjectOne.UI
 		private const int MODE_COUNT = 3;
 		private const int FILTER_COUNT = 5;
 
-		private static readonly string[] ActionLabels = { "강화", "승급", "전이" };
+		private const string MODE_TAB_ON = "craft-seg__item--on";
+		private const string FILTER_TAB_ON = "tab--selected";
+		private const string MODE_CLASS = "craft--mode-";	// + 모드 번호 — 모드 색(빛·화살표·실행 버튼)을 고른다
+
+		private static readonly string[] ActionLabels = { "강화하기", "승급하기", "전이하기" };
 
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
+		[SerializeField] private EDT.Currency[] _headerCurrencies = { EDT.Currency.Gold, EDT.Currency.Dia };	// 제목 줄 재화 캡슐(최대 3)
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action<int> OnModeSelected;
@@ -33,7 +38,6 @@ namespace ProjectOne.UI
 		public event Action OnActionClicked;
 		public event Action OnActionHeld;	// 실행 버튼을 누른 채 반복 — 강화만 쓴다
 		public event Action OnCancelClicked;
-		public event Action OnHomeClicked;
 		public event Action OnSortClicked;
 
 		// 모드 하나의 비용 영역 상태 — 보이는 모드가 바뀔 때 다시 그린다.
@@ -67,17 +71,21 @@ namespace ProjectOne.UI
 		private readonly List<CostView> _costViews = new List<CostView>();
 
 		private CraftMode _shownMode = CraftMode.Enhance;
-		private Label _requirementCaption;
+		private HeaderCurrencyBar _currencyBar;
+		private VisualElement _screen;
+		private VisualElement _requirement;
 		private VisualElement _costRow;
 		private Label _disableText;
 		private Button _actionButton;
 		private Button _cancelButton;
 		private HoldRepeatManipulator _hold;
 		private Button _sortButton;
+		private Label _count;
 		private ScrollView _grid;
 
 		protected override void OnBind(VisualElement root)
 		{
+			_screen = root.Q("screen");
 			for (int i = 0; i < MODE_COUNT; i++)
 			{
 				_modeStates[i] = new ModeState();
@@ -103,7 +111,7 @@ namespace ProjectOne.UI
 			addRegisterSlot(root, "slot-transfer-source", CraftSlotRoot.TransferSource);
 			addRegisterSlot(root, "slot-transfer-target", CraftSlotRoot.TransferTarget);
 
-			_requirementCaption = root.Q<Label>("requirement-caption");
+			_requirement = root.Q("requirement");
 			_costRow = root.Q("cost-row");
 			_disableText = root.Q<Label>("disable-text");
 
@@ -117,11 +125,12 @@ namespace ProjectOne.UI
 
 			_sortButton = root.Q<Button>("sort-button");
 			_sortButton.clicked += onSortClicked;
-			root.Q<Button>("home-button").clicked += onHomeClicked;
 
+			_count = root.Q<Label>("count");
 			_grid = root.Q<ScrollView>("grid");
 			_grid.AddManipulator(new ScrollDragManipulator(_grid));
 
+			_currencyBar = new HeaderCurrencyBar(root.Q("header-currencies"), _headerCurrencies, _icons, GetDestroyToken());
 			_presenter.Initialize(this);
 		}
 
@@ -130,6 +139,7 @@ namespace ProjectOne.UI
 			if (IsBound == true)
 			{
 				_presenter.Dispose();
+				_currencyBar.Dispose();
 			}
 
 			_icons.ReleaseAll();
@@ -162,12 +172,12 @@ namespace ProjectOne.UI
 		// 탭만 선택(OnModeSelected 를 발행하지 않음 — 초기 표시용).
 		public void SelectModeTab(int index)
 		{
-			selectTabs(_modeTabs, index);
+			selectTabs(_modeTabs, index, MODE_TAB_ON);
 		}
 
 		public void SelectFilterTab(int index)
 		{
-			selectTabs(_filterTabs, index);
+			selectTabs(_filterTabs, index, FILTER_TAB_ON);
 		}
 
 		public void SetSortLabel(string label)
@@ -182,6 +192,7 @@ namespace ProjectOne.UI
 			for (int i = 0; i < MODE_COUNT; i++)
 			{
 				_panels[i].EnableInClassList("craft-panel--shown", i == (int)mode);
+				_screen.EnableInClassList(MODE_CLASS + i, i == (int)mode);
 			}
 
 			_actionButton.text = ActionLabels[(int)mode];
@@ -190,6 +201,7 @@ namespace ProjectOne.UI
 
 		public async UniTask RenderGridAsync(IReadOnlyList<CraftSlotData> data, CancellationToken ct)
 		{
+			_count.text = data.Count.ToString();
 			_bindTasks.Clear();
 			for (int i = 0; i < data.Count; i++)
 			{
@@ -299,9 +311,10 @@ namespace ProjectOne.UI
 			bool disabled = state.visible == true && string.IsNullOrEmpty(state.disableMessage) == false;
 			bool showCosts = state.visible == true && disabled == false;
 
+			// 등록한 것이 없으면 띠를 숨기되 자리는 남긴다 — 등록할 때마다 아래 버튼이 오르내리지 않게
+			_requirement.style.visibility = (disabled == true || showCosts == true) ? Visibility.Visible : Visibility.Hidden;
 			setShown(_disableText, disabled);
 			_disableText.text = disabled ? state.disableMessage : string.Empty;
-			setShown(_requirementCaption, showCosts);
 			setShown(_costRow, showCosts);
 			if (showCosts == false)
 			{
@@ -332,11 +345,11 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private static void selectTabs(Button[] tabs, int index)
+		private static void selectTabs(Button[] tabs, int index, string onClass)
 		{
 			for (int i = 0; i < tabs.Length; i++)
 			{
-				tabs[i].EnableInClassList("tab--selected", i == index);
+				tabs[i].EnableInClassList(onClass, i == index);
 			}
 		}
 
@@ -450,11 +463,6 @@ namespace ProjectOne.UI
 		private void onCancelClicked()
 		{
 			if (OnCancelClicked != null) { OnCancelClicked.Invoke(); }
-		}
-
-		private void onHomeClicked()
-		{
-			if (OnHomeClicked != null) { OnHomeClicked.Invoke(); }
 		}
 
 		private void onSortClicked()

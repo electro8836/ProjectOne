@@ -98,7 +98,6 @@ namespace ProjectOne.UI
 			view.OnActionClicked += onActionClicked;
 			view.OnActionHeld += onActionHeld;
 			view.OnCancelClicked += onCancelClicked;
-			view.OnHomeClicked += onHomeClicked;
 			view.OnSortClicked += onSortClicked;
 
 			EventManager.Instance.Subscribe<EquipmentChangeEvent>(onEquipmentChanged);
@@ -129,7 +128,6 @@ namespace ProjectOne.UI
 			view.OnActionClicked -= onActionClicked;
 			view.OnActionHeld -= onActionHeld;
 			view.OnCancelClicked -= onCancelClicked;
-			view.OnHomeClicked -= onHomeClicked;
 			view.OnSortClicked -= onSortClicked;
 
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
@@ -402,12 +400,6 @@ namespace ProjectOne.UI
 			}
 
 			rebuild();
-		}
-
-		// 창을 닫는다. 마지막 창이면 WindowClosedEvent 가 발행되어 네비게이션 바의 탭 선택도 함께 풀린다.
-		private void onHomeClicked()
-		{
-			UIManager.Instance.CloseWindowAsync().Forget();
 		}
 
 		private void onEquipmentChanged(EquipmentChangeEvent e)

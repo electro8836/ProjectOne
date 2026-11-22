@@ -148,6 +148,7 @@
 }
 
 .btn:disabled {
+	background-color: rgba(0, 0, 0, 0);	/* 기본 버튼의 :disabled 회색 면이 구운 버튼 모서리 밖으로 비치지 않게 */
 	-unity-background-image-tint-color: #9A9A9A;
 	opacity: 0.7;
 }

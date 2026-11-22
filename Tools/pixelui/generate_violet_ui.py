@@ -428,6 +428,18 @@ def equip_icon():
 	save(out, 'icon_equip')
 
 
+# 제작 화면 등록 칸 사이 화살표 — 흰 삼각형(어두운 테두리·아래 그림자). USS 가 모드 색으로 틴트한다. 4배로 그려 줄인다
+def arrow_icon():
+	from PIL import ImageDraw
+	w, h, k = 64, 76, 4
+	big = Image.new('RGBA', (w * k, h * k))
+	d = ImageDraw.Draw(big)
+	tri = [(6 * k, 4 * k), (6 * k, 66 * k), (58 * k, 35 * k)]
+	d.polygon([(x, y + 6 * k) for x, y in tri], fill=(10, 8, 20, 255))
+	d.polygon(tri, fill=(255, 255, 255, 255), outline=(10, 8, 20, 255), width=3 * k)
+	save(big.resize((w, h), Image.LANCZOS), 'icon_arrow')
+
+
 def gear(name):
 	return Image.open(os.path.join(GEAR, name + '.png')).convert('RGBA')
 
@@ -484,6 +496,96 @@ def pict_sack():
 	tie, dt = _mask()
 	dt.rectangle([180, 150, 332, 176], fill=255)
 	return gear_style(shape, [(shade, GEAR_SHADE), (hi, GEAR_HI)], tie)
+
+
+# 빈 장착 칸 부위 아이콘 — 분류 탭 아이콘(Icon_Gear 결)과 같은 모양을 '면만 한 색'으로 굽는다.
+# 외곽선·안쪽 선 자리는 비워 칸 바닥이 비치게 해 무늬가 남는다. 흐림(투명도)은 USS(.equip-slot__placeholder)가 준다.
+# 무기·갑옷·신발·반지는 Gear 스프라이트, 유물은 탭과 같은 pict_relic, 투구·장갑·목걸이는 같은 결로 그린다.
+SLOT_ICON_COLOR = (160, 150, 215, 255)
+
+
+def _gear_big(name):
+	img = gear(name)
+	img = img.crop(img.getbbox())
+	k = 440 / max(img.size)
+	img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
+	out = Image.new('RGBA', (512, 512))
+	out.alpha_composite(img, ((512 - img.width) // 2, (512 - img.height) // 2))
+	return out
+
+
+def pict_helmet():
+	shape, d = _mask()
+	d.pieslice([86, 50, 426, 390], 180, 360, fill=255)
+	d.rectangle([86, 220, 426, 400], fill=255)
+	d.polygon([(86, 400), (200, 400), (200, 470), (86, 440)], fill=255)
+	d.polygon([(426, 400), (312, 400), (312, 470), (426, 440)], fill=255)
+	hi, dh = _mask()
+	dh.pieslice([86, 50, 426, 390], 180, 250, fill=255)
+	shade, ds = _mask()
+	ds.polygon([(330, 220), (426, 220), (426, 440), (312, 470), (312, 400)], fill=255)
+	lines, dl = _mask()
+	dl.rectangle([140, 250, 372, 290], fill=255)
+	dl.rectangle([236, 250, 276, 400], fill=255)
+	return gear_style(shape, [(hi, GEAR_HI), (shade, GEAR_SHADE)], lines)
+
+
+def pict_gloves():
+	shape, d = _mask()
+	d.rounded_rectangle([150, 50, 390, 330], radius=70, fill=255)
+	d.rounded_rectangle([54, 180, 210, 290], radius=54, fill=255)
+	d.rounded_rectangle([140, 340, 400, 470], radius=24, fill=255)
+	hi, dh = _mask()
+	dh.rounded_rectangle([170, 70, 250, 300], radius=40, fill=255)
+	shade, ds = _mask()
+	ds.rounded_rectangle([140, 340, 400, 470], radius=24, fill=255)
+	ds.rectangle([320, 60, 390, 330], fill=255)
+	lines, dl = _mask()
+	dl.rectangle([226, 50, 244, 190], fill=255)
+	dl.rectangle([296, 50, 314, 190], fill=255)
+	dl.rectangle([140, 330, 400, 346], fill=255)
+	return gear_style(shape, [(hi, GEAR_HI), (shade, GEAR_SHADE)], lines)
+
+
+def pict_amulet():
+	shape, d = _mask()
+	d.line([(120, 50), (256, 230)], fill=255, width=44)
+	d.line([(392, 50), (256, 230)], fill=255, width=44)
+	d.ellipse([136, 200, 376, 440], fill=255)
+	hi, dh = _mask()
+	dh.pieslice([136, 200, 376, 440], 150, 300, fill=255)
+	shade, ds = _mask()
+	ds.pieslice([136, 200, 376, 440], 330, 120, fill=255)
+	lines, dl = _mask()
+	dl.ellipse([206, 270, 306, 370], outline=255, width=20)
+	return gear_style(shape, [(hi, GEAR_HI), (shade, GEAR_SHADE)], lines)
+
+
+def slot_icons():
+	from PIL import ImageChops
+	icons = {
+		'weapon': _gear_big('Icon_Gear_Sword'),
+		'helmet': pict_helmet(),
+		'armor': _gear_big('Icon_Gear_Armor'),
+		'gloves': pict_gloves(),
+		'boots': _gear_big('Icon_Gear_Boots'),
+		'ring': _gear_big('Icon_Gear_Ring'),
+		'amulet': pict_amulet(),
+		'relic': pict_relic(),
+	}
+	for key in icons:
+		icon = icons[key]
+		# 면 = 불투명하고 밝은 곳(외곽선·안쪽 선은 어두워 빠진다)
+		alpha = icon.getchannel('A').point(lambda v: 255 if v > 128 else 0)
+		bright = icon.convert('L').point(lambda v: 255 if v >= 95 else 0)
+		flat = Image.new('RGBA', icon.size, SLOT_ICON_COLOR)
+		flat.putalpha(ImageChops.multiply(alpha, bright))
+		flat = flat.crop(flat.getbbox())
+		k = ICON_SIZE / max(flat.size)
+		flat = flat.resize((max(1, round(flat.width * k)), max(1, round(flat.height * k))), Image.LANCZOS)
+		out = Image.new('RGBA', (ICON_SIZE, ICON_SIZE))
+		out.alpha_composite(flat, ((ICON_SIZE - flat.width) // 2, (ICON_SIZE - flat.height) // 2))
+		save(out, 'sloticon_' + key)
 
 
 def tab_icons():
@@ -639,6 +741,7 @@ def main():
 	# 일반 버튼 — 기능 버튼·툴바 80px
 	middle('btn_face', 80, '#392E53', '#483B65')
 	tab_icons()
+	slot_icons()
 	type_icons()
 	extra_icons()
 	# 기능 버튼 — 어떤 버튼인지 색으로 구분(능력치 파랑·재화 호박·코스튬 자홍·펫 초록), 80px.
@@ -657,9 +760,14 @@ def main():
 	middle('btn_stash', 88, '#D45012', '#E08154')
 	# 공용 확인 팝업의 위험 확인(분해·삭제) — 장비 화면 분해 버튼(btn_danger)과 같은 색을 112px 로
 	middle('btn_danger_large', 112, '#9A2E36', '#C04A4E', '#2A0A0E')
+	# 제작 화면 실행 버튼 — 모드 색(강화 초록·승급 금·전이 파랑) 112px. 취소는 btn_danger_large
+	middle('btn_active_large', 112, '#2F8A52', '#4CB474')
+	middle('btn_gold_large', 112, '#C98A1C', '#E2AE4A')
+	middle('btn_blue_large', 112, '#2E5FB8', '#4F82DC')
 	close_icon()
 	lock_icon()
 	equip_icon()
+	arrow_icon()
 
 
 if __name__ == '__main__':

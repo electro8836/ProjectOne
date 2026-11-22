@@ -1,42 +1,101 @@
-/* 제작 화면 — 모드 탭(강화·승급·전이) + 등록 칸·비용·버튼 + 분류 탭과 장비 목록. 부품·색·글자는 Theme.uss 를 따른다. */
+/* 제작 화면 — 바이올렛 (기준 해상도 1080 x 1920, 세로). 제목 판·분류 탭·가방·아이템 칸은 Violet.uss 를 따른다.
+   위 작업대는 장비 화면 위 영역과 같은 면(#252A40). 모드 탭은 색 없이 밝은 칸만 움직이고,
+   모드 색(강화 초록 · 승급 금 · 전이 파랑)은 빛·화살표·실행 버튼에만 쓴다 — 루트의 craft--mode-N 이 고른다. */
 
-.tabs,
-.craft-top {
+.craft {
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+/* 가방만 늘고 줄어든다 — 나머지는 내용보다 작아지지 않게(UI Toolkit 기본 flex-shrink 는 1) */
+.craft .header,
+.craft-work,
+.craft .tabs,
+.craft .bag__toolbar {
 	flex-shrink: 0;
 }
 
-.craft-top {
-	margin-bottom: 12px;
-	padding: 30px 30px 26px 30px;
+/* ── 작업대 ─────────────────────────────────────── */
+
+.craft-work {
+	margin: 0 -6px;
+	padding: 26px 6px 28px 6px;
+	background-color: #252A40;
 }
 
+/* 등록 칸 뒤 빛 — 흰 빛(glow_white)을 모드 색으로 틴트 */
+.craft-glow {
+	position: absolute;
+	left: 170px;
+	right: 170px;
+	top: 60px;
+	height: 560px;
+	background-image: url("../../Violet/glow_white.png");
+	-unity-background-scale-mode: stretch-to-fill;
+	opacity: 0.8;
+}
+
+/* 모드 탭 — 어두운 홈 하나 + 선택 칸만 밝은 판 */
+.craft-seg {
+	flex-direction: row;
+	height: 94px;
+	margin: 0 18px;
+	padding: 6px;
+	border-width: 3px;
+	border-color: #2E3450;
+	border-radius: 26px;
+	background-color: #151826;
+}
+
+.craft-seg__item {
+	flex-grow: 1;
+	flex-basis: 0;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	border-radius: 20px;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: none;
+	font-size: 40px;
+	color: #8E93B8;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-text-align: middle-center;
+}
+
+.craft-seg__item--on {
+	background-color: #3D4566;
+	color: #FFFFFF;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* 모드별 등록 칸 줄 */
 .craft-panel {
 	display: none;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	height: 240px;
+	margin-top: 40px;
 }
 
 .craft-panel--shown {
 	display: flex;
 }
 
-.craft-slots {
-	flex-direction: row;
-	align-items: center;
-	justify-content: center;
-	height: 280px;
-}
-
-/* 등록 칸 — 빈 틀 위에 아이템 칸을 겹쳐 얹는다 */
+/* 등록 칸 — 아이템 칸과 같은 둥근 틀(slot_round)·크기라 장비를 올려도 모서리가 어긋나지 않는다 */
 .craft-slot {
-	width: 220px;
-	height: 220px;
+	width: 240px;
+	height: 240px;
 	align-items: center;
 	justify-content: center;
-	background-image: url("../../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+	background-image: url("../../Violet/slot_round.png");
+	-unity-slice-left: 32;
+	-unity-slice-right: 32;
+	-unity-slice-top: 32;
+	-unity-slice-bottom: 32;
+	-unity-slice-scale: 1px;
+	-unity-background-image-tint-color: #5C6390;
+	border-radius: 24px;
+	background-color: #191C2C;	/* 틀 안쪽이 비쳐 뒤의 빛이 보이지 않게 — 빈 칸은 어두운 면 */
 	transition-property: scale;
 	transition-duration: 0.3s;
 	transition-timing-function: ease-out-back;
@@ -47,15 +106,19 @@
 	transition-duration: 0s;
 }
 
-.craft-slot--preview {
+/* 승급 후 미리보기 — 칸(틀·어두운 면)은 그대로 두고 올린 장비만 살짝 흐리게(칸째 흐리면 뒤의 빛이 비쳐 뚫려 보인다) */
+.craft-slot--preview .item-cell {
 	opacity: 0.85;
 }
 
 .craft-slot__hint {
-	font-size: 36px;
-	color: var(--ink-dim);
+	margin-bottom: 5px;	/* 틀 아랫변이 두꺼워(15px) 안쪽 가운데가 위로 올라가 있다 */
+	font-size: 34px;
+	color: #8E93B8;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
 	white-space: normal;
 	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
 }
 
 .craft-slot .item-cell {
@@ -66,86 +129,156 @@
 	bottom: 0;
 }
 
+/* 칸 사이 화살표 — 모드 색 틴트 */
 .craft-arrow {
-	font-size: 60px;
-	color: var(--gold);
-	margin: 0 40px;
+	width: 64px;
+	height: 76px;
+	margin: 0 64px;
+	background-image: url("../../Violet/icon_arrow.png");
+	-unity-background-scale-mode: scale-to-fit;
 }
 
-.craft-requirement {
-	align-items: center;
-	min-height: 150px;
-	justify-content: center;
-}
-
-.craft-requirement__costs {
+/* 재료 띠 — 어두운 둥근 띠 하나에 아이콘 x수량, 또는 불가 문구 */
+.craft-cost {
 	flex-direction: row;
+	align-items: center;
 	justify-content: center;
-	flex-wrap: wrap;
+	height: 86px;
+	margin: 40px 114px 0 114px;
+	padding: 0 24px;
+	border-width: 3px;
+	border-color: #2E3450;
+	border-radius: 43px;
+	background-color: #121420;
 }
 
-.craft-requirement__disable {
-	font-size: 36px;
+.craft-cost__row {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+}
+
+.craft .cost {
+	margin: 0 22px;
+}
+
+.craft .cost__icon {
+	width: 64px;
+	height: 64px;
+	margin-right: 10px;
+}
+
+.craft .cost__count {
+	font-size: 38px;
+	color: #FFFFFF;
+}
+
+.craft-cost__disable {
+	font-size: 34px;
 	color: #FF8A80;
 	white-space: normal;
 	-unity-text-align: middle-center;
 }
 
+/* 버튼 줄 — 취소(빨강)와 실행(모드 색)을 같은 폭으로. 구운 버튼 높이 112px 그대로 쓴다 */
 .craft-buttons {
 	flex-direction: row;
 	justify-content: center;
-	margin-top: 10px;
+	margin-top: 36px;
+	padding: 0 34px;
 }
 
-.craft-button {
+.craft .craft-button {
 	flex-grow: 1;
 	flex-basis: 0;
-	margin: 0 10px;
+	height: 112px;
+	margin: 0 16px;
 	font-size: 48px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+	-unity-font-style: bold;
 }
 
-/* 분류 탭 (아이콘) */
-.craft-filter .tab {
+.craft .craft-button.btn--red {
+	background-image: url("../../Violet/btn_danger_large.png");
+}
+
+/* ── 모드 색 ── */
+
+.craft--mode-0 .craft-glow,
+.craft--mode-0 .craft-arrow {
+	-unity-background-image-tint-color: #3CBE6E;
+}
+
+.craft--mode-0 .craft-action {
+	background-image: url("../../Violet/btn_active_large.png");
+}
+
+.craft--mode-1 .craft-glow,
+.craft--mode-1 .craft-arrow {
+	-unity-background-image-tint-color: #F0AA32;
+}
+
+.craft--mode-1 .craft-action {
+	background-image: url("../../Violet/btn_gold_large.png");
+}
+
+.craft--mode-2 .craft-glow,
+.craft--mode-2 .craft-arrow {
+	-unity-background-image-tint-color: #508CFF;
+}
+
+.craft--mode-2 .craft-action {
+	background-image: url("../../Violet/btn_blue_large.png");
+}
+
+/* ── 분류 탭 (모양은 Violet.uss) ───────────────────── */
+
+.craft .tab {
 	height: 92px;
 	font-size: 36px;
 	align-items: center;
 	justify-content: center;
 }
 
-.tab__icon {
-	width: 52px;
-	height: 52px;
+.craft .tab__icon {
 	-unity-background-scale-mode: scale-to-fit;
-	opacity: 0.55;
 }
 
-.tab--selected .tab__icon {
-	opacity: 1;
+/* ── 장비 목록 (면·칸 크기는 Violet.uss) ─────────────── */
+
+.craft .bag {
+	flex-grow: 1;
+	flex-shrink: 1;
+	padding-top: 22px;
+	padding-bottom: 26px;
 }
 
-.craft-bag {
-	padding: 22px 26px 26px 26px;
-}
-
-.craft-bag__toolbar {
+.craft .bag__toolbar {
 	flex-direction: row;
 	align-items: center;
-	justify-content: space-between;
 	margin-bottom: 8px;
-	flex-shrink: 0;
 }
 
-.craft-grid {
+.craft .bag__caption {
+	margin: 0 12px 0 6px;
+}
+
+.craft .bag__capacity {
 	flex-grow: 1;
 }
 
-.craft-grid .unity-scroll-view__content-container {
-	flex-direction: row;
-	flex-wrap: wrap;
+.craft .bag__button {
+	min-width: 150px;
+	margin-left: 10px;
 }
 
-.craft-grid .item-cell {
-	width: 180px;
-	height: 180px;
-	margin: 8px;
+.craft .item-grid {
+	flex-grow: 1;
+	flex-shrink: 1;
+}
+
+.craft .item-grid .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
 }
