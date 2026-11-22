@@ -629,3 +629,9 @@
 	background-image: url("../Violet/btn_active.png");
 	color: #FFFFFF;
 }
+
+/* ── 팝업 공통 안쪽 상자 — 나무판 상자 대신 아이템 설명 판과 같은 진한 회색(팝업에만, 창 화면은 그대로) ── */
+.theme-violet.popup .px-inset {
+	background-image: none;
+	background-color: #26272C;
+}

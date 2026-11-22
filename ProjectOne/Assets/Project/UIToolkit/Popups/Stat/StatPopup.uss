@@ -1,33 +1,152 @@
-/* 능력치 팝업 — 묶음마다 2열 줄(아이콘 + 값) */
+/* 능력치 팝업 — 공격 · 방어 · 기타 묶음마다 틀 하나. 맨 위 묶음 색 머리띠(아이콘 + 제목), 안은 2열 칸.
+   칸은 틀 없이 아이콘 + 위 이름(작게) · 아래 값(크게), 칸 사이는 얇은 선. 0 인 능력치는 흐리게.
+   시안: Shared/Design/UI능력치팝업_확정.png */
 
 .stat-scroll {
 	max-height: 1300px;
 }
 
+/* ── 묶음 틀 ── */
+
 .stat-group {
+	margin-bottom: 28px;
+	border-width: 4px;
+	border-radius: 16px;
+	background-color: #26272C;
+	overflow: hidden;
+}
+
+.stat-group__head {
+	height: 76px;
+	flex-direction: row;
+	align-items: center;
+	padding-left: 22px;
+	border-bottom-width: 4px;
+}
+
+.stat-group__icon {
+	width: 48px;
+	height: 48px;
+	margin-right: 14px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.stat-group__title {
+	font-size: 44px;
+	color: #FFFFFF;
+	text-shadow: 0 4px 0 #0A0814;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+/* 묶음 색 — 머리띠는 묶음 색을 바탕 판(#26272C)에 45% 섞은 색, 테두리 55%, 머리띠 아래 선은 묶음 색 그대로 */
+.stat-group--offensive {
+	border-color: #914A3D;
+}
+
+.stat-group--offensive .stat-group__head {
+	background-color: #7D433A;
+	border-bottom-color: #E8664A;
+}
+
+.stat-group--offensive .stat-group__icon {
+	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Stat/StatIcon_Attack.png");
+}
+
+.stat-group--defensive {
+	border-color: #3A6093;
+}
+
+.stat-group--defensive .stat-group__head {
+	background-color: #365681;
+	border-bottom-color: #4A8FE8;
+}
+
+.stat-group--defensive .stat-group__icon {
+	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Stat/StatIcon_Defense.png");
+}
+
+.stat-group--utility {
+	border-color: #917748;
+}
+
+.stat-group--utility .stat-group__head {
+	background-color: #7D6841;
+	border-bottom-color: #E8B84A;
+}
+
+.stat-group--utility .stat-group__icon {
+	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Stat/StatIcon_Utility.png");
+}
+
+/* ── 2열 칸 ── */
+
+.stat-grid {
 	flex-direction: row;
 	flex-wrap: wrap;
-	margin-bottom: 16px;
+	padding: 6px 12px;
 }
 
 .stat-row {
 	width: 50%;
+	height: 88px;
 	flex-direction: row;
 	align-items: center;
-	padding: 6px 4px;
+	padding: 0 12px 0 10px;
+	border-bottom-width: 2px;
+	border-bottom-color: #3A3C43;
+}
+
+/* 왼쪽 칸 — 가운데 세로 선 */
+.stat-row--left {
+	border-right-width: 2px;
+	border-right-color: #3A3C43;
+}
+
+/* 마지막 줄 — 아래 선 없음 */
+.stat-row--last {
+	border-bottom-width: 0;
 }
 
 .stat-row__icon {
-	width: 60px;
-	height: 60px;
-	margin-right: 12px;
-	-unity-background-scale-mode: scale-to-fit;
+	width: 48px;
+	height: 48px;
+	margin-right: 16px;
 	flex-shrink: 0;
+	-unity-background-scale-mode: scale-to-fit;
 }
 
-.stat-row__text {
+.stat-row__texts {
 	flex-grow: 1;
 	flex-shrink: 1;
-	font-size: 36px;
-	white-space: normal;
+	overflow: hidden;
+}
+
+/* 이름 — 한 줄 고정. 긴 이름은 StatPopup 이 --medium·--small 로 줄인다 */
+.stat-row__name {
+	font-size: 26px;
+	color: #C8C9CF;
+	white-space: nowrap;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.stat-row__name--medium {
+	font-size: 22px;
+}
+
+.stat-row__name--small {
+	font-size: 19px;
+}
+
+.stat-row__value {
+	margin-top: -2px;
+	font-size: 38px;
+	color: #5CFF5C;
+	white-space: nowrap;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.stat-row--zero .stat-row__name,
+.stat-row--zero .stat-row__value {
+	color: #787A82;
 }

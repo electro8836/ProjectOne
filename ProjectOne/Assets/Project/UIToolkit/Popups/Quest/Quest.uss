@@ -97,3 +97,17 @@
 	-unity-slice-scale: 4px;
 	-unity-text-outline-color: var(--ink);
 }
+
+/* ── 바이올렛 테마 — 행은 회색 판, 진행 중인 행은 바이올렛 판 ── */
+.theme-violet .quest-row {
+	background-image: none;
+	background-color: #3A3C43;
+	border-width: 3px;
+	border-color: #4C4E56;
+	border-radius: 12px;
+}
+
+.theme-violet .quest-row--current {
+	background-color: #4A3F7A;
+	border-color: #A893FF;
+}

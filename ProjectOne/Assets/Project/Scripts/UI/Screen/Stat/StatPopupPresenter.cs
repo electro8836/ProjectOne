@@ -12,7 +12,9 @@ namespace ProjectOne.UI
 	public struct StatSlotData
 	{
 		public string iconAddress;
-		public string text;
+		public string name;
+		public string value;
+		public bool isZero;
 	}
 
 	// 스탯 팝업 Presenter — 어떤 스탯을 어떤 문구로 보여줄지 정한다.
@@ -21,10 +23,6 @@ namespace ProjectOne.UI
 	// 값은 히어로의 최종 스탯이라 장비·마스터리가 모두 반영된 결과다.
 	public sealed class StatPopupPresenter : Presenter<StatPopup>
 	{
-		// 스탯 창은 증감을 보여주는 화면이 아니라 현재값을 보여주는 화면이라
-		// StatOptionText 의 증가/감소 색과 별개로 한 가지 색만 쓴다.
-		private const string ValueColor = "#5CFF5C";
-
 		// 카테고리별 렌더 버퍼 — 표시 대상이 고정이라 매번 같은 리스트를 다시 채운다.
 		private readonly List<Table_Stat.Row> _rows = new List<Table_Stat.Row>();
 		private readonly List<StatSlotData> _offensive = new List<StatSlotData>();
@@ -99,9 +97,13 @@ namespace ProjectOne.UI
 			{
 				Table_Stat.Row row = _rows[i];
 
+				float shown = toShown(row, (stats != null) ? stats.GetStat(row.ID) : 0f);
+
 				StatSlotData data;
 				data.iconAddress = row.Icon;
-				data.text = buildText(row, (stats != null) ? stats.GetStat(row.ID) : 0f);
+				data.name = row.Name;
+				data.value = buildValue(row, shown);
+				data.isZero = Mathf.Approximately(shown, 0f);
 
 				switch (row.Category)
 				{
@@ -120,14 +122,17 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// "공격력 : <color=#5CFF5C>300</color>" — 이름은 Table_Stat 의 Name 컬럼이 소유한다.
 		// Percent 스탯은 0.35 처럼 비율로 저장되어 있다 — 표시할 때만 100 을 곱한다 (설계 3.5).
-		private string buildText(Table_Stat.Row row, float value)
+		private static float toShown(Table_Stat.Row row, float value)
 		{
-			float shown = (row.ValueType == StatValueTypes.Percent) ? value * 100f : value;
-			string unit = (row.ValueType == StatValueTypes.Percent) ? "%" : string.Empty;
+			return (row.ValueType == StatValueTypes.Percent) ? value * 100f : value;
+		}
 
-			return $"{row.Name} : <color={ValueColor}>{shown.ToString("0.##")}{unit}</color>";
+		// "2,384" · "232.89%" — 이름은 Table_Stat 의 Name 컬럼이 소유하고, 값 색은 USS 가 정한다.
+		private static string buildValue(Table_Stat.Row row, float shown)
+		{
+			string unit = (row.ValueType == StatValueTypes.Percent) ? "%" : string.Empty;
+			return shown.ToString("#,0.##") + unit;
 		}
 
 		private int compareStatId(Table_Stat.Row a, Table_Stat.Row b)

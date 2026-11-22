@@ -1,13 +1,14 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
 	<Style src="../Popups.uss" />
 	<Style src="Account.uss" />
 
-	<ui:VisualElement name="popup" class="popup">
+	<ui:VisualElement name="popup" class="popup theme-violet">
 		<ui:VisualElement name="dim" class="popup__dim" />
 		<ui:VisualElement class="px-paper popup__window">
-			<ui:VisualElement class="px-wood popup__head">
-				<ui:Label text="닉네임 변경" class="popup__name text-pop" />
+			<ui:VisualElement class="px-wood popup__head item-head">
+				<ui:Label text="닉네임 변경" class="popup__name item-head__name" />
 			</ui:VisualElement>
 			<ui:VisualElement class="popup__body">
 				<ui:TextField name="input" class="nickname-input" />

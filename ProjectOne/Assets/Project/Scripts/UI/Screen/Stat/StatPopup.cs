@@ -10,12 +10,19 @@ namespace ProjectOne.UI
 	// 아이콘까지 준비되면 Reveal 로 한 번에 보인다(빈 줄이 깜빡이지 않게).
 	public class StatPopup : ToolkitScreen, IView
 	{
-		// 능력치 한 줄 — 아이콘 + 값 문구.
+		// 이름 글자 줄임 기준(px) — 칸 안 글자 자리(약 340px)에 한 줄로 들어가게. 폭은 Pretendard 기준 추정
+		// (한글 1칸 ≈ 글자 크기 0.85배, 영문·숫자 0.55배, 공백 0.3배 — ItemInfoPopup 제목과 같은 방식).
+		private const float NAME_WIDTH_LIMIT = 330f;
+		private const float NAME_SIZE_LARGE = 26f;
+		private const float NAME_SIZE_MEDIUM = 22f;
+
+		// 능력치 칸 하나 — 아이콘 + 위 이름 · 아래 값.
 		private sealed class Row
 		{
 			public VisualElement root;
 			public VisualElement icon;
-			public Label text;
+			public Label name;
+			public Label value;
 		}
 
 		private readonly StatPopupPresenter _presenter = new StatPopupPresenter();
@@ -95,11 +102,22 @@ namespace ProjectOne.UI
 
 		private void renderGroup(List<Row> rows, VisualElement parent, IReadOnlyList<StatSlotData> data, CancellationToken ct)
 		{
+			// 2열 — 짝수 번째가 왼쪽 칸, 마지막 줄 칸은 아래 선을 뺀다
+			int lastRowStart = ((data.Count - 1) / 2) * 2;
 			for (int i = 0; i < data.Count; i++)
 			{
 				Row row = getOrCreateRow(rows, parent, i);
 				row.root.style.display = DisplayStyle.Flex;
-				row.text.text = data[i].text;
+				row.root.EnableInClassList("stat-row--left", i % 2 == 0);
+				row.root.EnableInClassList("stat-row--last", i >= lastRowStart);
+				row.root.EnableInClassList("stat-row--zero", data[i].isZero);
+				row.name.text = data[i].name;
+				row.value.text = data[i].value;
+
+				float width = estimateWidth(data[i].name);
+				row.name.EnableInClassList("stat-row__name--medium", width * NAME_SIZE_LARGE > NAME_WIDTH_LIMIT && width * NAME_SIZE_MEDIUM <= NAME_WIDTH_LIMIT);
+				row.name.EnableInClassList("stat-row__name--small", width * NAME_SIZE_MEDIUM > NAME_WIDTH_LIMIT);
+
 				_bindTasks.Add(_icons.SetAsync(row.icon, data[i].iconAddress, ct));
 			}
 
@@ -121,14 +139,44 @@ namespace ProjectOne.UI
 			row.root.AddToClassList("stat-row");
 			row.icon = new VisualElement();
 			row.icon.AddToClassList("stat-row__icon");
-			row.text = new Label();
-			row.text.AddToClassList("stat-row__text");
+			VisualElement texts = new VisualElement();
+			texts.AddToClassList("stat-row__texts");
+			row.name = new Label();
+			row.name.AddToClassList("stat-row__name");
+			row.value = new Label();
+			row.value.AddToClassList("stat-row__value");
+			texts.Add(row.name);
+			texts.Add(row.value);
 			row.root.Add(row.icon);
-			row.root.Add(row.text);
+			row.root.Add(texts);
 			parent.Add(row.root);
 
 			rows.Add(row);
 			return row;
+		}
+
+		// 글자 폭(글자 크기 배수) 추정 — 한글 0.85, 영문·숫자·기호 0.55, 공백 0.3.
+		private static float estimateWidth(string text)
+		{
+			float width = 0f;
+			for (int i = 0; i < text.Length; i++)
+			{
+				char c = text[i];
+				if (c == ' ')
+				{
+					width += 0.3f;
+				}
+				else if (c < 128)
+				{
+					width += 0.55f;
+				}
+				else
+				{
+					width += 0.85f;
+				}
+			}
+
+			return width;
 		}
 
 		private void onDimClicked(ClickEvent evt)
