@@ -1,72 +1,279 @@
-/* 마스터리 화면 — 도트 스타일 (기준 해상도 1080 x 1920, 세로). 부품·색·글자 효과는 Theme.uss 를 따른다.
-   모바일 가독성 기준: 본문 36px 이상, 목록 이름 48px, 제목 60~72px, 보조 글자도 30px 아래로 내리지 않는다. */
+/* 마스터리 화면 — 바이올렛 카드형 (기준 해상도 1080 x 1920, 세로).
+   제목 판만 보라(Violet.uss), 바탕은 남색 회색, 카드는 남색. 종류 색: 패시브 초록 · 전술 파랑 · 코어 주황. */
+
+.theme-violet.screen.mastery {
+	background-color: #1F2333;
+}
 
 /* 목록만 늘고 줄어든다 — 나머지는 내용보다 작아지지 않게(UI Toolkit 기본 flex-shrink 는 1) */
-.tabs,
-.info,
-.slots,
-.section-title,
-.section-row,
-.total {
+.m-seg,
+.m-weapon,
+.m-section,
+.m-slots,
+.m-filter {
 	flex-shrink: 0;
 }
 
-/* ── 무기 정보 ──────────────────────────────────── */
+/* 강조 글자 — Pretendard ExtraBold */
+.m-seg__item,
+.m-weapon__name,
+.m-weapon__level,
+.m-weapon__active,
+.m-section__title,
+.m-filter__item,
+.m-gauge__text,
+.m-chip,
+.skill-row__name,
+.skill-row__state,
+.m-hint-cancel {
+	-unity-font-definition: url("../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
 
-.info {
+/* ── 페이지 탭 — 어두운 홈 + 선택 칸 금색 알약 ── */
+
+.m-seg {
 	flex-direction: row;
-	align-items: center;
-	margin-bottom: 14px;
+	height: 92px;
+	margin: 26px 18px 0 18px;
+	padding: 6px;
+	border-width: 3px;
+	border-color: #2E3450;
+	border-radius: 46px;
+	background-color: #151826;
 }
 
-.info__icon-frame {
-	width: 176px;
-	height: 176px;
-	padding: 18px;	/* 테두리 4칸(16px) 바로 안쪽 — 무기 그림을 크게 */
-	background-image: url("../Pixel/slot_gold.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
-}
-
-.info__body {
+.m-seg__item {
 	flex-grow: 1;
-	margin-left: 26px;
+	flex-basis: 0;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	border-radius: 38px;
+	background-color: rgba(0, 0, 0, 0);
+	font-size: 36px;
+	color: #8E93B8;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-text-align: middle-center;
 }
 
-.info__title-row {
+.m-seg__item--on {
+	border-bottom-width: 5px;
+	border-color: #966414;
+	background-color: #FFC94A;
+	font-size: 38px;
+	color: #3A2406;
+}
+
+.m-seg__item:disabled {
+	opacity: 0.4;
+}
+
+.m-page {
+	padding: 0 18px;
+	margin-top: 28px;
+}
+
+/* ── 카드 ── */
+
+.m-card {
+	border-width: 3px;
+	border-color: #3D4566;
+	border-radius: 22px;
+	background-color: #2A3048;
+}
+
+/* 무기 카드 (현재 무기 · 총 마스터리 · 무기별 행 공용): 아이콘 | 이름·레벨 / 보너스 / 경험치 */
+.m-weapon {
 	flex-direction: row;
 	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 6px;
+	padding: 26px 28px 26px 26px;
 }
 
-.info__name {
-	font-size: 60px;
+.m-weapon__frame {
+	width: 144px;
+	height: 144px;
+	padding: 8px;
+	border-width: 5px;
+	border-color: #6E7496;
+	border-radius: 18px;
+	background-color: #121422;
 }
 
-.info__level {
-	align-self: center;
+.m-weapon--active .m-weapon__frame,
+.mastery-row--active .m-weapon__frame {
+	border-color: #FFC446;
 }
 
-/* ── 스킬 칸 6개 ────────────────────────────────── */
+.m-weapon--total .m-weapon__frame {
+	border-color: #9678FF;
+	padding: 14px;
+}
 
-.slots {
+.m-total-icon {
+	background-image: url("../../Art/UI/Atlas/Textures/Icons/Tabs/Icon_Mastery.png");
+}
+
+.m-weapon__body {
+	flex-grow: 1;
+	flex-shrink: 1;
+	margin-left: 30px;
+}
+
+.m-weapon__title-row {
 	flex-direction: row;
 	align-items: center;
-	justify-content: space-between;
-	padding: 18px 10px 12px 10px;
-	margin-bottom: 8px;
 }
 
-.slots__divider {
+.m-weapon__name {
+	font-size: 50px;
+	color: #FFFFFF;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.m-weapon__level {
+	margin-left: auto;
+	font-size: 42px;
+	color: #FFD447;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.m-weapon__bonus {
+	margin: 4px 0 12px 2px;
+	font-size: 30px;
+	color: #96F596;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* 지금 쓰는 무기 — 금색 테 + '사용 중' 꼬리표 */
+.m-weapon__active {
+	display: none;
+	margin-left: 16px;
+	padding: 2px 16px 4px 16px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 20px;
+	background-color: #FFD447;
+	font-size: 24px;
+	color: #3A2406;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.mastery-row {
+	margin-bottom: 22px;
+}
+
+.mastery-row--active {
+	border-width: 5px;
+	border-color: #FFD447;
+	background-color: #343254;
+}
+
+.mastery-row--active .m-weapon__active {
+	display: flex;
+}
+
+/* 막대 — 둥근 홈 + 채움, 글자는 가운데 */
+.m-gauge {
+	height: 42px;
+	padding: 4px;
+	border-radius: 21px;
+	background-color: #0A0814;
+}
+
+.m-gauge__fill {
+	width: 0;
+	height: 100%;
+	border-radius: 17px;
+	background-color: #5CC85A;
+	transition-property: width;
+	transition-duration: 0.3s;
+}
+
+.m-gauge--gold .m-gauge__fill {
+	background-color: #FFD447;
+}
+
+.m-gauge__text {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	margin: 0;
+	padding: 0;
+	font-size: 28px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* ── 구역 제목 — 금색 막대 + 흰 글자 ── */
+
+.m-section {
+	flex-direction: row;
+	align-items: center;
+	height: 62px;
+	margin: 22px 0 6px 8px;
+}
+
+.m-section__bar {
+	width: 8px;
+	height: 36px;
+	border-radius: 4px;
+	background-color: #FFC94A;
+}
+
+.m-section__title {
+	margin-left: 16px;
+	font-size: 36px;
+	color: #FFFFFF;
+}
+
+/* 칸 고르기 안내 — 구역 제목 줄 오른쪽 */
+.slot-hint {
+	display: none;
+	flex-direction: row;
+	align-items: center;
+	margin-left: auto;
+}
+
+.slot-hint--visible {
+	display: flex;
+}
+
+.slot-hint__text {
+	margin-right: 14px;
+	font-size: 30px;
+	color: #FFD447;
+}
+
+.m-hint-cancel {
+	height: 56px;
+	margin: 0;
+	padding: 0 24px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 28px;
+	background-color: #D2463C;
+	font-size: 28px;
+	color: #FFFFFF;
+}
+
+/* ── 장착 스킬 6칸 ── */
+
+.m-slots {
+	flex-direction: row;
+	align-items: flex-start;
+	justify-content: space-between;
+	padding: 22px 18px 14px 18px;
+}
+
+.m-slots__divider {
 	width: 4px;
-	height: 116px;
-	background-color: var(--divider);
-	border-right-width: 4px;
-	border-right-color: #FFFFFF;
+	height: 128px;
+	margin-top: 4px;
+	border-radius: 2px;
+	background-color: #3D4566;
 }
 
 .slot {
@@ -77,30 +284,83 @@
 .slot__frame {
 	width: 132px;
 	height: 132px;
-	padding: 16px;	/* 테두리 4칸(16px) 바로 안쪽까지 아이콘을 채운다 */
-	background-image: url("../Pixel/slot_tactic.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+	padding: 6px;
+	border-width: 5px;
+	border-color: #5496FF;
+	border-radius: 16px;
+	background-color: #121422;
 	transition-property: scale, translate;
 	transition-duration: 0.12s;
 }
 
 .slot--passive .slot__frame {
-	background-image: url("../Pixel/slot_passive.png");
+	border-color: #5CC85A;
 }
 
 .slot--core .slot__frame {
-	background-image: url("../Pixel/slot_core.png");
+	border-color: #FF963C;
+}
+
+.slot__empty {
+	display: none;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	margin: 0;
+	padding: 0;
+	font-size: 22px;
+	color: #6E7496;
+	-unity-text-align: middle-center;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.slot--empty .slot__empty {
+	display: flex;
+}
+
+.slot--empty .slot__frame {
+	border-color: #263F6E;
+}
+
+.slot--passive.slot--empty .slot__frame {
+	border-color: #2A5A2E;
+}
+
+.slot--core.slot--empty .slot__frame {
+	border-color: #6E4220;
 }
 
 .slot__label {
-	margin-top: 4px;
-	font-size: 36px;
-	color: var(--ink-sub);
+	margin-top: 10px;
+	font-size: 28px;
+	color: #969CBA;
 	-unity-text-align: middle-center;
+}
+
+/* 지금 보고 있는 종류의 칸 — 이름 밝게 + 같은 색 밑줄 */
+.slot__mark {
+	width: 100px;
+	height: 8px;
+	margin-top: 6px;
+	border-radius: 4px;
+}
+
+.slot--focus .slot__label {
+	color: #FFFFFF;
+}
+
+.slot--focus .slot__mark {
+	background-color: #5496FF;
+}
+
+.slot--passive.slot--focus .slot__mark {
+	background-color: #5CC85A;
+}
+
+.slot--core.slot--focus .slot__mark {
+	background-color: #FF963C;
 }
 
 .slot:active .slot__frame {
@@ -109,40 +369,112 @@
 
 /* 선택한 스킬이 들어 있는 칸 */
 .slot--selected .slot__frame {
-	background-image: url("../Pixel/slot_selected.png");
+	border-color: #FFFFFF;
 }
 
 /* 선택한 스킬을 넣을 수 있는 칸 — 누르면 장착 */
 .slot--target .slot__frame {
-	background-image: url("../Pixel/slot_gold.png");
+	border-color: #FFD447;
 	scale: 1.1;
 	translate: 0 -6px;
 }
 
 .slot--target .slot__label {
-	color: var(--gold-dark);
+	color: #FFD447;
 }
 
-/* ── 스킬 목록 ──────────────────────────────────── */
+/* ── 스킬 종류 탭 ── */
 
-.list {
+.m-filter {
+	flex-direction: row;
+	margin-bottom: 16px;
+}
+
+.m-filter__item {
+	flex-grow: 1;
+	flex-basis: 0;
+	height: 80px;
+	margin: 0 0 0 12px;
+	padding: 0;
+	border-width: 3px;
+	border-color: #2E3450;
+	border-radius: 20px;
+	background-color: #151826;
+	font-size: 32px;
+	color: #8E93B8;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-text-align: middle-center;
+}
+
+.m-filter__item--all {
+	margin-left: 0;
+}
+
+.m-filter__item--on {
+	border-color: #0A0814;
+	border-bottom-width: 6px;
+	font-size: 34px;
+	color: #FFFFFF;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.m-filter__item--all.m-filter__item--on {
+	background-color: #9678FF;
+}
+
+.m-filter__item--passive.m-filter__item--on {
+	background-color: #5CC85A;
+}
+
+.m-filter__item--tactic.m-filter__item--on {
+	background-color: #5496FF;
+}
+
+.m-filter__item--core.m-filter__item--on {
+	background-color: #FF963C;
+}
+
+/* ── 목록 ── */
+
+.m-list {
 	flex-grow: 1;
 	flex-shrink: 1;
 	min-height: 200px;
 }
 
+/* 종류 꼬리표 — 전술 파랑 · 패시브 초록 · 코어 주황 */
+.m-chip {
+	align-self: flex-start;
+	margin-top: 6px;
+	padding: 2px 14px 4px 14px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 14px;
+	background-color: #5496FF;
+	font-size: 22px;
+	color: #FFFFFF;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.m-chip--passive {
+	background-color: #5CC85A;
+}
+
+.m-chip--core {
+	background-color: #FF963C;
+}
+
+/* 스킬 행 */
 .skill-row {
 	flex-direction: row;
 	align-items: center;
-	height: 184px;
-	padding: 18px 28px 24px 18px;
-	margin-bottom: 12px;
-	background-image: url("../Pixel/row.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
+	height: 116px;
+	margin-bottom: 14px;
+	padding: 0 26px 0 32px;
+	border-width: 3px;
+	border-color: #3D4566;
+	border-radius: 22px;
+	background-color: #2A3048;
 	transition-property: translate;
 	transition-duration: 0.06s;
 }
@@ -151,114 +483,116 @@
 	translate: 0 4px;
 }
 
+.skill-row__bar {
+	display: none;
+	position: absolute;
+	left: -3px;
+	top: -3px;
+	bottom: -3px;
+	width: 12px;
+	border-top-left-radius: 22px;
+	border-bottom-left-radius: 22px;
+	background-color: #5CC85A;
+}
+
 .skill-row__icon-frame {
-	width: 140px;
-	height: 140px;
-	padding: 16px;	/* 테두리 4칸(16px) 바로 안쪽까지 아이콘을 채운다 */
-	background-image: url("../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+	width: 92px;
+	height: 92px;
+	padding: 4px;
+	border-width: 5px;
+	border-color: #5496FF;
+	border-radius: 14px;
+	background-color: #121422;
+}
+
+.skill-row--passive .skill-row__icon-frame {
+	border-color: #5CC85A;
+}
+
+.skill-row--core .skill-row__icon-frame {
+	border-color: #FF963C;
 }
 
 .skill-row__body {
 	flex-grow: 1;
+	flex-shrink: 1;
 	margin-left: 26px;
 	justify-content: center;
 }
 
 .skill-row__name {
-	font-size: 48px;
-	margin-bottom: 8px;
+	font-size: 38px;
+	color: #FFFFFF;
 }
 
-.skill-row__lock {
+/* 종류 꼬리표는 '전체' 탭에서만 */
+.skill-row__chip {
 	display: none;
-	width: 54px;
-	height: 66px;
-	margin-right: 12px;
-	background-image: url("../Pixel/icon_lock.png");
 }
 
-.skill-row__state {
-	font-size: 36px;
-	color: var(--ink-sub);
-	-unity-text-align: middle-right;
-}
-
-/* 장착 중 — 상태 글자를 초록 칩으로 */
-.skill-row--equipped .skill-row__state {
-	padding: 6px 18px 10px 18px;
-	background-image: url("../Pixel/chip_green.png");
-	-unity-slice-left: 3;
-	-unity-slice-right: 3;
-	-unity-slice-top: 3;
-	-unity-slice-bottom: 3;
-	-unity-slice-scale: 4px;
-	font-size: 36px;
-	color: var(--white);
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 3px 0 var(--ink);
-}
-
-.skill-row--equipped .skill-row__icon-frame {
-	background-image: url("../Pixel/slot_passive.png");
-}
-
-.skill-row--locked {
-	background-image: url("../Pixel/row_locked.png");
-}
-
-.skill-row--locked .skill-row__lock {
+.skill-row--show-category .skill-row__chip {
 	display: flex;
 }
 
-.skill-row--locked .skill-row__name {
-	color: var(--ink-dim);
-	text-shadow: 0 3px 0 var(--paper-shadow);
+/* 오른쪽 상태 — 장착 중(초록 알약) / 미획득(Lv.N 획득) 일 때만 보인다 */
+.skill-row__state {
+	display: none;
+	padding: 6px 22px 8px 22px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 26px;
+	font-size: 28px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.skill-row--equipped {
+	border-color: #42784F;
+}
+
+.skill-row--equipped .skill-row__bar {
+	display: flex;
+}
+
+.skill-row--equipped .skill-row__state {
+	display: flex;
+	background-color: #3CB45A;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* 미획득 — 어두운 카드 + 흐린 그림·이름 + 금색 획득 레벨 */
+.skill-row--locked {
+	background-color: #1E2232;
+}
+
+.skill-row--locked .skill-row__icon-frame {
+	border-color: #464A60;
 }
 
 .skill-row--locked .icon {
-	-unity-background-image-tint-color: #6E6E6E;
+	-unity-background-image-tint-color: #5A5A64;
+}
+
+.skill-row--locked .skill-row__name {
+	color: #8C90AA;
+}
+
+.skill-row--locked .m-chip {
+	background-color: #50546C;
+}
+
+.skill-row--locked .skill-row__state {
+	display: flex;
+	background-color: #141624;
+	color: #FFD447;
 }
 
 .skill-row--selected {
-	background-image: url("../Pixel/row_selected.png");
+	border-color: #FFFFFF;
 }
 
-/* ── 칸 고르기 안내 ─────────────────────────────── */
-
-.section-row {
-	flex-direction: row;
-	align-items: center;
-	justify-content: space-between;
-	height: 84px;	/* 안내가 떠도 아래가 밀리지 않게 높이 고정 */
-	margin-bottom: 4px;
-}
-
-.section-row .section-title {
-	margin: 0 0 0 6px;
-}
-
-.slot-hint {
-	display: none;
-	flex-direction: row;
-	align-items: center;
-}
-
-.slot-hint--visible {
-	display: flex;
-}
-
-.slot-hint__text {
-	margin-right: 14px;
-	font-size: 36px;
-	color: var(--gold-dark);
-}
-
-/* ── 스킬 상세 팝업 ─────────────────────────────── */
+/* ── 스킬 상세 팝업 ── */
 
 .popup__summary {
 	flex-direction: row;
@@ -269,13 +603,19 @@
 .popup__icon-frame {
 	width: 192px;
 	height: 192px;
-	padding: 16px;	/* 테두리 4칸(16px) 바로 안쪽까지 아이콘을 채운다 */
-	background-image: url("../Pixel/slot_gold.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+	padding: 10px;
+	border-width: 6px;
+	border-color: #5496FF;
+	border-radius: 20px;
+	background-color: #121422;
+}
+
+.popup__icon-frame--passive {
+	border-color: #5CC85A;
+}
+
+.popup__icon-frame--core {
+	border-color: #FF963C;
 }
 
 .popup__meta {
@@ -284,14 +624,15 @@
 }
 
 .popup__chip {
-	font-size: 36px;
-	padding: 2px 20px 10px 20px;
-	margin-bottom: 16px;
+	font-size: 30px;
+	padding: 4px 20px 6px 20px;
+	margin: 0 0 16px 0;
+	border-radius: 18px;
 }
 
 .popup__state {
-	font-size: 48px;
-	color: var(--ink-sub);
+	font-size: 44px;
+	color: #C8C9CF;
 }
 
 .popup__desc-box {
@@ -301,102 +642,15 @@
 }
 
 .popup__desc {
-	font-size: 48px;
-	color: var(--text);
+	font-size: 40px;
+	color: #F2F2F5;
 	white-space: normal;
-	text-shadow: 0 3px 0 var(--paper-shadow);
 }
 
 .popup__hint {
 	margin: 0 40px 22px 40px;
-	font-size: 36px;
-	color: var(--gold-dark);
+	font-size: 34px;
+	color: #FFD447;
 	white-space: normal;
 	-unity-text-align: middle-center;
-}
-
-/* ── 전체 마스터리 ──────────────────────────────── */
-
-.total {
-	margin-bottom: 14px;
-}
-
-.total__title-row {
-	flex-direction: row;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 12px;
-}
-
-.total__caption {
-	font-size: 48px;
-}
-
-.total__level {
-	align-self: center;
-}
-
-.total__bonus {
-	margin-top: 12px;
-	font-size: 36px;
-	white-space: normal;
-}
-
-.mastery-row {
-	flex-direction: row;
-	align-items: center;
-	padding: 20px 28px 26px 20px;
-	margin-bottom: 12px;
-	background-image: url("../Pixel/row.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
-}
-
-.mastery-row--active {
-	background-image: url("../Pixel/row_active.png");
-}
-
-.mastery-row__icon-frame {
-	width: 148px;
-	height: 148px;
-	padding: 18px;	/* 테두리 4칸(16px) 바로 안쪽 — 무기 그림을 크게 */
-	background-image: url("../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
-}
-
-.mastery-row--active .mastery-row__icon-frame {
-	background-image: url("../Pixel/slot_gold.png");
-}
-
-.mastery-row__body {
-	flex-grow: 1;
-	margin-left: 26px;
-}
-
-.mastery-row__title-row {
-	flex-direction: row;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 8px;
-}
-
-.mastery-row__name {
-	font-size: 48px;
-}
-
-.mastery-row__title-row .level-text {
-	align-self: center;
-}
-
-.mastery-row__bonus {
-	margin-top: 10px;
-	font-size: 36px;
-	color: var(--ink-sub);
 }

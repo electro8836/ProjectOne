@@ -1,123 +1,143 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 	<Style src="../Common/Theme.uss" />
+	<Style src="../Common/Violet.uss" />
 	<Style src="MasteryScreen.uss" />
 
-	<ui:VisualElement name="screen" class="screen">
+	<ui:VisualElement name="screen" class="screen theme-violet mastery">
 
-		<!-- 상단 나무 배너: 제목 + 닫기 -->
-		<ui:VisualElement class="px-wood header">
-			<ui:Label text="마스터리" class="header__title text-pop" />
-			<ui:Button name="close-button" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
-		</ui:VisualElement>
-
-		<!-- 탭 (아래 종이 패널에 붙는다) -->
-		<ui:VisualElement class="tabs">
-			<ui:Button name="tab-current" text="현재 무기" class="tab" />
-			<ui:Button name="tab-all" text="전체 마스터리" class="tab" />
-		</ui:VisualElement>
-
-		<!-- ── 현재 무기 페이지 ──────────────────────── -->
-		<ui:VisualElement name="page-current" class="page">
-			<ui:VisualElement class="px-paper sheet">
-
-				<!-- 무기 정보 -->
-				<ui:VisualElement class="info">
-					<ui:VisualElement class="info__icon-frame">
-						<ui:VisualElement name="info-icon" class="icon" />
-					</ui:VisualElement>
-					<ui:VisualElement class="info__body">
-						<ui:VisualElement class="info__title-row">
-							<ui:Label name="info-name" text="대검" class="info__name" />
-							<ui:Label name="info-level" text="Lv.1" class="level-text info__level" />
-						</ui:VisualElement>
-						<ui:Label text="숙련도 경험치" class="caption" />
-						<ui:VisualElement class="gauge">
-							<ui:VisualElement name="info-exp-fill" class="gauge__fill" />
-							<ui:Label name="info-exp-text" text="0.00%" class="gauge__text" />
-						</ui:VisualElement>
-					</ui:VisualElement>
-				</ui:VisualElement>
-
-				<!-- 스킬 칸 6개: 패시브 | 전술 1~4 | 코어 -->
-				<ui:VisualElement class="section-row">
-					<ui:Label text="장착 스킬" class="section-title" />
-					<!-- [장착] 했는데 빈 칸이 없을 때만 보인다 — 바꿀 칸을 고르는 중 -->
-					<ui:VisualElement name="slot-hint" class="slot-hint">
-						<ui:Label text="바꿀 칸을 누르세요" class="slot-hint__text" />
-						<ui:Button name="slot-hint-cancel" text="취소" class="btn btn--red btn--small" />
-					</ui:VisualElement>
-				</ui:VisualElement>
-				<ui:VisualElement class="px-inset slots">
-					<ui:VisualElement name="slot-0" class="slot slot--passive">
-						<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /></ui:VisualElement>
-						<ui:Label text="패시브" class="slot__label" />
-					</ui:VisualElement>
-					<ui:VisualElement class="slots__divider" />
-					<ui:VisualElement name="slot-1" class="slot slot--tactic">
-						<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /></ui:VisualElement>
-						<ui:Label text="전술 1" class="slot__label" />
-					</ui:VisualElement>
-					<ui:VisualElement name="slot-2" class="slot slot--tactic">
-						<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /></ui:VisualElement>
-						<ui:Label text="전술 2" class="slot__label" />
-					</ui:VisualElement>
-					<ui:VisualElement name="slot-3" class="slot slot--tactic">
-						<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /></ui:VisualElement>
-						<ui:Label text="전술 3" class="slot__label" />
-					</ui:VisualElement>
-					<ui:VisualElement name="slot-4" class="slot slot--tactic">
-						<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /></ui:VisualElement>
-						<ui:Label text="전술 4" class="slot__label" />
-					</ui:VisualElement>
-					<ui:VisualElement class="slots__divider" />
-					<ui:VisualElement name="slot-5" class="slot slot--core">
-						<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /></ui:VisualElement>
-						<ui:Label text="코어" class="slot__label" />
-					</ui:VisualElement>
-				</ui:VisualElement>
-
-				<!-- 스킬 목록 (해금 레벨 순) — 행은 MasterySkillRow.uxml -->
-				<ui:Label text="스킬 목록" class="section-title" />
-				<ui:ScrollView name="skill-list" class="list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+		<!-- 제목 판: 장비·상점과 같은 보라 판 + 번짐 (닫기는 네비게이션 바 탭을 다시 누른다) -->
+		<ui:VisualElement class="header">
+			<ui:VisualElement class="header__frame">
+				<ui:VisualElement class="header__wash" picking-mode="Ignore" />
+				<ui:Label text="마스터리" class="header__title" />
 			</ui:VisualElement>
 		</ui:VisualElement>
 
-		<!-- ── 전체 마스터리 페이지 ──────────────────── -->
-		<ui:VisualElement name="page-all" class="page">
-			<ui:VisualElement class="px-paper sheet">
-				<ui:VisualElement class="total">
-					<ui:VisualElement class="total__title-row">
-						<ui:Label text="총 마스터리 레벨" class="total__caption" />
-						<ui:Label name="total-level" text="0 / 0" class="level-text total__level" />
-					</ui:VisualElement>
-					<ui:VisualElement class="gauge gauge--gold">
-						<ui:VisualElement name="total-fill" class="gauge__fill" />
-						<ui:Label name="total-text" text="0.00%" class="gauge__text" />
-					</ui:VisualElement>
-					<ui:Label name="total-bonus" text="" class="total__bonus" />
-				</ui:VisualElement>
-
-				<ui:Label text="무기별 마스터리" class="section-title" />
-				<!-- 행은 MasteryListRow.uxml -->
-				<ui:ScrollView name="mastery-list" class="list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
-			</ui:VisualElement>
+		<!-- 페이지 탭 — 어두운 홈 위에 선택 칸만 금색 알약 -->
+		<ui:VisualElement class="m-seg">
+			<ui:Button name="tab-current" text="현재 무기" class="m-seg__item" />
+			<ui:Button name="tab-all" text="전체 마스터리" class="m-seg__item" />
 		</ui:VisualElement>
 
-		<!-- ── 스킬 상세 팝업 (목록·칸을 누르면 뜬다) ──────── -->
-		<ui:VisualElement name="popup" class="popup">
+		<!-- 현재 무기 페이지 -->
+		<ui:VisualElement name="page-current" class="page m-page">
+
+			<!-- 무기 카드: 아이콘 | 이름·레벨 / 보너스 / 경험치 -->
+			<ui:VisualElement class="m-card m-weapon m-weapon--active">
+				<ui:VisualElement class="m-weapon__frame"><ui:VisualElement name="info-icon" class="icon" /></ui:VisualElement>
+				<ui:VisualElement class="m-weapon__body">
+					<ui:VisualElement class="m-weapon__title-row">
+						<ui:Label name="info-name" text="" class="m-weapon__name" />
+						<ui:Label name="info-level" text="" class="m-weapon__level" />
+					</ui:VisualElement>
+					<ui:Label name="info-bonus" text="" class="m-weapon__bonus" />
+					<ui:VisualElement class="m-gauge">
+						<ui:VisualElement name="info-exp-fill" class="m-gauge__fill" />
+						<ui:Label name="info-exp-text" text="" class="m-gauge__text" />
+					</ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<!-- 장착 스킬 6칸: 패시브 | 전술 1~4 | 코어 -->
+			<ui:VisualElement class="m-section">
+				<ui:VisualElement class="m-section__bar" />
+				<ui:Label text="장착 스킬" class="m-section__title" />
+				<!-- [장착] 했는데 빈 칸이 없을 때만 보인다 — 바꿀 칸을 고르는 중 -->
+				<ui:VisualElement name="slot-hint" class="slot-hint">
+					<ui:Label text="바꿀 칸을 누르세요" class="slot-hint__text" />
+					<ui:Button name="slot-hint-cancel" text="취소" class="m-hint-cancel" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+			<ui:VisualElement class="m-card m-slots">
+				<ui:VisualElement name="slot-0" class="slot slot--passive">
+					<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /><ui:Label text="비어 있음" class="slot__empty" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:Label text="패시브" class="slot__label" />
+					<ui:VisualElement class="slot__mark" />
+				</ui:VisualElement>
+				<ui:VisualElement class="m-slots__divider" />
+				<ui:VisualElement name="slot-1" class="slot slot--tactic">
+					<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /><ui:Label text="비어 있음" class="slot__empty" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:Label text="전술 1" class="slot__label" />
+					<ui:VisualElement class="slot__mark" />
+				</ui:VisualElement>
+				<ui:VisualElement name="slot-2" class="slot slot--tactic">
+					<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /><ui:Label text="비어 있음" class="slot__empty" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:Label text="전술 2" class="slot__label" />
+					<ui:VisualElement class="slot__mark" />
+				</ui:VisualElement>
+				<ui:VisualElement name="slot-3" class="slot slot--tactic">
+					<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /><ui:Label text="비어 있음" class="slot__empty" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:Label text="전술 3" class="slot__label" />
+					<ui:VisualElement class="slot__mark" />
+				</ui:VisualElement>
+				<ui:VisualElement name="slot-4" class="slot slot--tactic">
+					<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /><ui:Label text="비어 있음" class="slot__empty" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:Label text="전술 4" class="slot__label" />
+					<ui:VisualElement class="slot__mark" />
+				</ui:VisualElement>
+				<ui:VisualElement class="m-slots__divider" />
+				<ui:VisualElement name="slot-5" class="slot slot--core">
+					<ui:VisualElement class="slot__frame"><ui:VisualElement class="icon slot__icon" /><ui:Label text="비어 있음" class="slot__empty" picking-mode="Ignore" /></ui:VisualElement>
+					<ui:Label text="코어" class="slot__label" />
+					<ui:VisualElement class="slot__mark" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<!-- 스킬 목록 — 종류 탭(전체·패시브·전술·코어) + 행(MasterySkillRow.uxml) -->
+			<ui:VisualElement class="m-section">
+				<ui:VisualElement class="m-section__bar" />
+				<ui:Label text="스킬 목록" class="m-section__title" />
+			</ui:VisualElement>
+			<ui:VisualElement class="m-filter">
+				<ui:Button name="filter-0" text="전체" class="m-filter__item m-filter__item--all" />
+				<ui:Button name="filter-1" text="패시브" class="m-filter__item m-filter__item--passive" />
+				<ui:Button name="filter-2" text="전술" class="m-filter__item m-filter__item--tactic" />
+				<ui:Button name="filter-3" text="코어" class="m-filter__item m-filter__item--core" />
+			</ui:VisualElement>
+			<ui:ScrollView name="skill-list" class="m-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+		</ui:VisualElement>
+
+		<!-- 전체 마스터리 페이지 -->
+		<ui:VisualElement name="page-all" class="page m-page">
+			<!-- 총 마스터리 카드 — 무기 카드와 같은 틀 -->
+			<ui:VisualElement class="m-card m-weapon m-weapon--total">
+				<ui:VisualElement class="m-weapon__frame"><ui:VisualElement class="icon m-total-icon" /></ui:VisualElement>
+				<ui:VisualElement class="m-weapon__body">
+					<ui:VisualElement class="m-weapon__title-row">
+						<ui:Label text="총 마스터리" class="m-weapon__name" />
+						<ui:Label name="total-level" text="" class="m-weapon__level" />
+					</ui:VisualElement>
+					<ui:Label name="total-bonus" text="" class="m-weapon__bonus" />
+					<ui:VisualElement class="m-gauge m-gauge--gold">
+						<ui:VisualElement name="total-fill" class="m-gauge__fill" />
+						<ui:Label name="total-text" text="" class="m-gauge__text" />
+					</ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<ui:VisualElement class="m-section">
+				<ui:VisualElement class="m-section__bar" />
+				<ui:Label text="무기별 마스터리" class="m-section__title" />
+			</ui:VisualElement>
+			<!-- 행은 MasteryListRow.uxml -->
+			<ui:ScrollView name="mastery-list" class="m-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+		</ui:VisualElement>
+
+		<!-- 스킬 상세 팝업 (목록·칸을 누르면 뜬다) — 다른 팝업과 같은 회색 제목 줄 틀 -->
+		<ui:VisualElement name="popup" class="popup theme-violet">
 			<ui:VisualElement name="popup-dim" class="popup__dim" />
 			<ui:VisualElement class="px-paper popup__window">
-				<ui:VisualElement class="px-wood popup__head">
-					<ui:Label name="popup-name" text="" class="popup__name text-pop" />
-					<ui:Button name="popup-close" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+				<ui:VisualElement class="px-wood popup__head item-head">
+					<ui:Label name="popup-name" text="" class="popup__name item-head__name" />
+					<ui:Button name="popup-close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
 				</ui:VisualElement>
 
 				<ui:VisualElement class="popup__summary">
-					<ui:VisualElement class="popup__icon-frame">
+					<ui:VisualElement name="popup-frame" class="popup__icon-frame">
 						<ui:VisualElement name="popup-icon" class="icon" />
 					</ui:VisualElement>
 					<ui:VisualElement class="popup__meta">
-						<ui:Label name="popup-category" text="" class="chip popup__chip" />
+						<ui:Label name="popup-category" text="" class="m-chip popup__chip" />
 						<ui:Label name="popup-state" text="" class="popup__state" />
 					</ui:VisualElement>
 				</ui:VisualElement>

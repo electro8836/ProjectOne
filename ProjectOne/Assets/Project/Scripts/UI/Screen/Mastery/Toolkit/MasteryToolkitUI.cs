@@ -14,6 +14,7 @@ namespace ProjectOne.UI
 		public bool isEmpty;
 		public bool isSelected;	// 선택한 스킬이 이 칸에 들어 있다
 		public bool isTarget;	// 선택한 스킬을 이 칸에 넣을 수 있다
+		public bool isFocus;	// 지금 보고 있는 스킬 종류의 칸 — 이름 밝게 + 밑줄
 	}
 
 	// 스킬 목록 1행 렌더 데이터.
@@ -24,6 +25,7 @@ namespace ProjectOne.UI
 		public string categoryLabel;
 		public string categoryClass;	// 칩 색 클래스 (chip--passive 등, 전술은 빈 문자열)
 		public string stateText;
+		public bool showCategory;	// '전체' 탭에서만 종류 꼬리표를 단다
 		public bool isUnlocked;
 		public bool isEquipped;
 		public bool isSelected;
@@ -46,23 +48,27 @@ namespace ProjectOne.UI
 	}
 
 	// 마스터리 화면의 UI Toolkit View(MVP). 레이아웃은 UIToolkit/Mastery/MasteryScreen.uxml, 스타일은 같은 폴더의 USS.
+	// 닫기는 네비게이션 바 탭을 다시 누른다(화면 안 닫기 버튼 없음).
 	// 표시와 입력 전달만 하고, 무엇을 보여줄지·장착 판정은 MasteryToolkitPresenter 가 정한다.
 	// 목록은 끌어서 스크롤한다(터치는 ScrollView 기본, 마우스는 ScrollDragManipulator).
 	public class MasteryToolkitUI : ToolkitScreen, IView
 	{
 		private const int TAB_CURRENT = 0;
 		private const int TAB_ALL = 1;
+		private const int FILTER_COUNT = 4;	// 스킬 종류 탭: 전체 · 패시브 · 전술 · 코어
 
-		// 레벨 표기 — 숫자만 크게 금색(USS .level-text), "Lv."·"/ 최대" 는 작은 기본색
-		private const string SUB_OPEN = "<size=36px><color=#F4E7C8>";
+		// 총 레벨의 "/ 최대" — 작은 회색
+		private const string SUB_OPEN = "<size=30px><color=#8E93B8>";
 		private const string SUB_CLOSE = "</color></size>";
+		private const string TAB_ON = "m-seg__item--on";
+		private const string FILTER_ON = "m-filter__item--on";
 
 		[SerializeField] private VisualTreeAsset _skillRowTemplate;		// MasterySkillRow.uxml
 		[SerializeField] private VisualTreeAsset _masteryRowTemplate;	// MasteryListRow.uxml
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action<int> OnTabSelected;
-		public event Action OnCloseClicked;
+		public event Action<int> OnSkillFilterSelected;	// 스킬 종류 탭 0 전체 · 1 패시브 · 2 전술 · 3 코어
 		public event Action<int> OnSkillClicked;	// 스킬 목록 행 인덱스
 		public event Action<int> OnSlotClicked;		// 칸 인덱스 0~5
 		public event Action OnEquipClicked;
@@ -103,13 +109,14 @@ namespace ProjectOne.UI
 
 		private Button _tabCurrent;
 		private Button _tabAll;
-		private Button _closeButton;
+		private readonly Button[] _filters = new Button[FILTER_COUNT];
 		private VisualElement _pageCurrent;
 		private VisualElement _pageAll;
 
 		private VisualElement _infoIcon;
 		private Label _infoName;
 		private Label _infoLevel;
+		private Label _infoBonus;
 		private VisualElement _infoExpFill;
 		private Label _infoExpText;
 
@@ -122,6 +129,7 @@ namespace ProjectOne.UI
 
 		private VisualElement _popup;
 		private bool _isPopupShown;
+		private VisualElement _popupFrame;
 		private VisualElement _popupIcon;
 		private Label _popupName;
 		private Label _popupCategory;
@@ -171,17 +179,24 @@ namespace ProjectOne.UI
 		{
 			_tabCurrent = root.Q<Button>("tab-current");
 			_tabAll = root.Q<Button>("tab-all");
-			_closeButton = root.Q<Button>("close-button");
 			_pageCurrent = root.Q("page-current");
 			_pageAll = root.Q("page-all");
 
 			_tabCurrent.clicked += onTabCurrentClicked;
 			_tabAll.clicked += onTabAllClicked;
-			_closeButton.clicked += onCloseButtonClicked;
+
+			for (int i = 0; i < FILTER_COUNT; i++)
+			{
+				_filters[i] = root.Q<Button>("filter-" + i);
+				_filters[i].userData = i;
+				_filters[i].RegisterCallback<ClickEvent>(onFilterClicked);
+				_filters[i].AddToClassList("sfx-click");	// 클릭음 대상(UIManager)
+			}
 
 			_infoIcon = root.Q("info-icon");
 			_infoName = root.Q<Label>("info-name");
 			_infoLevel = root.Q<Label>("info-level");
+			_infoBonus = root.Q<Label>("info-bonus");
 			_infoExpFill = root.Q("info-exp-fill");
 			_infoExpText = root.Q<Label>("info-exp-text");
 
@@ -203,6 +218,7 @@ namespace ProjectOne.UI
 			root.Q<Button>("slot-hint-cancel").clicked += onSlotHintCancelButtonClicked;
 
 			_popup = root.Q("popup");
+			_popupFrame = root.Q("popup-frame");
 			_popupIcon = root.Q("popup-icon");
 			_popupName = root.Q<Label>("popup-name");
 			_popupCategory = root.Q<Label>("popup-category");
@@ -243,11 +259,20 @@ namespace ProjectOne.UI
 		{
 			bool current = index == TAB_CURRENT;
 
-			_tabCurrent.EnableInClassList("tab--selected", current);
-			_tabAll.EnableInClassList("tab--selected", current == false);
+			_tabCurrent.EnableInClassList(TAB_ON, current);
+			_tabAll.EnableInClassList(TAB_ON, current == false);
 
 			_pageCurrent.style.display = current ? DisplayStyle.Flex : DisplayStyle.None;
 			_pageAll.style.display = current ? DisplayStyle.None : DisplayStyle.Flex;
+		}
+
+		// 스킬 종류 탭 선택 표시.
+		public void ShowSkillFilter(int index)
+		{
+			for (int i = 0; i < FILTER_COUNT; i++)
+			{
+				_filters[i].EnableInClassList(FILTER_ON, i == index);
+			}
 		}
 
 		// 현재 무기 페이지 — 정보·칸·목록. 아이콘만 비동기라 나머지는 먼저 채운다.
@@ -257,7 +282,8 @@ namespace ProjectOne.UI
 			_iconTasks.Clear();
 
 			_infoName.text = info.name;
-			_infoLevel.text = SUB_OPEN + "Lv." + SUB_CLOSE + info.level.ToString();
+			_infoLevel.text = "Lv." + info.level.ToString();
+			_infoBonus.text = info.bonusText;
 			_infoExpFill.style.width = Length.Percent(info.expRatio * 100f);
 			_infoExpText.text = info.isMaxLevel ? "MAX" : $"{info.expRatio * 100f:F2}%";
 			_iconTasks.Add(_icons.SetAsync(_infoIcon, info.iconAddress, ct));
@@ -270,6 +296,7 @@ namespace ProjectOne.UI
 				slot.root.EnableInClassList("slot--empty", data.isEmpty);
 				slot.root.EnableInClassList("slot--selected", data.isSelected);
 				slot.root.EnableInClassList("slot--target", data.isTarget);
+				slot.root.EnableInClassList("slot--focus", data.isFocus);
 				_iconTasks.Add(_icons.SetAsync(slot.icon, data.iconAddress, ct));
 			}
 
@@ -281,9 +308,13 @@ namespace ProjectOne.UI
 				row.root.style.display = DisplayStyle.Flex;
 				row.name.text = data.name;
 				row.category.text = data.categoryLabel;
-				row.category.EnableInClassList("chip--passive", data.categoryClass == "chip--passive");
-				row.category.EnableInClassList("chip--core", data.categoryClass == "chip--core");
+				row.category.EnableInClassList("m-chip--passive", data.categoryClass == "chip--passive");
+				row.category.EnableInClassList("m-chip--core", data.categoryClass == "chip--core");
 				row.state.text = data.stateText;
+
+				row.root.EnableInClassList("skill-row--passive", data.categoryClass == "chip--passive");
+				row.root.EnableInClassList("skill-row--core", data.categoryClass == "chip--core");
+				row.root.EnableInClassList("skill-row--show-category", data.showCategory);
 
 				row.root.EnableInClassList("skill-row--locked", data.isUnlocked == false);
 				row.root.EnableInClassList("skill-row--equipped", data.isEquipped);
@@ -319,8 +350,10 @@ namespace ProjectOne.UI
 
 			_popupName.text = data.name;
 			_popupCategory.text = data.categoryLabel;
-			_popupCategory.EnableInClassList("chip--passive", data.categoryClass == "chip--passive");
-			_popupCategory.EnableInClassList("chip--core", data.categoryClass == "chip--core");
+			_popupCategory.EnableInClassList("m-chip--passive", data.categoryClass == "chip--passive");
+			_popupCategory.EnableInClassList("m-chip--core", data.categoryClass == "chip--core");
+			_popupFrame.EnableInClassList("popup__icon-frame--passive", data.categoryClass == "chip--passive");
+			_popupFrame.EnableInClassList("popup__icon-frame--core", data.categoryClass == "chip--core");
 			_popupState.text = data.stateText;
 			_popupDesc.text = data.description;
 			_popupHint.text = data.hint;
@@ -356,7 +389,7 @@ namespace ProjectOne.UI
 		{
 			_iconTasks.Clear();
 
-			_totalLevel.text = total.totalLevel.ToString() + SUB_OPEN + " / " + total.maxTotalLevel.ToString() + SUB_CLOSE;
+			_totalLevel.text = "Lv." + total.totalLevel.ToString() + SUB_OPEN + " / " + total.maxTotalLevel.ToString() + SUB_CLOSE;
 			_totalFill.style.width = Length.Percent(total.ratio * 100f);
 			_totalText.text = total.isMax ? "MAX" : $"{total.ratio * 100f:F2}%";
 			_totalBonus.text = total.bonusText;
@@ -370,9 +403,9 @@ namespace ProjectOne.UI
 				row.root.style.display = DisplayStyle.Flex;
 				row.root.EnableInClassList("mastery-row--active", data.isActive);
 				row.name.text = data.name;
-				row.level.text = SUB_OPEN + "Lv." + SUB_CLOSE + data.level.ToString();
+				row.level.text = "Lv." + data.level.ToString();
 				row.fill.style.width = Length.Percent(ratio * 100f);
-				row.gaugeText.text = $"{data.level}/{data.maxLevel}";
+				row.gaugeText.text = $"{data.level} / {data.maxLevel}";
 				row.bonus.text = data.bonusText;
 
 				_iconTasks.Add(_icons.SetAsync(row.icon, data.iconAddress, ct));
@@ -446,9 +479,15 @@ namespace ProjectOne.UI
 			if (OnTabSelected != null) { OnTabSelected.Invoke(TAB_ALL); }
 		}
 
-		private void onCloseButtonClicked()
+		private void onFilterClicked(ClickEvent evt)
 		{
-			if (OnCloseClicked != null) { OnCloseClicked.Invoke(); }
+			VisualElement target = evt.currentTarget as VisualElement;
+			if (target == null || OnSkillFilterSelected == null)
+			{
+				return;
+			}
+
+			OnSkillFilterSelected.Invoke((int)target.userData);
 		}
 
 		private void onSlotElementClicked(ClickEvent evt)

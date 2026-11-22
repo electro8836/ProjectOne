@@ -8,6 +8,7 @@
 		public int level;
 		public float expRatio;		// 현재 레벨 구간의 진행률 0~1
 		public bool isMaxLevel;
+		public string bonusText;	// 레벨 보너스 옵션 문구 (예: 스킬 피해량 +12.6%)
 	}
 
 	// 전체 마스터리 정보 1회분 렌더 데이터.

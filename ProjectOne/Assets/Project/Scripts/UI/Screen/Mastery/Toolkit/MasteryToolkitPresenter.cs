@@ -19,12 +19,26 @@ namespace ProjectOne.UI
 	//   (넣을 수 있는 칸이 금색으로 빛나고, 그 칸을 누르면 장착 — 다른 칸에 있던 스킬이면 맞바꿈).
 	//   [해제] 는 그 칸을 비운다.
 	// 막힘 판정은 MasteryBook.GetSlotBlock 하나만 본다. 저장은 창을 닫을 때 FlushMasteryIfDirty 가 묶어 보낸다.
+	// 스킬 목록은 종류 탭(전체·패시브·전술·코어)으로 거르고, 종류 → 장착 중 → 획득 → 미획득(해금 레벨) 순으로 늘어놓는다.
 	public sealed class MasteryToolkitPresenter : Presenter<MasteryToolkitUI>
 	{
 		private const int TAB_CURRENT = 0;
 		private const int TAB_ALL = 1;
+		private const int FILTER_ALL = 0;	// 1 패시브 · 2 전술 · 3 코어 = 종류 순번 + 1
+
+		// 목록 한 줄의 정렬 키
+		private struct SkillEntry
+		{
+			public Table_MasterySkill.Row mastery;
+			public Table_Skill.Row skill;
+			public int categoryOrder;	// 0 패시브 · 1 전술 · 2 코어
+			public int stateOrder;		// 0 장착 중 · 1 획득 · 2 미획득
+			public bool unlocked;
+			public bool equipped;
+		}
 
 		private int _currentTab = TAB_CURRENT;
+		private int _skillFilter = FILTER_ALL;
 
 		private EDT.Skill _selectedSkill = EDT.Skill.None;
 		private bool _isPopupOpen;
@@ -34,6 +48,7 @@ namespace ProjectOne.UI
 		private readonly List<MasterySlotViewData> _slotData = new List<MasterySlotViewData>();
 		private readonly List<MasterySkillRowData> _skillData = new List<MasterySkillRowData>();
 		private IReadOnlyList<Table_MasterySkill.Row> _skills;
+		private readonly List<SkillEntry> _entries = new List<SkillEntry>();
 
 		// 전체 마스터리 렌더 버퍼
 		private readonly List<Table_WeaponMastery.Row> _masteryRows = new List<Table_WeaponMastery.Row>();
@@ -44,7 +59,7 @@ namespace ProjectOne.UI
 		protected override void OnInitialize()
 		{
 			view.OnTabSelected += onTabSelected;
-			view.OnCloseClicked += onCloseClicked;
+			view.OnSkillFilterSelected += onSkillFilterSelected;
 			view.OnSkillClicked += onSkillClicked;
 			view.OnSlotClicked += onSlotClicked;
 			view.OnEquipClicked += onEquipClicked;
@@ -59,7 +74,7 @@ namespace ProjectOne.UI
 		protected override void OnDispose()
 		{
 			view.OnTabSelected -= onTabSelected;
-			view.OnCloseClicked -= onCloseClicked;
+			view.OnSkillFilterSelected -= onSkillFilterSelected;
 			view.OnSkillClicked -= onSkillClicked;
 			view.OnSlotClicked -= onSlotClicked;
 			view.OnEquipClicked -= onEquipClicked;
@@ -109,20 +124,21 @@ namespace ProjectOne.UI
 			renderCurrentTab();
 		}
 
-		private void onCloseClicked()
+		private void onSkillFilterSelected(int index)
 		{
-			UIManager.Instance.CloseWindowAsync().Forget();
+			_skillFilter = index;
+			renderCurrent();
 		}
 
-		// 스킬 행 → 상세 팝업
+		// 스킬 행 → 상세 팝업 (행 순서는 거르고 정렬한 _entries 순서)
 		private void onSkillClicked(int index)
 		{
-			if (_skills == null || index < 0 || index >= _skills.Count)
+			if (index < 0 || index >= _entries.Count)
 			{
 				return;
 			}
 
-			openPopup(_skills[index].SkillID);
+			openPopup(_entries[index].mastery.SkillID);
 		}
 
 		private void onSlotClicked(int index)
@@ -287,32 +303,109 @@ namespace ProjectOne.UI
 				data.isEmpty = skill == EDT.Skill.None;
 				data.isSelected = skill != EDT.Skill.None && skill == _selectedSkill;
 				data.isTarget = isTargetSlot(book, row.ID, progress, i);
+				data.isFocus = _skillFilter == FILTER_ALL || _skillFilter - 1 == getSlotCategoryOrder(i);
 				_slotData.Add(data);
 			}
 
+			buildEntries(progress);
+
 			_skillData.Clear();
-			for (int i = 0; i < _skills.Count; i++)
+			for (int i = 0; i < _entries.Count; i++)
 			{
-				Table_MasterySkill.Row masterySkill = _skills[i];
-				Table_Skill.Row skillRow = Table_Skill.Get(masterySkill.SkillID);
-				bool unlocked = progress.IsUnlocked(masterySkill.SkillID);
-				bool equipped = progress.IndexOfSlot(masterySkill.SkillID) >= 0;
+				SkillEntry entry = _entries[i];
+				Table_Skill.Row skillRow = entry.skill;
 
 				MasterySkillRowData data;
 				data.iconAddress = skillRow != null ? skillRow.Icon : string.Empty;
-				data.name = skillRow != null ? skillRow.Name : masterySkill.SkillID.ToString();
+				data.name = skillRow != null ? skillRow.Name : entry.mastery.SkillID.ToString();
 				data.categoryLabel = getCategoryLabel(skillRow);
 				data.categoryClass = getCategoryClass(skillRow);
-				data.isUnlocked = unlocked;
-				data.isEquipped = equipped;
-				data.isSelected = masterySkill.SkillID == _selectedSkill;
-				data.stateText = unlocked == false ? $"Lv.{masterySkill.UnlockLevel} 해금" : (equipped ? "장착 중" : string.Empty);
+				data.showCategory = _skillFilter == FILTER_ALL;
+				data.isUnlocked = entry.unlocked;
+				data.isEquipped = entry.equipped;
+				data.isSelected = entry.mastery.SkillID == _selectedSkill;
+				data.stateText = entry.unlocked == false ? $"Lv.{entry.mastery.UnlockLevel} 획득" : (entry.equipped ? "장착 중" : string.Empty);
 				_skillData.Add(data);
 			}
 
+			view.ShowSkillFilter(_skillFilter);
 			view.SetSlotHintVisible(_awaitingSlot);
 			view.RenderPopup(buildPopup(row, progress));
 			view.RenderCurrentAsync(buildInfo(row, progress), _slotData, _skillData, view.GetDestroyToken()).Forget();
+		}
+
+		// 종류 탭으로 거른 뒤 종류 → 장착 중 → 획득 → 미획득(해금 레벨) 순으로 정렬한다.
+		private void buildEntries(MasteryProgress progress)
+		{
+			_entries.Clear();
+			for (int i = 0; i < _skills.Count; i++)
+			{
+				SkillEntry entry;
+				entry.mastery = _skills[i];
+				entry.skill = Table_Skill.Get(entry.mastery.SkillID);
+				entry.categoryOrder = getCategoryOrder(entry.skill);
+				if (_skillFilter != FILTER_ALL && _skillFilter - 1 != entry.categoryOrder)
+				{
+					continue;
+				}
+
+				entry.unlocked = progress.IsUnlocked(entry.mastery.SkillID);
+				entry.equipped = progress.IndexOfSlot(entry.mastery.SkillID) >= 0;
+				entry.stateOrder = entry.equipped ? 0 : (entry.unlocked ? 1 : 2);
+				_entries.Add(entry);
+			}
+
+			_entries.Sort(compareEntry);
+		}
+
+		private int compareEntry(SkillEntry a, SkillEntry b)
+		{
+			if (a.categoryOrder != b.categoryOrder)
+			{
+				return a.categoryOrder.CompareTo(b.categoryOrder);
+			}
+
+			if (a.stateOrder != b.stateOrder)
+			{
+				return a.stateOrder.CompareTo(b.stateOrder);
+			}
+
+			return a.mastery.UnlockLevel.CompareTo(b.mastery.UnlockLevel);
+		}
+
+		// 0 패시브 · 1 전술 · 2 코어 — 장착 칸 순서와 같다
+		private static int getCategoryOrder(Table_Skill.Row skillRow)
+		{
+			if (skillRow == null)
+			{
+				return 1;
+			}
+
+			switch (skillRow.SkillCategory)
+			{
+				case SkillCategoryTypes.Passive:
+					return 0;
+
+				case SkillCategoryTypes.Ultimate:
+					return 2;
+			}
+
+			return 1;
+		}
+
+		private static int getSlotCategoryOrder(int index)
+		{
+			if (index == MasteryRules.PassiveSlot)
+			{
+				return 0;
+			}
+
+			if (index == MasteryRules.UltimateSlot)
+			{
+				return 2;
+			}
+
+			return 1;
 		}
 
 		// 칸 고르는 중이고, 고른 스킬을 그 칸에 넣을 수 있고, 이미 그 칸에 있지 않다.
@@ -404,6 +497,7 @@ namespace ProjectOne.UI
 			data.name = row.Name;
 			data.level = level;
 			data.isMaxLevel = level >= MasteryCatalog.MasteryMaxLevel;
+			data.bonusText = buildMasteryBonusText(row, level);
 
 			if (data.isMaxLevel == true)
 			{
