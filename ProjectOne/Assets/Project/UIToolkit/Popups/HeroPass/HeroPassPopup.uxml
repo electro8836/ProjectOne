@@ -27,12 +27,31 @@
 				</ui:VisualElement>
 			</ui:VisualElement>
 
-			<ui:VisualElement class="pass-columns popup__body">
-				<ui:Label text="일반" class="pass-columns__label" />
-				<ui:Label text="레벨" class="pass-columns__label pass-columns__label--middle" />
-				<ui:Label text="패스" class="pass-columns__label" />
+			<!-- 열 제목 일반 / 패스 머리판. 스크롤 안 됨. 미구매면 columns 에 잠금 클래스(HeroPassPopup.SetHeader) -->
+			<ui:VisualElement name="columns" class="pass-columns popup__body" picking-mode="Ignore">
+				<ui:VisualElement class="pass-columns__half">
+					<ui:VisualElement class="pass-plate pass-plate--normal">
+						<ui:VisualElement class="pass-plate__hi" />
+						<ui:Label text="일반" class="pass-plate__text" />
+					</ui:VisualElement>
+				</ui:VisualElement>
+				<ui:VisualElement class="pass-columns__middle" />
+				<ui:VisualElement class="pass-columns__half">
+					<ui:VisualElement class="pass-plate pass-plate--pass">
+						<ui:VisualElement class="pass-plate__hi" />
+						<ui:Label text="패스" class="pass-plate__text" />
+					</ui:VisualElement>
+				</ui:VisualElement>
 			</ui:VisualElement>
-			<ui:ScrollView name="list" class="pass-list popup__body" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+
+			<!-- 보상 목록 영역 배경(pass-board)과 줄은 코드가 스크롤 내용 안에 만든다. 안내와 스크롤 막대는 목록 위에 고정 -->
+			<ui:VisualElement class="pass-list-wrap popup__body">
+				<ui:ScrollView name="list" class="pass-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+				<ui:VisualElement name="scroll-thumb" class="pass-scroll-thumb" picking-mode="Ignore" />
+				<ui:VisualElement name="guide" class="pass-guide" picking-mode="Ignore">
+					<ui:Label text="구매하고 받기" class="pass-guide__text" />
+				</ui:VisualElement>
+			</ui:VisualElement>
 
 			<ui:VisualElement class="popup__buttons">
 				<ui:Button name="all-receive" text="모두 받기" class="btn btn--green popup__button" />

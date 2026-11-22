@@ -9,7 +9,7 @@ using ProjectOne.Reward;
 
 namespace ProjectOne.UI
 {
-	// 히어로 패스 레벨 한 줄 (UI Toolkit) — 왼쪽 일반 보상, 가운데 레벨과 진행 선, 오른쪽 패스 보상(미구매면 잠금).
+	// 히어로 패스 레벨 한 줄 (UI Toolkit) — 왼쪽 일반 보상, 가운데 레벨과 진행 선, 오른쪽 패스 보상(미구매면 어둡게).
 	// 받을 수 있는 칸을 누르면 수령 요청, 아니면 보상 정보. 스타일은 UIToolkit/Popups/HeroPass/HeroPass.uss.
 	public sealed class HeroPassRow
 	{
@@ -33,7 +33,6 @@ namespace ProjectOne.UI
 		private readonly VisualElement _lineFill;
 		private readonly RewardBox _normal;
 		private readonly RewardBox _advanced;
-		private readonly VisualElement _lock;
 
 		public int Level { get; private set; }
 
@@ -53,7 +52,7 @@ namespace ProjectOne.UI
 			_root.AddToClassList("pass-row");
 
 			_normal = createBox(false);
-			_root.Add(_normal.root);
+			_root.Add(createSide(_normal));
 
 			VisualElement middle = new VisualElement();
 			middle.AddToClassList("pass-row__middle");
@@ -69,11 +68,7 @@ namespace ProjectOne.UI
 			_root.Add(middle);
 
 			_advanced = createBox(true);
-			_lock = new VisualElement();
-			_lock.AddToClassList("pass-row__lock");
-			_lock.pickingMode = PickingMode.Ignore;
-			_advanced.root.Add(_lock);
-			_root.Add(_advanced.root);
+			_root.Add(createSide(_advanced));
 
 			parent.Add(_root);
 		}
@@ -87,7 +82,8 @@ namespace ProjectOne.UI
 			_lineFill.style.height = Length.Percent(Mathf.Clamp01(data.sliderValue) * 100f);
 			_root.EnableInClassList("pass-row--reached", data.sliderValue > 0f);
 
-			_lock.style.display = data.isLocked ? DisplayStyle.Flex : DisplayStyle.None;
+			// 미구매 — 패스 칸을 어둡게(열 전체 잠금 표현은 HeroPassPopup 의 영역 배경·머리판).
+			_advanced.root.EnableInClassList("pass-reward--locked", data.isLocked);
 
 			UniTask normalTask = bindBoxAsync(_normal, data.normalGroupId, data.normalClaimed, data.normalClaimable, ct);
 			UniTask advancedTask = bindBoxAsync(_advanced, data.advancedGroupId, data.advancedClaimed, data.advancedClaimable, ct);
@@ -97,6 +93,16 @@ namespace ProjectOne.UI
 		public void SetShown(bool shown)
 		{
 			_root.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
+		}
+
+		// 칸을 영역 가운데에 두는 감싸개
+		private VisualElement createSide(RewardBox box)
+		{
+			VisualElement side = new VisualElement();
+			side.AddToClassList("pass-row__side");
+			side.pickingMode = PickingMode.Ignore;
+			side.Add(box.root);
+			return side;
 		}
 
 		private RewardBox createBox(bool advanced)
@@ -124,6 +130,17 @@ namespace ProjectOne.UI
 			box.check.AddToClassList("pass-reward__check");
 			box.check.pickingMode = PickingMode.Ignore;
 			box.root.Add(box.check);
+
+			// 받을 수 있음 표시 — 오른쪽 위 빨간 점 + 아래 '받기' 띠 (pass-reward--claimable 일 때만 보인다)
+			Label dot = new Label("!");
+			dot.AddToClassList("pass-reward__dot");
+			dot.pickingMode = PickingMode.Ignore;
+			box.root.Add(dot);
+
+			Label claim = new Label("받기");
+			claim.AddToClassList("pass-reward__claim");
+			claim.pickingMode = PickingMode.Ignore;
+			box.root.Add(claim);
 			return box;
 		}
 
@@ -132,6 +149,7 @@ namespace ProjectOne.UI
 			box.isClaimable = claimable;
 			box.check.style.display = claimed ? DisplayStyle.Flex : DisplayStyle.None;
 			box.root.EnableInClassList("pass-reward--claimable", claimable);
+			box.root.EnableInClassList("pass-reward--claimed", claimed);
 
 			box.preview.Clear();
 			RewardPreview.Build(groupId, box.preview);

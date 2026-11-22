@@ -26,6 +26,10 @@ namespace ProjectOne.UI
 		private VisualElement _progressFill;
 		private Label _progressText;
 		private VisualElement _header;
+		private VisualElement _columns;
+		private VisualElement _board;
+		private VisualElement _guide;
+		private VisualElement _scrollThumb;
 		private ScrollView _list;
 		private Button _allReceiveButton;
 		private IVisualElementScheduledItem _tick;
@@ -44,9 +48,23 @@ namespace ProjectOne.UI
 			_progressFill = root.Q("progress-fill");
 			_progressText = root.Q<Label>("progress-text");
 			_header = root.Q("header");
+			_columns = root.Q("columns");
+			_guide = root.Q("guide");
+			_scrollThumb = root.Q("scroll-thumb");
 
 			_list = root.Q<ScrollView>("list");
 			_list.AddManipulator(new ScrollDragManipulator(_list));
+			_list.verticalScroller.valueChanged += onScrollChanged;
+			_list.RegisterCallback<GeometryChangedEvent>(onListGeometryChanged);
+			_list.contentContainer.RegisterCallback<GeometryChangedEvent>(onListGeometryChanged);
+
+			// 영역 배경 — 줄보다 먼저 넣어 맨 뒤에 깔고, 스크롤 내용과 함께 움직인다
+			_board = new VisualElement();
+			_board.AddToClassList("pass-board");
+			_board.pickingMode = PickingMode.Ignore;
+			_board.Add(createArea("pass-board__area--normal"));
+			_board.Add(createArea("pass-board__area--pass"));
+			_list.contentContainer.Add(_board);
 
 			// 레벨 수만큼 줄을 미리 만든다(최대 레벨이 곧 줄 수).
 			CancellationToken ownerToken = GetDestroyToken();
@@ -97,6 +115,11 @@ namespace ProjectOne.UI
 			_level.text = level.ToString();
 			_state.text = isPurchased ? "활성화됨" : "비활성화";
 			_header.EnableInClassList("pass-header--active", isPurchased);
+
+			// 미구매 — 패스 머리판 회색 + 패스 영역 어둡게 + 목록 아래 '구매하고 받기' 안내
+			_columns.EnableInClassList("pass-columns--locked", isPurchased == false);
+			_board.EnableInClassList("pass-board--locked", isPurchased == false);
+			_guide.EnableInClassList("pass-guide--shown", isPurchased == false);
 		}
 
 		public void SetProgress(float ratio, string text)
@@ -164,6 +187,44 @@ namespace ProjectOne.UI
 			{
 				_list.ScrollTo(_rows[_scrollIndex].Root);
 			}
+		}
+
+		private VisualElement createArea(string className)
+		{
+			VisualElement area = new VisualElement();
+			area.AddToClassList("pass-board__area");
+			area.AddToClassList(className);
+			area.pickingMode = PickingMode.Ignore;
+			return area;
+		}
+
+		private void onScrollChanged(float value)
+		{
+			updateScrollThumb();
+		}
+
+		private void onListGeometryChanged(GeometryChangedEvent evt)
+		{
+			updateScrollThumb();
+		}
+
+		// 오른쪽 얇은 막대 — 보이는 비율만큼 길이, 스크롤 위치만큼 내려간다
+		private void updateScrollThumb()
+		{
+			float view = _list.contentViewport.layout.height;
+			float content = _list.contentContainer.layout.height;
+			if (float.IsNaN(view) || float.IsNaN(content) || content <= view)
+			{
+				_scrollThumb.style.display = DisplayStyle.None;
+				return;
+			}
+
+			float thumb = view * view / content;
+			float high = _list.verticalScroller.highValue;
+			float ratio = high > 0f ? Mathf.Clamp01(_list.verticalScroller.value / high) : 0f;
+			_scrollThumb.style.display = DisplayStyle.Flex;
+			_scrollThumb.style.height = thumb;
+			_scrollThumb.style.top = (view - thumb) * ratio;
 		}
 
 		private void onTick()

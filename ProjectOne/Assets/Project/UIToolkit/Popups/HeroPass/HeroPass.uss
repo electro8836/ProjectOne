@@ -44,134 +44,344 @@
 	margin-top: 8px;
 }
 
+/* 열 제목 — 일반 / 패스 머리판. 스크롤 안 되고 보상 영역 바로 위에 얹힌다 */
 .pass-columns {
 	flex-direction: row;
-	margin-bottom: 6px;
+	margin-top: 36px;	/* 머리 정보 아래 간격을 위쪽(제목줄~머리 정보)과 같게 */
 }
 
-.pass-columns__label {
+.pass-columns__half {
 	flex-grow: 1;
 	flex-basis: 0;
-	font-size: 36px;
-	color: var(--ink-sub);
-	-unity-text-align: middle-center;
+	align-items: center;
 }
 
-.pass-columns__label--middle {
-	flex-grow: 0;
-	width: 160px;
-	flex-basis: auto;
+.pass-columns__middle {
+	width: 120px;
+}
+
+.pass-plate {
+	width: 240px;
+	height: 68px;
+	align-items: center;
+	justify-content: center;
+	border-width: 4px;
+	border-color: #0A0814;
+	border-radius: 16px;
+	border-bottom-width: 9px;
+	background-color: #6E7488;
+}
+
+.pass-plate__hi {
+	position: absolute;
+	left: 6px;
+	right: 6px;
+	top: 4px;
+	height: 18px;
+	border-radius: 10px;
+	background-color: #AAB0C4;
+}
+
+.pass-plate__text {
+	font-size: 40px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: #0A0814;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.pass-plate--pass {
+	background-color: #825AF0;
+}
+
+.pass-plate--pass .pass-plate__hi {
+	background-color: #BEA0FF;
+}
+
+/* 미구매 — 패스 머리판 회색 */
+.pass-columns--locked .pass-plate--pass {
+	background-color: #605C6E;
+}
+
+.pass-columns--locked .pass-plate--pass .pass-plate__hi {
+	background-color: #8C889C;
+}
+
+.pass-columns--locked .pass-plate--pass .pass-plate__text {
+	color: #C8C6D2;
+}
+
+/* 보상 목록 — 영역 배경·게이지·칸이 함께 스크롤된다 */
+.pass-list-wrap {
+	height: 974px;
+	margin-top: -4px;
+	margin-bottom: 26px;
 }
 
 .pass-list {
-	height: 980px;
-	margin-bottom: 26px;
+	flex-grow: 1;
+}
+
+/* 영역 배경 — 가운데 게이지를 경계로 왼쪽 일반 / 오른쪽 패스 (스크롤 내용 맨 뒤) */
+.pass-board {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	flex-direction: row;
+}
+
+.pass-board__area {
+	flex-grow: 1;
+	flex-basis: 0;
+	border-width: 4px;
+}
+
+.pass-board__area--normal {
+	background-color: #282C3A;
+	border-color: #545A70;
+	border-right-width: 0;
+	border-top-left-radius: 18px;
+	border-bottom-left-radius: 18px;
+}
+
+.pass-board__area--pass {
+	background-color: #382264;
+	border-color: #8C64F0;
+	border-left-width: 0;
+	border-top-right-radius: 18px;
+	border-bottom-right-radius: 18px;
+}
+
+.pass-board--locked .pass-board__area--pass {
+	background-color: #1C1924;
+	border-color: #3E3A4C;
+}
+
+/* 미구매 안내 — 스크롤과 상관없이 목록 아래 패스 쪽에 고정 */
+.pass-guide {
+	display: none;
+	position: absolute;
+	right: 24px;
+	bottom: 18px;
+	width: 380px;
+	height: 56px;
+	align-items: center;
+	justify-content: center;
+	border-width: 3px;
+	border-color: #8C64F0;
+	border-radius: 28px;
+	background-color: #141024;
+}
+
+.pass-guide--shown {
+	display: flex;
+}
+
+.pass-guide__text {
+	font-size: 30px;
+	color: #D2BEFF;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
+}
+
+/* 스크롤 위치 표시 — 오른쪽 얇은 막대 */
+.pass-scroll-thumb {
+	position: absolute;
+	right: 8px;
+	width: 8px;
+	border-radius: 4px;
+	background-color: rgba(255, 255, 255, 0.35);
 }
 
 /* 레벨 한 줄 */
 .pass-row {
 	flex-direction: row;
 	align-items: center;
-	height: 200px;
+	height: 196px;
+}
+
+.pass-row__side {
+	flex-grow: 1;
+	flex-basis: 0;
+	align-items: center;
+	justify-content: center;
 }
 
 .pass-row__middle {
-	width: 160px;
+	width: 120px;
 	height: 100%;
 	align-items: center;
 	justify-content: center;
 }
 
-/* 진행 선 — 줄을 세로로 꿰뚫는다 */
+/* 진행 선 — 줄을 세로로 꿰뚫는다(줄끼리 붙어 영역 위·아래 테까지 이어진다) */
 .pass-row__line {
 	position: absolute;
 	top: 0;
 	bottom: 0;
-	left: 70px;
-	width: 20px;
-	background-color: var(--ink);
+	left: 48px;
+	width: 24px;
+	background-color: #0A0814;
 }
 
 .pass-row__line-fill {
-	width: 100%;
+	margin-left: 5px;
+	width: 14px;
 	height: 0;
 	background-color: var(--gold);
 }
 
 .pass-row__level {
-	width: 96px;
-	height: 96px;
-	font-size: 48px;
+	width: 80px;
+	height: 80px;
+	font-size: 42px;
+	color: #968C6E;
 	-unity-text-align: middle-center;
-	background-image: url("../../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 2px;
-	background-color: var(--paper-shadow);
+	border-width: 4px;
+	border-radius: 8px;
+	border-color: #6E6446;
+	background-color: #141628;
 }
 
 .pass-row--reached .pass-row__level {
-	background-image: url("../../Pixel/slot_gold.png");
+	border-color: var(--gold);
 	color: var(--gold);
+}
+
+/* 강조 글자 — Pretendard ExtraBold */
+.pass-plate__text,
+.pass-row__level,
+.pass-reward__count,
+.pass-reward__dot,
+.pass-reward__claim,
+.pass-guide__text {
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }
 
 /* 보상 칸 */
 .pass-reward {
-	flex-grow: 1;
-	flex-basis: 0;
-	height: 176px;
-	margin: 0 10px;
+	width: 260px;
+	height: 168px;
 	align-items: center;
-	justify-content: center;
-	background-image: url("../../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+	border-width: 5px;
+	border-radius: 12px;
+	border-color: #686C7A;
+	background-color: #141628;
 }
 
 .pass-reward--advanced {
-	-unity-background-image-tint-color: #C9A0FF;
+	border-color: #523C8C;
 }
 
 .pass-reward--claimable {
-	background-image: url("../../Pixel/slot_gold.png");
-	-unity-background-image-tint-color: #FFFFFF;
+	border-color: #BEC4DC;
+	border-width: 6px;
+}
+
+.pass-reward--advanced.pass-reward--claimable {
+	border-color: #966EFF;
 }
 
 .pass-reward__icon {
-	width: 112px;
-	height: 112px;
+	width: 96px;
+	height: 96px;
+	margin-top: 12px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
+/* 수량 — 아래 가운데 */
 .pass-reward__count {
 	position: absolute;
-	right: 20px;
-	bottom: 14px;
-	font-size: 36px;
+	left: 0;
+	right: 0;
+	bottom: 8px;
+	font-size: 34px;
 	color: var(--white);
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 3px 0 var(--ink);
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: #0A0814;
+}
+
+/* 받음 — 그림 흐리게 + 초록 체크 */
+.pass-reward--claimed .pass-reward__icon {
+	opacity: 0.35;
+}
+
+.pass-reward--claimed .pass-reward__count {
+	color: #9696A0;
 }
 
 .pass-reward__check {
 	position: absolute;
-	left: 12px;
-	right: 12px;
-	top: 12px;
-	bottom: 12px;
-	background-color: rgba(20, 16, 30, 0.6);
+	top: 26px;
+	width: 68px;
+	height: 68px;
+	border-width: 4px;
+	border-radius: 34px;
+	border-color: #0A0814;
+	background-color: #3CBE5A;
+	background-image: url("icon_check.png");
+	-unity-background-scale-mode: scale-to-fit;
 }
 
-.pass-row__lock {
+/* 받을 수 있음 — 오른쪽 위 빨간 점 + 아래 '받기' 띠 */
+.pass-reward__dot {
+	display: none;
 	position: absolute;
-	right: 18px;
-	top: 16px;
+	right: -14px;
+	top: -14px;
 	width: 36px;
-	height: 44px;
-	background-image: url("../../Pixel/icon_lock.png");
+	height: 36px;
+	border-width: 3px;
+	border-radius: 18px;
+	border-color: #0A0814;
+	background-color: #EB374B;
+	font-size: 26px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	padding: 0;
+}
+
+.pass-reward__claim {
+	display: none;
+	position: absolute;
+	bottom: -20px;
+	width: 120px;
+	height: 38px;
+	border-width: 3px;
+	border-radius: 19px;
+	border-color: #0A0814;
+	background-color: #5CD668;
+	font-size: 26px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
+	padding: 0;
+}
+
+.pass-reward--claimable .pass-reward__dot,
+.pass-reward--claimable .pass-reward__claim {
+	display: flex;
+}
+
+/* 받을 수 있는 칸은 수량을 띠 위로 올린다 */
+.pass-reward--claimable .pass-reward__count {
+	bottom: 20px;
+}
+
+/* 패스 미구매 — 패스 칸 그림·수량을 어둡게 */
+.pass-reward--locked {
+	border-color: #2E2A38;
+	background-color: #0E0D14;
+}
+
+.pass-reward--locked .pass-reward__icon {
+	-unity-background-image-tint-color: #5A5A64;
+}
+
+.pass-reward--locked .pass-reward__count {
+	color: #7A7A84;
 }
