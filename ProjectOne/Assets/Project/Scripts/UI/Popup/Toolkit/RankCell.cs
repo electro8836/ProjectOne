@@ -6,7 +6,7 @@ using ProjectOne.Resources;
 
 namespace ProjectOne.UI
 {
-	// 랭킹 목록 줄 1개 (UI Toolkit). 1~3위는 순위 아이콘과 금·은·동 틀, 그 밖은 숫자로 표시한다.
+	// 랭킹 목록 줄 1개 (UI Toolkit). 1~3위는 순위 아이콘과 금·은·동 이름 색, 그 밖은 숫자로 표시한다.
 	// 집계 밖(0 이하·9999 초과)은 "---". 스타일은 UIToolkit/Popups/Ranking/Ranking.uss.
 	public sealed class RankCell
 	{

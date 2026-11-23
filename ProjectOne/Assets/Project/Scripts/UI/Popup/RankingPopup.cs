@@ -127,6 +127,7 @@ namespace ProjectOne.UI
 			}
 
 			RankCell cell = new RankCell(_list.contentContainer);
+			cell.Root.EnableInClassList("rank-row--odd", index % 2 == 1);	// 줄무늬 — 칸은 인덱스 자리에서 재사용되므로 만들 때 한 번만
 			cell.OnClicked += onCellClicked;
 			_cells.Add(cell);
 			return cell;

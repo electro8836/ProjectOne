@@ -1,81 +1,155 @@
 /* 랭킹·플레이어 정보 팝업 */
 
+/* ── 랭킹 표 — 머리줄 + 줄무늬 줄, 1~3위는 메달 + 순위 색 이름, 내 순위는 보라 줄. 시안 Shared/Design/UI랭킹목록_시안.png 4안 ── */
 .rank-list-box {
 	height: 1000px;
 	margin-bottom: 16px;
-	padding: 12px;
+	padding: 0;	/* 머리줄·줄무늬가 판 가장자리까지 닿게 */
+	border-radius: 16px;
+	overflow: hidden;
 }
 
 .rank-list {
 	flex-grow: 1;
 }
 
-/* 순위 줄 */
+.rank-head {
+	flex-direction: row;
+	align-items: center;
+	height: 80px;
+	flex-shrink: 0;
+	padding-right: 26px;
+	background-color: #3E3662;
+}
+
+.rank-head__label,
+.rank-row__rank-text,
+.rank-row__name,
+.rank-row__power {
+	margin: 0;
+	padding: 0;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.rank-head__label {
+	font-size: 30px;
+	color: #D2CAF0;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* 순위 칸 너비는 줄의 순위 칸(.rank-row__rank)과 같다 */
+.rank-head__rank {
+	width: 132px;
+	margin-right: 24px;
+	-unity-text-align: middle-center;
+}
+
+.rank-head__name {
+	flex-grow: 1;
+}
+
+.rank-head__power {
+	-unity-text-align: middle-right;
+}
+
+/* 순위 줄 — 홀수 번째(0부터)는 줄무늬 */
 .rank-row {
 	flex-direction: row;
 	align-items: center;
-	height: 120px;
-	padding: 0 24px 6px 12px;
-	margin-bottom: 10px;
-	background-image: url("../../Pixel/row.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
+	height: 100px;
+	padding-right: 26px;
 }
 
-.rank-row--top1 { -unity-background-image-tint-color: #FFD447; }
-.rank-row--top2 { -unity-background-image-tint-color: #D7DEE6; }
-.rank-row--top3 { -unity-background-image-tint-color: #E0965A; }
+.rank-row--odd {
+	background-color: #2E2F36;
+}
 
 .rank-row__rank {
-	width: 120px;
+	width: 132px;
 	height: 100px;
+	flex-shrink: 0;
 	align-items: center;
 	justify-content: center;
-	margin-right: 16px;
+	margin-right: 24px;
 }
 
 .rank-row__rank-icon {
-	width: 88px;
-	height: 88px;
+	width: 72px;
+	height: 72px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
 .rank-row__rank-text {
-	font-size: 48px;
-	color: var(--gold);
+	font-size: 38px;
+	color: #C8C4DC;
 }
 
 .rank-row__name {
 	flex-grow: 1;
 	flex-shrink: 1;
-	font-size: 48px;
+	font-size: 38px;
+	color: #FFFFFF;
+	white-space: nowrap;
 	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .rank-row__power {
-	font-size: 48px;
-	color: var(--gold);
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 4px 0 var(--ink);
+	flex-shrink: 0;
+	margin-left: 16px;
+	font-size: 38px;
+	color: #E6E2F0;
 }
 
+.rank-row--top1 .rank-row__name { color: #FFD447; }
+.rank-row--top2 .rank-row__name { color: #D7DEE6; }
+.rank-row--top3 .rank-row__name { color: #E0965A; }
+
+.rank-row--top1 .rank-row__power,
+.rank-row--top2 .rank-row__power,
+.rank-row--top3 .rank-row__power {
+	color: #FFD447;
+}
+
+/* 내 순위 — 보라 줄 */
 .rank-mine {
 	margin-bottom: 30px;
 }
 
 .rank-mine .rank-row {
-	background-image: url("../../Pixel/row_active.png");
-	margin-bottom: 0;
+	height: 110px;
+	border-width: 4px;
+	border-radius: 16px;
+	border-color: #A893FF;
+	background-color: #423A68;
 }
 
-/* 플레이어 정보 */
+.rank-mine .rank-row__rank {
+	height: 102px;
+}
+
+.rank-mine .rank-row__rank-text {
+	font-size: 42px;
+	color: #FFFFFF;
+}
+
+.rank-mine .rank-row__name {
+	font-size: 40px;
+	color: #FFFFFF;
+}
+
+.rank-mine .rank-row__power {
+	font-size: 40px;
+	color: #FFD447;
+}
+
+/* ── 플레이어 정보 — 장비 4+4칸 · 보라 빛 무대의 캐릭터 · 능력치 2x2 줄무늬 판. 시안 Shared/Design/UI플레이어정보_시안.png 1안 ── */
 .info-body {
 	flex-direction: row;
 	height: 680px;
-	margin-bottom: 20px;
+	margin-bottom: 28px;
 }
 
 .info-column {
@@ -103,6 +177,23 @@
 	bottom: 0;
 }
 
+.info-stage {
+	flex-grow: 1;
+}
+
+/* 캐릭터 뒤 빛 — 흰 빛을 보라로 틴트, 발밑 쪽으로 조금 내린다 */
+.info-stage__glow {
+	position: absolute;
+	left: 54px;
+	right: 54px;
+	top: 110px;
+	bottom: 50px;
+	background-image: url("../../Violet/glow_white.png");
+	-unity-background-scale-mode: stretch-to-fill;
+	-unity-background-image-tint-color: #7C68E4;
+	opacity: 0.6;
+}
+
 .info-character {
 	flex-grow: 1;
 	background-size: contain;
@@ -111,25 +202,52 @@
 }
 
 .info-stats {
-	flex-direction: row;
-	flex-wrap: wrap;
-	padding: 20px 24px;
+	padding: 0;
 	margin-bottom: 30px;
+	border-radius: 16px;
+	overflow: hidden;
+}
+
+.info-stats__row {
+	flex-direction: row;
+	height: 100px;
+}
+
+.info-stats__row--odd {
+	background-color: #2E2F36;
 }
 
 .info-stat {
-	width: 50%;
+	flex-grow: 1;
+	flex-basis: 0;
 	flex-direction: row;
 	justify-content: space-between;
-	padding: 6px 14px;
+	align-items: center;
+	padding: 0 30px;
+}
+
+/* 왼쪽 칸 오른쪽 구분선 */
+.info-stat--left {
+	border-right-width: 3px;
+	border-color: #3C3E46;
+}
+
+.info-stat__name,
+.info-stat__value {
+	margin: 0;
+	padding: 0;
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
 }
 
 .info-stat__name {
-	font-size: 36px;
-	color: var(--ink-sub);
+	font-size: 32px;
+	color: #F2F2F5;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
 }
 
 .info-stat__value {
-	font-size: 36px;
-	color: var(--gold);
+	font-size: 34px;
+	color: #FFD447;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 3px 0 #0A0814;
 }
