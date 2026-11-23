@@ -1,4 +1,5 @@
-/* 출석 팝업 — 주간 4열(큰 칸), 월간 6열(작은 칸) */
+/* 출석 팝업 — 달력 판: 어두운 판에 칸을 2px 틈으로 붙여 깐다. 주간 4열(큰 칸), 월간 6열(작은 칸).
+   시안 Shared/Design/UI출석_시안.png 4안 + UI출석_오늘수령_시안.png 2번 + UI출석_글자색_시안.png 2번 */
 
 /* 탭이 창 위에 붙도록 창과 탭을 한 묶음으로 띄운다 — 등장 전환은 이 묶음에 건다 */
 .daily-window {
@@ -29,57 +30,94 @@
 	padding: 0 20px;
 }
 
+/* 판 — 너비는 칸 수에 맞춘다(주간 4 x (210 + 2) + 안쪽 22, 월간 6 x (138 + 2) + 22) */
 .daily-grid {
 	flex-direction: row;
 	flex-wrap: wrap;
-	justify-content: center;
-	margin-bottom: 20px;
+	align-self: center;
+	width: 870px;
+	padding: 11px;
+	margin-bottom: 30px;
+	border-radius: 18px;
+	background-color: #26272C;
 }
 
+.daily-grid--month {
+	width: 862px;
+}
+
+/* 칸 — 지난 날(받음)은 어둡게, 오늘은 보라 칸 + 보라 테두리, 오늘 받은 뒤는 초록 테두리 */
 .daily-cell {
-	width: 200px;
-	height: 200px;
-	margin: 8px;
+	width: 210px;
+	height: 216px;
+	margin: 1px;
 	align-items: center;
 	justify-content: center;
-	background-image: url("../../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+	background-color: #3A3C43;
+}
+
+.daily-cell--claimed {
+	background-color: #282A30;
 }
 
 .daily-cell--focus {
-	background-image: url("../../Pixel/slot_gold.png");
+	border-width: 4px;
+	border-color: #A893FF;
+	background-color: #423A68;
 }
 
-.daily-cell--claimable {
-	-unity-background-image-tint-color: #A4EC7E;
+.daily-cell--focus.daily-cell--claimed {
+	border-color: #38AA64;
 }
 
+.daily-cell__day,
+.daily-cell__count {
+	margin: 0;
+	padding: 0;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* 날짜 — 왼쪽 위, 연보라 */
 .daily-cell__day {
 	position: absolute;
-	top: 14px;
-	left: 18px;
-	font-size: 36px;
-	color: var(--gold);
+	top: 10px;
+	left: 14px;
+	font-size: 32px;
+	color: #C8B8FF;
 }
 
+.daily-cell--claimed .daily-cell__day {
+	color: #786E99;
+}
+
+/* 아이콘 — 아래 수량 자리만큼 위로 */
 .daily-cell__icon {
 	width: 104px;
 	height: 104px;
+	margin-bottom: 16px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
+.daily-cell--claimed .daily-cell__icon {
+	opacity: 0.35;
+}
+
+/* 수량 — 아래 가운데 */
 .daily-cell__count {
 	position: absolute;
-	right: 18px;
-	bottom: 14px;
-	font-size: 36px;
-	color: var(--white);
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 3px 0 var(--ink);
+	left: 0;
+	right: 0;
+	bottom: 22px;
+	height: 40px;
+	font-size: 32px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+}
+
+.daily-cell--claimed .daily-cell__count {
+	color: #787A84;
 }
 
 /* 이름은 칸에 비해 길다 — 감추고, 칸을 누르면 툴팁으로 보인다 */
@@ -87,28 +125,50 @@
 	display: none;
 }
 
+/* 받음 체크 — 아이콘 위에 얹는다 */
 .daily-cell__check {
 	position: absolute;
-	left: 0;
-	right: 0;
-	top: 0;
-	bottom: 0;
-	background-color: rgba(20, 16, 30, 0.6);
+	left: 58px;
+	right: 58px;
+	top: 56px;
+	bottom: 72px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Check.png");
+	-unity-background-scale-mode: scale-to-fit;
+	opacity: 0.8;
+	display: none;
 }
 
-/* 월간 — 6열 작은 칸, 이름은 숨긴다 */
+.daily-cell--claimed .daily-cell__check {
+	display: flex;
+}
+
+/* 월간 — 6열 작은 칸 */
 .daily-grid--month .daily-cell {
-	width: 132px;
+	width: 138px;
 	height: 150px;
-	margin: 6px;
+}
+
+.daily-grid--month .daily-cell__day {
+	top: 6px;
+	left: 10px;
+	font-size: 24px;
 }
 
 .daily-grid--month .daily-cell__icon {
 	width: 72px;
 	height: 72px;
+	margin-bottom: 12px;
 }
 
 .daily-grid--month .daily-cell__count {
-	bottom: 8px;
-	right: 10px;
+	bottom: 12px;
+	height: 30px;
+	font-size: 24px;
+}
+
+.daily-grid--month .daily-cell__check {
+	left: 38px;
+	right: 38px;
+	top: 39px;
+	bottom: 51px;
 }

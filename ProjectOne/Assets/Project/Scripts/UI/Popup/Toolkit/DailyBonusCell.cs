@@ -20,7 +20,6 @@ namespace ProjectOne.UI
 		private readonly VisualElement _icon;
 		private readonly Label _count;
 		private readonly Label _name;
-		private readonly VisualElement _check;
 
 		private readonly List<RewardPreviewItem> _preview = new List<RewardPreviewItem>(2);
 		private bool _isClaimable;
@@ -49,10 +48,10 @@ namespace ProjectOne.UI
 			_count = addLabel("daily-cell__count");
 			_name = addLabel("daily-cell__name");
 
-			_check = new VisualElement();
-			_check.AddToClassList("daily-cell__check");
-			_check.pickingMode = PickingMode.Ignore;
-			_root.Add(_check);
+			VisualElement check = new VisualElement();	// 받음 체크 — 보임은 USS(daily-cell--claimed)
+			check.AddToClassList("daily-cell__check");
+			check.pickingMode = PickingMode.Ignore;
+			_root.Add(check);
 
 			parent.Add(_root);
 		}
@@ -63,7 +62,7 @@ namespace ProjectOne.UI
 			_isClaimable = data.isClaimable;
 
 			_day.text = data.dayCount.ToString() + "일";
-			_check.style.display = data.isClaimed ? DisplayStyle.Flex : DisplayStyle.None;
+			_root.EnableInClassList("daily-cell--claimed", data.isClaimed);	// 칸 어둡게 + 체크(USS)
 			_root.EnableInClassList("daily-cell--focus", data.isFocused);
 			_root.EnableInClassList("daily-cell--claimable", data.isClaimable);
 
