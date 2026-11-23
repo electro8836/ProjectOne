@@ -91,7 +91,7 @@ namespace ProjectOne.UI
 			{
 				_lastQuestId = questId;
 				_title.text = baked.row.Name;
-				_label.text = getTargetLabel(baked.row.QuestTargetType);
+				_label.text = GetTargetLabel(baked.row.QuestTargetType);
 			}
 
 			int current = book.GetCurrentCount(baked);
@@ -125,8 +125,8 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 진행도 앞에 붙는 목표 종류
-		private static string getTargetLabel(QuestTargetType type)
+		// 진행도 앞에 붙는 목표 종류 — 퀘스트 목록 팝업도 쓴다
+		public static string GetTargetLabel(QuestTargetType type)
 		{
 			switch (type)
 			{

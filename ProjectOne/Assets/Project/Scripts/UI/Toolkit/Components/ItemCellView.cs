@@ -190,6 +190,13 @@ namespace ProjectOne.UI
 			setShown(_level, false);
 		}
 
+		// 개수 글자를 직접 정한다 — 축약 표기(999K 등)를 쓰는 화면용(Bind 뒤에 호출).
+		public void SetCountText(string text)
+		{
+			setShown(_count, true);
+			_count.text = text;
+		}
+
 		// 등급 틀·바탕을 지정한 등급으로 칠한다 (보상 미리보기 등 아이템 없이 등급만 보일 때).
 		public void SetGrade(ItemGradeType grade)
 		{

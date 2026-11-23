@@ -18,8 +18,8 @@ namespace ProjectOne.UI
 	// QuestTracker 의 자동 완료까지 같은 경로로 따라온다.
 	//
 	// 다만 그 이벤트는 몬스터를 한 마리 잡을 때마다도 날아온다(QuestTracker.publishActive).
-	// 목록에는 진행도 숫자가 없어 그때마다 그려 봐야 화면이 똑같으므로, 아래 세 값이
-	// 바뀔 때만 그린다 — 그러지 않으면 보고 있던 목록이 처치마다 다시 그려진다.
+	// 목록 전체는 아래 세 값이 바뀔 때만 다시 그리고 — 그러지 않으면 보고 있던 목록이 처치마다 다시 그려진다 —
+	// 처치마다 바뀌는 진행 중 줄의 진행도(숫자·막대)만 따로 고친다.
 	public sealed class QuestListPopupPresenter : Presenter<QuestListPopup>
 	{
 		private readonly List<QuestSlotData> _slotData = new List<QuestSlotData>(16);
@@ -39,6 +39,11 @@ namespace ProjectOne.UI
 		private int _renderedCurrentId = -1;
 		private int _renderedClearedId = -1;
 		private bool _renderedCurrentClaimable;
+
+		// 마지막으로 진행 중 줄에 쓴 진행도. 같으면 다시 쓰지 않는다.
+		private int _progressQuestId = -1;
+		private int _progressIndex = -1;
+		private int _progressCount = -1;
 
 		// 렌더 단위 취소. 수령은 이벤트를 두 번 쏘므로(완료 + 다음 퀘스트 열림)
 		// 아이콘 로드가 끝나기 전에 다음 렌더가 겹친다 — 직전 렌더를 접는다.
@@ -68,6 +73,7 @@ namespace ProjectOne.UI
 			markRendered();
 
 			await view.RenderAsync(_slotData, ct);
+			updateProgress();
 
 			// 스크롤은 여기서 한 번만 맞춘다 — 이후 갱신은 사용자가 보고 있는 위치를 그대로 둔다.
 			view.FocusSlot(_focusIndex);
@@ -94,6 +100,7 @@ namespace ProjectOne.UI
 				&& _renderedClearedId == _clearedId
 				&& _renderedCurrentClaimable == _currentClaimable)
 			{
+				updateProgress();
 				return;
 			}
 
@@ -107,6 +114,32 @@ namespace ProjectOne.UI
 
 			_renderCts = CancellationTokenSource.CreateLinkedTokenSource(view.GetDestroyToken());
 			view.RenderAsync(_slotData, _renderCts.Token).Forget();
+
+			// 줄은 RenderAsync 의 동기 구간에서 이미 만들어져 있다 — 바로 진행도를 쓴다
+			_progressIndex = -1;
+			updateProgress();
+		}
+
+		// 진행 중 줄의 진행도 — 퀘스트·줄·현재 수치가 그대로면 건너뛴다
+		private void updateProgress()
+		{
+			QuestBook book = Account.Instance.Quests;
+			QuestCatalog.BakedQuest baked = book.GetCurrentBaked();
+			if (baked == null || _focusIndex < 0)
+			{
+				return;
+			}
+
+			int current = book.GetCurrentCount(baked);
+			if (_progressQuestId == baked.row.ID && _progressIndex == _focusIndex && _progressCount == current)
+			{
+				return;
+			}
+
+			_progressQuestId = baked.row.ID;
+			_progressIndex = _focusIndex;
+			_progressCount = current;
+			view.SetProgress(_focusIndex, HudQuestInfo.GetTargetLabel(baked.row.QuestTargetType), current, QuestBook.GetRequiredCount(baked));
 		}
 
 		private void markRendered()

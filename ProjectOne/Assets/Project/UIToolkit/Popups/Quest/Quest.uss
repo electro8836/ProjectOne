@@ -1,9 +1,11 @@
-/* 퀘스트 목록 팝업 */
+/* 퀘스트 목록 팝업 — 왼쪽 단계 줄(번호 원 + 세로 선) + 카드.
+   카드: 진행 중 = 보라 + 진행도, 완료 = 초록 테두리 + 보상 흐리게 + 체크, 잠김 = 회색. 이름 앞 칩으로 완료/진행 중 표시.
+   시안 Shared/Design/UI퀘스트목록_상태칩_시안.png 1안 + UI퀘스트목록_보상틀_시안.png 2안 */
 
 .quest-list-box {
 	height: 1200px;
 	margin-bottom: 30px;
-	padding: 12px;
+	padding: 24px 16px 12px 8px;
 }
 
 .quest-list {
@@ -12,52 +14,205 @@
 
 .quest-row {
 	flex-direction: row;
-	align-items: center;
-	padding: 16px 16px 20px 16px;
-	margin-bottom: 10px;
-	background-image: url("../../Pixel/row.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
+	margin-bottom: 14px;
 }
 
-.quest-row--current {
-	background-image: url("../../Pixel/row_active.png");
+/* ── 단계 줄 — 번호 원 가운데 (48, 60). 선은 원 가운데에서 다음 줄 원 가운데까지(줄 간격 14 + 60) ── */
+.quest-row__rail {
+	width: 96px;
+	flex-shrink: 0;
 }
 
-.quest-row--cleared .quest-row__number,
-.quest-row--cleared .quest-row__text {
-	opacity: 0.5;
+.quest-row__line {
+	position: absolute;
+	left: 45px;
+	width: 6px;
+	top: 60px;
+	bottom: -74px;
+	background-color: #464852;
+}
+
+.quest-row--cleared .quest-row__line {
+	background-color: #5CDC82;
 }
 
 .quest-row__number {
-	width: 96px;
-	font-size: 48px;
-	color: var(--gold);
+	position: absolute;
+	left: 20px;
+	top: 32px;
+	width: 56px;
+	height: 56px;
+	margin: 0;
+	padding: 0;
+	border-width: 4px;
+	border-color: #0A0814;
+	border-radius: 28px;
+	background-color: #383A42;
+	font-size: 28px;
+	color: #A8ACBA;
 	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+}
+
+.quest-row--cleared .quest-row__number {
+	background-color: #38AA64;
+	font-size: 30px;
+	color: #FFFFFF;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.quest-row--current .quest-row__number {
+	left: 14px;
+	top: 26px;
+	width: 68px;
+	height: 68px;
+	border-radius: 34px;
+	background-color: #A893FF;
+	font-size: 34px;
+	color: #FFFFFF;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* ── 카드 ── */
+.quest-row__card {
+	flex-grow: 1;
+	flex-shrink: 1;
+	flex-direction: row;
+	align-items: center;
+	min-height: 168px;
+	padding: 18px 22px 18px 28px;
+	border-width: 3px;
+	border-radius: 16px;
+	border-color: #4C4E56;
+	background-color: #3A3C43;
+}
+
+.quest-row--cleared .quest-row__card {
+	border-color: #469664;
+	background-color: #283A34;
+}
+
+.quest-row--current .quest-row__card {
+	border-width: 4px;
+	border-color: #A893FF;
+	background-color: #4A3F7A;
 }
 
 .quest-row__text {
 	flex-grow: 1;
 	flex-shrink: 1;
-	margin: 0 16px;
+	margin-right: 20px;
+}
+
+.quest-row__head {
+	flex-direction: row;
+	align-items: center;
+}
+
+.quest-row__chip,
+.quest-row__name,
+.quest-row__desc,
+.quest-row__progress-text {
+	margin: 0;
+	padding: 0;
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
+}
+
+/* 상태 칩 — 이름 앞 */
+.quest-row__chip {
+	height: 36px;
+	padding: 0 14px;
+	margin-right: 12px;
+	flex-shrink: 0;
+	border-radius: 18px;
+	background-color: #38A060;
+	font-size: 24px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.quest-row--current .quest-row__chip {
+	background-color: #7C68E4;
 }
 
 .quest-row__name {
-	font-size: 48px;
+	flex-shrink: 1;
+	font-size: 40px;
+	color: #A8ACBA;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 3px 0 #0A0814;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
+.quest-row--cleared .quest-row__name {
+	color: #C8E6D2;
+}
+
+.quest-row--current .quest-row__name {
+	color: #FFFFFF;
+}
+
+/* 설명 — 한 줄, 넘치면 말줄임 */
 .quest-row__desc {
-	font-size: 36px;
-	color: var(--ink-sub);
-	white-space: normal;
+	margin-top: 10px;
+	font-size: 28px;
+	color: #787A84;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
+.quest-row--cleared .quest-row__desc {
+	color: #96AFA0;
+}
+
+.quest-row--current .quest-row__desc {
+	color: #E2DAFC;
+}
+
+/* 진행도 — 진행 중 줄만 */
+.quest-row__progress {
+	margin-top: 14px;
+}
+
+.quest-row__progress-head {
+	flex-direction: row;
+	justify-content: space-between;
+}
+
+.quest-row__progress-text {
+	font-size: 26px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.quest-row__bar {
+	height: 16px;
+	margin-top: 6px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 8px;
+	background-color: #1A162C;
+}
+
+.quest-row__bar-fill {
+	height: 100%;
+	width: 0;
+	border-radius: 5px;
+	background-color: #46BEF0;
+}
+
+/* ── 보상 칸 ── */
 .quest-row__reward {
-	width: 152px;
-	height: 152px;
+	width: 128px;
+	height: 128px;
+	flex-shrink: 0;
 }
 
 .quest-row__reward .item-cell {
@@ -68,46 +223,56 @@
 	bottom: 0;
 }
 
+/* 개수 — 칸이 작아(128) 기본 위치(오른쪽 15·아래 28, 32px)로는 글자가 칸 밖으로 나간다.
+   틀 안쪽 아랫변(옆 11 · 아래 15)에 붙인 띠로 고정하고, 큰 수는 코드가 999K 처럼 줄인다 */
+.quest-row__reward .item-cell__count {
+	left: 11px;
+	right: 11px;
+	bottom: 15px;
+	height: 36px;
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+	font-size: 26px;
+	-unity-text-align: middle-center;
+	overflow: hidden;
+}
+
+/* 완료 — 보상 칸(흰 틀 포함)을 흐리게 하고 가운데 체크는 덜 흐리게. 흰 틀은 QuestCell 이 인라인으로 칠한다 */
+.quest-row--cleared .quest-row__reward .item-cell {
+	opacity: 0.45;
+}
+
 .quest-row__check {
 	position: absolute;
-	right: -8px;
-	bottom: -8px;
-	width: 52px;
-	height: 52px;
-	background-color: var(--green);
-	border-width: 4px;
-	border-color: var(--ink);
-	border-radius: 26px;
+	left: 29px;
+	top: 26px;
+	width: 70px;
+	height: 64px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Check.png");
+	-unity-background-scale-mode: scale-to-fit;
+	opacity: 0.7;
 }
 
+/* 받기 — 보상 칸 아래에 걸친 띠 */
 .quest-row__claim {
 	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: -6px;
-	padding: 2px 0 6px 0;
-	font-size: 36px;
-	color: var(--white);
-	-unity-text-align: middle-center;
-	background-image: url("../../Pixel/chip_gold.png");
-	-unity-slice-left: 3;
-	-unity-slice-right: 3;
-	-unity-slice-top: 3;
-	-unity-slice-bottom: 3;
-	-unity-slice-scale: 4px;
-	-unity-text-outline-color: var(--ink);
-}
-
-/* ── 바이올렛 테마 — 행은 회색 판, 진행 중인 행은 바이올렛 판 ── */
-.theme-violet .quest-row {
-	background-image: none;
-	background-color: #3A3C43;
+	left: -2px;
+	right: -2px;
+	bottom: -8px;
+	height: 44px;
+	margin: 0;
+	padding: 0;
 	border-width: 3px;
-	border-color: #4C4E56;
+	border-color: #0A0814;
 	border-radius: 12px;
-}
-
-.theme-violet .quest-row--current {
-	background-color: #4A3F7A;
-	border-color: #A893FF;
+	background-color: #FFBE3C;
+	font-size: 30px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 #0A0814;
 }

@@ -63,7 +63,7 @@ namespace ProjectOne.UI
 			{
 				QuestCell cell = getOrCreateCell(i);
 				cell.SetShown(true);
-				_bindTasks.Add(cell.BindAsync(data[i], ct));
+				_bindTasks.Add(cell.BindAsync(data[i], i == data.Count - 1, ct));
 			}
 
 			for (int i = data.Count; i < _cells.Count; i++)
@@ -72,6 +72,17 @@ namespace ProjectOne.UI
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
+		}
+
+		// 진행 중 줄의 진행도. 범위 밖이면 무시한다.
+		public void SetProgress(int index, string label, int current, int required)
+		{
+			if (index < 0 || index >= _cells.Count)
+			{
+				return;
+			}
+
+			_cells[index].SetProgress(label, current, required);
 		}
 
 		// 지정한 줄이 보이도록 스크롤한다. 범위 밖이면 맨 위. 배치가 끝난 다음 프레임에 옮긴다.
