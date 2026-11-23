@@ -4,6 +4,7 @@
 	<Style src="../Popups.uss" />
 	<Style src="Mail.uss" />
 
+	<!-- 우편 한 통 — 제목 · 보낸 사람·날짜 한 줄 · 본문 판(고정 높이, 넘치면 스크롤) · 첨부 보상 칸 · 받기/삭제 -->
 	<ui:VisualElement name="popup" class="popup theme-violet">
 		<ui:VisualElement name="dim" class="popup__dim" />
 		<ui:VisualElement class="px-paper popup__window">
@@ -11,11 +12,17 @@
 				<ui:Label text="우편" class="popup__name item-head__name" />
 				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
 			</ui:VisualElement>
-			<ui:Label name="head" text="" class="mail-head popup__body" />
-			<ui:VisualElement class="px-inset popup-text-box">
-				<ui:Label name="body" text="" class="popup-text" />
+			<ui:Label name="title" text="" class="mail-detail__title popup__body" />
+			<ui:Label name="meta" text="" class="mail-detail__meta popup__body" />
+			<ui:VisualElement class="px-inset mail-detail__body popup__body">
+				<ui:ScrollView name="body-scroll" class="mail-detail__scroll" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden">
+					<ui:Label name="body" text="" class="mail-detail__text" />
+				</ui:ScrollView>
 			</ui:VisualElement>
-			<ui:VisualElement name="attachments" class="mail-attachments popup__body" />
+			<ui:VisualElement name="attach-group" class="popup__body">
+				<ui:Label text="첨부 보상" class="mail-detail__caption" />
+				<ui:VisualElement name="attachments" class="mail-attachments" />
+			</ui:VisualElement>
 			<ui:VisualElement class="popup__buttons">
 				<ui:Button name="claim" text="받기" class="btn btn--green popup__button" />
 				<ui:Button name="delete" text="삭제" class="btn btn--red popup__button" />

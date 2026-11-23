@@ -1,7 +1,8 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.UIElements;
 using ProjectOne.Mail;
 
@@ -14,8 +15,11 @@ namespace ProjectOne.UI
 		public event Action<MailData> OnMailSelected;
 		public event Action OnAllClaimRequested;
 
+		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO — 줄의 첫 첨부 칸
+
 		private readonly MailBoxPopupPresenter _presenter = new MailBoxPopupPresenter();
 		private readonly List<MailCell> _cells = new List<MailCell>();
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
 
 		private ScrollView _list;
 		private Label _empty;
@@ -43,6 +47,7 @@ namespace ProjectOne.UI
 				_presenter.Dispose();
 			}
 
+			_icons.ReleaseAll();
 			base.OnDestroy();
 		}
 
@@ -65,7 +70,7 @@ namespace ProjectOne.UI
 			{
 				MailCell cell = getOrCreateCell(i);
 				cell.SetShown(true);
-				cell.Bind(mails[i], MailReadLog.IsRead(mails[i].id));
+				cell.Bind(mails[i], MailReadLog.IsRead(mails[i].id), GetDestroyToken());
 			}
 
 			for (int i = mails.Count; i < _cells.Count; i++)
@@ -97,7 +102,7 @@ namespace ProjectOne.UI
 				return _cells[index];
 			}
 
-			MailCell cell = new MailCell(_list.contentContainer);
+			MailCell cell = new MailCell(_list.contentContainer, _gradeColors, _icons);
 			cell.OnClicked += onCellClicked;
 			_cells.Add(cell);
 			return cell;

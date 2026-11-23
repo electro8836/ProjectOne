@@ -21,79 +21,282 @@
 	-unity-text-align: middle-center;
 }
 
-/* 목록 줄 */
+/* 목록 줄 — 카드: 상태 아이콘 · 제목/보낸 사람·날짜 · 첫 첨부 칸. 안 읽음 = 보라 카드 + 빨간 점, 읽음 = 회색 카드.
+   시안 Shared/Design/UI우편함_시안.png 1안 */
 .mail-row {
 	flex-direction: row;
 	align-items: center;
-	padding: 16px 20px 20px 16px;
-	margin-bottom: 10px;
-	background-image: url("../../Pixel/row.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
+	min-height: 156px;
+	padding: 20px;
+	margin-bottom: 12px;
+	border-width: 3px;
+	border-radius: 16px;
+	border-color: #A893FF;
+	background-color: #423A68;
 }
 
 .mail-row--read {
-	opacity: 0.55;
+	border-color: #3C3E46;
+	background-color: #2E3036;
 }
 
 .mail-row__state {
-	width: 112px;
-	height: 112px;
-	padding: 12px;
-	margin-right: 20px;
-	background-image: url("../../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 2px;
+	width: 116px;
+	height: 116px;
+	flex-shrink: 0;
+	align-items: center;
+	justify-content: center;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 16px;
+	background-color: #282246;
 }
 
-.mail-row__check {
+.mail-row--read .mail-row__state {
+	background-color: #2C2E34;
+}
+
+.mail-row__icon {
+	width: 72px;
+	height: 72px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.mail-row--read .mail-row__icon {
+	opacity: 0.55;
+}
+
+/* 안 읽음 — 아이콘 칸 오른쪽 위 빨간 점 */
+.mail-row__dot {
 	position: absolute;
-	right: -6px;
-	bottom: -6px;
-	width: 44px;
-	height: 44px;
-	background-color: var(--green);
-	border-width: 4px;
-	border-color: var(--ink);
-	border-radius: 22px;
+	right: -10px;
+	top: -10px;
+	width: 28px;
+	height: 28px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 14px;
+	background-color: #FF4848;
 }
 
 .mail-row__text {
 	flex-grow: 1;
 	flex-shrink: 1;
+	margin: 0 20px 0 24px;
+}
+
+.mail-row__title,
+.mail-row__meta,
+.mail-row__more {
+	margin: 0;
+	padding: 0;
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
 }
 
 .mail-row__title {
-	font-size: 48px;
+	font-size: 38px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 3px 0 #0A0814;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
-.mail-row__sender,
-.mail-row__date {
-	font-size: 36px;
-	color: var(--ink-sub);
+.mail-row--read .mail-row__title {
+	color: #A8ACBA;
 }
 
-/* 메일 한 통 */
-.mail-head {
-	font-size: 36px;
-	margin-bottom: 16px;
+/* 보낸 사람 · 날짜 — 한 줄 */
+.mail-row__meta {
+	margin-top: 10px;
+	font-size: 26px;
+	color: #D2CAF0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.mail-row--read .mail-row__meta {
+	color: #787A84;
+}
+
+/* 첫 첨부 칸 — 틀은 MailCell 이 흰색으로 칠한다 */
+.mail-row__reward {
+	width: 116px;
+	height: 116px;
+	flex-shrink: 0;
+}
+
+.mail-row__reward .item-cell {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+/* 개수 — 틀 안쪽 아랫변(옆 11 · 아래 15)에 붙인 띠. 큰 수는 코드가 999K 처럼 줄인다 */
+.mail-row__reward .item-cell__count {
+	left: 11px;
+	right: 11px;
+	bottom: 15px;
+	height: 34px;
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+	font-size: 24px;
+	-unity-text-align: middle-center;
+	overflow: hidden;
+}
+
+/* 받은 첨부 — 칸을 흐리게 하고 가운데 체크는 덜 흐리게 */
+.mail-row--claimed .mail-row__reward .item-cell {
+	opacity: 0.45;
+}
+
+.mail-row__check {
+	position: absolute;
+	left: 26px;
+	top: 23px;
+	width: 64px;
+	height: 58px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Check.png");
+	-unity-background-scale-mode: scale-to-fit;
+	opacity: 0.7;
+}
+
+/* 첨부가 더 있으면 칸 왼쪽 위에 "+N" */
+.mail-row__more {
+	position: absolute;
+	left: -12px;
+	top: -14px;
+	height: 34px;
+	padding: 0 12px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 17px;
+	background-color: #7C68E4;
+	font-size: 22px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* ── 우편 한 통 — 제목 · 보낸 사람·날짜 · 본문 판 · 첨부. 시안 Shared/Design/UI우편상세_시안.png 1안 ── */
+.mail-detail__title,
+.mail-detail__meta,
+.mail-detail__text,
+.mail-detail__caption {
+	padding: 0;
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
+}
+
+/* 제목 판 아래 여백(52px, Violet.uss)이 제목 글자 위로는 너무 넓어 28px 당긴다 — 시안의 간격(약 35px) */
+.mail-detail__title {
+	margin-top: -28px;
+	font-size: 46px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 3px 0 #0A0814;
+	white-space: normal;
+}
+
+.mail-detail__meta {
+	margin-top: 8px;
+	margin-bottom: 22px;
+	font-size: 28px;
+	color: #A8ACBA;
+}
+
+/* 본문 판 — 높이 고정, 내용이 넘치면 판 안에서 스크롤 */
+.mail-detail__body {
+	height: 300px;
+	padding: 24px 0;
+	margin-bottom: 30px;
+}
+
+.mail-detail__scroll {
+	flex-grow: 1;
+}
+
+.mail-detail__scroll .unity-scroll-view__content-container {
+	padding: 0 32px;
+}
+
+.mail-detail__text {
+	margin: 0;
+	font-size: 32px;
+	color: #E2DEEC;
+	white-space: normal;
+}
+
+.mail-detail__caption {
+	margin: 0 0 14px 0;
+	font-size: 30px;
+	color: #C8C4DC;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
 }
 
 .mail-attachments {
 	flex-direction: row;
 	flex-wrap: wrap;
 	justify-content: center;
-	margin-bottom: 20px;
+	margin-bottom: 30px;
 }
 
-.mail-attachments .item-cell {
-	width: 168px;
-	height: 168px;
-	margin: 8px;
+/* 첨부 칸 묶음 — 칸(흰 틀, MailSlotPopup 이 칠함) + 받은 뒤 체크 */
+.mail-attach {
+	width: 150px;
+	height: 150px;
+	margin: 0 10px 10px 10px;
+}
+
+.mail-attach .item-cell {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	margin: 0;
+}
+
+/* 개수 — 틀 안쪽 아랫변(옆 11 · 아래 15)에 붙인 띠. 큰 수는 코드가 999K 처럼 줄인다 */
+.mail-attach .item-cell__count {
+	left: 11px;
+	right: 11px;
+	bottom: 15px;
+	height: 40px;
+	margin: 0;
+	padding: 0;
+	border-radius: 0;
+	border-bottom-left-radius: 10px;
+	border-bottom-right-radius: 10px;
+	font-size: 30px;
+	-unity-text-align: middle-center;
+	overflow: hidden;
+}
+
+.mail-attach__check {
+	position: absolute;
+	left: 34px;
+	top: 31px;
+	width: 82px;
+	height: 76px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Check.png");
+	-unity-background-scale-mode: scale-to-fit;
+	opacity: 0.7;
+	display: none;
+}
+
+.mail-attach--claimed .item-cell {
+	opacity: 0.45;
+}
+
+.mail-attach--claimed .mail-attach__check {
+	display: flex;
 }

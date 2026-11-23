@@ -149,7 +149,7 @@ namespace ProjectOne.Editor
 			buildView(PopupDir + "UIPrefab_MenuPopup.prefab", typeof(UI.MenuPopup), PopupsDir + "Menu/MenuPopup.uxml", false, false);
 			buildView(PopupDir + "UIPrefab_RewardPopup.prefab", typeof(UI.RewardPopup), PopupsDir + "Reward/RewardPopup.uxml", true, false);
 			buildView(PopupDir + "UIPrefab_StatPopup.prefab", typeof(UI.StatPopup), PopupsDir + "Stat/StatPopup.uxml", false, false);
-			buildView(PopupDir + "UIPrefab_MailBoxPopup.prefab", typeof(UI.MailBoxPopup), PopupsDir + "Mail/MailBoxPopup.uxml", false, false);
+			buildView(PopupDir + "UIPrefab_MailBoxPopup.prefab", typeof(UI.MailBoxPopup), PopupsDir + "Mail/MailBoxPopup.uxml", true, false);
 			buildView(PopupDir + "UIPrefab_MailSlotPopup.prefab", typeof(UI.MailSlotPopup), PopupsDir + "Mail/MailSlotPopup.uxml", true, false);
 			buildView(PopupDir + "UIPrefab_AccountPopup.prefab", typeof(UI.AccountPopup), PopupsDir + "Account/AccountPopup.uxml", false, false);
 			buildView(PopupDir + "UIPrefab_NicknamePopup.prefab", typeof(UI.NicknamePopup), PopupsDir + "Account/NicknamePopup.uxml", false, false);
