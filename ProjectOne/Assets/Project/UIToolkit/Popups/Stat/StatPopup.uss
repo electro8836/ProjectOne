@@ -1,6 +1,7 @@
 /* 능력치 팝업 — 공격 · 방어 · 기타 묶음마다 틀 하나. 맨 위 묶음 색 머리띠(아이콘 + 제목), 안은 2열 칸.
-   칸은 틀 없이 아이콘 + 위 이름(작게) · 아래 값(크게), 칸 사이는 얇은 선. 0 인 능력치는 흐리게.
-   시안: Shared/Design/UI능력치팝업_확정.png */
+   칸은 틀 없이 아이콘 + 이름(작게)·값(크게) 묶음을 칸 세로 가운데에. 묶음 안은 가로선 없이 한 판 —
+   한 줄 걸러 옅은 띠, 두 열 사이 세로선 하나. 0 인 능력치는 흐리게.
+   시안: Shared/Design/UI능력치_간격_시안.png (2번) */
 
 .stat-scroll {
 	max-height: 1300px;
@@ -80,10 +81,11 @@
 
 /* ── 2열 칸 ── */
 
+/* 띠가 묶음 틀 안쪽 끝까지 닿게 좌우 여백은 칸이 가진다 */
 .stat-grid {
 	flex-direction: row;
 	flex-wrap: wrap;
-	padding: 6px 12px;
+	padding: 6px 0;
 }
 
 .stat-row {
@@ -91,20 +93,19 @@
 	height: 88px;
 	flex-direction: row;
 	align-items: center;
-	padding: 0 12px 0 10px;
-	border-bottom-width: 2px;
-	border-bottom-color: #3A3C43;
+	padding: 0 12px;
 }
 
-/* 왼쪽 칸 — 가운데 세로 선 */
+/* 한 줄 걸러 옅은 띠 — 같은 줄 두 칸이 함께 칠해져 한 줄로 이어진다 */
+.stat-row--band {
+	background-color: #2E2F36;
+}
+
+/* 왼쪽 칸 — 두 열 사이 세로선. 묶음 틀에서 떨어지게 안쪽 여백을 더 준다 */
 .stat-row--left {
+	padding-left: 22px;
 	border-right-width: 2px;
 	border-right-color: #3A3C43;
-}
-
-/* 마지막 줄 — 아래 선 없음 */
-.stat-row--last {
-	border-bottom-width: 0;
 }
 
 .stat-row__icon {
@@ -123,6 +124,8 @@
 
 /* 이름 — 한 줄 고정. 긴 이름은 StatPopup 이 --medium·--small 로 줄인다 */
 .stat-row__name {
+	margin: 0;
+	padding: 0;
 	font-size: 26px;
 	color: #C8C9CF;
 	white-space: nowrap;
@@ -137,8 +140,10 @@
 	font-size: 19px;
 }
 
+/* 이름 바로 아래 — 이름·값 글자 사이 4px(글줄 위 여백만큼 당긴다) */
 .stat-row__value {
-	margin-top: -2px;
+	margin: -4px 0 0 0;
+	padding: 0;
 	font-size: 38px;
 	color: #5CFF5C;
 	white-space: nowrap;

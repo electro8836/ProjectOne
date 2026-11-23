@@ -102,14 +102,13 @@ namespace ProjectOne.UI
 
 		private void renderGroup(List<Row> rows, VisualElement parent, IReadOnlyList<StatSlotData> data, CancellationToken ct)
 		{
-			// 2열 — 짝수 번째가 왼쪽 칸, 마지막 줄 칸은 아래 선을 뺀다
-			int lastRowStart = ((data.Count - 1) / 2) * 2;
+			// 2열 — 짝수 번째가 왼쪽 칸, 한 줄 걸러(둘째 줄부터) 옅은 띠
 			for (int i = 0; i < data.Count; i++)
 			{
 				Row row = getOrCreateRow(rows, parent, i);
 				row.root.style.display = DisplayStyle.Flex;
 				row.root.EnableInClassList("stat-row--left", i % 2 == 0);
-				row.root.EnableInClassList("stat-row--last", i >= lastRowStart);
+				row.root.EnableInClassList("stat-row--band", (i / 2) % 2 == 1);
 				row.root.EnableInClassList("stat-row--zero", data[i].isZero);
 				row.name.text = data[i].name;
 				row.value.text = data[i].value;
@@ -121,7 +120,22 @@ namespace ProjectOne.UI
 				_bindTasks.Add(_icons.SetAsync(row.icon, data[i].iconAddress, ct));
 			}
 
-			for (int i = data.Count; i < rows.Count; i++)
+			// 개수가 홀수면 마지막 줄 오른쪽에 빈 칸을 둔다 — 띠가 그 줄 끝까지 이어지게
+			int shown = data.Count;
+			if (data.Count % 2 == 1)
+			{
+				Row filler = getOrCreateRow(rows, parent, data.Count);
+				filler.root.style.display = DisplayStyle.Flex;
+				filler.root.EnableInClassList("stat-row--left", false);
+				filler.root.EnableInClassList("stat-row--band", (data.Count / 2) % 2 == 1);
+				filler.root.EnableInClassList("stat-row--zero", false);
+				filler.name.text = string.Empty;
+				filler.value.text = string.Empty;
+				filler.icon.style.backgroundImage = new StyleBackground(StyleKeyword.None);
+				shown = data.Count + 1;
+			}
+
+			for (int i = shown; i < rows.Count; i++)
 			{
 				rows[i].root.style.display = DisplayStyle.None;
 			}
