@@ -162,7 +162,6 @@ namespace ProjectOne.Editor
 			buildView(PopupDir + "UIPrefab_ConsumablePopup.prefab", typeof(UI.ConsumableInfoPopup), PopupsDir + "ItemInfo/ConsumablePopup.uxml", true, false);
 			buildView(PopupDir + "UIPrefab_DecompositionPopup.prefab", typeof(UI.DecompositionPopup), PopupsDir + "Decomposition/DecompositionPopup.uxml", true, false);
 			buildView(PopupDir + "UIPrefab_EquipmentPopup.prefab", typeof(UI.ItemInfoPopup), PopupsDir + "ItemInfo/EquipmentPopup.uxml", true, false);
-			buildView(PopupDir + "UIPrefab_PetEnhancePopup.prefab", typeof(UI.PetEnhancePopup), PopupsDir + "Pet/PetEnhancePopup.uxml", true, false);
 			buildView(PopupDir + "UIPrefab_CurrencyListPopup.prefab", typeof(UI.CurrencyListPopup), PopupsDir + "Currency/CurrencyListPopup.uxml", false, false);
 			buildView(PopupDir + "UIPrefab_ActListPopup.prefab", typeof(UI.ActListPopup), PopupsDir + "ActList/ActListPopup.uxml", false, false);
 		}

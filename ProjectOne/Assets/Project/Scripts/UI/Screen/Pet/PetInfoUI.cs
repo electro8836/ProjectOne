@@ -8,6 +8,17 @@ using ProjectOne.Resources;
 
 namespace ProjectOne.UI
 {
+	// 강화·등급업 버튼 한쪽의 비용 표시.
+	public struct PetCostData
+	{
+		public bool available;		// 버튼을 누를 수 있는가
+		public bool notEnough;		// 재화 부족 — 이때만 비용을 빨갛게
+		public bool hasCost;		// 한계 도달이면 false — 아이콘을 감추고 한계 문구를 낸다
+		public string limitText;	// "최대레벨" / "최대등급"
+		public string iconAddress;
+		public string amountText;
+	}
+
 	// 무대에 보일 고른 펫 1마리의 표시 데이터. 문구·색은 Presenter 가 끝낸다.
 	public struct PetDetailData
 	{
