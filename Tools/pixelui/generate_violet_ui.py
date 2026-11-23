@@ -764,6 +764,7 @@ def main():
 	middle('btn_active_large', 112, '#2F8A52', '#4CB474')
 	middle('btn_gold_large', 112, '#C98A1C', '#E2AE4A')
 	middle('btn_blue_large', 112, '#2E5FB8', '#4F82DC')
+	middle('btn_face_large', 112, '#392E53', '#483B65')
 	close_icon()
 	lock_icon()
 	equip_icon()

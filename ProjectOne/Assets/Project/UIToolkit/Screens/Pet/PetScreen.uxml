@@ -1,17 +1,76 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
 	<Style src="PetScreen.uss" />
 
-	<ui:VisualElement name="screen" class="screen screen--full">
-		<ui:VisualElement class="px-wood header">
-			<ui:Label name="title" text="펫" class="header__title text-pop" />
-			<ui:Button name="return-button" text="" class="btn btn--red btn--icon"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+	<ui:VisualElement name="screen" class="screen screen--full theme-violet pet">
+		<!-- 제목 판: 장비·코스튬과 같은 보라 판 + 보유 수. 네비게이션 바를 가리는 화면이라 닫기 X 를 둔다 -->
+		<ui:VisualElement class="header">
+			<ui:VisualElement class="header__frame">
+				<ui:VisualElement class="header__wash" picking-mode="Ignore" />
+				<ui:Label text="펫" class="header__title text-pop pet-title" />
+				<ui:Label name="count" text="" class="pet-count" />
+				<ui:Button name="return-button" text="" class="btn btn--icon pet-close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
 		</ui:VisualElement>
 
-		<ui:VisualElement class="px-paper sheet">
+		<!-- 고른 펫: 무대 · 정보 판 · 장착/강화/등급업(미보유면 획득처 띠) -->
+		<ui:VisualElement name="detail" class="pet-detail">
+			<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
+			<ui:VisualElement name="stage-glow" class="pet-stage__glow" picking-mode="Ignore" />
+			<ui:VisualElement class="pet-stage">
+				<ui:VisualElement name="stage-image" class="pet-stage__image" picking-mode="Ignore" />
+			</ui:VisualElement>
+
+			<ui:VisualElement class="pet-info">
+				<ui:VisualElement class="pet-info__head">
+					<ui:Label name="detail-name" text="" class="pet-info__name" />
+					<ui:Label name="detail-grade" text="" class="pet-info__grade" />
+				</ui:VisualElement>
+				<ui:Label name="detail-missing" text="미보유" class="pet-info__missing" />
+				<ui:VisualElement name="level-row" class="pet-info__level-row">
+					<ui:VisualElement class="pet-info__bar"><ui:VisualElement name="level-fill" class="pet-info__bar-fill" /></ui:VisualElement>
+					<ui:Label name="level-text" text="" class="pet-info__level" />
+				</ui:VisualElement>
+				<ui:VisualElement class="pet-info__line">
+					<ui:Label text="보유 효과" class="pet-info__caption" />
+					<ui:Label name="detail-bonus" text="" class="pet-info__bonus" />
+				</ui:VisualElement>
+				<ui:VisualElement class="pet-info__line">
+					<ui:Label text="장착 효과" class="pet-info__caption" />
+					<ui:Label name="detail-equip-text" text="" class="pet-info__equip" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<ui:VisualElement name="actions" class="pet-actions">
+				<ui:Button name="equip-button" text="장착" class="btn pet-action pet-action--equip" />
+				<ui:Button name="level-up" text="" class="btn pet-action pet-cost">
+					<ui:Label text="강화" class="pet-cost__label" picking-mode="Ignore" />
+					<ui:VisualElement class="pet-cost__row" picking-mode="Ignore">
+						<ui:VisualElement class="pet-cost__icon" picking-mode="Ignore" />
+						<ui:Label text="" class="pet-cost__amount" picking-mode="Ignore" />
+					</ui:VisualElement>
+				</ui:Button>
+				<ui:Button name="grade-up" text="" class="btn pet-action pet-cost">
+					<ui:Label text="등급업" class="pet-cost__label" picking-mode="Ignore" />
+					<ui:VisualElement class="pet-cost__row" picking-mode="Ignore">
+						<ui:VisualElement class="pet-cost__icon" picking-mode="Ignore" />
+						<ui:Label text="" class="pet-cost__amount" picking-mode="Ignore" />
+					</ui:VisualElement>
+				</ui:Button>
+			</ui:VisualElement>
+
+			<ui:VisualElement name="acquire" class="pet-acquire">
+				<ui:VisualElement class="pet-acquire__lock" picking-mode="Ignore" />
+				<ui:Label name="acquire-text" text="" class="pet-acquire__text" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<!-- 펫 목록 — 4열 칸 -->
+		<ui:VisualElement class="pet-bag">
 			<ui:VisualElement class="pet-toolbar">
-				<ui:Label text="펫 목록" class="caption" />
-				<ui:Button name="sort-button" text="" class="btn btn--gold btn--small" />
+				<ui:Label text="펫 목록" class="pet-toolbar__caption" />
+				<ui:Button name="sort-button" text="" class="btn btn--small pet-toolbar__sort" />
 			</ui:VisualElement>
 			<ui:ScrollView name="list" class="pet-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
 		</ui:VisualElement>

@@ -5,6 +5,7 @@ namespace ProjectOne.UI
 {
 	// 누른 채로 있으면 반복 호출한다 (UGUI UIBaseInteractable 의 _holdRepeat 와 같은 규칙).
 	// 첫 반복까지 0.5초, 이후 0.1초마다. 반복이 한 번이라도 나갔으면 뗄 때의 클릭은 건너뛰어야 한다 — HoldFired 로 확인한다.
+	// 반복마다 버튼음을 낸다(클릭 이벤트가 없어 UIManager 의 층 클릭음이 나지 않는다). 반복 뒤 뗄 때의 클릭음은 막는다.
 	public sealed class HoldRepeatManipulator : Manipulator
 	{
 		private const long HoldDelayMs = 500;
@@ -32,6 +33,7 @@ namespace ProjectOne.UI
 			target.RegisterCallback<PointerUpEvent>(onPointerUp, TrickleDown.TrickleDown);
 			target.RegisterCallback<PointerCancelEvent>(onPointerCancel);
 			target.RegisterCallback<PointerCaptureOutEvent>(onCaptureOut);
+			target.RegisterCallback<ClickEvent>(onClicked);
 		}
 
 		protected override void UnregisterCallbacksFromTarget()
@@ -40,6 +42,7 @@ namespace ProjectOne.UI
 			target.UnregisterCallback<PointerUpEvent>(onPointerUp, TrickleDown.TrickleDown);
 			target.UnregisterCallback<PointerCancelEvent>(onPointerCancel);
 			target.UnregisterCallback<PointerCaptureOutEvent>(onCaptureOut);
+			target.UnregisterCallback<ClickEvent>(onClicked);
 			stop();
 		}
 
@@ -71,6 +74,15 @@ namespace ProjectOne.UI
 			stop();
 		}
 
+		// 반복이 나간 누름을 뗄 때의 클릭은 층 루트(UIManager 클릭음)까지 올리지 않는다 — 소리는 반복마다 이미 났다
+		private void onClicked(ClickEvent evt)
+		{
+			if (_holdFired == true)
+			{
+				evt.StopPropagation();
+			}
+		}
+
 		private void fire()
 		{
 			// 반복 중 버튼이 잠기면(재화 부족 등) 멈춘다.
@@ -81,6 +93,11 @@ namespace ProjectOne.UI
 			}
 
 			_holdFired = true;
+			if (UIManager.HasInstance == true)
+			{
+				UIManager.Instance.PlayClickSfx();
+			}
+
 			if (_onHold != null)
 			{
 				_onHold.Invoke();

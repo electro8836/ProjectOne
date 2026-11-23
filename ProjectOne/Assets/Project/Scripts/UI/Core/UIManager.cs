@@ -256,6 +256,12 @@ namespace ProjectOne.UI
 			}
 		}
 
+		// 클릭 이벤트 없이 버튼음을 낸다 — 누른 채 반복(HoldRepeatManipulator)이 반복마다 부른다.
+		public void PlayClickSfx()
+		{
+			playClickSfx(_clickSfx);
+		}
+
 		private static void playClickSfx(string sfxName)
 		{
 			if (string.IsNullOrEmpty(sfxName) == false && AudioManager.HasInstance == true)

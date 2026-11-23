@@ -6,8 +6,14 @@
 }
 
 /* 아이템 칸 격자 (보상 목록 등) */
+/* 본문 최소 높이 — 공용 확인 팝업 본문(360)과 같게. 칸이 적어도 팝업이 납작해지지 않고, 칸 줄은 세로 가운데에 모은다 */
 .popup-grid {
+	min-height: 360px;
 	max-height: 900px;
+}
+
+.popup-grid .unity-scroll-view__content-viewport {
+	justify-content: center;
 }
 
 .popup-grid .unity-scroll-view__content-container {

@@ -1,109 +1,461 @@
-/* 펫 화면 — 정렬 버튼 + 3열 펫 칸. 부품·색·글자는 Theme.uss 를 따른다. */
+/* 펫 화면 — 바이올렛 (기준 해상도 1080 x 1920, 세로). 제목 판·버튼은 Violet.uss 를 따른다.
+   위: 고른 펫 무대 + 정보 판 + 장착/강화/등급업(미보유면 획득처 띠). 아래: 펫 목록 4열 칸.
+   보유/미보유는 루트의 pet--locked 가 가른다(PetInfoUI.SetDetail). */
+
+.pet {
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.pet .header,
+.pet-detail,
+.pet-toolbar {
+	flex-shrink: 0;
+}
+
+/* 제목 옆 보유 수 — 흐린 글자 */
+.pet .pet-title {
+	flex-grow: 0;
+}
+
+.pet-count {
+	flex-grow: 1;
+	margin: 6px 0 0 20px;
+	font-size: 40px;
+	color: #A8A2CC;
+}
+
+/* 닫기 X — 프레임 없이 X 만 */
+.pet .pet-close {
+	background-image: none;
+}
+
+/* ── 고른 펫 ─────────────────────────────────────── */
+
+.pet-detail {
+	margin: 0 -6px;
+	padding: 0 32px 34px 32px;
+	background-color: #252A40;
+}
+
+/* 무대 뒤 빛 — 흰 빛을 등급 테두리색으로 틴트(미보유는 USS 의 흐린 색) */
+.pet-stage__glow {
+	position: absolute;
+	left: 220px;
+	right: 220px;
+	top: 20px;
+	height: 460px;
+	background-image: url("../../Violet/glow_white.png");
+	-unity-background-scale-mode: stretch-to-fill;
+	opacity: 0.6;
+}
+
+.pet--locked .pet-stage__glow {
+	-unity-background-image-tint-color: #5A5A78;
+	opacity: 0.4;
+}
+
+.pet-stage {
+	height: 420px;
+	align-items: center;
+}
+
+/* 펫 그림 — 뒤 빛(위 20 · 높이 460, 가운데 250)의 한가운데: 높이 300 이면 위 100 */
+.pet-stage__image {
+	position: absolute;
+	top: 100px;
+	width: 320px;
+	height: 300px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.pet--locked .pet-stage__image {
+	-unity-background-image-tint-color: #1A1A1A;
+}
+
+/* 정보 판 — 어두운 판 + 보라 테두리. 미보유(레벨 줄 없음)도 보유와 같은 높이로 — 고를 때 아래 목록이 튀지 않게 */
+.pet-info {
+	min-height: 313px;
+	padding: 26px 38px 28px 38px;
+	border-width: 3px;
+	border-color: #6E60BE;
+	border-radius: 28px;
+	background-color: #121420;
+}
+
+.pet-info__head {
+	flex-direction: row;
+	align-items: flex-end;
+}
+
+.pet-info__name {
+	font-size: 46px;
+	color: #FFFFFF;
+}
+
+.pet--locked .pet-info__name {
+	color: #A8A2CC;
+}
+
+.pet-info__grade {
+	margin: 0 0 6px 16px;
+	font-size: 30px;
+}
+
+.pet-info__missing {
+	display: none;
+	margin-top: 10px;
+	font-size: 30px;
+	color: #FF7878;
+}
+
+.pet--locked .pet-info__missing {
+	display: flex;
+}
+
+.pet-info__level-row {
+	flex-direction: row;
+	align-items: center;
+	margin-top: 16px;
+}
+
+.pet--locked .pet-info__level-row {
+	display: none;
+}
+
+.pet-info__bar {
+	flex-grow: 1;
+	height: 26px;
+	border-radius: 13px;
+	background-color: #1C1F32;
+	overflow: hidden;
+}
+
+.pet-info__bar-fill {
+	height: 100%;
+	width: 0;
+	border-radius: 13px;
+	background-color: #5CC85A;
+}
+
+.pet-info__level {
+	min-width: 170px;
+	margin-left: 18px;
+	font-size: 28px;
+	color: #FFFFFF;
+	-unity-text-align: middle-right;
+}
+
+.pet-info__line {
+	flex-direction: row;
+	align-items: center;
+	margin-top: 12px;
+}
+
+.pet-info__caption {
+	width: 130px;
+	font-size: 26px;
+	color: #A8A2CC;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+.pet-info__bonus,
+.pet-info__equip {
+	flex-shrink: 1;
+	font-size: 28px;
+	white-space: normal;
+}
+
+.pet-info__bonus {
+	color: #96F596;
+}
+
+.pet-info__equip {
+	color: #FFD666;
+}
+
+.pet--locked .pet-info__bonus,
+.pet--locked .pet-info__equip {
+	color: #A8A2CC;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+/* 버튼 줄 — 장착(해제) · 강화 · 등급업. 구운 버튼 높이 112px 그대로 */
+.pet-actions {
+	flex-direction: row;
+	margin-top: 26px;
+}
+
+.pet--locked .pet-actions {
+	display: none;
+}
+
+.pet .pet-action {
+	flex-grow: 1;
+	flex-basis: 0;
+	height: 112px;
+	margin: 0 8px;
+	background-image: url("../../Violet/btn_face_large.png");
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+	-unity-font-style: bold;
+}
+
+.pet .pet-action--equip {
+	font-size: 46px;
+	background-image: url("../../Violet/btn_active_large.png");
+}
+
+.pet .pet-action--equip.pet-action--unequip {
+	background-image: url("../../Violet/btn_danger_large.png");
+}
+
+/* 비용 버튼 — 위 이름, 아래 아이콘 x 금액(같은 크기 38). 구운 버튼은 위아래 테가 같은 두께(9px)라
+   (이름 + 금액 줄) 묶음을 버튼 정중앙에 그대로 둔다 */
+.pet .pet-cost {
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 0 36px;	/* 좌우는 기본 버튼과 같게 — 줄의 세 버튼 폭이 같아진다 */
+}
+
+.pet-cost__label {
+	margin: 0;
+	padding: 0;
+	font-size: 38px;
+	color: #FFFFFF;
+}
+
+.pet-cost__row {
+	flex-direction: row;
+	align-items: center;
+	margin-top: 2px;
+}
+
+.pet-cost__icon {
+	width: 42px;
+	height: 42px;
+	margin-right: 8px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.pet-cost__amount {
+	margin: 0;
+	padding: 0;
+	font-size: 38px;
+	color: #FFFFFF;
+}
+
+/* 획득처 띠 — 미보유일 때 버튼 줄 자리 */
+.pet-acquire {
+	display: none;
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	height: 100px;
+	margin: 38px 8px 0 8px;	/* 버튼 줄(위 26 + 112)과 같은 높이 */
+	border-width: 3px;
+	border-color: #2E3450;
+	border-radius: 50px;
+	background-color: #121420;
+}
+
+.pet--locked .pet-acquire {
+	display: flex;
+}
+
+.pet-acquire__lock {
+	width: 52px;
+	height: 52px;
+	margin-right: 16px;
+	background-image: url("../../Violet/icon_lock.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.pet-acquire__text {
+	font-size: 34px;
+	color: #A8A2CC;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+/* ── 펫 목록 — 보라 가방 면 + 4열 칸 ─────────────────── */
+
+.pet-bag {
+	flex-grow: 1;
+	flex-shrink: 1;
+	margin: 0 -6px -6px -6px;
+	padding: 0 24px;
+	border-top-width: 3px;
+	border-color: #6E5ACD;
+	background-color: #3A3060;
+}
 
 .pet-toolbar {
 	flex-direction: row;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 10px;
-	flex-shrink: 0;
+	margin: 24px 0 20px 0;
+}
+
+.pet-toolbar__caption {
+	margin-left: 12px;
+	font-size: 40px;
+	color: #FFFFFF;
+}
+
+.pet .pet-toolbar__sort {
+	min-width: 200px;
+	font-size: 32px;
+	color: #FFFFFF;
 }
 
 .pet-list {
 	flex-grow: 1;
+	flex-shrink: 1;
 }
 
+/* 4열 칸 — 칸 249 x 4 + 사이 12 x 3 = 1032(가방 안쪽 폭). 칸마다 오른쪽 12px 를 두고 줄 끝 여분은 음수 여백으로 상쇄한다 */
 .pet-list .unity-scroll-view__content-container {
 	flex-direction: row;
 	flex-wrap: wrap;
+	margin-right: -12px;
 }
 
-/* 펫 칸 — 바탕은 등급 bg, 틀은 등급 border 로 View 가 칠한다 */
-.pet-card {
-	width: 31.5%;
-	margin: 0 1.5% 14px 0;
-	padding: 16px 12px 20px 12px;
-	align-items: center;
-	background-image: url("../../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
-	transition-property: scale;
-	transition-duration: 0.06s;
+/* 칸 하나 — 아이템 칸과 같은 둥근 틀(등급 테두리색) + 등급 바탕 판. 레벨은 왼쪽 위, 이름은 칸 안 아래 띠 */
+.pet-cell {
+	width: 249px;
+	height: 249px;
+	margin: 0 12px 12px 0;
 }
 
-.pet-card:active {
-	scale: 0.95 0.95;
+.pet-cell__frame {
+	width: 100%;
+	height: 100%;
+	background-image: url("../../Violet/slot_round.png");
+	-unity-slice-left: 32;
+	-unity-slice-right: 32;
+	-unity-slice-top: 32;
+	-unity-slice-bottom: 32;
+	-unity-slice-scale: 1px;
 }
 
-.pet-card:disabled {
-	opacity: 1;
+/* 틀(slot_round)은 9-slice 배율 1px 라 칸이 커져도 두께가 위 10 · 옆 11 · 아래 15 그대로다 */
+.pet-cell__bg {
+	position: absolute;
+	left: 11px;
+	right: 11px;
+	top: 10px;
+	bottom: 15px;
+	border-radius: 12px;
+	background-image: url("../../Violet/cell_glow.png");
+	-unity-background-scale-mode: stretch-to-fill;
 }
 
-.pet-card--equipped {
-	background-image: url("../../Pixel/slot_gold.png");
-}
-
-.pet-card__image {
-	width: 200px;
-	height: 200px;
+/* 그림 — 위 레벨·표시와 아래 이름 띠를 피해 가운데 */
+.pet-cell__image {
+	position: absolute;
+	left: 36px;
+	right: 36px;
+	top: 26px;
+	bottom: 76px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
-.pet-card--locked .pet-card__image {
-	-unity-background-image-tint-color: rgb(40, 34, 60);
-}
-
-.pet-card__level {
+.pet-cell__level {
 	position: absolute;
-	left: 18px;
-	top: 14px;
-	font-size: 36px;
-	color: var(--white);
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 3px 0 var(--ink);
-}
-
-.pet-card__lock {
-	position: absolute;
-	right: 18px;
+	left: 24px;
 	top: 16px;
-	width: 36px;
-	height: 44px;
-	background-image: url("../../Pixel/icon_lock.png");
+	font-size: 36px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
+	-unity-font-style: bold;
 }
 
-.pet-card__equip {
+.pet-cell__equip {
+	display: none;
 	position: absolute;
-	right: 10px;
+	right: 20px;
+	top: 18px;
+	width: 56px;
+	height: 56px;
+	background-image: url("../../Violet/icon_equip.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.pet-cell--equipped .pet-cell__equip {
+	display: flex;
+}
+
+.pet-cell__lock {
+	display: none;
+	position: absolute;
+	right: 20px;
+	top: 18px;
+	width: 52px;
+	height: 52px;
+	background-image: url("../../Violet/icon_lock.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* 이름 띠 — 틀 안쪽 아래, 반투명 어두운 판 위 가운데 */
+.pet-cell__name {
+	position: absolute;
+	left: 11px;
+	right: 11px;
+	bottom: 15px;
+	height: 58px;
+	border-bottom-left-radius: 12px;
+	border-bottom-right-radius: 12px;
+	background-color: rgba(10, 8, 20, 0.6);
+	font-size: 34px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 2px;
+	-unity-text-outline-color: #0A0814;
+	-unity-font-style: bold;
+}
+
+/* 고른 칸 — 등급색 틀은 그대로 두고 틀 바로 안쪽에 흰 선(위 무대에 보이는 펫) */
+.pet-cell__select {
+	display: none;
+	position: absolute;
+	left: 11px;
+	right: 11px;
 	top: 10px;
-	padding: 2px 10px 6px 10px;
-	font-size: 36px;
-	color: var(--white);
-	background-image: url("../../Pixel/chip_green.png");
-	-unity-slice-left: 3;
-	-unity-slice-right: 3;
-	-unity-slice-top: 3;
-	-unity-slice-bottom: 3;
-	-unity-slice-scale: 4px;
-	-unity-text-outline-color: var(--ink);
+	bottom: 15px;
+	border-width: 5px;
+	border-color: #FFFFFF;
+	border-radius: 13px;
 }
 
-.pet-card__name {
-	font-size: 36px;
-	margin-top: 6px;
-	-unity-text-align: middle-center;
+.pet-cell--selected .pet-cell__select {
+	display: flex;
 }
 
-.pet-card__bonus-title {
-	font-size: 36px;
-	opacity: 0.7;
-	margin-top: 4px;
+/* 미보유 칸 — 어두운 칸에 실루엣 + 자물쇠 */
+.pet-cell--locked .pet-cell__frame {
+	-unity-background-image-tint-color: #4A466E;
+	border-radius: 24px;
+	background-color: #191C2C;
 }
 
-.pet-card__bonus {
-	font-size: 36px;
-	white-space: normal;
-	-unity-text-align: middle-center;
+.pet-cell--locked .pet-cell__bg {
+	display: none;
+}
+
+.pet-cell--locked .pet-cell__image {
+	-unity-background-image-tint-color: #1E1E1E;
+}
+
+.pet-cell--locked .pet-cell__lock {
+	display: flex;
+}
+
+.pet-cell--locked .pet-cell__name {
+	color: #A8A2CC;
+	-unity-text-outline-width: 0;
+	-unity-font-style: normal;
 }
