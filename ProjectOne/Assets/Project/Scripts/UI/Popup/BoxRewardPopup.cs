@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
@@ -11,12 +10,10 @@ using ProjectOne.Reward;
 namespace ProjectOne.UI
 {
 	// 상자 확률표 팝업(UIPrefab_BoxRewardPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/BoxReward/BoxRewardPopup.uxml.
-	// 등급별 탭으로 나눠, 나올 수 있는 아이템 칸 아래에 확률을 적는다.
+	// 탭 없이 한 스크롤 — 등급마다 머리띠(등급색 띠 · 이름 · 종 수 · 합계) 아래에 나올 수 있는 아이템 칸을 깔고, 칸 아래띠에 확률을 적는다.
 	public class BoxRewardPopup : ToolkitScreen, IView
 	{
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
-
-		public event Action<int> OnTabSelected;	// 탭 인덱스
 
 		// 아이템 칸 + 확률 1칸.
 		private sealed class PoolCell
@@ -26,19 +23,28 @@ namespace ProjectOne.UI
 			public Label chance;
 		}
 
+		// 등급 구역 1개 — 머리띠 + 칸 격자.
+		private sealed class Group
+		{
+			public VisualElement root;
+			public VisualElement bar;
+			public Label name;
+			public Label count;
+			public Label total;
+			public VisualElement grid;
+			public readonly List<PoolCell> cells = new List<PoolCell>();
+		}
+
 		private readonly BoxRewardPresenter _presenter = new BoxRewardPresenter();
 		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
-		private readonly List<PoolCell> _cells = new List<PoolCell>();
-		private readonly List<Button> _tabs = new List<Button>();
+		private readonly List<Group> _groups = new List<Group>();
 		private readonly List<UniTask> _bindTasks = new List<UniTask>();
 
-		private VisualElement _tabBar;
 		private ScrollView _grid;
 		private UniTaskCompletionSource _tcs;
 
 		protected override void OnBind(VisualElement root)
 		{
-			_tabBar = root.Q("tabs");
 			_grid = root.Q<ScrollView>("grid");
 			_grid.AddManipulator(new ScrollDragManipulator(_grid));
 
@@ -59,11 +65,6 @@ namespace ProjectOne.UI
 			base.OnDestroy();
 		}
 
-		public CancellationToken GetDestroyToken()
-		{
-			return this.GetCancellationTokenOnDestroy();
-		}
-
 		public async UniTask ShowAsync(int rewardGroupId, CancellationToken ct)
 		{
 			await _presenter.ShowAsync(rewardGroupId, ct);
@@ -72,45 +73,44 @@ namespace ProjectOne.UI
 			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
 		}
 
-		// 등급 수만큼 탭을 만들고 등급 이름을 단다.
-		public void SetGrades(IReadOnlyList<ItemGradeType> grades)
-		{
-			for (int i = 0; i < grades.Count; i++)
-			{
-				Button tab = getTab(i);
-				tab.text = ItemGradeNames.Get(grades[i]);
-				tab.style.display = DisplayStyle.Flex;
-			}
-
-			for (int i = grades.Count; i < _tabs.Count; i++)
-			{
-				_tabs[i].style.display = DisplayStyle.None;
-			}
-		}
-
-		// 탭만 선택(OnTabSelected 를 발행하지 않음).
-		public void SelectTab(int index)
-		{
-			for (int i = 0; i < _tabs.Count; i++)
-			{
-				_tabs[i].EnableInClassList("tab--selected", i == index);
-			}
-		}
-
-		public async UniTask RenderAsync(IReadOnlyList<RewardChance> chances, CancellationToken ct)
+		// 등급마다 구역을 그린다. 확률은 전체 기준 절대값이라 구역 합계를 모두 더하면 100% 다.
+		public async UniTask RenderAsync(IReadOnlyList<ItemGradeType> grades, IReadOnlyList<RewardChance> chances, CancellationToken ct)
 		{
 			_bindTasks.Clear();
-			for (int i = 0; i < chances.Count; i++)
+			for (int g = 0; g < grades.Count; g++)
 			{
-				PoolCell pool = getOrCreateCell(i);
-				pool.root.style.display = DisplayStyle.Flex;
-				pool.chance.text = (chances[i].chance * 100f).ToString("0.##", CultureInfo.InvariantCulture) + "%";
-				_bindTasks.Add(bindCell(pool.cell, chances[i], ct));
+				ItemGradeType grade = grades[g];
+				Group group = getOrCreateGroup(g);
+				group.root.style.display = DisplayStyle.Flex;
+
+				int count = 0;
+				float total = 0f;
+				for (int i = 0; i < chances.Count; i++)
+				{
+					if (chances[i].grade != grade)
+					{
+						continue;
+					}
+
+					PoolCell pool = getOrCreateCell(group, count);
+					pool.root.style.display = DisplayStyle.Flex;
+					pool.chance.text = toPercent(chances[i].chance);
+					_bindTasks.Add(bindCell(pool.cell, chances[i], ct));
+					total += chances[i].chance;
+					count++;
+				}
+
+				for (int i = count; i < group.cells.Count; i++)
+				{
+					group.cells[i].root.style.display = DisplayStyle.None;
+				}
+
+				applyHead(group, grade, count, total);
 			}
 
-			for (int i = chances.Count; i < _cells.Count; i++)
+			for (int g = grades.Count; g < _groups.Count; g++)
 			{
-				_cells[i].root.style.display = DisplayStyle.None;
+				_groups[g].root.style.display = DisplayStyle.None;
 			}
 
 			await UniTask.WhenAll(_bindTasks).SuppressCancellationThrow();
@@ -130,14 +130,25 @@ namespace ProjectOne.UI
 			}
 		}
 
+		private void applyHead(Group group, ItemGradeType grade, int count, float total)
+		{
+			ItemGradeColorTable.GradeColor colors = _gradeColors.Get(grade);
+			group.bar.style.backgroundColor = colors.border;
+			group.name.text = ItemGradeNames.Get(grade);
+			group.name.style.color = colors.text;
+			group.count.text = count + "종";
+			group.total.text = "합계 " + toPercent(total);
+		}
+
+		private static string toPercent(float chance)
+		{
+			return (chance * 100f).ToString("0.##", CultureInfo.InvariantCulture) + "%";
+		}
+
+		// 칸은 장비든 아니든 아이템으로 그린다 — 확률표는 레벨·품질이 의미가 없다. 틀 색은 테이블 등급이 아니라 나오는 등급이다.
 		private static UniTask bindCell(ItemCellView cell, RewardChance chance, CancellationToken ct)
 		{
-			if (chance.equipment != null)
-			{
-				return cell.BindEquipmentAsync(chance.equipment, false, ct);
-			}
-
-			Table_Item.Row row = Table_Item.Get(chance.itemId);
+			Table_Item.Row row = (chance.equipment != null) ? chance.equipment.Item : Table_Item.Get(chance.itemId);
 			if (row == null)
 			{
 				cell.SetShown(false);
@@ -145,54 +156,64 @@ namespace ProjectOne.UI
 			}
 
 			cell.SetShown(true);
-			return cell.BindItemAsync(row, 0, ct);
+			UniTask task = cell.BindItemAsync(row, 0, ct);
+			cell.SetGrade(chance.grade);
+			return task;
 		}
 
-		private Button getTab(int index)
+		private Group getOrCreateGroup(int index)
 		{
-			if (index < _tabs.Count)
+			if (index < _groups.Count)
 			{
-				return _tabs[index];
+				return _groups[index];
 			}
 
-			Button tab = new Button();
-			tab.AddToClassList("tab");
-			tab.userData = index;
-			tab.RegisterCallback<ClickEvent>(onTabClicked);
-			_tabBar.Add(tab);
-			_tabs.Add(tab);
-			return tab;
+			Group group = new Group();
+			group.root = addElement(_grid.contentContainer, "box-group");
+
+			VisualElement head = addElement(group.root, "box-group__head");
+			group.bar = addElement(head, "box-group__bar");
+			group.name = addLabel(head, "box-group__name");
+			group.count = addLabel(head, "box-group__count");
+			group.total = addLabel(head, "box-group__total");
+
+			group.grid = addElement(group.root, "box-group__grid");
+
+			_groups.Add(group);
+			return group;
 		}
 
-		private PoolCell getOrCreateCell(int index)
+		private PoolCell getOrCreateCell(Group group, int index)
 		{
-			if (index < _cells.Count)
+			if (index < group.cells.Count)
 			{
-				return _cells[index];
+				return group.cells[index];
 			}
 
 			PoolCell pool = new PoolCell();
-			pool.root = new VisualElement();
-			pool.root.AddToClassList("pool-cell");
+			pool.root = addElement(group.grid, "pool-cell");
 			pool.cell = new ItemCellView(pool.root, _gradeColors, _icons);
-			pool.chance = new Label();
-			pool.chance.AddToClassList("pool-cell__chance");
-			pool.root.Add(pool.chance);
-			_grid.contentContainer.Add(pool.root);
+			pool.chance = addLabel(pool.root, "pool-cell__chance");
 
-			_cells.Add(pool);
+			group.cells.Add(pool);
 			return pool;
 		}
 
-		private void onTabClicked(ClickEvent evt)
+		private static VisualElement addElement(VisualElement parent, string className)
 		{
-			int index = (int)((VisualElement)evt.currentTarget).userData;
-			SelectTab(index);
+			VisualElement element = new VisualElement();
+			element.AddToClassList(className);
+			parent.Add(element);
+			return element;
+		}
 
-			if (OnTabSelected != null)
-			{
-				OnTabSelected.Invoke(index);
-			}
+		private static Label addLabel(VisualElement parent, string className)
+		{
+			Label label = new Label();
+			label.AddToClassList(className);
+			label.pickingMode = PickingMode.Ignore;
+			parent.Add(label);
+			return label;
 		}
 
 		private void onDimClicked(ClickEvent evt)

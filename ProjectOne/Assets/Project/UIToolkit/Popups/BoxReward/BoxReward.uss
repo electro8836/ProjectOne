@@ -1,38 +1,104 @@
-/* 상자 확률표 팝업 */
-
-.box-tabs .tab {
-	font-size: 36px;
-	height: 92px;
-}
+/* 상자 확률표 팝업 — 등급 구역(머리띠 + 5열 칸)을 한 스크롤로. 시안 Shared/Design/UI상자확률_시안.png 4안 */
 
 .box-grid-box {
-	height: 1000px;
+	height: 1130px;
+	margin-top: 26px;
 	margin-bottom: 30px;
 	padding: 12px;
+	border-radius: 18px;
+	background-image: none;
+	background-color: #26272C;
 }
 
 .box-grid {
 	flex-grow: 1;
 }
 
-.box-grid .unity-scroll-view__content-container {
-	flex-direction: row;
-	flex-wrap: wrap;
-}
-
-.pool-cell {
-	width: 25%;
-	align-items: center;
+/* ── 등급 구역 ── */
+.box-group {
 	margin-bottom: 12px;
 }
 
-.pool-cell .item-cell {
-	width: 168px;
-	height: 168px;
+.box-group__head {
+	flex-direction: row;
+	align-items: center;
+	height: 64px;
+	margin-bottom: 12px;
+	padding-right: 20px;
+	border-radius: 14px;
+	background-color: #2E2F36;
+	overflow: hidden;
 }
 
+/* 왼쪽 등급색 띠 — 색은 BoxRewardPopup 이 칠한다 */
+.box-group__bar {
+	width: 14px;
+	height: 100%;
+	margin-right: 20px;
+}
+
+.box-group__name,
+.box-group__count,
+.box-group__total {
+	margin: 0;
+	padding: 0;
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
+}
+
+.box-group__name {
+	font-size: 34px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.box-group__count {
+	flex-grow: 1;
+	margin-left: 14px;
+	font-size: 26px;
+	color: #A8ACBA;
+}
+
+.box-group__total {
+	font-size: 32px;
+	color: #FFD447;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* 5열 — 칸 160 + 좌우 6 여백(가장자리 여백은 음수 여백으로 상쇄) */
+.box-group__grid {
+	flex-direction: row;
+	flex-wrap: wrap;
+	margin: 0 -6px;
+}
+
+.pool-cell {
+	width: 160px;
+	height: 160px;
+	margin: 0 6px 12px 6px;
+}
+
+.pool-cell .item-cell {
+	width: 160px;
+	height: 160px;
+}
+
+/* 확률 — 칸 바탕(틀 안쪽 11/10/15px) 아래쪽에 어두운 띠 */
 .pool-cell__chance {
-	font-size: 36px;
-	color: var(--gold);
-	margin-top: 4px;
+	position: absolute;
+	left: 11px;
+	right: 11px;
+	bottom: 15px;
+	height: 42px;
+	margin: 0;
+	padding: 0;
+	border-bottom-left-radius: 12px;
+	border-bottom-right-radius: 12px;
+	background-color: rgba(10, 8, 20, 0.75);
+	-unity-text-align: middle-center;
+	font-size: 30px;
+	color: #FFD447;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 #0A0814;
 }

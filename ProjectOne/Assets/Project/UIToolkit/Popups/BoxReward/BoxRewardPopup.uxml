@@ -4,6 +4,8 @@
 	<Style src="../Popups.uss" />
 	<Style src="BoxReward.uss" />
 
+	<!-- 상자 확률표 — 탭 없이 한 스크롤. 등급마다 머리띠(등급색 띠 · 이름 · 종 수 · 합계) + 5열 칸(칸 아래띠에 확률).
+	     시안 Shared/Design/UI상자확률_시안.png 4안 -->
 	<ui:VisualElement name="popup" class="popup theme-violet">
 		<ui:VisualElement name="dim" class="popup__dim" />
 		<ui:VisualElement class="px-paper popup__window">
@@ -11,9 +13,8 @@
 				<ui:Label text="획득 확률" class="popup__name item-head__name" />
 				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
 			</ui:VisualElement>
-			<!-- 등급 탭은 코드가 만든다 -->
-			<ui:VisualElement name="tabs" class="tabs box-tabs popup__body" />
 			<ui:VisualElement class="px-inset box-grid-box popup__body">
+				<!-- 등급 구역은 BoxRewardPopup 이 만든다 -->
 				<ui:ScrollView name="grid" class="box-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
 			</ui:VisualElement>
 		</ui:VisualElement>
