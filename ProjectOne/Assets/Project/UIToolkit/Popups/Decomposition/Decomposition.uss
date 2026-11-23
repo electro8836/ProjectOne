@@ -1,19 +1,207 @@
-/* 일괄 분해 팝업 */
+/* 일괄 분해 팝업 — 등급 칩 · 품질 판 · 자동 분해 판. 시안 Shared/Design/UI분해_시안.png 1안 */
 
+.decompose {
+	margin-bottom: 30px;
+}
+
+.decompose .section-title {
+	margin: 0 0 14px 0;
+	color: #F2F2F5;
+}
+
+.decompose .check__label,
+.decompose-chip__label,
+.decompose-auto__name,
+.decompose-auto__hint {
+	margin: 0;
+	padding: 0;
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
+}
+
+/* ── 등급 칩 — 3개씩 2줄. 켜면 등급색 면·테두리 + 체크(색은 DecompositionPopup 이 칠한다), 끄면 어두운 칩에 등급색 글자 ── */
 .decompose-grades {
 	flex-direction: row;
 	flex-wrap: wrap;
-	padding: 18px 20px;
+	justify-content: space-between;
+	margin-bottom: 14px;
+}
+
+.decompose-chip {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	width: 278px;
+	height: 84px;
+	margin: 0 0 16px 0;
+	padding: 0;
+	border-width: 4px;
+	border-radius: 42px;
+	border-color: #0A0814;
+	background-image: none;
+	background-color: #2E2F36;
+}
+
+.decompose-chip:hover:enabled {
+	border-color: #0A0814;
+	background-color: #2E2F36;
+}
+
+.decompose-chip:active {
+	translate: 0 4px;
+}
+
+.decompose-chip__mark {
+	width: 40px;
+	height: 37px;
+	margin-right: 12px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Check.png");
+	-unity-background-scale-mode: scale-to-fit;
+	display: none;
+}
+
+.decompose-chip--on .decompose-chip__mark {
+	display: flex;
+}
+
+.decompose-chip__label {
+	font-size: 36px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* ── 판 — 설명 판과 같은 어두운 판 ── */
+.decompose-panel {
+	padding: 22px 24px;
 	margin-bottom: 18px;
+	border-radius: 18px;
+	background-color: #26272C;
 }
 
-.decompose-grades .check {
-	width: 33%;
-	margin-bottom: 10px;
+/* 품질 체크 — 보라 상자 + 체크 */
+.decompose-check .check__box {
+	width: 48px;
+	height: 48px;
+	margin-right: 16px;
+	align-items: center;
+	justify-content: center;
+	background-image: none;
+	background-color: #2E2F36;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 10px;
 }
 
-.decompose-quality,
+.decompose-check.check--on .check__box {
+	background-image: none;
+	background-color: #7C68E4;
+}
+
+.decompose-check__mark {
+	width: 36px;
+	height: 33px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Check.png");
+	-unity-background-scale-mode: scale-to-fit;
+	display: none;
+}
+
+.decompose-check.check--on .decompose-check__mark {
+	display: flex;
+}
+
+.decompose .check__label {
+	font-size: 32px;
+	color: #F2F2F5;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* 품질 막대 — 어두운 홈 + 보라 채움 + 흰 원 손잡이 */
+.decompose-slider {
+	margin: 26px 0 4px 0;
+}
+
+.decompose-slider .unity-base-slider__tracker {
+	height: 24px;
+	margin-top: -12px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 12px;
+	background-color: #2E2F36;
+}
+
+.decompose-slider .unity-base-slider__fill {
+	border-radius: 9px;
+	background-color: #7C68E4;
+}
+
+.decompose-slider .unity-base-slider__dragger {
+	width: 56px;
+	height: 56px;
+	margin-top: -28px;
+	border-width: 4px;
+	border-color: #0A0814;
+	border-radius: 28px;
+	background-image: none;
+	background-color: #FFFFFF;
+}
+
+/* ── 자동 분해 — 이름 · 설명 · 오른쪽 스위치 ── */
 .decompose-auto {
-	padding: 20px 24px;
-	margin-bottom: 18px;
+	flex-direction: row;
+	align-items: center;
+	padding: 18px 24px 18px 32px;
+	margin-bottom: 0;
+}
+
+.decompose-auto__name {
+	font-size: 34px;
+	color: #F2F2F5;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.decompose-auto__hint {
+	flex-grow: 1;
+	margin-left: 20px;
+	font-size: 26px;
+	color: #A8ACBA;
+}
+
+/* 스위치 — 켜짐(check--on)은 초록, 손잡이가 오른쪽으로 */
+.decompose-switch {
+	width: 104px;
+	height: 56px;
+	margin: 0;
+	padding: 0;
+	border-width: 3px;
+	border-radius: 28px;
+	border-color: #0A0814;
+	background-image: none;
+	background-color: #464852;
+}
+
+.decompose-switch:hover:enabled {
+	border-color: #0A0814;
+	background-color: #464852;
+}
+
+.decompose-switch.check--on,
+.decompose-switch.check--on:hover:enabled {
+	background-color: #38AA64;
+}
+
+.decompose-switch__knob {
+	position: absolute;
+	left: 4px;
+	top: 4px;
+	width: 42px;
+	height: 42px;
+	border-radius: 21px;
+	background-color: #FFFFFF;
+	transition-property: left;
+	transition-duration: 0.12s;
+}
+
+.decompose-switch.check--on .decompose-switch__knob {
+	left: 52px;
 }

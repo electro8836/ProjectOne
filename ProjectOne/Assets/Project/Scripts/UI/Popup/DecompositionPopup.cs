@@ -10,7 +10,7 @@ using ProjectOne.Shared;
 namespace ProjectOne.UI
 {
 	// 일괄 분해 팝업(UIPrefab_DecompositionPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Decomposition/DecompositionPopup.uxml.
-	// 분해할 등급(체크) · 품질 상한(체크 + 슬라이더) · 자동 분해(체크)를 고르고 분해한다.
+	// 분해할 등급(칩 — 켜면 등급색 + 체크) · 품질 상한(체크 + 막대) · 자동 분해(스위치)를 고르고 분해한다.
 	// 선택 상태는 DecompositionPopupPresenter 가 소유하고 View 는 그리기만 한다.
 	public class DecompositionPopup : ToolkitScreen, IView
 	{
@@ -25,6 +25,7 @@ namespace ProjectOne.UI
 
 		private readonly DecompositionPopupPresenter _presenter = new DecompositionPopupPresenter();
 		private readonly List<Button> _gradeChecks = new List<Button>();
+		private readonly List<Label> _gradeLabels = new List<Label>();
 
 		private Button _qualityCheck;
 		private SliderInt _qualitySlider;
@@ -38,17 +39,15 @@ namespace ProjectOne.UI
 			for (int g = (int)ItemGradeType.Normal; g <= (int)ItemGradeType.Mythic; g++)
 			{
 				ItemGradeType grade = (ItemGradeType)g;
-				Button check = createCheck(ItemGradeNames.Get(grade));
-				check.userData = grade;
-				check.RegisterCallback<ClickEvent>(onGradeCheckClicked);
-				check.AddToClassList("sfx-click");	// 클릭음 대상(UIManager)
-				if (_gradeColors != null)
-				{
-					check.Q<Label>().style.color = _gradeColors.Get(grade).text;
-				}
+				Button chip = createChip(ItemGradeNames.Get(grade));
+				chip.userData = grade;
+				chip.RegisterCallback<ClickEvent>(onGradeCheckClicked);
+				chip.AddToClassList("sfx-click");	// 클릭음 대상(UIManager)
 
-				grades.Add(check);
-				_gradeChecks.Add(check);
+				grades.Add(chip);
+				_gradeChecks.Add(chip);
+				_gradeLabels.Add(chip.Q<Label>());
+				applyChip(_gradeChecks.Count - 1, false);
 			}
 
 			_qualityCheck = root.Q<Button>("quality-check");
@@ -96,7 +95,7 @@ namespace ProjectOne.UI
 			{
 				if ((ItemGradeType)_gradeChecks[i].userData == grade)
 				{
-					_gradeChecks[i].EnableInClassList("check--on", value);
+					applyChip(i, value);
 					return;
 				}
 			}
@@ -110,7 +109,7 @@ namespace ProjectOne.UI
 		public void SetQuality(int quality)
 		{
 			_qualitySlider.SetValueWithoutNotify(quality);
-			_qualityTitle.text = "아이템의 품질 <color=#7BE07A>" + EquipmentQuality.Format(quality) + "%</color> 이하 분해";
+			_qualityTitle.text = "품질 <color=#7BE07A>" + EquipmentQuality.Format(quality) + "%</color> 이하 분해";
 		}
 
 		public void SetAutoChecked(bool value)
@@ -132,22 +131,41 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 체크 상자 + 글자 버튼 (Theme.uss 의 .check).
-		private static Button createCheck(string text)
+		// 등급 칩 — 체크 표시 + 등급 이름 (Decomposition.uss 의 .decompose-chip).
+		private static Button createChip(string text)
 		{
-			Button check = new Button();
-			check.AddToClassList("check");
+			Button chip = new Button();
+			chip.AddToClassList("decompose-chip");
 
-			VisualElement box = new VisualElement();
-			box.AddToClassList("check__box");
-			box.pickingMode = PickingMode.Ignore;
-			check.Add(box);
+			VisualElement mark = new VisualElement();
+			mark.AddToClassList("decompose-chip__mark");
+			mark.pickingMode = PickingMode.Ignore;
+			chip.Add(mark);
 
 			Label label = new Label(text);
-			label.AddToClassList("check__label");
+			label.AddToClassList("decompose-chip__label");
 			label.pickingMode = PickingMode.Ignore;
-			check.Add(label);
-			return check;
+			chip.Add(label);
+			return chip;
+		}
+
+		// 켜면 등급색 면·테두리 + 흰 글자, 끄면 USS 의 어두운 칩에 등급색 글자.
+		private void applyChip(int index, bool on)
+		{
+			Button chip = _gradeChecks[index];
+			chip.EnableInClassList("decompose-chip--on", on);
+			if (_gradeColors == null)
+			{
+				return;
+			}
+
+			ItemGradeColorTable.GradeColor colors = _gradeColors.Get((ItemGradeType)chip.userData);
+			chip.style.backgroundColor = on ? new StyleColor(colors.bg) : new StyleColor(StyleKeyword.Null);
+			chip.style.borderTopColor = on ? new StyleColor(colors.border) : new StyleColor(StyleKeyword.Null);
+			chip.style.borderBottomColor = chip.style.borderTopColor;
+			chip.style.borderLeftColor = chip.style.borderTopColor;
+			chip.style.borderRightColor = chip.style.borderTopColor;
+			_gradeLabels[index].style.color = on ? Color.white : colors.text;
 		}
 
 		private void onGradeCheckClicked(ClickEvent evt)
