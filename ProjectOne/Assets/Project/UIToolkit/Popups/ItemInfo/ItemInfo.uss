@@ -24,10 +24,6 @@
 	margin-left: 30px;
 }
 
-.item-summary__grade {
-	font-size: 48px;
-}
-
 .item-summary__sub {
 	font-size: 36px;
 	color: var(--ink-sub);
@@ -43,26 +39,103 @@
 	margin-bottom: 12px;
 }
 
-/* 소모품 수량 조절 */
-.consumable-control {
-	padding-bottom: 6px;
+/* ── 소모품 — 보유 수 · 아래 조작 띠(수량 -/+ · 사용). 시안 Shared/Design/UI소모품정보_시안.png 4안 ── */
+.consumable-owned {
+	margin: 0;
+	padding: 0;
+	font-size: 44px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다 */
+	text-shadow: 0 4px 0 #0A0814;
 }
 
-.consumable-count {
+/* 조작 띠 — 설명 판과 같은 어두운 판에 [-] 수량 [+] [사용] 한 줄 */
+.consumable-bar {
 	flex-direction: row;
 	align-items: center;
+	padding: 16px 16px 16px 24px;
+	margin-bottom: 6px;
+	border-radius: 18px;
+	background-color: #26272C;
+}
+
+/* -/+ — 미니맵 확대·축소 버튼과 같은 꾸밈(금 테 · 검은 면 · 연보라 기호), 크기만 키운다 */
+.consumable-step {
+	margin: 0;
+	padding: 6px;
+	width: 96px;
+	height: 96px;
+	flex-shrink: 0;
+	border-width: 5px;
+	border-radius: 48px;
+	border-color: #0A0814;
+	background-image: none;
+	background-color: #B8964A;
+}
+
+.consumable-step:hover:enabled {
+	background-color: #B8964A;
+	border-color: #0A0814;
+}
+
+.consumable-step:active {
+	translate: 0 4px;
+}
+
+/* 기본 버튼의 비활성 반투명(opacity)을 끄고 색으로만 구분한다 */
+.consumable-step:disabled {
+	opacity: 1;
+	background-color: #545868;
+}
+
+.consumable-step__face {
+	flex-grow: 1;
+	border-radius: 37px;
+	background-color: #18171C;
+	align-items: center;
 	justify-content: center;
-	margin-bottom: 20px;
 }
 
-.consumable-count .btn {
-	font-size: 60px;
+.consumable-step:disabled .consumable-step__face {
+	background-color: #3A3D4A;
 }
 
-.consumable-count__value {
-	width: 200px;
-	font-size: 60px;
+/* Icon_Plus / Icon_Minus(44x47) — 버튼 지름의 60% 높이 */
+.consumable-step__icon {
+	width: 54px;
+	height: 58px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.consumable-step__icon--plus {
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Plus.png");
+}
+
+.consumable-step__icon--minus {
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Minus.png");
+}
+
+/* 연보라 채움이 회색이 되도록 어둡게 곱한다 */
+.consumable-step:disabled .consumable-step__icon {
+	-unity-background-image-tint-color: #8A8796;
+}
+
+.consumable-bar__count {
+	width: 120px;
+	margin: 0;
+	padding: 0;
+	font-size: 56px;
+	color: #FFFFFF;
 	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.consumable-bar__use {
+	flex-grow: 1;
+	margin: 0 0 0 28px;
 }
 
 /* 장비 정보 — 설명·옵션이 한 덩어리로 스크롤된다. 높이는 고정이라 팝업 전체 크기가 장비마다 같고, 넘치는 내용은 스크롤로 본다 */

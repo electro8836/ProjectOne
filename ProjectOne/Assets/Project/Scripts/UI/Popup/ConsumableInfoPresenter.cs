@@ -11,13 +11,15 @@ namespace ProjectOne.UI
 	// 소모품 정보 팝업 Presenter — 보유 수량 조회와 선택 수량 계산을 담당한다.
 	// 대상은 장비처럼 인스턴스 UID 가 아니라 **아이템 ID** 다. 소모품은 스택이라 인스턴스가 없다.
 	//
-	// 사용은 ConsumableUser 가 1개씩, 파괴는 선택 수량만큼 한다.
+	// 사용은 ConsumableUser 가 1개씩 한다 — 여러 개 사용(Consumable.MultiUse)이면 선택 수량만큼 연달아 부르고,
+	// 1개씩만 쓰는 소모품은 선택 수량을 1로 묶고 -/+ 를 잠근다. 파괴는 선택 수량만큼 한다.
 	// 파괴는 로컬에서 먼저 빼고 서버 차감은 ItemSpendSender 가 백그라운드로 보낸다.
 	public sealed class ConsumableInfoPresenter : Presenter<ConsumableInfoPopup>
 	{
 		private int _itemId;
 		private Table_Item.Row _row;
 		private bool _canUse;	// 소모품 데이터가 있는 아이템만 쓸 수 있다 — 재료는 파괴만 된다
+		private bool _singleUse;	// 1개씩만 쓰는 소모품 — 선택 수량을 1로 묶는다(재료는 해당 없음)
 		private int _owned;	// 보유 수량 — 선택 수량의 상한
 		private int _count;	// 선택 수량
 
@@ -59,6 +61,7 @@ namespace ProjectOne.UI
 
 			ConsumableCatalog.BakedConsumable baked = ConsumableCatalog.Get(itemId);
 			_canUse = baked != null && baked.isValid == true;
+			_singleUse = _canUse && baked.multiUse == false;
 
 			// 보유하지 않은 아이템이면 선택 수량은 0 이고 조작 버튼이 전부 잠긴다.
 			_count = (_owned > 0) ? 1 : 0;
@@ -77,7 +80,7 @@ namespace ProjectOne.UI
 
 		private void onPlusClicked()
 		{
-			if (_count >= _owned)
+			if (_singleUse == true || _count >= _owned)
 			{
 				return;
 			}
@@ -104,7 +107,17 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			ConsumableUseResult result = ConsumableUser.Use(_itemId);
+			// 여러 개 사용이면 선택 수량만큼 연달아 — 하나라도 실패하면 거기서 멈추고 그 사유를 보인다
+			int useCount = (_singleUse == true) ? 1 : _count;
+			ConsumableUseResult result = ConsumableUseResult.Success;
+			for (int i = 0; i < useCount; i++)
+			{
+				result = ConsumableUser.Use(_itemId);
+				if (result != ConsumableUseResult.Success)
+				{
+					break;
+				}
+			}
 
 			// 서버 판정 대기 — 결과(보스 등장·차감)는 필드에서 보이므로 팝업을 닫는다.
 			if (result == ConsumableUseResult.Pending)
@@ -182,7 +195,8 @@ namespace ProjectOne.UI
 			bool owned = _owned > 0;
 
 			view.SetCount(_count);
-			view.SetControlsInteractable(owned && _count < _owned, owned && _count > 1, owned && _canUse, owned);
+			bool adjustable = owned && _singleUse == false;
+			view.SetControlsInteractable(adjustable && _count < _owned, adjustable && _count > 1, owned && _canUse, owned);
 		}
 	}
 }

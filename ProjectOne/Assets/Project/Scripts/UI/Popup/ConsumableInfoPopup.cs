@@ -8,7 +8,8 @@ using EDT;
 namespace ProjectOne.UI
 {
 	// 소모품 정보 팝업(UIPrefab_ConsumablePopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/ItemInfo/ConsumablePopup.uxml.
-	// 이름·등급·설명과 아이템 칸, 수량 조절(+/-)·사용·삭제를 둔다. 읽기 전용이면 조작 줄을 감춘다.
+	// 등급색 제목 줄(이름·등급 박스)과 아이템 칸·보유 수·사용 효과, 아래 조작 띠(수량 +/-·사용), 오른쪽 위 삭제를 둔다.
+	// 읽기 전용이면 조작 띠와 삭제를 감춘다.
 	// 무엇을 할지는 ConsumableInfoPresenter 가 정한다.
 	public class ConsumableInfoPopup : ToolkitScreen, IView
 	{
@@ -23,8 +24,10 @@ namespace ProjectOne.UI
 		private readonly ConsumableInfoPresenter _presenter = new ConsumableInfoPresenter();
 		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
 
+		private VisualElement _head;
 		private Label _name;
 		private Label _grade;
+		private Label _owned;
 		private Label _desc;
 		private Label _count;
 		private VisualElement _control;
@@ -39,8 +42,10 @@ namespace ProjectOne.UI
 
 		protected override void OnBind(VisualElement root)
 		{
+			_head = root.Q("head");
 			_name = root.Q<Label>("name");
 			_grade = root.Q<Label>("grade");
+			_owned = root.Q<Label>("owned");
 			_desc = root.Q<Label>("desc");
 			_count = root.Q<Label>("count");
 			_control = root.Q("control");
@@ -82,6 +87,7 @@ namespace ProjectOne.UI
 			_readOnly = readOnly;
 			bool usable = (readOnly == false);
 			_control.style.display = usable ? DisplayStyle.Flex : DisplayStyle.None;
+			_delete.style.display = usable ? DisplayStyle.Flex : DisplayStyle.None;
 			applyControlsInteractable(usable, usable, usable, usable);
 		}
 
@@ -96,7 +102,11 @@ namespace ProjectOne.UI
 			_grade.text = ItemGradeNames.Get(row.Grade);
 			if (_gradeColors != null)
 			{
-				_grade.style.color = _gradeColors.Get(row.Grade).text;
+				// 장비 정보 팝업과 같이 — 제목 판·아래 선·등급 박스를 등급색으로
+				ItemGradeColorTable.GradeColor colors = _gradeColors.Get(row.Grade);
+				_head.style.backgroundColor = colors.bg;
+				_head.style.borderBottomColor = colors.border;
+				_grade.style.backgroundColor = colors.border;
 			}
 
 			_desc.text = row.Desc;
@@ -104,6 +114,7 @@ namespace ProjectOne.UI
 
 		public UniTask BindItemSlotAsync(Table_Item.Row row, int ownedCount, CancellationToken ct)
 		{
+			_owned.text = "보유 " + ownedCount.ToString() + "개";
 			return _cell.BindItemAsync(row, ownedCount, ct);
 		}
 

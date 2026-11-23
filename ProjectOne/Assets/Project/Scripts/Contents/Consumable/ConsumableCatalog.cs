@@ -18,6 +18,7 @@ namespace ProjectOne.Consumables
 		{
 			public int itemId;
 			public ConsumeEffect effect;
+			public bool multiUse;	// 한 번에 여러 개 사용 가능 — 정보 팝업이 고른 수량만큼 연달아 쓴다
 
 			// 파싱에 실패한 행은 사용 대상에서 제외한다. 경고는 Build 가 이미 냈다.
 			public bool isValid;
@@ -80,6 +81,7 @@ namespace ProjectOne.Consumables
 			BakedConsumable baked = new BakedConsumable();
 			baked.itemId = row.ID;
 			baked.effect = row.ConsumeEffect;
+			baked.multiUse = row.MultiUse;
 			baked.isValid = true;
 
 			switch (row.ConsumeEffect)
