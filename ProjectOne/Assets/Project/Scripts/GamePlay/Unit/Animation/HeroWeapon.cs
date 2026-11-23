@@ -381,6 +381,9 @@ namespace ProjectOne.Unit
 				return;
 			}
 
+			// Tick 을 부르지 않는 캐릭터 프리뷰도 클립 파라미터(WeaponBackAngle) 유무를 알아야 인게임과 같은 앞뒤가 된다
+			refreshController();
+
 			int hint = _modelRenderer.sortingOrder;
 			bool front;
 			if (hint > 0)
