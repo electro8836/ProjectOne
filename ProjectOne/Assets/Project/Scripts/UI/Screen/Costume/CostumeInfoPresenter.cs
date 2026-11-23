@@ -217,11 +217,15 @@ namespace ProjectOne.UI
 			data.iconAddress = row.Icon;
 			data.name = row.Name;
 			data.gradeText = buildGradeText(row);
-			data.acquisitionText = row.Acquisition;
+			ItemGradeColorTable.GradeColor gradeColor = view.GradeColors.Get(row.Grade);
+			data.frameColor = gradeColor.border;
+			data.bgColor = gradeColor.bg;
+			data.acquisitionText = row.Acquisition + "에서 획득";
 
 			data.equipped = equipped;
 			data.previewing = previewing;
 			data.equipLabel = equipped ? "해제" : "장착";
+			data.stateText = previewing ? "입어보는 중" : (equipped ? "장착 중" : "");
 
 			return data;
 		}

@@ -1,15 +1,47 @@
-/* 코스튬 화면 — 입어보기 무대 + 무기/의상 탭 + 2열 목록. 부품·색·글자는 Theme.uss 를 따른다. */
+/* 코스튬 화면 — 바이올렛 (기준 해상도 1080 x 1920, 세로). 제목 판·버튼은 Violet.uss 를 따른다.
+   입어보기 무대 + 무기/의상 탭(제작 모드 탭과 같은 홈) + 한 줄 행 카드 목록.
+   카드 상태는 왼쪽 색 띠와 이름 아래 글자로 보인다 — 입어보는 중 금색, 장착 중 초록. */
 
-.tabs,
-.costume-stage {
+.costume {
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+/* 바탕 — 숙련도 화면과 같은 남색(.theme-violet.screen 보다 우선하려고 두 클래스) */
+.theme-violet.costume {
+	background-color: #1F2333;
+}
+
+.costume .header,
+.costume-stage,
+.costume-seg {
 	flex-shrink: 0;
 }
 
+/* 닫기 X — 프레임 없이 X 만 */
+.costume .costume-close {
+	background-image: none;
+}
+
+/* ── 입어보기 무대 ─────────────────────────────────── */
+
 .costume-stage {
-	height: 520px;
-	margin-bottom: 12px;
+	height: 568px;
+	margin: 0 -6px;
 	align-items: center;
 	justify-content: center;
+	background-color: #252A40;
+}
+
+.costume-stage__glow {
+	position: absolute;
+	left: 240px;
+	right: 240px;
+	top: 20px;
+	bottom: 10px;
+	background-image: url("../../Violet/glow_white.png");
+	-unity-background-scale-mode: stretch-to-fill;
+	-unity-background-image-tint-color: #B4C6FF;
+	opacity: 0.5;
 }
 
 .costume-stage__character {
@@ -20,82 +52,194 @@
 	scale: 1.3 1.3;
 }
 
+/* ── 무기/의상 탭 — 어두운 홈 하나 + 선택 칸만 밝은 판 ── */
+
+.costume-seg {
+	flex-direction: row;
+	height: 92px;
+	margin: 26px 18px 30px 18px;
+	padding: 6px;
+	border-width: 3px;
+	border-color: #2E3450;
+	border-radius: 26px;
+	background-color: #151826;
+}
+
+.costume-seg__item {
+	flex-grow: 1;
+	flex-basis: 0;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	border-radius: 20px;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: none;
+	font-size: 40px;
+	color: #8E93B8;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-text-align: middle-center;
+}
+
+.costume-seg__item--on {
+	background-color: #3D4566;
+	color: #FFFFFF;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* ── 목록 ─────────────────────────────────────────── */
+
 .costume-list {
 	flex-grow: 1;
+	flex-shrink: 1;
 }
 
-.costume-list .unity-scroll-view__content-container {
-	flex-direction: row;
-	flex-wrap: wrap;
-	justify-content: space-between;
-}
-
-/* 코스튬 칸 */
+/* 행 카드 — 아이콘 | 이름·등급·상태 | 버튼 */
 .costume-card {
-	width: 49%;
+	flex-direction: row;
 	align-items: center;
-	padding: 20px 16px 22px 16px;
-	margin-bottom: 14px;
-	background-image: url("../../Pixel/row.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
+	height: 220px;
+	margin: 0 18px 16px 18px;
+	padding: 0 24px 0 42px;
+	border-width: 3px;
+	border-color: #3D4566;
+	border-radius: 26px;
+	background-color: #2A3048;
+	overflow: hidden;
 }
 
-.costume-card--previewing {
-	background-image: url("../../Pixel/row_active.png");
+/* 상태 띠 — 카드 왼쪽 끝. 입어보는 중·장착 중일 때만 보인다 */
+.costume-card__stripe {
+	display: none;
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 19px;
 }
 
-.costume-card--locked .costume-card__icon-frame,
-.costume-card--locked .costume-card__name {
-	opacity: 0.5;
+.costume-card--equipped .costume-card__stripe {
+	display: flex;
+	background-color: #5CC85A;
 }
 
+.costume-card--previewing .costume-card__stripe {
+	display: flex;
+	background-color: #FFD447;
+}
+
+/* 아이콘 칸 — 아이템 칸과 같은 둥근 틀(등급 테두리색) + 등급 바탕 판. 색은 CostumeCell 이 틴트한다 */
 .costume-card__icon-frame {
-	width: 200px;
-	height: 200px;
-	padding: 18px;
-	margin-bottom: 10px;
-	background-image: url("../../Pixel/slot_empty.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+	flex-shrink: 0;
+	width: 168px;
+	height: 168px;
+	background-image: url("../../Violet/slot_round.png");
+	-unity-slice-left: 32;
+	-unity-slice-right: 32;
+	-unity-slice-top: 32;
+	-unity-slice-bottom: 32;
+	-unity-slice-scale: 1px;
+}
+
+.costume-card__icon-bg {
+	position: absolute;
+	left: 11px;
+	right: 11px;
+	top: 10px;
+	bottom: 15px;
+	border-radius: 12px;
+	background-image: url("../../Violet/cell_glow.png");
+	-unity-background-scale-mode: stretch-to-fill;
+}
+
+.costume-card__icon {
+	position: absolute;
+	left: 22px;
+	right: 22px;
+	top: 18px;
+	bottom: 26px;
+}
+
+/* 미보유 — 아이콘만 어둡게 */
+.costume-card--locked .costume-card__icon {
+	-unity-background-image-tint-color: #737373;
+}
+
+.costume-card__info {
+	flex-grow: 1;
+	flex-shrink: 1;
+	margin-left: 28px;
 }
 
 .costume-card__name {
-	font-size: 48px;
-	-unity-text-align: middle-center;
+	font-size: 44px;
+	color: #FFFFFF;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .costume-card__grade {
-	font-size: 36px;
-	-unity-text-align: middle-center;
-	margin-bottom: 12px;
+	margin-top: 6px;
+	font-size: 30px;
+	color: #A8A2CC;
 }
 
+.costume-card__state {
+	display: none;
+	margin-top: 10px;
+	font-size: 28px;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+.costume-card--equipped .costume-card__state {
+	display: flex;
+	color: #96F596;
+}
+
+.costume-card--previewing .costume-card__state {
+	display: flex;
+	color: #FFD447;
+}
+
+/* 버튼 줄 — 입어보기 위, 장착/해제(또는 획득처) 아래 */
 .costume-card__buttons {
+	flex-shrink: 0;
+	align-items: flex-end;
+}
+
+.costume .costume-card__buttons .btn {
+	width: 252px;
+	margin: 7px 0;
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+	-unity-font-style: bold;
+}
+
+/* 획득처 — 어두운 알약에 자물쇠 + 문구 */
+.costume-card__acquisition {
 	flex-direction: row;
 	align-items: center;
-	justify-content: center;
-	width: 100%;
+	height: 72px;
+	margin: 11px 0;
+	padding: 0 22px 0 12px;
+	border-width: 3px;
+	border-color: #2E3450;
+	border-radius: 36px;
+	background-color: #121420;
 }
 
-.costume-card__buttons .btn {
-	flex-grow: 1;
-	flex-basis: 0;
-	min-width: 0;
-	margin: 0 6px;
+.costume-card__lock {
+	width: 52px;
+	height: 52px;
+	margin-right: 8px;
+	background-image: url("../../Violet/icon_lock.png");
+	-unity-background-scale-mode: scale-to-fit;
 }
 
-.costume-card__acquisition {
-	flex-grow: 1;
-	flex-basis: 0;
-	font-size: 36px;
-	color: var(--ink-sub);
-	white-space: normal;
-	-unity-text-align: middle-center;
+.costume-card__acquisition-text {
+	font-size: 26px;
+	color: #A8A2CC;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
 }

@@ -104,7 +104,7 @@ namespace ProjectOne.UI
 		{
 			for (int i = 0; i < TAB_COUNT; i++)
 			{
-				_tabs[i].EnableInClassList("tab--selected", i == index);
+				_tabs[i].EnableInClassList("costume-seg__item--on", i == index);
 			}
 		}
 
