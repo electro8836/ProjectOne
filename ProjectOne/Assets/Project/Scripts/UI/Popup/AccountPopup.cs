@@ -109,7 +109,7 @@ namespace ProjectOne.UI
 			}
 
 			GUIUtility.systemCopyBuffer = _uuidValue;
-			UIManager.Instance.ShowTooltipAsync("복사 완료", _copyButton, _ct).Forget();
+			UIManager.Instance.ShowTooltipAsync("복사 완료", string.Empty, _copyButton, _ct).Forget();
 		}
 	}
 }

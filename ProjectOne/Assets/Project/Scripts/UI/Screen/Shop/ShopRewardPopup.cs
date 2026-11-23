@@ -23,7 +23,7 @@ namespace ProjectOne.UI
 			string desc;
 			if (tryGetSimpleText(item, out name, out desc) == true)
 			{
-				UIManager.Instance.ShowTooltipAsync(name + "\n" + desc, anchor, ct).Forget();
+				UIManager.Instance.ShowTooltipAsync(name, desc, anchor, ct).Forget();
 				return;
 			}
 

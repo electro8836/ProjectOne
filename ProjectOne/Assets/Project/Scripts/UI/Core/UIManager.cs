@@ -2148,17 +2148,21 @@ namespace ProjectOne.UI
 		}
 
 		// ── UI Toolkit 툴팁 ─────────────────────────────────────────────
-		// 누른 요소 위에 잠깐 뜨는 한두 줄 설명(재화·재료처럼 정식 팝업이 필요 없는 대상). 팝업 층에 하나만 둔다.
+		// 누른 요소 위에 잠깐 뜨는 이름 + 설명(재화·재료처럼 정식 팝업이 필요 없는 대상). 팝업 층에 하나만 둔다.
+		// 누른 요소의 가로 중앙, 바로 위에 띄우고 화면 밖으로 나가면 안쪽으로 당긴다(위로 넘치면 요소 아래로).
 
 		private const float TooltipSeconds = 2f;
-		private const float TooltipGap = 20f;		// 앵커 위쪽 여백
-		private const float TooltipPadding = 16f;	// 화면 좌우 끝에서 띄울 여백
+		private const float TooltipGap = 20f;		// 앵커와 툴팁 사이 여백
+		private const float TooltipPadding = 16f;	// 화면 끝에서 띄울 여백
 
-		private Label _tooltip;
+		private VisualElement _tooltip;
+		private Label _tooltipTitle;
+		private Label _tooltipDesc;
 		private Rect _tooltipAnchor;
 		private CancellationTokenSource _tooltipCts;
 
-		public async UniTask ShowTooltipAsync(string text, VisualElement anchor, CancellationToken ct)
+		// desc 가 비면 이름 한 줄만 띄운다(예: "복사 완료").
+		public async UniTask ShowTooltipAsync(string title, string desc, VisualElement anchor, CancellationToken ct)
 		{
 			if (_tooltipCts != null)
 			{
@@ -2171,13 +2175,25 @@ namespace ProjectOne.UI
 
 			if (_tooltip == null)
 			{
-				_tooltip = new Label();
+				_tooltip = new VisualElement();
 				_tooltip.AddToClassList("tooltip");
 				_tooltip.pickingMode = PickingMode.Ignore;
 				_tooltip.RegisterCallback<GeometryChangedEvent>(onTooltipGeometryChanged);
+
+				_tooltipTitle = new Label();
+				_tooltipTitle.AddToClassList("tooltip__title");
+				_tooltipTitle.pickingMode = PickingMode.Ignore;
+				_tooltip.Add(_tooltipTitle);
+
+				_tooltipDesc = new Label();
+				_tooltipDesc.AddToClassList("tooltip__desc");
+				_tooltipDesc.pickingMode = PickingMode.Ignore;
+				_tooltip.Add(_tooltipDesc);
 			}
 
-			_tooltip.text = text;
+			_tooltipTitle.text = title;
+			_tooltipDesc.text = desc;
+			_tooltipDesc.style.display = string.IsNullOrEmpty(desc) ? DisplayStyle.None : DisplayStyle.Flex;
 			_tooltipAnchor = (anchor != null) ? anchor.worldBound : new Rect(540f, 960f, 0f, 0f);
 			getLayerRoot(_popupLayer).Add(_tooltip);
 			placeTooltip();
@@ -2216,7 +2232,16 @@ namespace ProjectOne.UI
 
 			float maxLeft = layer.resolvedStyle.width - width - TooltipPadding;
 			float left = Mathf.Clamp(_tooltipAnchor.center.x - width * 0.5f, TooltipPadding, Mathf.Max(TooltipPadding, maxLeft));
+
+			// 위가 화면 밖이면 앵커 아래로 내리고, 그래도 아래가 넘치면 화면 안쪽으로 당긴다.
 			float top = _tooltipAnchor.yMin - TooltipGap - height;
+			if (top < TooltipPadding)
+			{
+				top = _tooltipAnchor.yMax + TooltipGap;
+			}
+
+			float maxTop = layer.resolvedStyle.height - height - TooltipPadding;
+			top = Mathf.Clamp(top, TooltipPadding, Mathf.Max(TooltipPadding, maxTop));
 
 			// 같은 값을 다시 쓰면 GeometryChangedEvent 가 또 오지 않는다 — 바뀔 때만 쓴다.
 			if (Mathf.Approximately(_tooltip.resolvedStyle.left, left) == false)

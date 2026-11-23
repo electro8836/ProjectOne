@@ -11,7 +11,6 @@ namespace ProjectOne.UI
 	public struct CurrencySlotData
 	{
 		public EDT.Currency currency;
-		public string iconAddress;
 		public int amount;
 	}
 
@@ -70,7 +69,6 @@ namespace ProjectOne.UI
 
 				CurrencySlotData data = new CurrencySlotData();
 				data.currency = currency;
-				data.iconAddress = row.Icon;
 				data.amount = getAmount(currency);
 
 				_slotData.Add(data);
@@ -97,7 +95,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			UIManager.Instance.ShowTooltipAsync(row.Name + "\n" + row.Desc, anchor, view.GetDestroyToken()).Forget();
+			UIManager.Instance.ShowTooltipAsync(row.Name, row.Desc, anchor, view.GetDestroyToken()).Forget();
 		}
 
 		private void onResourceChanged(ResourceChangeEvent evt)

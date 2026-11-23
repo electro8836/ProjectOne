@@ -433,20 +433,37 @@
 	background-image: url("../Pixel/btn_gray.png");
 }
 
-/* 툴팁 — 누른 요소 위에 잠깐 뜨는 설명. UIManager.ShowTooltipAsync 가 팝업 층에 붙인다 */
+/* 툴팁 — 누른 요소 위에 잠깐 뜨는 이름 + 설명. UIManager.ShowTooltipAsync 가 팝업 층에 붙인다.
+   글 길이만큼 커지고, 최대 폭을 넘으면 다음 줄로 넘어가 높이가 늘어난다. 시안 Shared/Design/UI툴팁_프레임_시안.png 맨 왼쪽 */
 .tooltip {
 	position: absolute;
-	max-width: 900px;
-	padding: 20px 28px 24px 28px;
-	background-image: url("../Pixel/panel_paper.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
-	font-size: 36px;
+	max-width: 640px;
+	padding: 22px 30px;
+	align-items: center;
+	border-radius: 18px;
+	background-color: #161420;
+}
+
+.tooltip__title,
+.tooltip__desc {
+	margin: 0;
+	padding: 0;
 	white-space: normal;
 	-unity-text-align: middle-center;
+	-unity-text-outline-width: 0;	/* :root 의 2px 외곽선을 끈다 */
+}
+
+.tooltip__title {
+	font-size: 30px;
+	color: #C8B8FF;
+	-unity-font-definition: url("../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.tooltip__desc {
+	margin-top: 8px;
+	font-size: 26px;
+	color: #FFFFFF;
 }
 
 /* 비용 1칸 (CostView) — 재화 아이콘 + "x수량" */

@@ -2,20 +2,21 @@
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
 	// 보유 재화 목록 팝업(UIPrefab_CurrencyListPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Currency/CurrencyListPopup.uxml.
-	// 재화마다 아이콘 + 보유량 칸을 그리고, 칸을 누르면 Presenter 가 그 칸 위에 설명 툴팁을 띄운다.
+	// 재화마다 아이템 칸(아이콘 + 아래띠 보유량)을 그리고, 칸을 누르면 Presenter 가 그 칸 위에 이름·설명 툴팁을 띄운다.
 	public class CurrencyListPopup : ToolkitScreen, IView
 	{
-		// 재화 1칸 — 아이콘 + 수량.
+		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO — 재화 칸은 일반 등급 틀
+
+		// 재화 1칸 — 아이템 칸 + 재화 종류.
 		private sealed class CurrencyCell
 		{
-			public VisualElement root;
-			public VisualElement icon;
-			public Label count;
+			public ItemCellView view;
 			public EDT.Currency currency;
 		}
 
@@ -71,15 +72,15 @@ namespace ProjectOne.UI
 			for (int i = 0; i < data.Count; i++)
 			{
 				CurrencyCell cell = getOrCreateCell(i);
-				cell.root.style.display = DisplayStyle.Flex;
+				cell.view.SetShown(true);
 				cell.currency = data[i].currency;
-				cell.count.text = CurrencySlot.FormatAmount(data[i].amount);
-				_bindTasks.Add(_icons.SetAsync(cell.icon, data[i].iconAddress, ct));
+				_bindTasks.Add(cell.view.BindCurrencyAsync(data[i].currency, data[i].amount, ct));
+				cell.view.SetCountText(CurrencySlot.FormatAmount(data[i].amount));
 			}
 
 			for (int i = data.Count; i < _cells.Count; i++)
 			{
-				_cells[i].root.style.display = DisplayStyle.None;
+				_cells[i].view.SetShown(false);
 			}
 
 			_visibleCount = data.Count;
@@ -92,7 +93,7 @@ namespace ProjectOne.UI
 			{
 				if (_cells[i].currency == currency)
 				{
-					_cells[i].count.text = CurrencySlot.FormatAmount(amount);
+					_cells[i].view.SetCountText(CurrencySlot.FormatAmount(amount));
 					return;
 				}
 			}
@@ -119,33 +120,20 @@ namespace ProjectOne.UI
 			}
 
 			CurrencyCell cell = new CurrencyCell();
-			cell.root = new VisualElement();
-			cell.root.AddToClassList("currency-cell");
-			cell.root.userData = cell;
-			cell.root.RegisterCallback<ClickEvent>(onCellClicked);
-			cell.root.AddToClassList("sfx-click");	// 클릭음 대상(UIManager)
+			cell.view = new ItemCellView(_grid.contentContainer, _gradeColors, _icons);
+			cell.view.Root.AddToClassList("currency-cell");
+			cell.view.OnClicked += onCellClicked;
 
-			cell.icon = new VisualElement();
-			cell.icon.AddToClassList("currency-cell__icon");
-			cell.icon.pickingMode = PickingMode.Ignore;
-			cell.root.Add(cell.icon);
-
-			cell.count = new Label();
-			cell.count.AddToClassList("currency-cell__count");
-			cell.count.pickingMode = PickingMode.Ignore;
-			cell.root.Add(cell.count);
-
-			_grid.contentContainer.Add(cell.root);
 			_cells.Add(cell);
 			return cell;
 		}
 
-		private void onCellClicked(ClickEvent evt)
+		// 재화 칸은 itemId 자리에 재화 종류를 넘긴다(ItemCellView.BindCurrencyAsync).
+		private void onCellClicked(ItemCellView sender, long uid, int itemId)
 		{
-			CurrencyCell cell = ((VisualElement)evt.currentTarget).userData as CurrencyCell;
-			if (cell != null && OnSlotClicked != null)
+			if (OnSlotClicked != null)
 			{
-				OnSlotClicked.Invoke(cell.currency, cell.root);
+				OnSlotClicked.Invoke((EDT.Currency)itemId, sender.Root);
 			}
 		}
 
