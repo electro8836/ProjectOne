@@ -219,7 +219,7 @@
 	-unity-background-image-tint-color: #C8C8C8;
 }
 
-/* ── 기능 버튼(능력치·재화·코스튬·펫) — 버튼마다 색·아이콘으로 구분한다. 아이콘은 왼쪽, 글자는 남은 칸 가운데 ── */
+/* ── 기능 버튼(능력치·재화) — 버튼마다 색·아이콘으로 구분한다. 아이콘은 왼쪽, 글자는 남은 칸 가운데 ── */
 
 .theme-violet .extra__button {
 	margin: 0 2px;
@@ -255,22 +255,6 @@
 
 .theme-violet .extra--currency .extra__icon {
 	background-image: url("../Violet/extraicon_currency.png");
-}
-
-.theme-violet .extra--costume {
-	background-image: url("../Violet/btn_costume.png");
-}
-
-.theme-violet .extra--costume .extra__icon {
-	background-image: url("../Violet/extraicon_costume.png");
-}
-
-.theme-violet .extra--pet {
-	background-image: url("../Violet/btn_pet.png");
-}
-
-.theme-violet .extra--pet .extra__icon {
-	background-image: url("../Violet/extraicon_pet.png");
 }
 
 /* ── 분류 탭 — TabMenu_BottomFlush_02. 선택 탭은 버튼 전체가 바이올렛, 가방 패널 위에 붙는다 ── */

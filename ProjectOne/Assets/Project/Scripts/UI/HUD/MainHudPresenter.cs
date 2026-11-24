@@ -105,6 +105,14 @@ namespace ProjectOne.UI
 			{
 				await UIManager.Instance.OpenMapScreenAsync(ct);
 			}
+			else if (result == MenuPopupResult.Costume)
+			{
+				await UIManager.Instance.OpenCostumeScreenAsync(ct);
+			}
+			else if (result == MenuPopupResult.Pet)
+			{
+				await UIManager.Instance.OpenPetScreenAsync(ct);
+			}
 		}
 
 		// 잘못 눌러 꺼지지 않도록 한 번 더 확인받는다.

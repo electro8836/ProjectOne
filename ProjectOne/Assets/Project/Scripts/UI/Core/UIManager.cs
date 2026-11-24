@@ -1302,7 +1302,9 @@ namespace ProjectOne.UI
 		private const string QUEST_LIST_POPUP_ADDRESS = "UIPrefab_QuestListPopup";
 		private const string DAILY_BONUS_POPUP_ADDRESS = "UIPrefab_DailyBonusPopup";
 		private const string MAP_SCREEN_ADDRESS = "UIPrefab_MapScreen";
-		private bool _mapScreenOpening;
+		private const string COSTUME_SCREEN_ADDRESS = "UIPrefab_CostumeInfo";
+		private const string PET_SCREEN_ADDRESS = "UIPrefab_PetInfo";
+		private bool _menuScreenOpening;
 		private const string HERO_PASS_POPUP_ADDRESS = "UIPrefab_PassPopup";
 		private const string RANKING_POPUP_ADDRESS = "UIPrefab_RankingPopup";
 		private const string PLAYER_INFO_POPUP_ADDRESS = "UIPrefab_PlayerInfoPopup";
@@ -1905,27 +1907,43 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 월드맵 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다. 미니맵 확장 버튼이 연다.
-		// 이미 떠 있으면 새로 열지 않는다.
-		// 지도 화면 — 창(Window) 층에 연다. 열린 창(네비게이션 탭 화면)은 먼저 닫고 탭 선택도 푼다.
-		// 닫기는 화면의 X(CloseWindowAsync), 네비게이션 탭을 누르면 그 화면으로 바뀐다.
-		public async UniTask OpenMapScreenAsync(CancellationToken ct)
+		// 지도 화면 — 메뉴 지도 버튼·미니맵 확장 버튼이 연다.
+		public UniTask OpenMapScreenAsync(CancellationToken ct)
+		{
+			return openMenuScreenAsync<MapScreen>(MAP_SCREEN_ADDRESS, ct);
+		}
+
+		// 코스튬 화면 — 메뉴 코스튬 버튼이 연다.
+		public UniTask OpenCostumeScreenAsync(CancellationToken ct)
+		{
+			return openMenuScreenAsync<CostumeInfoUI>(COSTUME_SCREEN_ADDRESS, ct);
+		}
+
+		// 펫 화면 — 메뉴 펫 버튼이 연다.
+		public UniTask OpenPetScreenAsync(CancellationToken ct)
+		{
+			return openMenuScreenAsync<PetInfoUI>(PET_SCREEN_ADDRESS, ct);
+		}
+
+		// 메뉴에서 여는 전체 화면 — 창(Window) 층에 연다. 열린 창(네비게이션 탭 화면)은 먼저 닫고 탭 선택도 푼다.
+		// 닫기는 화면의 X(CloseWindowAsync), 네비게이션 탭을 누르면 그 화면으로 바뀐다. 이미 맨 위에 떠 있으면 새로 열지 않는다.
+		private async UniTask openMenuScreenAsync<T>(string address, CancellationToken ct) where T : UIScreen
 		{
 			// 여는 중(프리펩 로드 대기)에 또 누르면 두 장 뜨지 않게 막는다.
-			if (_mapScreenOpening == true || (_windowStack.Count > 0 && _windowStack.Peek().screen is MapScreen))
+			if (_menuScreenOpening == true || (_windowStack.Count > 0 && _windowStack.Peek().screen is T))
 			{
 				return;
 			}
 
-			_mapScreenOpening = true;
+			_menuScreenOpening = true;
 			if (_windowStack.Count > 0)
 			{
 				await CloseAllWindowsAsync();
 				EventManager.Instance.Publish(new WindowClosedEvent());
 			}
 
-			await OpenWindowAsync<MapScreen>(MAP_SCREEN_ADDRESS, ct).SuppressCancellationThrow();
-			_mapScreenOpening = false;
+			await OpenWindowAsync<T>(address, ct).SuppressCancellationThrow();
+			_menuScreenOpening = false;
 		}
 
 		// 출석 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.

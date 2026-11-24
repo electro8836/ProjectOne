@@ -30,8 +30,6 @@ namespace ProjectOne.UI
 		public event Action<long, int> OnSlotClicked;
 		public event Action OnStatClicked;
 		public event Action OnCurrencyClicked;
-		public event Action OnPetClicked;
-		public event Action OnCostumeClicked;
 		public event Action OnSortClicked;
 		public event Action OnStashClicked;
 		public event Action OnStashCloseClicked;
@@ -124,8 +122,6 @@ namespace ProjectOne.UI
 		{
 			root.Q<Button>("stat-button").clicked += onStatButtonClicked;
 			root.Q<Button>("currency-button").clicked += onCurrencyButtonClicked;
-			root.Q<Button>("pet-button").clicked += onPetButtonClicked;
-			root.Q<Button>("costume-button").clicked += onCostumeButtonClicked;
 			_stashButton = root.Q<Button>("stash-button");
 			_stashButton.clicked += onStashButtonClicked;
 			root.Q<Button>("stash-close-button").clicked += onStashCloseButtonClicked;
@@ -318,16 +314,6 @@ namespace ProjectOne.UI
 		private void onCurrencyButtonClicked()
 		{
 			if (OnCurrencyClicked != null) { OnCurrencyClicked.Invoke(); }
-		}
-
-		private void onPetButtonClicked()
-		{
-			if (OnPetClicked != null) { OnPetClicked.Invoke(); }
-		}
-
-		private void onCostumeButtonClicked()
-		{
-			if (OnCostumeClicked != null) { OnCostumeClicked.Invoke(); }
 		}
 
 		private void onSortButtonClicked()

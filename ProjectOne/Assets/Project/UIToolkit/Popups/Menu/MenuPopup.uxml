@@ -2,7 +2,7 @@
 	<Style src="../../Common/Theme.uss" />
 	<Style src="MenuPopup.uss" />
 
-	<!-- 메뉴 — 오른쪽 위 판에 아이콘 격자(5열 × 3줄, 지도는 2줄 맨 앞·게임 종료는 3줄 오른쪽 끝. 시안 Shared/Design/UI메뉴_지도_시안.png D). 닫기는 HUD 메뉴 버튼과 같은 자리·크기(첫 줄 맨 오른쪽 칸은 비워 둔다), 판 밖을 눌러도 닫힌다.
+	<!-- 메뉴 — 오른쪽 위 판에 아이콘 격자(5열 × 3줄, 지도는 2줄 맨 앞·코스튬·펫은 3줄 왼쪽·게임 종료는 3줄 오른쪽 끝. 시안 Shared/Design/UI메뉴_지도_시안.png D · UI메뉴_코스튬펫_시안.png A). 닫기는 HUD 메뉴 버튼과 같은 자리·크기(첫 줄 맨 오른쪽 칸은 비워 둔다), 판 밖을 눌러도 닫힌다.
 	     줄을 나눠 두는 이유: 해상도 배율에 따라 판 폭이 소수점으로 깎이면 wrap 이 4열로 접혀 칸이 밀린다 -->
 	<ui:VisualElement name="popup" class="popup menu-popup">
 		<ui:VisualElement name="dim" class="popup__dim" />
@@ -50,10 +50,16 @@
 					<ui:Label text="설정" class="menu-grid__label" picking-mode="Ignore" />
 				</ui:Button>
 			</ui:VisualElement>
-			<!-- 게임 종료는 잘못 누르지 않게 3줄 오른쪽 끝에 따로 둔다 -->
+			<!-- 3줄: 코스튬·펫 + 게임 종료는 잘못 누르지 않게 오른쪽 끝에 따로 둔다 -->
 			<ui:VisualElement class="menu-grid__row">
-				<ui:VisualElement class="menu-grid__item" picking-mode="Ignore" />
-				<ui:VisualElement class="menu-grid__item" picking-mode="Ignore" />
+				<ui:Button name="costume" class="menu-grid__item">
+					<ui:VisualElement class="menu-grid__icon menu-grid__icon--costume" picking-mode="Ignore" />
+					<ui:Label text="코스튬" class="menu-grid__label" picking-mode="Ignore" />
+				</ui:Button>
+				<ui:Button name="pet" class="menu-grid__item">
+					<ui:VisualElement class="menu-grid__icon menu-grid__icon--pet" picking-mode="Ignore" />
+					<ui:Label text="펫" class="menu-grid__label" picking-mode="Ignore" />
+				</ui:Button>
 				<ui:VisualElement class="menu-grid__item" picking-mode="Ignore" />
 				<ui:VisualElement class="menu-grid__item" picking-mode="Ignore" />
 				<ui:Button name="quit" class="menu-grid__item">

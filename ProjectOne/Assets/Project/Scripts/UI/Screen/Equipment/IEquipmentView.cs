@@ -14,8 +14,6 @@ namespace ProjectOne.UI
 		event Action<long, int> OnSlotClicked;
 		event Action OnStatClicked;
 		event Action OnCurrencyClicked;
-		event Action OnPetClicked;
-		event Action OnCostumeClicked;
 		event Action OnSortClicked;
 		event Action OnStashClicked;
 		event Action OnStashCloseClicked;
