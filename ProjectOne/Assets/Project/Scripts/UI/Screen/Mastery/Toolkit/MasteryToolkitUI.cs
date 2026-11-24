@@ -487,6 +487,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			_skillList.scrollOffset = Vector2.zero;	// 종류를 바꾸면 목록을 맨 위부터 보인다
 			OnSkillFilterSelected.Invoke((int)target.userData);
 		}
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
@@ -252,6 +253,7 @@ namespace ProjectOne.UI
 			}
 
 			SelectTab(index);
+			_list.scrollOffset = Vector2.zero;	// 월드를 바꾸면 구역 목록을 맨 위부터 보인다
 
 			if (OnTabSelected != null)
 			{

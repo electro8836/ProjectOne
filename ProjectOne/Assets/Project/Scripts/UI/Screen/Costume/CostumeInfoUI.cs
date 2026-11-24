@@ -160,6 +160,7 @@ namespace ProjectOne.UI
 		{
 			int index = (int)((VisualElement)evt.currentTarget).userData;
 			SelectTab(index);
+			_list.scrollOffset = Vector2.zero;	// 탭을 바꾸면 목록을 맨 위부터 보인다
 
 			if (OnTabSelected != null)
 			{

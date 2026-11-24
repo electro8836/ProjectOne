@@ -11,6 +11,9 @@ namespace ProjectOne.UI
 	// 내용이 보이는 영역보다 작으면 움직이지 않는다 — 마우스 끌기는 스크롤 범위 안으로만 옮기고,
 	// 터치는 누를 때마다 Elastic(넘치면 튕김) / Clamped(못 움직임)를 갈아 끼운다 — 줄바꿈 격자는 칸이 늘어도
 	// 크기 변경 이벤트가 오지 않아 누르는 순간에 판단한다.
+	//
+	// 내용이 줄어 스크롤 위치가 범위를 넘으면 끝으로 당긴다 — 긴 목록에서 내려 둔 위치가 짧은 목록(탭 전환 등)에 남으면
+	// 칸이 전부 화면 밖에 있어 빈 목록처럼 보인다. 모든 ScrollView 가 이 조작기를 달므로 화면마다 따로 막지 않아도 된다.
 	public sealed class ScrollDragManipulator : PointerManipulator
 	{
 		// 이 거리(패널 px)보다 덜 움직이면 탭으로 본다
@@ -38,6 +41,7 @@ namespace ProjectOne.UI
 			target.RegisterCallback<PointerUpEvent>(onPointerUp, TrickleDown.TrickleDown);
 			target.RegisterCallback<ClickEvent>(onClick, TrickleDown.TrickleDown);
 			target.RegisterCallback<WheelEvent>(onWheel, TrickleDown.TrickleDown);
+			_scrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(onContentGeometryChanged);
 		}
 
 		protected override void UnregisterCallbacksFromTarget()
@@ -47,6 +51,33 @@ namespace ProjectOne.UI
 			target.UnregisterCallback<PointerUpEvent>(onPointerUp, TrickleDown.TrickleDown);
 			target.UnregisterCallback<ClickEvent>(onClick, TrickleDown.TrickleDown);
 			target.UnregisterCallback<WheelEvent>(onWheel, TrickleDown.TrickleDown);
+			_scrollView.contentContainer.UnregisterCallback<GeometryChangedEvent>(onContentGeometryChanged);
+		}
+
+		// 내용 크기가 바뀌면(탭 전환으로 목록이 짧아짐 등) 스크롤 위치를 범위 안으로 당긴다.
+		// 범위 갱신(ScrollView 자기 처리)이 이 콜백보다 늦을 수 있어 같은 판단을 다음 갱신에서 한 번 더 한다.
+		private void onContentGeometryChanged(GeometryChangedEvent evt)
+		{
+			if (_isDragging == true)
+			{
+				return;
+			}
+
+			clampOffset();
+			_scrollView.schedule.Execute(clampOffset);
+		}
+
+		// 스크롤 위치를 범위 안으로 당기고, 터치 동작(튕김/고정)도 지금 범위에 맞춘다.
+		private void clampOffset()
+		{
+			float max = maxOffset();
+			Vector2 offset = _scrollView.scrollOffset;
+			if (offset.y > max)
+			{
+				_scrollView.scrollOffset = new Vector2(offset.x, max);
+			}
+
+			applyTouchBehavior();
 		}
 
 		// 세로로 밀 수 있는 거리. 내용이 보이는 영역보다 작으면 0 이다.

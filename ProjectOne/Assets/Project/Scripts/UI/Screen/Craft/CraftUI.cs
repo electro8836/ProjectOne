@@ -417,6 +417,7 @@ namespace ProjectOne.UI
 		{
 			int index = (int)((VisualElement)evt.currentTarget).userData;
 			SelectModeTab(index);
+			_grid.scrollOffset = Vector2.zero;	// 탭을 바꾸면 목록을 맨 위부터 보인다
 			if (OnModeSelected != null) { OnModeSelected.Invoke(index); }
 		}
 
@@ -424,6 +425,7 @@ namespace ProjectOne.UI
 		{
 			int index = (int)((VisualElement)evt.currentTarget).userData;
 			SelectFilterTab(index);
+			_grid.scrollOffset = Vector2.zero;
 			if (OnFilterSelected != null) { OnFilterSelected.Invoke(index); }
 		}
 
