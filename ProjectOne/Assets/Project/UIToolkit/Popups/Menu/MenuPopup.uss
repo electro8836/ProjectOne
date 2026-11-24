@@ -1,4 +1,4 @@
-/* 메뉴 팝업 — 오른쪽 위 어두운 판 + 아이콘 격자(5열 × 2줄). 딤은 투명(판 밖 누르면 닫기 용도만).
+/* 메뉴 팝업 — 오른쪽 위 어두운 판 + 아이콘 격자(5열 × 3줄, 게임 종료만 3줄 오른쪽 끝). 딤은 투명(판 밖 누르면 닫기 용도만).
    판은 화면 위·오른쪽 끝에 붙는다. 닫기 버튼은 판 밖(팝업 루트) 에서 HUD 메뉴 버튼과 같은 자리·크기로 띄운다 —
    화면 오른쪽 위 기준이라 해상도가 바뀌어도 같이 따라가고, 판 여백으로 칸 격자를 X 에 맞춘다. */
 
@@ -80,6 +80,7 @@
 .menu-grid__icon--account { background-image: url("../../Violet/menuicon_account.png"); }
 .menu-grid__icon--setting { background-image: url("../../Violet/menuicon_setting.png"); }
 .menu-grid__icon--quit { background-image: url("../../Violet/menuicon_quit.png"); }
+.menu-grid__icon--map { background-image: url("../../Violet/menuicon_map.png"); }
 
 .menu-grid__label {
 	padding: 0;

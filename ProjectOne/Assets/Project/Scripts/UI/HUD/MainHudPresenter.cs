@@ -101,6 +101,10 @@ namespace ProjectOne.UI
 			{
 				await UIManager.Instance.ShowQuestListPopupAsync(ct);
 			}
+			else if (result == MenuPopupResult.Map)
+			{
+				await UIManager.Instance.OpenMapScreenAsync(ct);
+			}
 		}
 
 		// 잘못 눌러 꺼지지 않도록 한 번 더 확인받는다.

@@ -1,0 +1,71 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
+	<Style src="../../Common/MapView.uss" />
+	<Style src="MapScreen.uss" />
+
+	<!-- 지도 — 보라 제목 판 + 지도(끌어서 이동) + 위쪽 ◀ 맵 이름 ▶ + 오른쪽 현재 위치·확대·축소·설정 버튼 막대.
+	     설정은 같은 화면 위 창(시스템 3 / 지도 아이콘 6, 기기 로컬 저장). 시안 Shared/Design/UI지도화면_시안.png 1안 · UI지도설정_시안.png 1안 -->
+	<ui:VisualElement name="screen" class="screen screen--full theme-violet map-screen">
+
+		<ui:VisualElement class="header">
+			<ui:VisualElement class="header__frame">
+				<ui:VisualElement class="header__wash" picking-mode="Ignore" />
+				<ui:Label text="지도" class="header__title text-pop" />
+				<ui:Button name="close" text="" class="btn btn--icon map-close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<ui:VisualElement class="map-body">
+			<!-- 지도 뷰포트 — 누르고 끌면 지도가 따라 움직인다 -->
+			<ui:VisualElement name="map" class="map-view map-screen__view" />
+			<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
+
+			<!-- 맵 선택 — 지금 있는 곳(마을·던전이면 그 맵) + 월드들. 점은 MapScreen 이 맵 수만큼 만든다 -->
+			<ui:VisualElement class="map-select" picking-mode="Ignore">
+				<ui:VisualElement class="map-select__bar">
+					<ui:Button name="prev" class="map-select__arrow"><ui:VisualElement class="map-select__tri map-select__tri--left" picking-mode="Ignore" /></ui:Button>
+					<ui:Label name="map-name" text="" class="map-select__name" picking-mode="Ignore" />
+					<ui:Button name="next" class="map-select__arrow"><ui:VisualElement class="map-select__tri" picking-mode="Ignore" /></ui:Button>
+				</ui:VisualElement>
+				<ui:VisualElement name="dots" class="map-select__dots" picking-mode="Ignore" />
+			</ui:VisualElement>
+
+			<!-- 버튼 막대 — 오른쪽 아래, 위에서부터 현재 위치 | 확대 · 축소 | 설정 (시안 Shared/Design/UI지도버튼막대_시안.png A) -->
+			<ui:VisualElement class="map-side">
+				<ui:Button name="locate" class="map-side__btn map-side__btn--split"><ui:VisualElement class="map-side__icon map-side__icon--locate" picking-mode="Ignore" /></ui:Button>
+				<ui:Button name="zoom-in" class="map-side__btn"><ui:VisualElement class="map-side__icon map-side__icon--plus" picking-mode="Ignore" /></ui:Button>
+				<ui:Button name="zoom-out" class="map-side__btn map-side__btn--split"><ui:VisualElement class="map-side__icon map-side__icon--minus" picking-mode="Ignore" /></ui:Button>
+				<ui:Button name="setting" class="map-side__btn"><ui:VisualElement class="map-side__icon map-side__icon--setting" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+		</ui:VisualElement>
+
+		<!-- 지도 설정 창 -->
+		<ui:VisualElement name="settings" class="map-settings">
+			<ui:VisualElement name="settings-dim" class="map-settings__dim" />
+			<ui:VisualElement class="map-settings__window">
+				<ui:VisualElement class="map-settings__head">
+					<ui:Label text="지도 설정" class="map-settings__title" />
+					<ui:Button name="settings-close" text="" class="btn btn--icon map-settings__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+				</ui:VisualElement>
+				<ui:VisualElement class="map-settings__body">
+					<ui:VisualElement class="map-set-title"><ui:VisualElement class="map-set-title__bar" /><ui:Label text="시스템" class="map-set-title__text" /></ui:VisualElement>
+					<ui:VisualElement class="map-set-box">
+					<ui:Button name="set-MinimapEnabled" class="map-set-row map-set-row--first"><ui:Label text="HUD 미니맵 사용" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					<ui:Button name="set-MinimapText" class="map-set-row"><ui:Label text="미니맵 텍스트 표시" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					<ui:Button name="set-TeleportButton" class="map-set-row"><ui:Label text="순간이동 버튼 표시" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					</ui:VisualElement>
+					<ui:VisualElement class="map-set-title"><ui:VisualElement class="map-set-title__bar" /><ui:Label text="지도 아이콘" class="map-set-title__text" /><ui:Label text="지도·미니맵에 표시" class="map-set-title__sub" /></ui:VisualElement>
+					<ui:VisualElement class="map-set-box">
+					<ui:Button name="set-Chest" class="map-set-row map-set-row--first"><ui:VisualElement class="map-set-row__badge map-set-row__badge--chest" picking-mode="Ignore"><ui:VisualElement class="map-set-row__icon map-set-row__icon--chest" picking-mode="Ignore" /></ui:VisualElement><ui:Label text="보물상자" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					<ui:Button name="set-Boss" class="map-set-row"><ui:VisualElement class="map-set-row__badge map-set-row__badge--boss" picking-mode="Ignore"><ui:VisualElement class="map-set-row__icon map-set-row__icon--boss" picking-mode="Ignore" /></ui:VisualElement><ui:Label text="보스" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					<ui:Button name="set-Altar" class="map-set-row"><ui:VisualElement class="map-set-row__badge map-set-row__badge--altar" picking-mode="Ignore"><ui:VisualElement class="map-set-row__icon map-set-row__icon--altar" picking-mode="Ignore" /></ui:VisualElement><ui:Label text="제단" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					<ui:Button name="set-Quest" class="map-set-row"><ui:VisualElement class="map-set-row__badge map-set-row__badge--quest" picking-mode="Ignore"><ui:VisualElement class="map-set-row__icon map-set-row__icon--quest" picking-mode="Ignore" /></ui:VisualElement><ui:Label text="퀘스트" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					<ui:Button name="set-Npc" class="map-set-row"><ui:VisualElement class="map-set-row__badge map-set-row__badge--npc" picking-mode="Ignore"><ui:VisualElement class="map-set-row__icon map-set-row__icon--npc" picking-mode="Ignore" /></ui:VisualElement><ui:Label text="NPC" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					<ui:Button name="set-Portal" class="map-set-row"><ui:VisualElement class="map-set-row__badge map-set-row__badge--portal" picking-mode="Ignore"><ui:VisualElement class="map-set-row__icon map-set-row__icon--portal" picking-mode="Ignore" /></ui:VisualElement><ui:Label text="포탈" class="map-set-row__name" picking-mode="Ignore" /><ui:VisualElement class="map-switch" picking-mode="Ignore"><ui:VisualElement class="map-switch__knob" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+					</ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

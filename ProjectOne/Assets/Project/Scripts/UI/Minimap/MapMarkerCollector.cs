@@ -61,6 +61,43 @@ namespace ProjectOne.UI
 			RefreshBosses(buffer);
 		}
 
+		// 띄우지 않은 월드 맵 프리팹(에셋)의 지도 이미지 — 지도 화면에서 다른 월드를 볼 때. 없으면 null.
+		public static MinimapImage FindImage(WorldMap world)
+		{
+			if (world == null || world.Grid == null)
+			{
+				return null;
+			}
+
+			return world.Grid.GetComponent<MinimapImage>();
+		}
+
+		// 띄우지 않은 월드 맵 프리팹(에셋)의 표시 목록. 월드는 원점에 놓이므로 에셋 좌표가 곧 월드 좌표다.
+		public static void Collect(WorldMap world, List<MapMarker> buffer)
+		{
+			buffer.Clear();
+			MinimapImage image = FindImage(world);
+			if (image == null)
+			{
+				return;
+			}
+
+			collectBosses(world.Grid, buffer);
+			collectGates(world.Grid, buffer);
+			if (Account.Instance.Quests != null)
+			{
+				int cleared = Account.Instance.Quests.ClearedQuestId;
+				IReadOnlyList<ZoneArea> zones = world.Zones;
+				for (int i = 0; i < zones.Count; i++)
+				{
+					collectNpcsOfMap(zones[i].ZoneId, zones[i].NpcPoints, cleared, buffer);
+				}
+			}
+
+			collectCustom(image, buffer);
+			RefreshBosses(buffer);
+		}
+
 		// 필드보스의 생사와 남은 시간을 다시 읽는다. 표시가 바뀐 표시가 하나라도 있으면 true.
 		public static bool RefreshBosses(List<MapMarker> markers)
 		{
@@ -171,35 +208,35 @@ namespace ProjectOne.UI
 			MapManager.Instance.CollectLoadedMapIds(_mapIds);
 			for (int m = 0; m < _mapIds.Count; m++)
 			{
-				IReadOnlyList<Table_NpcSpawn.Row> spawns = QuestCatalog.GetSpawnsOfMap(_mapIds[m]);
-				if (spawns.Count == 0)
+				collectNpcsOfMap(_mapIds[m], MapManager.Instance.GetNpcSpawnPoints(_mapIds[m]), cleared, buffer);
+			}
+		}
+
+		// 맵(월드면 구역) 하나의 NPC — 퀘스트 등장 조건에 맞는 것만.
+		private static void collectNpcsOfMap(int mapId, IReadOnlyList<NpcSpawnPoint> points, int cleared, List<MapMarker> buffer)
+		{
+			IReadOnlyList<Table_NpcSpawn.Row> spawns = QuestCatalog.GetSpawnsOfMap(mapId);
+			for (int i = 0; i < spawns.Count; i++)
+			{
+				Table_NpcSpawn.Row row = spawns[i];
+				if (QuestCatalog.IsSpawnActive(row, cleared) == false)
 				{
 					continue;
 				}
 
-				IReadOnlyList<NpcSpawnPoint> points = MapManager.Instance.GetNpcSpawnPoints(_mapIds[m]);
-				for (int i = 0; i < spawns.Count; i++)
+				NpcSpawnPoint point = findNpcPoint(points, row.SpawnPointID);
+				Table_Npc.Row npc = Table_Npc.Get(row.NpcID);
+				if (point == null || npc == null)
 				{
-					Table_NpcSpawn.Row row = spawns[i];
-					if (QuestCatalog.IsSpawnActive(row, cleared) == false)
-					{
-						continue;
-					}
-
-					NpcSpawnPoint point = findNpcPoint(points, row.SpawnPointID);
-					Table_Npc.Row npc = Table_Npc.Get(row.NpcID);
-					if (point == null || npc == null)
-					{
-						continue;
-					}
-
-					MapMarker marker = new MapMarker();
-					marker.Kind = MapMarkerKind.Npc;
-					marker.Position = point.Position;
-					marker.Icon = npcIcon(npc.NpcType);
-					marker.Label = string.IsNullOrEmpty(npc.Title) == false ? npc.Title : npc.Name;
-					buffer.Add(marker);
+					continue;
 				}
+
+				MapMarker marker = new MapMarker();
+				marker.Kind = MapMarkerKind.Npc;
+				marker.Position = point.Position;
+				marker.Icon = npcIcon(npc.NpcType);
+				marker.Label = string.IsNullOrEmpty(npc.Title) == false ? npc.Title : npc.Name;
+				buffer.Add(marker);
 			}
 		}
 

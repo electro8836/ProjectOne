@@ -94,6 +94,31 @@ namespace ProjectOne.UI
 			get { return _worldMin + _worldSize * 0.5f; }
 		}
 
+		public Vector2 WorldSize
+		{
+			get { return _worldSize; }
+		}
+
+		public float PixelsPerUnit
+		{
+			get { return _pixelsPerUnit; }
+		}
+
+		public Vector2 Center
+		{
+			get { return _center; }
+		}
+
+		// 지도 설정을 적용한다 — 꺼진 종류의 아이콘은 뷰포트 클래스로 숨긴다(MapView.uss).
+		// applyText: 미니맵만 "미니맵 텍스트 표시" 설정을 따른다.
+		public void ApplySettings(bool applyText)
+		{
+			_viewport.EnableInClassList("map-view--no-text", applyText == true && MapSettings.Get(MapSetting.MinimapText) == false);
+			_viewport.EnableInClassList("map-view--hide-boss", MapSettings.Get(MapSetting.Boss) == false);
+			_viewport.EnableInClassList("map-view--hide-npc", MapSettings.Get(MapSetting.Npc) == false);
+			_viewport.EnableInClassList("map-view--hide-portal", MapSettings.Get(MapSetting.Portal) == false);
+		}
+
 		public void SetMap(MinimapImage image)
 		{
 			_hasMap = image != null && image.Texture != null;
@@ -145,7 +170,7 @@ namespace ProjectOne.UI
 			for (int i = 0; i < markers.Count; i++)
 			{
 				MarkerElement element = getOrCreateMarker(i);
-				element.root.style.display = DisplayStyle.Flex;
+				element.root.style.display = StyleKeyword.Null;	// 인라인을 비워야 USS 의 종류별 숨김(지도 설정)이 먹는다
 				placeOnContent(element.root, markers[i].Position);
 				if (element.iconName != markers[i].Icon)
 				{
@@ -186,6 +211,8 @@ namespace ProjectOne.UI
 			element.label.style.display = string.IsNullOrEmpty(text) ? DisplayStyle.None : DisplayStyle.Flex;
 			element.root.EnableInClassList("map-marker--dead", marker.Dead);
 			element.root.EnableInClassList("map-marker--boss", marker.Kind == MapMarkerKind.Boss);
+			element.root.EnableInClassList("map-marker--npc", marker.Kind == MapMarkerKind.Npc);
+			element.root.EnableInClassList("map-marker--portal", marker.Kind == MapMarkerKind.Gate);
 		}
 
 		private MarkerElement getOrCreateMarker(int index)

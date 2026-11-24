@@ -16,7 +16,8 @@ namespace ProjectOne.UI
 		Ranking,
 		HeroPass,
 		DailyBonus,
-		Quest
+		Quest,
+		Map
 	}
 
 	// 메인 메뉴 팝업(UIPrefab_MenuPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Menu/MenuPopup.uxml.
@@ -43,6 +44,7 @@ namespace ProjectOne.UI
 			root.Q<Button>("daily").clicked += onDailyClicked;
 			root.Q<Button>("afk").clicked += onAfkClicked;
 			root.Q<Button>("quit").clicked += onQuitClicked;
+			root.Q<Button>("map").clicked += onMapClicked;
 		}
 
 		public async UniTask<MenuPopupResult> ShowAsync(CancellationToken ct)
@@ -73,6 +75,12 @@ namespace ProjectOne.UI
 
 		private void onCloseClicked()
 		{
+			Close();
+		}
+
+		private void onMapClicked()
+		{
+			_result = MenuPopupResult.Map;
 			Close();
 		}
 

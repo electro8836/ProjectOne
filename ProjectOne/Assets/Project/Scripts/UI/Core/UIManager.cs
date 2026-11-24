@@ -90,9 +90,6 @@ namespace ProjectOne.UI
 		// 출석 팝업도 같다 — 보상 칸을 누르면 설명 툴팁이 뜬다.
 		private CancellationTokenSource _dailyBonusCts;
 
-		// 월드맵 팝업 — 다른 팝업과 독립으로 열고 닫는다.
-		private CancellationTokenSource _worldMapCts;
-
 		// 히어로패스 팝업도 같다 — 보상 칸을 누르면 설명 툴팁이 뜬다.
 		private CancellationTokenSource _heroPassCts;
 
@@ -584,7 +581,6 @@ namespace ProjectOne.UI
 			cancelPopup(ref _currencyListCts);
 			cancelPopup(ref _questListCts);
 			cancelPopup(ref _dailyBonusCts);
-			cancelPopup(ref _worldMapCts);
 			cancelPopup(ref _heroPassCts);
 			cancelPopup(ref _rankingCts);
 			cancelPopup(ref _playerInfoCts);
@@ -1305,7 +1301,8 @@ namespace ProjectOne.UI
 		private const string MENU_POPUP_ADDRESS = "UIPrefab_MenuPopup";
 		private const string QUEST_LIST_POPUP_ADDRESS = "UIPrefab_QuestListPopup";
 		private const string DAILY_BONUS_POPUP_ADDRESS = "UIPrefab_DailyBonusPopup";
-		private const string WORLD_MAP_POPUP_ADDRESS = "UIPrefab_WorldMapPopup";
+		private const string MAP_SCREEN_ADDRESS = "UIPrefab_MapScreen";
+		private bool _mapScreenOpening;
 		private const string HERO_PASS_POPUP_ADDRESS = "UIPrefab_PassPopup";
 		private const string RANKING_POPUP_ADDRESS = "UIPrefab_RankingPopup";
 		private const string PLAYER_INFO_POPUP_ADDRESS = "UIPrefab_PlayerInfoPopup";
@@ -1910,41 +1907,25 @@ namespace ProjectOne.UI
 
 		// 월드맵 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다. 미니맵 확장 버튼이 연다.
 		// 이미 떠 있으면 새로 열지 않는다.
-		public async UniTask ShowWorldMapPopupAsync(CancellationToken ct)
+		// 지도 화면 — 창(Window) 층에 연다. 열린 창(네비게이션 탭 화면)은 먼저 닫고 탭 선택도 푼다.
+		// 닫기는 화면의 X(CloseWindowAsync), 네비게이션 탭을 누르면 그 화면으로 바뀐다.
+		public async UniTask OpenMapScreenAsync(CancellationToken ct)
 		{
-			if (_worldMapCts != null)
+			// 여는 중(프리펩 로드 대기)에 또 누르면 두 장 뜨지 않게 막는다.
+			if (_mapScreenOpening == true || (_windowStack.Count > 0 && _windowStack.Peek().screen is MapScreen))
 			{
 				return;
 			}
 
-			CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-			_worldMapCts = cts;
-
-			// 취소돼도 아래에서 _worldMapCts 를 비워야 다시 열 수 있다 — 예외 대신 결과로 받는다.
-			(bool cancelled, GameObject prefab) = await ResourceManager.Instance.AcquireAsync<GameObject>(WORLD_MAP_POPUP_ADDRESS, cts.Token).SuppressCancellationThrow();
-			if (cancelled == false && prefab != null)
+			_mapScreenOpening = true;
+			if (_windowStack.Count > 0)
 			{
-				GameObject go = spawnPopup(prefab);
-				WorldMapPopup popup = go.GetComponent<WorldMapPopup>();
-				if (popup != null)
-				{
-					await popup.ShowAsync(cts.Token);
-				}
-
-				Destroy(go);
-
-				if (ResourceManager.HasInstance)
-				{
-					ResourceManager.Instance.Release(WORLD_MAP_POPUP_ADDRESS);
-				}
+				await CloseAllWindowsAsync();
+				EventManager.Instance.Publish(new WindowClosedEvent());
 			}
 
-			if (_worldMapCts == cts)
-			{
-				_worldMapCts = null;
-			}
-
-			cts.Dispose();
+			await OpenWindowAsync<MapScreen>(MAP_SCREEN_ADDRESS, ct).SuppressCancellationThrow();
+			_mapScreenOpening = false;
 		}
 
 		// 출석 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.

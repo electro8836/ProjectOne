@@ -13,8 +13,9 @@ namespace ProjectOne.UI
 {
 	// 메인 HUD 미니맵 — 오른쪽 위 메뉴 버튼 아래의 원형 지도.
 	//
-	// 히어로를 가운데에 두고 지도가 따라 움직인다. +/- 로 줌, 확장 버튼으로 월드맵 창을 연다.
-	// 지도·표시는 월드맵 창과 같은 MapView·MapMarkerCollector 를 쓴다.
+	// 히어로를 가운데에 두고 지도가 따라 움직인다. +/- 로 줌, 확장 버튼으로 지도 화면을 연다.
+	// 지도·표시는 지도 화면과 같은 MapView·MapMarkerCollector 를 쓴다.
+	// 지도 설정의 "HUD 미니맵 사용"이 꺼지면 숨기고, 아이콘 종류·글자 표시 설정을 따른다.
 	// 맵이 바뀌었는지는 알림이 없어 지금 맵(MapManager.Current)의 지도 이미지 참조를 매 프레임 비교한다(참조 비교 1회).
 	// 지도 이미지가 없는 맵(아직 굽지 않음)에서는 칸째 숨긴다.
 	public sealed class HudMinimap
@@ -55,7 +56,9 @@ namespace ProjectOne.UI
 			root.Q<Button>("minimap-expand").clicked += onExpandClicked;
 
 			EventManager.Instance.Subscribe<QuestChangeEvent>(onQuestChanged);
+			EventManager.Instance.Subscribe<MapSettingChangedEvent>(onMapSettingChanged);
 
+			_view.ApplySettings(true);
 			applyZoom();
 			setVisible(false);
 		}
@@ -63,6 +66,7 @@ namespace ProjectOne.UI
 		public void Dispose()
 		{
 			EventManager.Instance.Unsubscribe<QuestChangeEvent>(onQuestChanged);
+			EventManager.Instance.Unsubscribe<MapSettingChangedEvent>(onMapSettingChanged);
 		}
 
 		public void Tick(float deltaTime)
@@ -107,8 +111,10 @@ namespace ProjectOne.UI
 			_clearedQuestId = (Account.Instance.Quests != null) ? Account.Instance.Quests.ClearedQuestId : 0;
 		}
 
+		// 지도가 있어도 설정에서 미니맵을 껐으면 숨긴다.
 		private void setVisible(bool visible)
 		{
+			visible = visible == true && MapSettings.Get(MapSetting.MinimapEnabled) == true;
 			_visible = visible;
 			_slot.EnableInClassList("minimap--shown", visible);
 		}
@@ -165,7 +171,19 @@ namespace ProjectOne.UI
 
 		private void onExpandClicked()
 		{
-			UIManager.Instance.ShowWorldMapPopupAsync(_ct).Forget();
+			UIManager.Instance.OpenMapScreenAsync(_ct).Forget();
+		}
+
+		// 꺼져 있던 미니맵을 다시 켜면 그동안 건너뛴 NPC 변화가 있을 수 있어 표시를 다시 모은다.
+		private void onMapSettingChanged(MapSettingChangedEvent e)
+		{
+			_view.ApplySettings(true);
+			bool wasVisible = _visible;
+			setVisible(_view.HasMap);
+			if (wasVisible == false && _visible == true)
+			{
+				rebuild();
+			}
 		}
 
 		// NPC 등장 조건은 완료한 퀘스트로 정해진다. 진행도 갱신마다 이벤트가 오므로 완료 퀘스트가 바뀔 때만 다시 모은다.

@@ -328,6 +328,11 @@ namespace ProjectOne.Event
 		{
 		}
 
+		// 지도 설정(미니맵 사용·글자·지도 아이콘 표시)이 바뀌었을 때. 미니맵·지도 화면이 구독해 다시 적용한다.
+		public readonly struct MapSettingChangedEvent
+		{
+		}
+
 		// 소모품 사용 시도 결과. 실패해도 발행된다 — 쿨다운 표시·실패 안내가 같은 지점에서 갱신된다.
 		public readonly struct ConsumableUsedEvent
 		{

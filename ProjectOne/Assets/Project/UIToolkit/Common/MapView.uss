@@ -81,3 +81,14 @@
 	border-color: #FFFFFF;
 	background-color: #FFC83D;
 }
+
+/* 지도 설정(MapView.ApplySettings) — 꺼진 종류의 아이콘·미니맵 글자를 숨긴다 */
+.map-view--no-text .map-marker__label {
+	display: none;
+}
+
+.map-view--hide-boss .map-marker--boss,
+.map-view--hide-npc .map-marker--npc,
+.map-view--hide-portal .map-marker--portal {
+	display: none;
+}

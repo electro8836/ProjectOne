@@ -1,0 +1,388 @@
+/* 지도 화면 — 보라 제목 판 아래 지도가 꽉 차고, 위에 맵 선택기·오른쪽 아래에 버튼 막대가 떠 있다.
+   시안 Shared/Design/UI지도화면_시안.png 1안 · 설정 창 UI지도설정_시안.png 1안 */
+
+/* 제목 판 오른쪽 닫기 */
+.theme-violet .map-close {
+	flex-shrink: 0;
+	background-image: none;
+}
+
+/* 지도 칸 — 제목 판 아래부터 화면 맨 아래까지(네비게이션 바는 숨는다) 화면 폭 전체 */
+.map-body {
+	flex-grow: 1;
+	margin: 0 -6px -6px -6px;
+}
+
+.map-screen__view {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+/* ── 맵 선택 — ◀ 이름 ▶ + 점 ── */
+.map-select {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 28px;
+	align-items: center;
+}
+
+.map-select__bar {
+	flex-direction: row;
+	align-items: center;
+	width: 760px;
+	height: 100px;
+	padding: 0 12px;
+	border-width: 4px;
+	border-color: #0A0814;
+	border-radius: 26px;
+	background-color: #161420;
+}
+
+.map-select__name {
+	flex-grow: 1;
+	margin: 0;
+	padding: 0;
+	-unity-text-align: middle-center;
+	font-size: 44px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 4px 0 #0A0814;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* 화살표 — 보라 네모, 끝이면 꺼진 회색 */
+.map-select__arrow {
+	width: 80px;
+	height: 72px;
+	margin: 0;
+	padding: 0;
+	align-items: center;
+	justify-content: center;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 16px;
+	background-image: none;
+	background-color: #7C68E4;
+}
+
+.map-select__arrow:hover:enabled {
+	border-color: #0A0814;
+	background-color: #7C68E4;
+}
+
+.map-select__arrow:active {
+	translate: 0 3px;
+}
+
+.map-select__arrow:disabled {
+	opacity: 1;
+	background-color: #3C3C46;
+}
+
+.map-select__tri {
+	width: 32px;
+	height: 32px;
+	background-image: url("../../Violet/icon_tri.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.map-select__tri--left {
+	scale: -1 1;
+}
+
+.map-select__arrow:disabled .map-select__tri {
+	-unity-background-image-tint-color: #6E6E7A;
+}
+
+.map-select__dots {
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	height: 32px;
+	margin-top: 10px;
+}
+
+.map-select__dot {
+	width: 12px;
+	height: 12px;
+	margin: 0 7px;
+	border-radius: 6px;
+	background-color: #5A5A66;
+}
+
+.map-select__dot--on {
+	width: 16px;
+	height: 16px;
+	border-radius: 8px;
+	background-color: #7C68E4;
+}
+
+/* ── 버튼 막대 — 오른쪽 아래 어두운 막대 하나에 현재 위치 | 확대 · 축소 | 설정. 묶음 사이에 얇은 선 ── */
+.map-side {
+	position: absolute;
+	right: 30px;
+	bottom: 40px;
+	width: 118px;
+	border-width: 4px;
+	border-color: #0A0814;
+	border-radius: 34px;
+	background-color: #161420;
+	overflow: hidden;
+}
+
+.map-side__btn,
+.map-side__btn:hover,
+.map-side__btn:active {
+	width: 110px;
+	height: 110px;
+	margin: 0;
+	padding: 0;
+	align-items: center;
+	justify-content: center;
+	border-width: 0;
+	border-radius: 0;
+	background-image: none;
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.map-side__btn:active .map-side__icon {
+	scale: 0.88 0.88;
+}
+
+.map-side__btn:disabled {
+	opacity: 1;
+}
+
+/* 묶음 끝 — 아래에 얇은 구분선 */
+.map-side__btn--split,
+.map-side__btn--split:hover,
+.map-side__btn--split:active {
+	border-bottom-width: 3px;
+	border-color: #3C3A50;
+}
+
+/* 픽토그램은 그림 둘레 여백이 넓어 칸보다 크게 잡는다 — 보이는 그림은 약 44px */
+.map-side__icon {
+	width: 80px;
+	height: 80px;
+	-unity-background-scale-mode: scale-to-fit;
+	-unity-background-image-tint-color: #C8B8FF;
+}
+
+.map-side__btn:disabled .map-side__icon {
+	-unity-background-image-tint-color: #4A4858;
+}
+
+.map-side__icon--locate { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_target_1.png"); }
+.map-side__icon--plus { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_plus.png"); }
+.map-side__icon--minus { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_minus.png"); }
+.map-side__icon--setting { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_setting_1.png"); }
+
+/* ── 지도 설정 창 — 화면 위에 딤 + 바이올렛 팝업 판 ── */
+.map-settings {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	align-items: center;
+	justify-content: center;
+	display: none;
+}
+
+.map-settings--open {
+	display: flex;
+}
+
+.map-settings__dim {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.7);
+}
+
+.map-settings__window {
+	width: 960px;
+	padding-bottom: 28px;
+	border-width: 4px;
+	border-color: #44464E;
+	background-color: #313338;
+}
+
+.map-settings__head {
+	height: 116px;
+	justify-content: center;
+	background-color: #44464E;
+}
+
+.map-settings__title {
+	margin: 0;
+	padding: 0;
+	-unity-text-align: middle-center;
+	font-size: 52px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 5px 0 #0A0814;
+}
+
+.theme-violet .map-settings__close {
+	position: absolute;
+	right: 10px;
+	top: 10px;
+	background-image: none;
+}
+
+.map-settings__body {
+	padding: 8px 36px 0 36px;
+}
+
+.map-set-title {
+	flex-direction: row;
+	align-items: center;
+	margin: 28px 0 14px 4px;
+}
+
+.map-set-title__bar {
+	width: 8px;
+	height: 36px;
+	margin-right: 16px;
+	border-radius: 4px;
+	background-color: #7C68E4;
+}
+
+.map-set-title__text {
+	margin: 0;
+	padding: 0;
+	font-size: 38px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.map-set-title__sub {
+	margin: 6px 0 0 16px;
+	padding: 0;
+	font-size: 26px;
+	color: #A8A8B8;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.map-set-box {
+	border-radius: 16px;
+	background-color: #26272C;
+	overflow: hidden;
+}
+
+/* 한 줄 — 전체가 눌림 영역. 줄 사이 얇은 선 */
+.map-set-row,
+.map-set-row:hover,
+.map-set-row:active {
+	flex-direction: row;
+	align-items: center;
+	height: 100px;
+	margin: 0;
+	padding: 0 28px;
+	border-width: 0;
+	border-top-width: 2px;
+	border-color: #3A3B42;
+	border-radius: 0;
+	background-image: none;
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.map-set-row--first {
+	border-top-width: 0;
+}
+
+.map-set-row__badge {
+	width: 66px;
+	height: 66px;
+	margin-right: 22px;
+	align-items: center;
+	justify-content: center;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 33px;
+}
+
+.map-set-row__badge--chest { background-color: #B07028; }
+.map-set-row__badge--boss { background-color: #96322A; }
+.map-set-row__badge--altar { background-color: #5846AA; }
+.map-set-row__badge--quest { background-color: #C8961E; }
+.map-set-row__badge--npc { background-color: #2B3456; }
+.map-set-row__badge--portal { background-color: #286E8C; }
+
+.map-set-row__icon {
+	width: 44px;
+	height: 44px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.map-set-row__icon--chest { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_chest_1.png"); }
+.map-set-row__icon--boss { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_skull.png"); }
+.map-set-row__icon--altar { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_magicball.png"); }
+.map-set-row__icon--quest { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_mark_exclamation.png"); }
+.map-set-row__icon--npc { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_talk_1.png"); }
+.map-set-row__icon--portal { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_cyclone.png"); }
+
+.map-set-row__name {
+	flex-grow: 1;
+	margin: 0;
+	padding: 0;
+	font-size: 34px;
+	color: #FFFFFF;
+	-unity-text-align: middle-left;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* 스위치 — 켜짐: 보라 홈 + 오른쪽 흰 손잡이 / 꺼짐: 회색 홈 + 왼쪽 */
+.map-switch {
+	width: 104px;
+	height: 56px;
+	padding: 0 6px;
+	justify-content: center;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 28px;
+	background-color: #7C68E4;
+}
+
+.map-switch__knob {
+	width: 40px;
+	height: 40px;
+	margin-left: 46px;
+	border-radius: 20px;
+	background-color: #FFFFFF;
+}
+
+/* 꺼진 줄 */
+.map-set-row--off .map-switch {
+	background-color: #46464F;
+}
+
+.map-set-row--off .map-switch__knob {
+	margin-left: 0;
+}
+
+.map-set-row--off .map-set-row__name {
+	color: #9696A4;
+}
+
+.map-set-row--off .map-set-row__badge {
+	background-color: #46464F;
+}
+
+.map-set-row--off .map-set-row__icon {
+	-unity-background-image-tint-color: #8A8A96;
+}
