@@ -1,4 +1,5 @@
-/* 알림 메시지 — 화면 위에 떠 있는 글 상자들. 입력은 받지 않는다. */
+/* 알림 메시지 — 화면 위에 떠 있는 글 상자들. 입력은 받지 않는다.
+   시안 Shared/Design/UI알림메시지_시안.png 2안 + UI알림메시지_시스템띠_시안.png A */
 
 .notice-layer {
 	position: absolute;
@@ -9,14 +10,59 @@
 	align-items: center;
 }
 
-/* 잠깐 떴다 사라지는 한 줄 — 위치는 프리펩마다 다른 클래스 */
-.notice {
+/* 알약 — 경고·제한 공통. 잉크 테두리의 둥근 판 + 왼쪽 원 아이콘, 글자가 길면 최대 2줄 */
+.pill {
 	position: absolute;
+	flex-direction: row;
+	align-items: center;
 	max-width: 960px;
-	padding: 18px 40px 24px 40px;
-	background-color: rgba(18, 17, 28, 0.85);
+	min-height: 92px;
+	padding: 10px 44px 10px 18px;
 	border-width: 4px;
-	border-color: #3A4280;
+	border-color: #0A0814;
+	border-radius: 46px;
+	background-color: #161420;
+}
+
+.pill__icon {
+	width: 54px;
+	height: 54px;
+	flex-shrink: 0;
+	margin-right: 18px;
+	align-items: center;
+	justify-content: center;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 27px;
+	background-color: #7C68E4;
+}
+
+.pill__icon-text {
+	margin: 0;
+	padding: 0;
+	font-size: 34px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.pill__text {
+	flex-shrink: 1;
+	max-height: 96px;
+	overflow: hidden;
+	text-overflow: ellipsis;	/* 2줄을 넘으면 끝을 … 로 자른다 */
+	margin: 0;
+	padding: 0;
+	font-size: 36px;
+	color: #FFFFFF;
+	white-space: normal;
+	-unity-text-align: middle-center;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* 잠깐 떴다 사라지는 메시지 — 위치는 프리펩마다 다른 클래스 */
+.notice {
 	opacity: 0;
 	transition-property: opacity;
 }
@@ -30,58 +76,58 @@
 	top: 820px;
 }
 
-/* 시스템 메시지 — 맨 위 층(System)이라 다른 UI 와 겹쳐도 가려지지 않는다. 대신 겹친 UI 와 섞여 보이지 않게
-   화면 폭 전체의 띠(가운데 진한 검정, 좌우 끝으로 옅어짐, 위아래 금색 선)를 깐다 */
+/* 시스템 메시지 — 맨 위 층(System)이라 다른 UI 와 겹친다. 확실히 읽히게 화면 폭 전체를
+   불투명 잉크 띠로 덮고 위아래 보라 선을 긋는다. 글자가 길면 띠가 2줄까지 늘어난다 */
 .notice--system {
 	top: 260px;
 	left: 0;
 	right: 0;
 	max-width: none;
-	padding: 26px 40px 30px 40px;
-	border-width: 0;
-	background-color: rgba(0, 0, 0, 0);
-	background-image: url("../../Violet/notice_band.png");
-	-unity-background-scale-mode: stretch-to-fill;
+	min-height: 108px;
+	padding: 16px 40px 16px 40px;
+	justify-content: center;
+	border-radius: 0;
+	border-left-width: 0;
+	border-right-width: 0;
+	border-top-color: #A893FF;
+	border-bottom-color: #A893FF;
 }
 
-.notice__text {
-	font-size: 36px;
-	color: var(--white);
-	white-space: normal;
-	-unity-text-align: middle-center;
-	-unity-text-outline-color: var(--ink);
+.notice--system .pill__icon {
+	display: none;
 }
 
-/* 제한 메시지 — 숨길 때까지 떠 있다 */
-.warning {
-	position: absolute;
+.notice--system .pill__text {
+	max-height: 100px;
+	font-size: 38px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* 제한 메시지 — 빨강 알약, 숨길 때까지 떠 있다 */
+.pill--warning {
 	top: 980px;
-	max-width: 760px;
-	padding: 20px 44px 26px 44px;
-	background-color: rgba(60, 12, 16, 0.9);
-	border-width: 4px;
-	border-color: #FF6B6B;
+	background-color: #2C0E16;
 }
 
-.warning__text {
-	font-size: 36px;
-	color: #FFD0D0;
-	white-space: normal;
-	-unity-text-align: middle-center;
+.pill__icon--warning {
+	background-color: #FF6B6B;
 }
 
-/* 레벨업 — 작게 시작해 튀어나온 뒤 사라진다 */
+/* 레벨업 — 판 없이 화면 폭 보라 띠(위아래 금 선) 위에 금 글자. 작게 시작해 튀어나온 뒤 사라진다 */
 .levelup {
 	position: absolute;
-	top: 440px;
+	top: 470px;
+	left: 0;
+	right: 0;
+	height: 190px;
 	align-items: center;
-	padding: 26px 60px 32px 60px;
-	background-image: url("../../Pixel/panel_wood.png");
-	-unity-slice-left: 6;
-	-unity-slice-right: 6;
-	-unity-slice-top: 6;
-	-unity-slice-bottom: 6;
-	-unity-slice-scale: 4px;
+	justify-content: center;
+	background-image: url("../../Violet/levelup_band.png");
+	-unity-background-scale-mode: stretch-to-fill;
+	-unity-slice-top: 4;
+	-unity-slice-bottom: 4;
+	-unity-slice-scale: 1px;
 	opacity: 0;
 	scale: 0.5 0.5;
 	transition-property: opacity, scale;
@@ -101,21 +147,40 @@
 	transition-timing-function: linear;
 }
 
+/* 제목 뒤 보라 빛 */
+.levelup__glow {
+	position: absolute;
+	top: -110px;
+	width: 360px;
+	height: 300px;
+	background-image: url("../../Violet/glow_white.png");
+	-unity-background-image-tint-color: #A893FF;
+	-unity-background-scale-mode: stretch-to-fill;
+	opacity: 0.55;
+}
+
 .levelup__title {
-	font-size: 60px;
-	color: var(--gold);
-	-unity-text-outline-color: var(--ink);
-	text-shadow: 0 4px 0 var(--ink);
+	margin: 0;
+	padding: 0;
+	font-size: 64px;
+	color: #FFD166;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 5px 0 #0A0814;
 }
 
-.levelup__level {
-	font-size: 48px;
-	color: var(--white);
-	-unity-text-outline-color: var(--ink);
+.levelup__sub {
+	flex-direction: row;
+	margin-top: 10px;
 }
 
-.levelup__desc {
-	font-size: 36px;
-	color: var(--text);
-	margin-top: 6px;
+.levelup__line {
+	margin: 0;
+	padding: 0;
+	font-size: 34px;
+	color: #FFFFFF;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.levelup__dot {
+	margin: 0 14px;
 }

@@ -930,7 +930,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 경고 메시지 — 3초 유지 후 사라진다. 떠 있는 중에 오면 닫힌 뒤 이어서 뜬다.
+		// 경고 메시지 — 1줄 3초·2줄 5초 유지 후 사라진다. 떠 있는 중에 오면 닫힌 뒤 이어서 뜬다.
 		public void ShowAlertMessage(string message)
 		{
 			if (_alertMessage == null)
@@ -942,7 +942,7 @@ namespace ProjectOne.UI
 			_alertMessage.Show(message);
 		}
 
-		// 시스템 메시지(공지 등) — 5초 유지 후 사라진다. 여러 개면 차례로 뜬다.
+		// 시스템 메시지(공지 등) — 1줄 4초·2줄 6초 유지 후 사라진다. 여러 개면 차례로 뜬다.
 		public void ShowSystemMessage(string message)
 		{
 			if (_systemMessage == null)
