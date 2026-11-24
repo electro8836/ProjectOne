@@ -505,13 +505,13 @@
 	flex-direction: column;
 }
 
-/* 버프 1칸 — 75×75 둥근 칸. 검은 바탕 + 초록 테두리 3px, 아이콘은 테두리 안쪽을 채운다 */
+/* 버프 1칸 — 75×75 둥근 칸. 검은 바탕 + 초록 테두리 4px, 아이콘은 테두리 안쪽을 채운다 */
 .buff {
 	width: 75px;
 	height: 75px;
 	margin-bottom: 15px;
 	background-color: #000000;
-	border-width: 3px;
+	border-width: 4px;
 	border-color: #42FF49;
 	border-radius: 10px;
 }
@@ -526,23 +526,23 @@
 	-unity-background-scale-mode: scale-to-fit;
 }
 
-/* 중첩 수 — 칸 윗변에 걸쳐 가운데. 남은 시간과 같은 만큼(10px)만 내민다 — 더 내밀면 위 칸의 남은 시간과 겹친다 */
+/* 중첩 수 — 칸 위 가운데. 글자 높이의 20%(4px)가 칸 위로 나온다 — 남은 시간과 위아래 같은 비율 */
 .buff__stack {
 	position: absolute;
 	left: -10px;
 	right: -10px;
-	top: -10px;
+	top: -15px;
 	font-size: 28px;
 	-unity-text-align: upper-center;
 	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
 }
 
-/* 남은 시간 — 칸 아랫변에 걸쳐 가운데 */
+/* 남은 시간 — 칸 아래 가운데. 글자 높이의 20%(4px)가 칸 아래로 나온다 */
 .buff__time {
 	position: absolute;
 	left: -10px;
 	right: -10px;
-	bottom: -10px;
+	bottom: -14px;
 	font-size: 28px;
 	-unity-text-align: lower-center;
 	white-space: nowrap;
