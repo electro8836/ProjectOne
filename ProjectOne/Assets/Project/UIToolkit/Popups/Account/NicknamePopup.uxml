@@ -4,6 +4,7 @@
 	<Style src="../Popups.uss" />
 	<Style src="Account.uss" />
 
+	<!-- 닉네임 변경 — 보라 테두리 입력칸, 아래 길이 규칙 · 바이트, 버튼 안 "변경" 아래 비용. 시안 Shared/Design/UI계정_시안.png 1안 -->
 	<ui:VisualElement name="popup" class="popup theme-violet">
 		<ui:VisualElement name="dim" class="popup__dim" />
 		<ui:VisualElement class="px-paper popup__window">
@@ -12,7 +13,10 @@
 			</ui:VisualElement>
 			<ui:VisualElement class="popup__body">
 				<ui:TextField name="input" class="nickname-input" />
-				<ui:Label name="byte" text="" class="nickname-byte" />
+				<ui:VisualElement class="nickname-info">
+					<ui:Label name="rule" text="" class="nickname-rule" />
+					<ui:Label name="byte" text="" class="nickname-byte" />
+				</ui:VisualElement>
 				<ui:Label name="error" text="" class="nickname-error" />
 			</ui:VisualElement>
 			<ui:VisualElement class="popup__buttons">

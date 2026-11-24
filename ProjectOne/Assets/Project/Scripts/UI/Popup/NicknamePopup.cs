@@ -36,6 +36,7 @@ namespace ProjectOne.UI
 			_input = root.Q<TextField>("input");
 			_input.RegisterValueChangedCallback(onInputChanged);
 			_byteText = root.Q<Label>("byte");
+			root.Q<Label>("rule").text = $"{NicknameRules.MinBytes}~{NicknameRules.MaxBytes}byte";
 			_errorText = root.Q<Label>("error");
 			_errorText.style.display = DisplayStyle.None;
 

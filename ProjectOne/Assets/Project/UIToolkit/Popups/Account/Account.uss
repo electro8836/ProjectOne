@@ -1,77 +1,348 @@
-/* 계정·닉네임 팝업 */
+/* 계정 · 닉네임 변경 팝업. 시안 Shared/Design/UI계정연동_시안.png 1안 · UI계정_시안.png 1안 */
 
-.account-row {
+.account {
+	margin-bottom: 30px;
+}
+
+/* :root 의 2px 외곽선을 끈다 — 그림자로 대신한다. 여백은 클래스마다 정한다 */
+.account-panel__label,
+.account-panel__value,
+.account-guest,
+.account-section,
+.account-warn,
+.account-link__name,
+.account-link__id,
+.account-linked__text {
+	margin: 0;
+	padding: 0;
+	-unity-text-outline-width: 0;
+}
+
+/* ── 판 — 왼쪽 정보, 오른쪽 버튼 ── */
+.account-panel {
 	flex-direction: row;
 	align-items: center;
-	margin-bottom: 20px;
-	padding: 20px 24px;
+	height: 134px;
+	margin-bottom: 16px;
+	padding: 0 28px 0 32px;
+	border-radius: 18px;
+	background-color: #26272C;
 }
 
-.account-row__text {
+.account-panel__info {
 	flex-grow: 1;
 	flex-shrink: 1;
-	font-size: 36px;
-	white-space: normal;
+	overflow: hidden;
+	margin-right: 16px;
 }
 
-/* 닉네임 입력란 — 도트 패널 안에 글자 */
+.account-panel__caption {
+	flex-direction: row;
+	align-items: center;
+	margin-bottom: 4px;
+}
+
+.account-panel__label {
+	font-size: 26px;
+	color: #A8ACBA;
+}
+
+.account-panel__value {
+	font-size: 38px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 3px 0 #0A0814;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.account-panel__value--small {
+	font-size: 28px;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* 게스트 배지 — 연동된 계정이 하나도 없을 때 */
+.account-guest {
+	margin-left: 12px;
+	height: 40px;
+	padding: 0 14px;
+	border-radius: 20px;
+	background-color: #FFB040;
+	-unity-text-align: middle-center;
+	font-size: 24px;
+	color: #0A0814;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+/* ── 보라 버튼 ── */
+.account-btn {
+	width: 136px;
+	height: 72px;
+	margin: 0;
+	padding: 0 0 4px 0;
+	flex-shrink: 0;
+	border-width: 3px;
+	border-bottom-width: 8px;
+	border-color: #0A0814;
+	border-bottom-color: #4F4294;
+	border-radius: 16px;
+	background-image: none;
+	background-color: #7C68E4;
+	font-size: 34px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.account-btn:hover:enabled {
+	background-color: #7C68E4;
+	border-color: #0A0814;
+	border-bottom-color: #4F4294;
+}
+
+.account-btn:active {
+	translate: 0 4px;
+}
+
+/* ── 아이콘 버튼(변경 · 복사) — 슬레이트 정사각 판 + 검은 외곽 + 아래 턱, 흰 아이콘 크게 ──
+   버튼 바탕이 턱 색이고, 판(face)을 위에 얹어 아래 6px 만 턱으로 보이게 한다 */
+.account-icon-btn {
+	width: 82px;
+	height: 88px;
+	margin: 0;
+	padding: 0;
+	flex-shrink: 0;
+	border-width: 3px;
+	border-color: #080A0D;
+	border-radius: 14px;
+	background-image: none;
+	background-color: #20282D;
+}
+
+.account-icon-btn:hover:enabled {
+	border-color: #080A0D;
+	background-color: #20282D;
+}
+
+.account-icon-btn:active {
+	translate: 0 4px;
+}
+
+.account-icon-btn__face {
+	height: 76px;
+	align-items: center;
+	justify-content: center;
+	border-radius: 11px;
+	background-color: #354149;
+}
+
+.account-icon-btn__icon {
+	width: 66px;
+	height: 66px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.icon-write {
+	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_write_1.png");
+}
+
+.icon-copy {
+	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_copy.png");
+}
+
+/* ── 계정 연동 ── */
+.account-section {
+	margin: 24px 0 14px 0;
+	font-size: 34px;
+	color: #F2F2F5;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* 게스트 경고 줄 — 왼쪽 주황 띠 */
+.account-warn {
+	height: 64px;
+	margin-bottom: 16px;
+	padding-left: 24px;
+	border-left-width: 10px;
+	border-left-color: #FFB040;
+	border-radius: 16px;
+	background-color: #42321E;
+	-unity-text-align: middle-left;
+	font-size: 25px;
+	color: #FFD696;
+}
+
+.account-link {
+	height: 120px;
+	padding-left: 32px;
+}
+
+.account-link__logo {
+	width: 70px;
+	height: 70px;
+	margin-right: 26px;
+	flex-shrink: 0;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.link-apple {
+	background-image: url("../../Violet/link_apple.png");
+}
+
+.link-google {
+	background-image: url("../../Violet/link_google.png");
+}
+
+.link-discord {
+	background-image: url("../../Violet/link_discord.png");
+}
+
+.account-link__name {
+	font-size: 34px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.account-link__id {
+	margin-top: 4px;
+	font-size: 26px;
+	color: #A8ACBA;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* 연동됨 칩 — 초록 알약 + 체크 */
+.account-linked {
+	flex-direction: row;
+	align-items: center;
+	flex-shrink: 0;
+	height: 56px;
+	padding: 0 22px 0 16px;
+	border-radius: 28px;
+	background-color: #38AA64;
+}
+
+.account-linked__mark {
+	width: 28px;
+	height: 26px;
+	margin-right: 8px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Check.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.account-linked__text {
+	font-size: 28px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* ── 로그아웃 · 계정 삭제 ── */
+.account-bottom {
+	flex-direction: row;
+	justify-content: space-between;
+	margin-top: 20px;
+}
+
+.account-btn--wide {
+	width: 426px;
+	height: 104px;
+	font-size: 36px;
+}
+
+.account-btn--gray,
+.account-btn--gray:hover:enabled {
+	background-color: #545662;
+	border-bottom-color: #34353E;
+}
+
+.account-btn--red,
+.account-btn--red:hover:enabled {
+	background-color: #CE4040;
+	border-bottom-color: #8A2626;
+}
+
+/* ── 닉네임 변경 — 보라 테두리 입력칸 + 규칙 · 바이트 줄 ── */
 .nickname-input {
-	margin: 0 0 8px 0;
+	margin: 0 0 14px 0;
 	height: 120px;
 }
 
 .nickname-input .unity-text-field__input {
-	padding: 0 26px;
-	font-size: 48px;
-	color: var(--text);
-	background-color: rgba(0, 0, 0, 0);
-	border-width: 0;
-	background-image: url("../../Pixel/panel_inset.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
+	padding: 0 30px;
+	font-size: 44px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	background-image: none;
+	background-color: #18171C;
+	border-width: 3px;
+	border-color: #A893FF;
+	border-radius: 16px;
+	--unity-cursor-color: #C8B8FF;
 }
 
+.nickname-info {
+	flex-direction: row;
+	justify-content: space-between;
+	margin-bottom: 24px;
+}
+
+.nickname-rule,
 .nickname-byte {
-	font-size: 36px;
-	color: var(--ink-sub);
-	-unity-text-align: middle-right;
+	margin: 0;
+	padding: 0 6px;
+	font-size: 26px;
+	color: #A8ACBA;
+	-unity-text-outline-width: 0;
 }
 
 .nickname-error {
-	font-size: 36px;
+	margin: 0 0 10px 0;
+	padding: 0 6px;
+	font-size: 28px;
 	color: #FF8A80;
 	white-space: normal;
-	margin-bottom: 10px;
+	-unity-text-outline-width: 0;
 }
 
+/* 변경 버튼 — "변경" 아래 비용(아이콘 + 값)을 가운데로 */
 .nickname-change {
 	flex-direction: column;
-	padding-top: 6px;
+	align-items: center;
+	justify-content: center;
+	padding-top: 0;
 }
 
 .nickname-change__label {
-	font-size: 48px;
-	color: var(--white);
-	-unity-text-outline-color: var(--ink);
+	margin: 0;
+	padding: 0;
+	font-size: 44px;
+	color: #FFFFFF;
+	-unity-text-outline-color: #0A0814;
 }
 
 .nickname-change__cost {
 	flex-direction: row;
 	align-items: center;
+	justify-content: center;
 }
 
 .nickname-change__icon {
 	width: 40px;
 	height: 40px;
-	margin-right: 6px;
+	margin-right: 8px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
 .nickname-change__value {
-	font-size: 36px;
-	color: var(--white);
-	-unity-text-outline-color: var(--ink);
+	margin: 0;
+	padding: 0;
+	font-size: 30px;
+	color: #FFFFFF;
+	-unity-text-outline-color: #0A0814;
 }

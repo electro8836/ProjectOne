@@ -4,6 +4,8 @@
 	<Style src="../Popups.uss" />
 	<Style src="Account.uss" />
 
+	<!-- 계정 — 닉네임 · UUID 판, 계정 연동(애플은 iOS 만 · 구글 · 디스코드), 로그아웃 · 계정 삭제.
+	     연동된 계정이 없으면 게스트 배지와 경고 줄을 띄운다. 시안 Shared/Design/UI계정연동_시안.png 1안 -->
 	<ui:VisualElement name="popup" class="popup theme-violet">
 		<ui:VisualElement name="dim" class="popup__dim" />
 		<ui:VisualElement class="px-paper popup__window">
@@ -11,13 +13,64 @@
 				<ui:Label text="계정" class="popup__name item-head__name" />
 				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
 			</ui:VisualElement>
-			<ui:VisualElement class="px-inset account-row popup__body">
-				<ui:Label name="name" text="" class="account-row__text" />
-				<ui:Button name="name-button" text="변경" class="btn btn--small" />
-			</ui:VisualElement>
-			<ui:VisualElement class="px-inset account-row popup__body">
-				<ui:Label name="uuid" text="" class="account-row__text" />
-				<ui:Button name="copy" text="복사" class="btn btn--small" />
+
+			<ui:VisualElement class="account popup__body">
+				<ui:VisualElement class="account-panel">
+					<ui:VisualElement class="account-panel__info">
+						<ui:VisualElement class="account-panel__caption">
+							<ui:Label text="닉네임" class="account-panel__label" />
+							<ui:Label name="guest-badge" text="게스트" class="account-guest" />
+						</ui:VisualElement>
+						<ui:Label name="name" text="" class="account-panel__value" />
+					</ui:VisualElement>
+					<ui:Button name="name-button" class="account-icon-btn"><ui:VisualElement class="account-icon-btn__face" picking-mode="Ignore"><ui:VisualElement class="account-icon-btn__icon icon-write" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+				</ui:VisualElement>
+
+				<ui:VisualElement class="account-panel">
+					<ui:VisualElement class="account-panel__info">
+						<ui:Label text="UUID" class="account-panel__label" />
+						<ui:Label name="uuid" text="" class="account-panel__value account-panel__value--small" />
+					</ui:VisualElement>
+					<ui:Button name="copy" class="account-icon-btn"><ui:VisualElement class="account-icon-btn__face" picking-mode="Ignore"><ui:VisualElement class="account-icon-btn__icon icon-copy" picking-mode="Ignore" /></ui:VisualElement></ui:Button>
+				</ui:VisualElement>
+
+				<ui:Label text="계정 연동" class="account-section" />
+				<ui:Label name="guest-warn" text="연동하지 않으면 앱을 지우거나 기기를 바꿀 때 데이터를 잃습니다" class="account-warn" />
+
+				<ui:VisualElement name="link-apple" class="account-panel account-link">
+					<ui:VisualElement class="account-link__logo link-apple" />
+					<ui:VisualElement class="account-panel__info">
+						<ui:Label text="애플" class="account-link__name" />
+						<ui:Label name="id" text="" class="account-link__id" />
+					</ui:VisualElement>
+					<ui:Button name="link" text="연동" class="account-btn" />
+					<ui:VisualElement name="linked" class="account-linked"><ui:VisualElement class="account-linked__mark" /><ui:Label text="연동됨" class="account-linked__text" /></ui:VisualElement>
+				</ui:VisualElement>
+
+				<ui:VisualElement name="link-google" class="account-panel account-link">
+					<ui:VisualElement class="account-link__logo link-google" />
+					<ui:VisualElement class="account-panel__info">
+						<ui:Label text="구글" class="account-link__name" />
+						<ui:Label name="id" text="" class="account-link__id" />
+					</ui:VisualElement>
+					<ui:Button name="link" text="연동" class="account-btn" />
+					<ui:VisualElement name="linked" class="account-linked"><ui:VisualElement class="account-linked__mark" /><ui:Label text="연동됨" class="account-linked__text" /></ui:VisualElement>
+				</ui:VisualElement>
+
+				<ui:VisualElement name="link-discord" class="account-panel account-link">
+					<ui:VisualElement class="account-link__logo link-discord" />
+					<ui:VisualElement class="account-panel__info">
+						<ui:Label text="디스코드" class="account-link__name" />
+						<ui:Label name="id" text="" class="account-link__id" />
+					</ui:VisualElement>
+					<ui:Button name="link" text="연동" class="account-btn" />
+					<ui:VisualElement name="linked" class="account-linked"><ui:VisualElement class="account-linked__mark" /><ui:Label text="연동됨" class="account-linked__text" /></ui:VisualElement>
+				</ui:VisualElement>
+
+				<ui:VisualElement class="account-bottom">
+					<ui:Button name="logout" text="로그아웃" class="account-btn account-btn--wide account-btn--gray" />
+					<ui:Button name="delete" text="계정 삭제" class="account-btn account-btn--wide account-btn--red" />
+				</ui:VisualElement>
 			</ui:VisualElement>
 		</ui:VisualElement>
 	</ui:VisualElement>
