@@ -6,7 +6,7 @@ namespace ProjectOne.UI
 	// ScrollView 를 끌어서 스크롤한다 — 손가락처럼 마우스로도 밀어 올리고 내릴 수 있게 한다.
 	//
 	// 터치는 ScrollView 가 기본으로 끌기 스크롤을 처리하므로 여기서는 마우스만 맡는다(에디터·PC 테스트에서도 모바일과 같은 조작).
-	// 일정 거리 이상 끌면 드래그로 보고, 손을 뗀 뒤 따라오는 클릭은 삼켜 목록 행이 눌리지 않게 한다.
+	// 일정 거리 이상 끌면 드래그로 보고, 손을 뗀 뒤 따라오는 클릭은 삼켜 목록 행이 눌리지 않게 한다(마우스·터치 모두).
 	//
 	// 내용이 보이는 영역보다 작으면 움직이지 않는다 — 마우스 끌기는 스크롤 범위 안으로만 옮기고,
 	// 터치는 누를 때마다 Elastic(넘치면 튕김) / Clamped(못 움직임)를 갈아 끼운다 — 줄바꿈 격자는 칸이 늘어도
@@ -26,6 +26,10 @@ namespace ProjectOne.UI
 		private Vector2 _startOffset;
 		private bool _isDragging;
 		private bool _suppressClick;
+
+		// 터치 — 스크롤은 ScrollView 가 하고, 여기서는 끈 거리만 재서 뒤따르는 클릭을 삼킨다
+		private int _touchId = PointerId.invalidPointerId;
+		private Vector2 _touchStart;
 
 		public ScrollDragManipulator(ScrollView scrollView)
 		{
@@ -107,7 +111,15 @@ namespace ProjectOne.UI
 		{
 			applyTouchBehavior();
 
-			if (evt.pointerType != UnityEngine.UIElements.PointerType.mouse || evt.button != 0)
+			if (evt.pointerType != UnityEngine.UIElements.PointerType.mouse)
+			{
+				_touchId = evt.pointerId;
+				_touchStart = evt.position;
+				_suppressClick = false;
+				return;
+			}
+
+			if (evt.button != 0)
 			{
 				return;
 			}
@@ -151,6 +163,13 @@ namespace ProjectOne.UI
 
 		private void onPointerUp(PointerUpEvent evt)
 		{
+			if (evt.pointerId == _touchId)
+			{
+				_suppressClick = ((Vector2)evt.position - _touchStart).sqrMagnitude >= DragThreshold * DragThreshold;
+				_touchId = PointerId.invalidPointerId;
+				return;
+			}
+
 			if (evt.pointerId != _pointerId)
 			{
 				return;

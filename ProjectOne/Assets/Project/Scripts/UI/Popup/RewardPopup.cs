@@ -9,7 +9,7 @@ using ProjectOne.Reward;
 namespace ProjectOne.UI
 {
 	// 획득 보상 팝업(UIPrefab_RewardPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Reward/RewardPopup.uxml.
-	// 받은 보상을 아이템 칸으로 늘어놓고, 칸을 누르면 읽기 전용 정보를 띄운다. 딤이나 확인으로 닫는다.
+	// 받은 보상을 아이템 칸으로 늘어놓고, 칸을 누르면 읽기 전용 정보를 띄운다. 칸 밖 아무 곳이나 누르면 닫는다.
 	public class RewardPopup : ToolkitScreen
 	{
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
@@ -23,8 +23,7 @@ namespace ProjectOne.UI
 		{
 			_grid = root.Q<ScrollView>("grid");
 			_grid.AddManipulator(new ScrollDragManipulator(_grid));
-			root.Q("dim").RegisterCallback<ClickEvent>(onDimClicked);
-			root.Q<Button>("confirm").clicked += onConfirmClicked;
+			root.Q("popup").RegisterCallback<ClickEvent>(onPopupClicked);
 		}
 
 		protected override void OnDestroy()
@@ -66,6 +65,7 @@ namespace ProjectOne.UI
 			}
 
 			cell.BindItemAsync(Table_Item.Get(reward.itemId), reward.count, ct).Forget();
+			cell.SetCountText(reward.count.ToString());	// 보상은 1개도 수량을 적는다(가방 칸은 2개부터)
 		}
 
 		// 받은 것도 이 팝업에선 조작하지 않는다 — 상점 진열과 같은 읽기 전용 경로로 연다.
@@ -83,13 +83,20 @@ namespace ProjectOne.UI
 			ShopRewardPopup.Show(item, sender.Root, this.GetCancellationTokenOnDestroy());
 		}
 
-		private void onDimClicked(ClickEvent evt)
+		// 칸을 누른 클릭은 정보 팝업만 띄우고 닫지 않는다.
+		private void onPopupClicked(ClickEvent evt)
 		{
-			close();
-		}
+			VisualElement element = evt.target as VisualElement;
+			while (element != null)
+			{
+				if (element.ClassListContains("item-cell") == true)
+				{
+					return;
+				}
 
-		private void onConfirmClicked()
-		{
+				element = element.parent;
+			}
+
 			close();
 		}
 

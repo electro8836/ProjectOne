@@ -317,6 +317,18 @@ def glow_white():
 	save(img, 'glow_white')
 
 
+# 보상 팝업 제목 아래 금선 — 가운데 진하고 양끝으로 흐려진다
+def reward_line():
+	w, h = 512, 4
+	img = Image.new('RGBA', (w, h))
+	for x in range(w):
+		t = 1 - abs(x - (w - 1) / 2) / ((w - 1) / 2)
+		a = int(255 * min(1.0, t * 2.2))
+		for y in range(h):
+			img.putpixel((x, y), (236, 190, 92, a))
+	save(img, 'reward_line')
+
+
 # 아이콘을 내용 영역 기준으로 같은 크기에 맞추는 도구 (분류 탭·기능 버튼 아이콘 공용)
 # 모두 내용 영역을 잘라 같은 크기(ICON_FILL)로 맞춰 128 캔버스 가운데에 둔다 → 탭에서 크기·위치가 일정하다.
 ICON_SIZE = 128
@@ -731,6 +743,7 @@ def main():
 	header_wash()
 	header_shadow()
 	glow_white()
+	reward_line()
 	# 내비 탭 — 152px(바 윗선이 보이게 160 보다 8 낮게), 선택은 색만 바뀐다
 	# 내비 탭 — 모서리를 깎지 않아 탭끼리 틈 없이 붙는다. 선택 탭은 바 높이(160px)에 딱 맞게 솟는다
 	nav_tab('navtab_off', 152, '#3B304E', '#565076', '#332B47')

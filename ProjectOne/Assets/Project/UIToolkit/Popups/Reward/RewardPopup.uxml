@@ -1,19 +1,16 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 	<Style src="../../Common/Theme.uss" />
 	<Style src="../../Common/Violet.uss" />
-	<Style src="../Popups.uss" />
+	<Style src="RewardPopup.uss" />
 
-	<!-- 획득 보상 — 아무 곳이나(딤·확인) 누르면 닫힌다 -->
-	<ui:VisualElement name="popup" class="popup theme-violet">
-		<ui:VisualElement name="dim" class="popup__dim" />
-		<ui:VisualElement class="px-paper popup__window">
-			<ui:VisualElement class="px-wood popup__head item-head">
-				<ui:Label text="보상 획득" class="popup__name item-head__name" />
-			</ui:VisualElement>
-			<ui:ScrollView name="grid" class="popup-grid popup__body" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
-			<ui:VisualElement class="popup__buttons">
-				<ui:Button name="confirm" text="확인" class="btn btn--green popup__button" />
-			</ui:VisualElement>
+	<!-- 획득 보상 — 틀 없이 어두운 덮개 위에 제목·금선·5열 칸(닫기 글자 위에서 잘리고 스크롤). 칸 밖 아무 곳이나 누르면 닫힌다(칸은 정보) -->
+	<ui:VisualElement name="popup" class="popup theme-violet reward">
+		<ui:VisualElement class="popup__dim" picking-mode="Ignore" />
+		<ui:VisualElement class="reward__body" picking-mode="Ignore">
+			<ui:Label text="보상" class="reward__title" picking-mode="Ignore" />
+			<ui:VisualElement class="reward__line" picking-mode="Ignore" />
+			<ui:ScrollView name="grid" class="reward__grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
 		</ui:VisualElement>
+		<ui:Label text="화면을 터치하여 닫기" class="reward__hint" picking-mode="Ignore" />
 	</ui:VisualElement>
 </ui:UXML>
