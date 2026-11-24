@@ -21,6 +21,34 @@
 	bottom: 0;
 }
 
+/* 지도 밖은 검정 — 공용 .map-view(남색)보다 우선하게 화면 클래스를 붙인다 */
+.map-screen .map-view {
+	background-color: #000000;
+}
+
+/* 표시 — 미니맵보다 크게(아이콘 52 · 글자 26). 글자는 외곽선 대신 어두운 둥근 판 위에 (시안 UI지도표시크기_시안.png D) */
+.map-screen .map-marker__icon {
+	left: -26px;
+	top: -26px;
+	width: 52px;
+	height: 52px;
+	border-width: 3px;
+	border-radius: 26px;
+}
+
+.map-screen .map-marker__label {
+	left: auto;
+	top: 30px;
+	width: auto;
+	translate: -50% 0;
+	padding: 3px 12px 4px 12px;
+	border-radius: 14px;
+	background-color: rgba(10, 8, 20, 0.82);
+	font-size: 26px;
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 0;
+}
+
 /* ── 맵 선택 — ◀ 이름 ▶ + 점 ── */
 .map-select {
 	position: absolute;

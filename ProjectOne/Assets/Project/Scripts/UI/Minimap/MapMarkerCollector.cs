@@ -98,7 +98,7 @@ namespace ProjectOne.UI
 			RefreshBosses(buffer);
 		}
 
-		// 필드보스의 생사와 남은 시간을 다시 읽는다. 표시가 바뀐 표시가 하나라도 있으면 true.
+		// 필드보스의 생사와 남은 시간을 다시 읽는다 — 처치 후에는 이름 아래 줄에 다시 나올 때까지 남은 시간. 표시가 바뀐 표시가 하나라도 있으면 true.
 		public static bool RefreshBosses(List<MapMarker> markers)
 		{
 			bool changed = false;
@@ -120,7 +120,7 @@ namespace ProjectOne.UI
 						remain = DailyReset.FormatDuration((int)DailyReset.GetRemaining().TotalSeconds);
 					}
 
-					label = remain;
+					label = marker.BossName + "\n" + remain;
 				}
 
 				if (dead != marker.Dead || label != marker.Label)

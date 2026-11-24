@@ -340,26 +340,12 @@ namespace ProjectOne.UI
 			_zoomOut.SetEnabled(_view.PixelsPerUnit > fit + 0.01f);
 		}
 
-		// 지도 밖으로 끌려 나가지 않게 — 화면 가운데가 지도 범위 안에 머문다.
+		// 화면 가운데가 지도 범위 안에만 있으면 된다 — 지도 끝자락(내 캐릭터가 가장자리에 있어도)까지 가운데로 끌어올 수 있다.
 		private Vector2 clampCenter(Vector2 center)
 		{
-			Vector2 half = _view.ViewportSize * 0.5f / _view.PixelsPerUnit;
 			Vector2 min = _view.WorldCenter - _view.WorldSize * 0.5f;
 			Vector2 max = _view.WorldCenter + _view.WorldSize * 0.5f;
-			float x = clampAxis(center.x, min.x + half.x, max.x - half.x);
-			float y = clampAxis(center.y, min.y + half.y, max.y - half.y);
-			return new Vector2(x, y);
-		}
-
-		// 지도가 화면보다 작은 축은 가운데에 고정한다.
-		private static float clampAxis(float value, float low, float high)
-		{
-			if (low > high)
-			{
-				return (low + high) * 0.5f;
-			}
-
-			return Mathf.Clamp(value, low, high);
+			return new Vector2(Mathf.Clamp(center.x, min.x, max.x), Mathf.Clamp(center.y, min.y, max.y));
 		}
 
 		private void onPointerDown(PointerDownEvent evt)

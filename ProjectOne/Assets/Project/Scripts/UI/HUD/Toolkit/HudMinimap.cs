@@ -28,6 +28,7 @@ namespace ProjectOne.UI
 		private const float BossRefreshInterval = 1f;
 
 		private readonly VisualElement _slot;
+		private readonly VisualElement _mapInfo;
 		private readonly Button _zoomIn;
 		private readonly Button _zoomOut;
 		private readonly MapView _view;
@@ -46,6 +47,7 @@ namespace ProjectOne.UI
 		public HudMinimap(VisualElement root, ToolkitIconLoader icons, CancellationToken ct)
 		{
 			_slot = root.Q("minimap");
+			_mapInfo = root.Q("map-info");
 			_zoomIn = root.Q<Button>("minimap-zoom-in");
 			_zoomOut = root.Q<Button>("minimap-zoom-out");
 			_ct = ct;
@@ -114,9 +116,13 @@ namespace ProjectOne.UI
 		// 지도가 있어도 설정에서 미니맵을 껐으면 숨긴다.
 		private void setVisible(bool visible)
 		{
-			visible = visible == true && MapSettings.Get(MapSetting.MinimapEnabled) == true;
+			bool enabled = MapSettings.Get(MapSetting.MinimapEnabled);
+			visible = visible == true && enabled == true;
 			_visible = visible;
 			_slot.EnableInClassList("minimap--shown", visible);
+
+			// 맵 이름 판은 미니맵에 붙어 있어 설정으로 끄면 같이 숨긴다(표시 여부는 HUD 맥락이 인라인으로 쓰므로 visibility 로).
+			_mapInfo.EnableInClassList("map-info--off", enabled == false);
 		}
 
 		// 히어로는 씬이 바뀌면 새로 만들어진다 — 들고 있던 것이 죽었거나 사라졌으면 다시 찾는다.

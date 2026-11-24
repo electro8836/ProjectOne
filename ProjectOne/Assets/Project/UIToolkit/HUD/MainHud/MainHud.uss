@@ -306,6 +306,11 @@
 	align-items: center;
 }
 
+/* 지도 설정에서 HUD 미니맵을 끄면 이름 판도 숨는다 */
+.map-info--off {
+	visibility: hidden;
+}
+
 /* 한 겹 판 — 검정 테(border) + 바랜 금 테(배경 + padding) + 흑회 판(글자) */
 .map-info__box {
 	padding: 4px;

@@ -208,7 +208,16 @@ namespace ProjectOne.UI
 				element.label.text = text;
 			}
 
-			element.label.style.display = string.IsNullOrEmpty(text) ? DisplayStyle.None : DisplayStyle.Flex;
+			// 글자가 있으면 인라인을 비운다 — 그래야 USS 의 글자 숨김(미니맵 텍스트 표시 끔)이 먹는다.
+			if (string.IsNullOrEmpty(text) == true)
+			{
+				element.label.style.display = DisplayStyle.None;
+			}
+			else
+			{
+				element.label.style.display = StyleKeyword.Null;
+			}
+
 			element.root.EnableInClassList("map-marker--dead", marker.Dead);
 			element.root.EnableInClassList("map-marker--boss", marker.Kind == MapMarkerKind.Boss);
 			element.root.EnableInClassList("map-marker--npc", marker.Kind == MapMarkerKind.Npc);
