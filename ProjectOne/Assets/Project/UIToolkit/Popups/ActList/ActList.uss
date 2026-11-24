@@ -1,57 +1,229 @@
-/* 구역 목록 팝업 */
+/* 월드맵(구역 목록) 팝업 — 월드 선택기 + 구역 줄. 시안 Shared/Design/UI월드맵_선택기_시안.png 1안 */
 
-.act-tabs .tab {
-	font-size: 36px;
-	height: 92px;
+/* ── 월드 선택기 — 어두운 판 안 ◀ 이름 ▶, 아래 점 ── */
+.world-select {
+	margin-top: 26px;
+	margin-bottom: 14px;
 }
 
-.field-list-box {
-	height: 1000px;
-	margin-bottom: 26px;
-	padding: 12px;
+.world-select__bar {
+	flex-direction: row;
+	align-items: center;
+	height: 100px;
+	padding: 0 16px;
+	border-radius: 20px;
+	background-color: #26272C;
 }
 
-.field-list {
+.world-select__name {
 	flex-grow: 1;
+	margin: 0;
+	padding: 0;
+	-unity-text-align: middle-center;
+	font-size: 42px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+/* 화살표 버튼 — 보라 네모, 끝이면 꺼진 회색 */
+.world-select__arrow {
+	width: 80px;
+	height: 72px;
+	margin: 0;
+	padding: 0;
+	align-items: center;
+	justify-content: center;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 14px;
+	background-image: none;
+	background-color: #7C68E4;
+}
+
+.world-select__arrow:hover:enabled {
+	border-color: #0A0814;
+	background-color: #7C68E4;
+}
+
+.world-select__arrow:active {
+	translate: 0 3px;
+}
+
+.world-select__arrow:disabled {
+	opacity: 1;
+	background-color: #2E2F36;
+}
+
+.world-select__tri {
+	width: 32px;
+	height: 32px;
+	background-image: url("../../Violet/icon_tri.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.world-select__tri--left {
+	scale: -1 1;
+}
+
+.world-select__arrow:disabled .world-select__tri {
+	-unity-background-image-tint-color: #5A5C68;
+}
+
+.world-select__dots {
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+	height: 32px;
+	margin-top: 8px;
+}
+
+.world-select__dot {
+	width: 12px;
+	height: 12px;
+	margin: 0 7px;
+	border-radius: 6px;
+	background-color: #464852;
+}
+
+.world-select__dot--on {
+	width: 16px;
+	height: 16px;
+	border-radius: 8px;
+	background-color: #7C68E4;
+}
+
+/* ── 구역 줄 — 번호 원 · 이름 · 이동. 지금 있는 곳은 보라 강조, 못 가는 곳은 흐리게 ── */
+.field-list-box {
+	margin-bottom: 16px;
+}
+
+/* 구역이 많으면 이 높이에서 스크롤 */
+.field-list {
+	max-height: 900px;
 }
 
 .field-row {
 	flex-direction: row;
 	align-items: center;
-	height: 132px;
-	padding: 0 20px 6px 16px;
-	margin-bottom: 10px;
-	background-image: url("../../Pixel/row.png");
-	-unity-slice-left: 4;
-	-unity-slice-right: 4;
-	-unity-slice-top: 4;
-	-unity-slice-bottom: 4;
-	-unity-slice-scale: 4px;
+	height: 118px;
+	margin-bottom: 14px;
+	padding: 0 28px;
+	border-width: 3px;
+	border-color: rgba(0, 0, 0, 0);
+	border-radius: 18px;
+	background-color: #3A3C43;
 }
 
 .field-row--current {
-	background-image: url("../../Pixel/row_active.png");
+	border-color: #A893FF;
+	background-color: #423A68;
 }
 
 .field-row--locked {
-	background-image: url("../../Pixel/row_locked.png");
-}
-
-.field-row--locked .field-row__order,
-.field-row--locked .field-row__name {
-	color: var(--ink-dim);
+	background-color: #2E2F36;
 }
 
 .field-row__order {
-	width: 96px;
-	font-size: 48px;
-	color: var(--gold);
+	width: 64px;
+	height: 64px;
+	margin: 0;
+	padding: 0;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 32px;
+	background-color: #7C68E4;
 	-unity-text-align: middle-center;
+	font-size: 34px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 #0A0814;
 }
 
 .field-row__name {
 	flex-grow: 1;
 	flex-shrink: 1;
-	font-size: 48px;
-	margin-left: 12px;
+	margin: 0 0 0 28px;
+	padding: 0;
+	font-size: 38px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.field-row--locked .field-row__order {
+	background-color: #464852;
+	color: #6E707C;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.field-row--locked .field-row__name {
+	color: #6E707C;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+/* 마을로 귀환 — 금색 넓은 버튼(월드 안에서만 보인다) */
+.world-town-row {
+	margin-bottom: 30px;
+}
+
+.world-town {
+	height: 116px;
+	margin: 0;
+	padding: 0 0 6px 0;
+	border-width: 3px;
+	border-bottom-width: 10px;
+	border-color: #0A0814;
+	border-bottom-color: #8E6A22;
+	border-radius: 18px;
+	background-image: none;
+	background-color: #D6A034;
+	font-size: 42px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.world-town:hover:enabled {
+	border-color: #0A0814;
+	border-bottom-color: #8E6A22;
+	background-color: #D6A034;
+}
+
+.world-town:active {
+	translate: 0 4px;
+}
+
+/* 이동 버튼 — 보라 */
+.field-row__move {
+	width: 136px;
+	height: 72px;
+	margin: 0;
+	padding: 0 0 4px 0;
+	border-width: 3px;
+	border-bottom-width: 8px;
+	border-color: #0A0814;
+	border-bottom-color: #4F4294;
+	border-radius: 16px;
+	background-image: none;
+	background-color: #7C68E4;
+	font-size: 34px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.field-row__move:hover:enabled {
+	border-color: #0A0814;
+	border-bottom-color: #4F4294;
+	background-color: #7C68E4;
+}
+
+.field-row__move:active {
+	translate: 0 4px;
 }

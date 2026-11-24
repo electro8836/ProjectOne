@@ -6,8 +6,9 @@ using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
-	// 구역 목록 팝업(UIPrefab_ActListPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/ActList/ActListPopup.uxml.
-	// 월드 탭을 고르면 그 월드의 구역 줄을 그린다. 갈 수 있는 다른 구역 줄에만 이동 버튼이 있고,
+	// 월드맵(구역 목록) 팝업(UIPrefab_ActListPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/ActList/ActListPopup.uxml.
+	// ◀ 월드 이름 ▶ 선택기로 월드를 고르면 그 월드의 구역 줄을 그린다. 월드가 계속 늘어나도 선택기 폭은 같고,
+	// 몇 번째 월드인지는 아래 점으로 보인다. 갈 수 있는 다른 구역 줄에만 이동 버튼이 있고,
 	// 이동하거나 마을로 돌아가면 이동했다(true)로 닫힌다.
 	public class ActListPopup : ToolkitScreen, IView
 	{
@@ -21,24 +22,32 @@ namespace ProjectOne.UI
 			public int fieldId;
 		}
 
-		public event Action<int> OnTabSelected;		// 탭 인덱스
+		public event Action<int> OnTabSelected;		// 월드 인덱스
 		public event Action<int> OnMoveRequested;	// 목적지 Field.ID
 		public event Action OnTownRequested;		// 마을 귀환
 
 		private readonly ActListPopupPresenter _presenter = new ActListPopupPresenter();
 		private readonly List<FieldRow> _rows = new List<FieldRow>();
-		private readonly List<Button> _tabs = new List<Button>();
+		private readonly List<VisualElement> _dots = new List<VisualElement>();
 
-		private VisualElement _tabBar;
+		private VisualElement _dotBar;
+		private Button _prevButton;
+		private Button _nextButton;
 		private Label _actName;
 		private ScrollView _list;
 		private Button _townButton;
+		private int _worldCount;
+		private int _selected;
 		private int _scrollIndex = -1;
 		private UniTaskCompletionSource<bool> _tcs;
 
 		protected override void OnBind(VisualElement root)
 		{
-			_tabBar = root.Q("tabs");
+			_dotBar = root.Q("dots");
+			_prevButton = root.Q<Button>("prev");
+			_prevButton.clicked += onPrevClicked;
+			_nextButton = root.Q<Button>("next");
+			_nextButton.clicked += onNextClicked;
 			_actName = root.Q<Label>("act-name");
 			_list = root.Q<ScrollView>("list");
 			_list.AddManipulator(new ScrollDragManipulator(_list));
@@ -82,35 +91,40 @@ namespace ProjectOne.UI
 			return moved;
 		}
 
-		// 월드 수만큼 탭을 만든다.
+		// 월드 수만큼 점을 만든다.
 		public void SetTabCount(int count)
 		{
+			_worldCount = count;
 			for (int i = 0; i < count; i++)
 			{
-				Button tab = getTab(i);
-				tab.style.display = DisplayStyle.Flex;
+				getDot(i).style.display = DisplayStyle.Flex;
 			}
 
-			for (int i = count; i < _tabs.Count; i++)
+			for (int i = count; i < _dots.Count; i++)
 			{
-				_tabs[i].style.display = DisplayStyle.None;
+				_dots[i].style.display = DisplayStyle.None;
 			}
 		}
 
 		public void SetTownButtonVisible(bool visible)
 		{
-			_townButton.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+			_townButton.parent.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;	// 버튼 줄째로 — 아래 여백까지 접는다
 		}
 
-		// 탭만 선택(OnTabSelected 를 발행하지 않음).
+		// 월드만 선택(OnTabSelected 를 발행하지 않음) — 점과 화살표 잠금을 맞춘다. 첫·마지막 월드면 그쪽 화살표를 잠근다.
 		public void SelectTab(int index)
 		{
-			for (int i = 0; i < _tabs.Count; i++)
+			_selected = index;
+			for (int i = 0; i < _dots.Count; i++)
 			{
-				_tabs[i].EnableInClassList("tab--selected", i == index);
+				_dots[i].EnableInClassList("world-select__dot--on", i == index);
 			}
+
+			_prevButton.SetEnabled(index > 0);
+			_nextButton.SetEnabled(index < _worldCount - 1);
 		}
 
+		// 선택기 가운데 월드 이름.
 		public void SetActName(string text)
 		{
 			_actName.text = text;
@@ -173,21 +187,19 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private Button getTab(int index)
+		private VisualElement getDot(int index)
 		{
-			if (index < _tabs.Count)
+			if (index < _dots.Count)
 			{
-				return _tabs[index];
+				return _dots[index];
 			}
 
-			Button tab = new Button();
-			tab.text = "월드 " + (index + 1).ToString();
-			tab.AddToClassList("tab");
-			tab.userData = index;
-			tab.RegisterCallback<ClickEvent>(onTabClicked);
-			_tabBar.Add(tab);
-			_tabs.Add(tab);
-			return tab;
+			VisualElement dot = new VisualElement();
+			dot.AddToClassList("world-select__dot");
+			dot.pickingMode = PickingMode.Ignore;
+			_dotBar.Add(dot);
+			_dots.Add(dot);
+			return dot;
 		}
 
 		private FieldRow getOrCreateRow(int index)
@@ -211,9 +223,7 @@ namespace ProjectOne.UI
 
 			row.move = new Button();
 			row.move.text = "이동";
-			row.move.AddToClassList("btn");
-			row.move.AddToClassList("btn--green");
-			row.move.AddToClassList("btn--small");
+			row.move.AddToClassList("field-row__move");
 			row.move.userData = row;
 			row.move.RegisterCallback<ClickEvent>(onMoveClicked);
 			row.move.AddToClassList("sfx-click");	// 클릭음 대상(UIManager)
@@ -224,9 +234,23 @@ namespace ProjectOne.UI
 			return row;
 		}
 
-		private void onTabClicked(ClickEvent evt)
+		private void onPrevClicked()
 		{
-			int index = (int)((VisualElement)evt.currentTarget).userData;
+			selectByArrow(_selected - 1);
+		}
+
+		private void onNextClicked()
+		{
+			selectByArrow(_selected + 1);
+		}
+
+		private void selectByArrow(int index)
+		{
+			if (index < 0 || index >= _worldCount)
+			{
+				return;
+			}
+
 			SelectTab(index);
 
 			if (OnTabSelected != null)
