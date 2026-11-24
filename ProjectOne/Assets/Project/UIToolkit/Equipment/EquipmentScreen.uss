@@ -10,7 +10,6 @@
 /* 가방만 늘고 줄어든다 — 나머지는 내용보다 작아지지 않게(UI Toolkit 기본 flex-shrink 는 1) */
 .upper,
 .top,
-.extra,
 .tabs,
 .bag__toolbar {
 	flex-shrink: 0;
@@ -127,7 +126,7 @@
 	text-shadow: 0 4px 0 var(--ink);
 }
 
-/* 보관함 — 기능 버튼 줄 + 위 영역(.upper) 전체를 덮는다 */
+/* 보관함 — 위 영역(.upper) 전체를 덮는다 */
 .stash {
 	position: absolute;
 	left: 0;
@@ -154,20 +153,6 @@
 	margin-left: 18px;
 	font-size: 48px;
 	color: var(--ink-sub);
-}
-
-/* ── 부가 기능 버튼 ──────────────────────────────── */
-
-.extra {
-	flex-direction: row;
-	margin-bottom: 12px;
-}
-
-.extra__button {
-	flex-grow: 1;
-	flex-basis: 0;
-	min-width: 0;
-	margin: 0 6px;
 }
 
 /* ── 분류 탭 ─────────────────────────────────────── */

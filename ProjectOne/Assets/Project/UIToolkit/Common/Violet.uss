@@ -16,7 +16,6 @@
 .theme-violet .btn--red,
 .theme-violet .btn--green,
 .theme-violet .btn--on,
-.theme-violet .extra__button,
 .theme-violet .popup__button,
 .theme-violet #stash,
 .theme-violet .tab--selected,
@@ -120,18 +119,13 @@
 
 /* ── 위 영역 — 어두운 남색 회색 면(#252A40) + 캐릭터 뒤 푸른 흰빛. 보라 일색을 피해 제목 판·탭만 보라로 둔다 ── */
 
+/* 제목 바로 아래부터 시작한다 — 장착 칸 위아래 여백이 같게(16 + 칸 여백 5) */
 .theme-violet .top {
 	background-image: none;
 	background-color: #252A40;
 	margin: 0 -6px;
-}
-
-/* 기능 버튼 줄(제목 아래, 캐릭터 영역 위)·분류 탭 줄 — 위 영역과 같은 면으로 이어
-   제목 아래부터 탭 아래 선까지 한 덩어리로 보이게 한다(화면 여백 6px 까지 덮는다) */
-.theme-violet .extra {
-	background-color: #252A40;
-	margin: 0 -6px;
-	padding: 16px 6px 0 6px;
+	padding-top: 16px;
+	padding-bottom: 12px;
 }
 
 /* 캐릭터 뒤 빛 — 흰 빛(glow_white)에 배경색과 어울리는 푸른 흰빛을 입힌다 */
@@ -141,20 +135,21 @@
 	-unity-background-scale-mode: scale-to-fit;
 }
 
-/* 장착 칸 — 152 → 168px 로 키운다. 4칸 x (168 + 위아래 8) = 704 */
+/* 장착 칸 — 152 → 188px 로 키운다(기능 버튼 줄이 빠진 자리를 칸으로 채운다). 4칸 x (188 + 위아래 10) = 792.
+   시안 Shared/Design/UI장비_D배치_버튼디자인_시안.png */
 .theme-violet .top__body {
-	height: 704px;
+	height: 792px;
 }
 
 .theme-violet .equip-column {
-	width: 168px;
-	margin: 0 14px;
+	width: 188px;
+	margin: 0 8px;
 }
 
 .theme-violet .equip-slot {
-	width: 168px;
-	height: 168px;
-	margin: 4px 0;
+	width: 188px;
+	height: 188px;
+	margin: 5px 0;
 }
 
 /* 이름 양옆 장식선은 쓰지 않는다 */
@@ -219,41 +214,90 @@
 	-unity-background-image-tint-color: #C8C8C8;
 }
 
-/* ── 기능 버튼(능력치·재화) — 버튼마다 색·아이콘으로 구분한다. 아이콘은 왼쪽, 글자는 남은 칸 가운데 ── */
+/* ── 능력치·재화 버튼 — 전투력 아래. 어두운 알약 왼쪽에 둥근 색 뱃지(아이콘)가 튀어나온다.
+   글자는 뱃지 오른쪽 남은 칸이 아니라 알약 쪽 가운데에 가깝게(왼쪽 여백 20) — 시안 UI장비_버튼글자크기_시안.png B ── */
 
-.theme-violet .extra__button {
-	margin: 0 2px;
-	padding-left: 76px;
-	color: #FFFFFF;
+.theme-violet .stage__info {
+	margin-bottom: 0;
 }
 
-.extra__icon {
-	display: none;
+.theme-violet .stage__buttons {
+	flex-direction: row;
+	margin: 8px 0 0 0;
 }
 
-.theme-violet .extra__icon {
-	display: flex;
+.theme-violet .stage-btn,
+.theme-violet .stage-btn:hover,
+.theme-violet .stage-btn:active {
+	width: 212px;
+	height: 60px;
+	margin: 0 7px;
+	padding: 0;
+	border-width: 0;
+	background-image: none;
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.theme-violet .stage-btn:active {
+	scale: 0.95 0.95;
+}
+
+.theme-violet .stage-btn__pill {
 	position: absolute;
-	left: 22px;
-	top: 14px;
-	width: 52px;
-	height: 52px;
+	left: 24px;
+	right: 0;
+	top: 6px;
+	bottom: 6px;
+	justify-content: center;
+	padding-left: 20px;
+	border-width: 3px;
+	border-color: #0A0814;
+	border-radius: 24px;
+	background-color: #2E294A;
+}
+
+.theme-violet .stage-btn__label {
+	margin: 0;
+	padding: 0;
+	-unity-text-align: middle-center;
+	font-size: 32px;
+	color: #F0ECFF;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.theme-violet .stage-btn__badge {
+	position: absolute;
+	left: -2px;
+	top: -4px;
+	width: 68px;
+	height: 68px;
+	align-items: center;
+	justify-content: center;
+	border-width: 4px;
+	border-color: #0A0814;
+	border-radius: 34px;
+}
+
+.theme-violet .stage-btn--stat .stage-btn__badge {
+	background-color: #2E57A8;
+}
+
+.theme-violet .stage-btn--currency .stage-btn__badge {
+	background-color: #A06A1E;
+}
+
+.theme-violet .stage-btn__icon {
+	width: 38px;
+	height: 38px;
 	-unity-background-scale-mode: scale-to-fit;
 }
 
-.theme-violet .extra--stat {
-	background-image: url("../Violet/btn_stat.png");
-}
-
-.theme-violet .extra--stat .extra__icon {
+.theme-violet .stage-btn--stat .stage-btn__icon {
 	background-image: url("../Violet/extraicon_stat.png");
 }
 
-.theme-violet .extra--currency {
-	background-image: url("../Violet/btn_currency.png");
-}
-
-.theme-violet .extra--currency .extra__icon {
+.theme-violet .stage-btn--currency .stage-btn__icon {
 	background-image: url("../Violet/extraicon_currency.png");
 }
 
@@ -362,12 +406,12 @@
 }
 
 /* 빈 칸 부위 아이콘 — 분류 탭 아이콘 결의 단색 그림(sloticon_*, generate_violet_ui.py slot_icons).
-   크기는 칸(168px)의 약 57%(96px), 틀 아랫변이 윗변보다 5px 두꺼워 안쪽 가운데에 맞춰 3px 올린다 */
+   크기는 칸(188px)의 약 57%(108px), 틀 아랫변이 윗변보다 5px 두꺼워 안쪽 가운데에 맞춰 3px 올린다 */
 .theme-violet .equip-slot__placeholder {
-	left: 36px;
-	right: 36px;
-	top: 33px;
-	bottom: 39px;
+	left: 40px;
+	right: 40px;
+	top: 37px;
+	bottom: 43px;
 	opacity: 0.45;
 }
 

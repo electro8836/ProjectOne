@@ -338,16 +338,16 @@ def picto(name):
 	return Image.open(os.path.join(PICTO, 'btn_icon_' + name + '.png')).convert('RGBA')
 
 
-# 기능 버튼(능력치·재화·코스튬·펫) 아이콘 — Fantasy Picto Pack 흰 실루엣, 같은 크기로 맞춘다
+# 장비 화면 능력치·재화 뱃지 아이콘 + 메뉴 코스튬·펫 아이콘 — Fantasy Picto Pack 흰 실루엣, 같은 크기로 맞춘다
 def extra_icons():
 	icons = {
-		'stat': picto('strength'),
-		'currency': picto('money'),
-		'costume': picto('hat'),
-		'pet': picto('paw'),
+		'extraicon_stat': picto('strength'),
+		'extraicon_currency': picto('money'),
+		'menuicon_costume': picto('hat'),
+		'menuicon_pet': picto('paw'),
 	}
 	for key in icons:
-		save(fit_icon(icons[key]), 'extraicon_' + key)
+		save(fit_icon(icons[key]), key)
 
 
 # 분류 탭 아이콘 — Layer Lab GUI Pro-FantasyHero 의 Icon_Gear_* 결(진한 외곽선 + 연보라 3톤 면).
@@ -744,12 +744,6 @@ def main():
 	slot_icons()
 	type_icons()
 	extra_icons()
-	# 기능 버튼 — 어떤 버튼인지 색으로 구분(능력치 파랑·재화 호박·코스튬 자홍·펫 초록), 80px.
-	# 모서리는 절반만 깎아 더 네모나게
-	middle('btn_stat', 80, '#2E57A8', '#4A78D2', corner=0.5)
-	middle('btn_currency', 80, '#A06A1E', '#CC9234', corner=0.5)
-	middle('btn_costume', 80, '#963A84', '#C05AAA', corner=0.5)
-	middle('btn_pet', 80, '#2F8A52', '#4CB474', corner=0.5)
 	middle('btn_danger', 80, '#9A2E36', '#C04A4E', '#2A0A0E')
 	# 켜진 토글 버튼(보관함 열림) — 일반 버튼 모양에 초록
 	middle('btn_active', 80, '#2F8A52', '#4CB474')

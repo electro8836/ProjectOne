@@ -19,18 +19,12 @@
 			</ui:VisualElement>
 		</ui:VisualElement>
 
-		<!-- 기능 버튼 줄 + 캐릭터 영역 — 보관함이 이 묶음 전체를 덮는다 -->
+		<!-- 캐릭터 영역 — 보관함이 이 묶음 전체를 덮는다 -->
 		<ui:VisualElement class="upper">
-
-			<!-- ── 캐릭터 메뉴 — 캐릭터 영역 위. 버튼마다 색·아이콘으로 구분 ── -->
-			<ui:VisualElement class="extra">
-				<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
-				<ui:Button name="stat-button" text="능력치" class="btn btn--small extra__button extra--stat"><ui:VisualElement class="extra__icon" picking-mode="Ignore" /></ui:Button>
-				<ui:Button name="currency-button" text="재화" class="btn btn--small extra__button extra--currency"><ui:VisualElement class="extra__icon" picking-mode="Ignore" /></ui:Button>
-			</ui:VisualElement>
 
 			<!-- ── 위: 캐릭터 + 양옆 장착 칸 ── -->
 			<ui:VisualElement class="px-paper top">
+				<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
 
 				<ui:VisualElement class="top__body">
 					<!-- 왼쪽 장착 칸: 무기 · 목걸이 · 반지 · 유물 -->
@@ -41,7 +35,7 @@
 						<ui:VisualElement name="equip-8" class="equip-slot"><ui:VisualElement class="equip-slot__placeholder slot-relic" picking-mode="Ignore" /></ui:VisualElement>
 					</ui:VisualElement>
 
-					<!-- 가운데: 이름 → 캐릭터 → 레벨·전투력 -->
+					<!-- 가운데: 이름 → 캐릭터 → 레벨·전투력 → 능력치·재화 버튼(둥근 색 뱃지 + 알약) -->
 					<ui:VisualElement class="stage">
 						<ui:VisualElement class="stage__name-row">
 							<ui:VisualElement class="stage__ornament" picking-mode="Ignore" />
@@ -52,6 +46,16 @@
 						<ui:VisualElement class="stage__info">
 							<ui:Label name="hero-level" text="" class="stage__level" />
 							<ui:Label name="battle-power" text="" class="stage__power" />
+						</ui:VisualElement>
+						<ui:VisualElement class="stage__buttons">
+							<ui:Button name="stat-button" class="stage-btn stage-btn--stat">
+								<ui:VisualElement class="stage-btn__pill" picking-mode="Ignore"><ui:Label text="능력치" class="stage-btn__label" picking-mode="Ignore" /></ui:VisualElement>
+								<ui:VisualElement class="stage-btn__badge" picking-mode="Ignore"><ui:VisualElement class="stage-btn__icon" picking-mode="Ignore" /></ui:VisualElement>
+							</ui:Button>
+							<ui:Button name="currency-button" class="stage-btn stage-btn--currency">
+								<ui:VisualElement class="stage-btn__pill" picking-mode="Ignore"><ui:Label text="재화" class="stage-btn__label" picking-mode="Ignore" /></ui:VisualElement>
+								<ui:VisualElement class="stage-btn__badge" picking-mode="Ignore"><ui:VisualElement class="stage-btn__icon" picking-mode="Ignore" /></ui:VisualElement>
+							</ui:Button>
 						</ui:VisualElement>
 					</ui:VisualElement>
 
@@ -66,7 +70,7 @@
 
 			</ui:VisualElement>
 
-			<!-- 보관함 — 열면 기능 버튼 줄부터 캐릭터 영역까지 통째로 덮는다 -->
+			<!-- 보관함 — 열면 캐릭터 영역을 통째로 덮는다 -->
 			<ui:VisualElement name="stash-section" class="px-paper stash">
 				<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
 				<ui:VisualElement class="stash__head">
