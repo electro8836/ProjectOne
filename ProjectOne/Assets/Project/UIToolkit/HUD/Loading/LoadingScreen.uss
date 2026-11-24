@@ -1,4 +1,4 @@
-/* 로딩 화면 — 타이틀 그림 위, 아래를 어둡게 물들이고 단계 문구 + 알약 게이지. 시안 Shared/Design/UI로딩_시안.png 3안 */
+/* 로딩 화면 — 로딩 그림 위, 아래를 어둡게 물들이고 단계 문구 + 알약 게이지. 시안 Shared/Design/UI로딩_시안.png 3안 */
 
 .loading {
 	position: absolute;
@@ -8,7 +8,7 @@
 	bottom: 0;
 	justify-content: flex-end;
 	background-color: #191A29;
-	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Image_TitleBg_01.png");
+	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Image_LoadingBg_01.png");
 	-unity-background-scale-mode: scale-and-crop;
 }
 
