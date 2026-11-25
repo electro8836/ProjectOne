@@ -50,7 +50,7 @@
 					<ui:Label text="설정" class="menu-grid__label" picking-mode="Ignore" />
 				</ui:Button>
 			</ui:VisualElement>
-			<!-- 3줄: 코스튬·펫 + 게임 종료는 잘못 누르지 않게 오른쪽 끝에 따로 둔다 -->
+			<!-- 3줄: 코스튬·펫·던전 + 게임 종료는 잘못 누르지 않게 오른쪽 끝에 따로 둔다 -->
 			<ui:VisualElement class="menu-grid__row">
 				<ui:Button name="costume" class="menu-grid__item">
 					<ui:VisualElement class="menu-grid__icon menu-grid__icon--costume" picking-mode="Ignore" />
@@ -60,7 +60,10 @@
 					<ui:VisualElement class="menu-grid__icon menu-grid__icon--pet" picking-mode="Ignore" />
 					<ui:Label text="펫" class="menu-grid__label" picking-mode="Ignore" />
 				</ui:Button>
-				<ui:VisualElement class="menu-grid__item" picking-mode="Ignore" />
+				<ui:Button name="dungeon" class="menu-grid__item">
+					<ui:VisualElement class="menu-grid__icon menu-grid__icon--dungeon" picking-mode="Ignore" />
+					<ui:Label text="던전" class="menu-grid__label" picking-mode="Ignore" />
+				</ui:Button>
 				<ui:VisualElement class="menu-grid__item" picking-mode="Ignore" />
 				<ui:Button name="quit" class="menu-grid__item">
 					<ui:VisualElement class="menu-grid__icon menu-grid__icon--quit" picking-mode="Ignore" />

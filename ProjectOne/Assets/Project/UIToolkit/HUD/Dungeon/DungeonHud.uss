@@ -1,0 +1,300 @@
+/* 던전 전용 HUD(골드·균열·미궁·유적) + 던전 메시지 배너 (기준 해상도 1080 x 1920, 세로).
+   위치·크기는 UGUI 시절 프리펩과 같다. 그림은 Art/UI/Atlas/Textures/Common/{Pictogram,Frame}. */
+
+.dungeon-hud {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+/* ── 상태줄 — 오른쪽 위(맵 이름 판 351~406 아래, 위에서 422), 아이콘 60 + 글자 한 줄씩 ── */
+.dungeon-state {
+	position: absolute;
+	right: 20px;
+	top: 422px;
+	width: 185px;
+}
+
+.dungeon-state__row {
+	flex-direction: row;
+	align-items: center;
+	height: 60px;
+}
+
+.dungeon-state__icon {
+	width: 60px;
+	height: 60px;
+	margin-right: 5px;
+	flex-shrink: 0;
+}
+
+.dungeon-state__text {
+	flex-grow: 1;
+	margin: 0;
+	padding: 0;
+	font-size: 40px;
+	color: #FFFFFF;
+	-unity-text-align: middle-left;
+	white-space: nowrap;
+}
+
+.picto-stage { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Thunder.Png"); }
+.picto-time { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Timer.Png"); }
+.picto-wave { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Location.Png"); }
+.picto-kill { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Skull.Png"); }
+.picto-life { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Health.Png"); }
+.picto-chest { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Crown.Png"); }
+
+/* ── 균열 스킬 버튼 — 오른쪽 아래(아래에서 500) ── */
+.rift-skill-btn {
+	position: absolute;
+	right: -12px;
+	bottom: 437px;
+	width: 125px;
+	height: 125px;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Frame/ProfileFrame_01_Bg.png");
+}
+
+.unity-button.rift-skill-btn:hover:enabled,
+.unity-button.rift-skill-btn:active:enabled,
+.rift-skill-btn:disabled {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.rift-skill-btn:disabled .rift-skill-btn__icon {
+	-unity-background-image-tint-color: #707070;
+}
+
+.rift-skill-btn__icon {
+	position: absolute;
+	left: 5px;
+	right: 5px;
+	top: 5px;
+	bottom: 5px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* 다음 1회분 충전 — 아래에서 위로 차오르는 덮개 대신, 아직 안 찬 만큼 위에서 어둡게 덮는다 */
+.rift-skill-btn__shade {
+	position: absolute;
+	left: 5px;
+	right: 5px;
+	top: 5px;
+	height: 0;
+	background-color: rgba(0, 0, 0, 0.55);
+}
+
+.rift-skill-btn__border {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Frame/ProfileFrame_01_InnerBorder.png");
+}
+
+.rift-skill-btn__stack {
+	position: absolute;
+	right: -3px;
+	bottom: -3px;
+	width: 50px;
+	height: 50px;
+	margin: 0;
+	padding: 0;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Frame/ProfileFrame_01_Bg.png");
+	font-size: 32px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+}
+
+.rift-skill-btn__gauge {
+	position: absolute;
+	left: 12px;
+	right: 12px;
+	bottom: -38px;
+	height: 36px;
+	margin: 0;
+	padding: 0;
+	font-size: 25px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+}
+
+/* ── 미궁 진행 막대 — 오른쪽 세로(가운데에서 172 아래, 높이 920) ── */
+.laby-progress {
+	position: absolute;
+	right: 20px;
+	top: 50%;
+	width: 28px;
+	height: 920px;
+	margin-top: -288px;
+}
+
+.laby-bar {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 92px;
+	bottom: 92px;
+	border-width: 3px;
+	border-radius: 14px;
+	border-color: #0A0814;
+	background-color: rgba(10, 8, 20, 0.6);
+	justify-content: flex-end;
+	overflow: hidden;
+}
+
+/* 캐릭터 위치 — 아래에서 위로 */
+.laby-bar__fill {
+	width: 100%;
+	height: 0;
+	background-color: #42FF49;
+}
+
+/* 불(무너짐) 위치 — 막대 왼쪽 가는 줄 */
+.laby-fire {
+	position: absolute;
+	left: -45px;
+	width: 10px;
+	top: 92px;
+	bottom: 92px;
+	justify-content: flex-end;
+}
+
+.laby-fire__fill {
+	width: 100%;
+	height: 0;
+	border-radius: 5px;
+	background-color: #FF6A3D;
+}
+
+/* 구간 포인트 5개 — 막대 위에 0·25·50·75·100% 자리 */
+.laby-points {
+	position: absolute;
+	left: -9px;
+	width: 46px;
+	top: 92px;
+	bottom: 92px;
+}
+
+.laby-point {
+	position: absolute;
+	left: 0;
+	width: 46px;
+	height: 46px;
+	margin-bottom: -23px;
+	border-width: 4px;
+	border-radius: 23px;
+	border-color: #0A0814;
+	background-color: #3A3B42;
+}
+
+.laby-point--reached {
+	background-color: #42FF49;
+}
+
+.laby-point--0 { bottom: 0; }
+.laby-point--1 { bottom: 25%; }
+.laby-point--2 { bottom: 50%; }
+.laby-point--3 { bottom: 75%; }
+.laby-point--4 { bottom: 100%; }
+
+.laby-info {
+	position: absolute;
+	left: -16px;
+	width: 60px;
+	bottom: 20px;
+	height: 40px;
+	margin: 0;
+	padding: 0;
+	border-radius: 8px;
+	background-color: rgba(10, 8, 20, 0.8);
+	font-size: 20px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+}
+
+/* ── 던전 메시지 배너 — 위에서 350 가운데, 750x220 ── */
+.dungeon-message {
+	position: absolute;
+	left: 50%;
+	top: 240px;
+	width: 750px;
+	height: 220px;
+	margin-left: -375px;
+	display: none;
+}
+
+.dungeon-message--show {
+	display: flex;
+}
+
+.dungeon-message__bg {
+	position: absolute;
+	left: 7px;
+	right: 7px;
+	top: 94px;
+	bottom: 0;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Frame/Title_Line_01_Bg.png");
+}
+
+.dungeon-message__line {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Frame/Title_Line_Deco_01.png");
+}
+
+.dungeon-message__deco {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	width: 109px;
+	height: 109px;
+	margin-left: -54px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Frame/Circle_Deco_01.png");
+}
+
+.dungeon-message--bad .dungeon-message__deco {
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Frame/Circle_Deco_02.png");
+}
+
+.dungeon-message__icon {
+	position: absolute;
+	left: 50%;
+	top: 14px;
+	width: 80px;
+	height: 80px;
+	margin-left: -40px;
+}
+
+.dungeon-message__text {
+	position: absolute;
+	left: 63px;
+	right: 63px;
+	top: 110px;
+	bottom: 25px;
+	margin: 0;
+	padding: 0;
+	font-size: 48px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	white-space: normal;
+}
+
+.dungeon-message--small .dungeon-message__text {
+	font-size: 30px;
+}
+
+.picto-star { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Star.Png"); }
+.picto-warning { background-image: url("../../../Art/UI/Atlas/Textures/Common/Pictogram/PictoIcon_Warning.Png"); }

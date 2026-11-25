@@ -237,14 +237,6 @@ PrefabInstance:
       propertyPath: m_AdditionalShaderChannelsFlag
       value: 25
       objectReference: {fileID: 0}
-    - target: {fileID: 827102520626777141, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
-      propertyPath: m_AdditionalShaderChannelsFlag
-      value: 25
-      objectReference: {fileID: 0}
-    - target: {fileID: 1529667782244705642, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
-      propertyPath: m_AdditionalShaderChannelsFlag
-      value: 25
-      objectReference: {fileID: 0}
     - target: {fileID: 3373317497805159052, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_Name
       value: UIManager
@@ -265,10 +257,6 @@ PrefabInstance:
       propertyPath: _interactionGauge
       value: 
       objectReference: {fileID: 176688733951041818, guid: a4aebce4e42002647a366f85c973755a, type: 3}
-    - target: {fileID: 5100000000000000012, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
-      propertyPath: m_AdditionalShaderChannelsFlag
-      value: 25
-      objectReference: {fileID: 0}
     - target: {fileID: 5592100982462328540, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -307,14 +295,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5592100982462328540, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8397822096474945262, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
-      propertyPath: m_AdditionalShaderChannelsFlag
-      value: 25
-      objectReference: {fileID: 0}
-    - target: {fileID: 9100000000000000005, guid: 41ee18f5a5c1b414c8df66569bbfe4d8, type: 3}
-      propertyPath: m_BlockingMask.m_Bits
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
@@ -562,7 +542,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.Boot.DevDataInjector
   _disabled: 1
-  _characterLevel: 3
   _equipSlots:
   - slot: 1
     itemId: 1010101001
@@ -664,12 +643,36 @@ MonoBehaviour:
   _masteries:
   - mastery: 1
     level: 22
+    passive: 0
+    tactical1: 0
+    tactical2: 0
+    tactical3: 0
+    tactical4: 0
+    core: 0
   - mastery: 2
     level: 18
+    passive: 0
+    tactical1: 0
+    tactical2: 0
+    tactical3: 0
+    tactical4: 0
+    core: 0
   - mastery: 3
     level: 12
+    passive: 0
+    tactical1: 0
+    tactical2: 0
+    tactical3: 0
+    tactical4: 0
+    core: 0
   - mastery: 4
     level: 30
+    passive: 0
+    tactical1: 0
+    tactical2: 0
+    tactical3: 0
+    tactical4: 0
+    core: 0
   _ownedCostumes: 
   _equippedBodyCostume: 1002
   _equippedWeaponCostume: 0
@@ -679,8 +682,8 @@ MonoBehaviour:
   _pets: []
   _equippedPet: 2
   _viewRefreshInterval: 1
-  _viewCharacterLevel: 0
-  _viewCharacterExp: 0
+  _viewMasteryLevel: 0
+  _viewMasteryExp: 0
   _viewCurrencies: []
   _viewItems: []
   _viewEquipments: []

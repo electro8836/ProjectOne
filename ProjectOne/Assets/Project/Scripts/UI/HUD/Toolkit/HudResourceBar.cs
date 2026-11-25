@@ -57,7 +57,7 @@ namespace ProjectOne.UI
 				if (_lastGold != amount)
 				{
 					_lastGold = amount;
-					_goldText.text = CurrencySlot.FormatAmount(amount);
+					_goldText.text = CurrencyFormat.Short(amount);
 				}
 			}
 			else if (currency == EDT.Currency.Dia)
@@ -65,7 +65,7 @@ namespace ProjectOne.UI
 				if (_lastDia != amount)
 				{
 					_lastDia = amount;
-					_diaText.text = CurrencySlot.FormatAmount(amount);
+					_diaText.text = CurrencyFormat.Short(amount);
 				}
 			}
 		}

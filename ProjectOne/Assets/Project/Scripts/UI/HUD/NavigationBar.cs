@@ -9,9 +9,11 @@ namespace ProjectOne.UI
 	// UIManager 가 Navigation 층(300)에 한 번 세워 두고, 보일 맥락(마을·필드)과 창이 가리는지에 따라 스스로 숨는다.
 	//
 	// 탭을 누르면 그 화면으로 창을 교체하고, 열린 탭을 다시 누르면 창을 모두 닫는다.
+	// 월드 탭은 화면이 아직 없어 "준비 중" 알림만 띄운다.
 	public class NavigationBar : ToolkitScreen
 	{
 		private const int TAB_COUNT = 5;
+		private const string ComingSoon = "준비 중입니다";
 
 		// 탭 순서와 열 화면 — UXML 의 tab-0 ~ tab-4 와 같은 순서다.
 		private static readonly UIScreenId[] TabScreens =
@@ -125,6 +127,12 @@ namespace ProjectOne.UI
 			}
 
 			int index = (int)((VisualElement)evt.currentTarget).userData;
+			if (TabScreens[index] == UIScreenId.World)
+			{
+				UIManager.Instance.ShowAlertMessage(ComingSoon);
+				return;
+			}
+
 			if (index == _openedIndex)
 			{
 				closeAsync().Forget();

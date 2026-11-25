@@ -79,7 +79,7 @@ namespace ProjectOne.UI
 			}
 
 			_lastAmounts[index] = amount;
-			_texts[index].text = CurrencySlot.FormatAmount(amount);
+			_texts[index].text = CurrencyFormat.Short(amount);
 		}
 	}
 }

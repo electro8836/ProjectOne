@@ -1,0 +1,37 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="TitleScreen.uss" />
+
+	<ui:VisualElement name="screen" class="title">
+		<!-- 키아트 한 장(배경·로고) + 아래 어둠 띠 -->
+		<ui:VisualElement class="title-art" picking-mode="Ignore" />
+		<ui:VisualElement class="title-shade" picking-mode="Ignore" />
+
+		<!-- 메뉴 버튼 자리 — 아직 기능 없음 -->
+		<ui:VisualElement class="title-menu" picking-mode="Ignore">
+			<ui:VisualElement class="title-menu__icon" picking-mode="Ignore" />
+		</ui:VisualElement>
+
+		<!-- 로그인 버튼 — 계정 팝업과 같은 종류. 애플은 iOS 에서만 보인다 -->
+		<ui:VisualElement class="title-login" picking-mode="Ignore">
+			<ui:Button name="guest" class="title-btn">
+				<ui:VisualElement class="title-btn__icon title-icon--guest" picking-mode="Ignore" />
+				<ui:Label text="게스트 로그인" class="title-btn__text" picking-mode="Ignore" />
+			</ui:Button>
+			<ui:Button name="apple" class="title-btn">
+				<ui:VisualElement class="title-btn__icon title-icon--apple" picking-mode="Ignore" />
+				<ui:Label text="애플 로그인" class="title-btn__text" picking-mode="Ignore" />
+			</ui:Button>
+			<ui:Button name="google" class="title-btn">
+				<ui:VisualElement class="title-btn__icon title-icon--google" picking-mode="Ignore" />
+				<ui:Label text="구글 로그인" class="title-btn__text" picking-mode="Ignore" />
+			</ui:Button>
+			<ui:Button name="discord" class="title-btn">
+				<ui:VisualElement class="title-btn__icon title-icon--discord" picking-mode="Ignore" />
+				<ui:Label text="디스코드 로그인" class="title-btn__text" picking-mode="Ignore" />
+			</ui:Button>
+		</ui:VisualElement>
+
+		<ui:Label text="Ver. 1.0.130" class="title-ver" picking-mode="Ignore" />
+	</ui:VisualElement>
+</ui:UXML>

@@ -73,7 +73,7 @@ namespace ProjectOne.Town
 			// 카메라는 맵·히어로가 없어도 먼저 세운다 — 실패해도 흐름을 막지 않는다.
 			await GameplaySceneSetup.EnsureCameraAsync(ct);
 
-			_townMapId = findTownMapId();
+			_townMapId = FindTownMapId();
 			if (_townMapId <= 0)
 			{
 				Debug.LogWarning("[TownDirector] MapType=Town 인 Map 행이 없습니다 — 마을 맵과 NPC 배치를 건너뜁니다.");
@@ -129,7 +129,7 @@ namespace ProjectOne.Town
 		}
 
 		// 마을은 하나뿐이다. 여러 개면 첫 번째를 쓰고 경고한다.
-		private static int findTownMapId()
+		public static int FindTownMapId()
 		{
 			int found = 0;
 

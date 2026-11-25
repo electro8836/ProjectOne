@@ -11,7 +11,6 @@
 ### 1.1 원칙
 
 - **그리는 층만 바꾼다.** 창 스택·Addressables 참조카운트·MVP(Presenter + IView)는 그대로 쓰고, View 만 UI Toolkit 으로 교체한다.
-- **단계마다 게임이 돌아간다.** 전환 중에는 UGUI 화면과 UI Toolkit 화면이 같은 창 스택에 함께 올라간다.
 - **화면 수만큼 패널을 만들지 않는다.** 층(Layer)마다 UIDocument 하나, 화면은 그 루트에 붙였다 뗀다.
 
 ### 1.2 유지하는 것
@@ -29,13 +28,11 @@
 
 ### 2.1 층 목록
 
-`UIManager` 아래에 층마다 UIDocument 하나를 둔다. UI Toolkit 패널과 UGUI Canvas(Screen Space Overlay)는 정렬 값대로 섞여 그려지므로, 남은 UGUI 와의 위아래도 정렬 값으로 정한다.
+`UIManager` 아래에 층마다 UIDocument 하나를 둔다. 화면 UI 는 전부 이 층에 붙고, 화면용 UGUI Canvas 는 없다.
 
 | 층 | PanelSettings | 정렬 | 내용 |
 |---|---|---|---|
-| (UGUI) 조이스틱 | `UIPrefab_Joystick` 의 Canvas | 80 | 이동 조이스틱 |
-| HUD | `PanelSettings_HUD` | 90 | 메인 HUD |
-| (UGUI) HUD 캔버스 | `UIManager._hudCanvas` | 100 | 던전 HUD, 월드 보스 게이지 |
+| HUD | `PanelSettings_HUD` | 90 | 조이스틱, 메인 HUD, 던전 HUD, 던전 메시지, 타이틀 |
 | Window | `PanelSettings_Window` | 200 | 전체 창(장비·마스터리·상점 …) |
 | Navigation | `PanelSettings_Navigation` | 300 | 하단 네비게이션 바 |
 | Popup | `PanelSettings_Popup` | 350 | 팝업, 툴팁 |
@@ -43,7 +40,8 @@
 | Loading | `PanelSettings_Loading` | 999 | 로딩 화면 — 층 구조의 유일한 예외 |
 | World | (UGUI WorldSpace Canvas 유지) | — | 머리 위 게이지, 피해 숫자 |
 
-- 메인 HUD 는 조이스틱 위·던전 HUD 아래에 놓인다. HUD 의 빈 곳은 `pickingMode = Ignore` 라 터치가 조이스틱까지 내려간다.
+- HUD 층 안에서는 붙는 순서가 곧 위아래다: 조이스틱 → 메인 HUD → 던전 HUD → 던전 메시지. HUD 의 빈 곳은 `pickingMode = Ignore` 라 터치가 맨 아래 조이스틱까지 내려간다.
+- 타이틀(`TitleHUD`)은 2.Title 씬에 놓인 화면이라 `Start` 에서 `UIManager.AttachToHudLayer` 로 스스로 붙고, 씬이 내려가면 떨어진다.
 - 로딩 화면(`LoadingUI`)은 `LoadingManager` 가 UIManager 와 따로 띄우고 모든 UI 를 덮어야 해서, 층에 붙지 않고 자기 UIDocument 를 가진다.
 - 모든 PanelSettings 는 기준 해상도 1080 x 1920 · Match Height(1) 이고 테마 `Theme.tss`(기본 테마 + `Theme.uss`)를 쓴다. 층 루트에 바로 붙는 요소(툴팁·네트워크 딤)도 테마를 받는다. 각 UXML 도 `<Style>` 로 `Theme.uss` 를 가져온다.
 - 층 루트는 `pickingMode = Ignore` 로 두어 빈 곳의 입력을 아래 층으로 통과시킨다. 자식 UIDocument 는 `UIManager.Awake` 시점에 루트가 없으므로 층을 처음 쓸 때 설정한다.
@@ -51,10 +49,10 @@
 
 ### 2.2 입력
 
-- UGUI 와 UI Toolkit 이 함께 있는 동안 EventSystem 하나가 둘 다 처리한다.
+- EventSystem 은 `UIManager` 가 하나 보장한다.
 - 클릭음은 층 루트에 올라오는(bubble) `ClickEvent` 하나를 걸어 일괄로 낸다. 버튼마다 연결하지 않는다.
   - 대상: `Button`, 탭(`.tab` · `.nav-tab` — 탭 소리), 버튼이 아닌데 누르는 요소(`.sfx-click` — 아이템 칸·목록 행 등. 클릭 콜백을 걸 때 이 클래스도 붙인다).
-  - 소리는 UGUI 버튼 테마와 같은 FMOD 이벤트다(`UIManager._clickSfx` / `_tabClickSfx`).
+  - 소리는 FMOD 이벤트다(`UIManager._clickSfx` / `_tabClickSfx`).
   - 끌어서 스크롤한 뒤의 클릭은 `ScrollDragManipulator` 가 삼키므로 소리가 나지 않는다.
 - 모바일 게임이라 hover 표시를 쓰지 않는다. `Theme.uss` 가 기본 테마의 버튼 hover·눌림 배경을 같은 강도로 덮고, 색 배경 버튼은 화면 USS 에서 `:hover:enabled` 로 자기 색을 다시 지정한다.
 - 뒤로가기 키는 팝업 스택 → 창 스택 순으로 맨 위부터 닫는다.
@@ -84,9 +82,9 @@ public abstract class ToolkitScreen : UIScreen
 ```
 
 - 화면은 계속 프리펩(Addressable)이다. 캐릭터 미리보기처럼 MonoBehaviour 부품이 필요한 화면이 있기 때문이다.
-- `UIManager.OpenWindowAsync` 는 프리펩을 생성한 뒤, `ToolkitScreen` 이면 Window 층 루트에 `Attach` 한다. 닫을 때는 파괴(→ `Detach`)·Release 한다. 창 스택 로직은 UGUI 화면과 공유한다.
-- 상시 UI 도 같은 방식이다: 메인 HUD → HUD 층, 네비게이션 바 → Navigation 층, 알림 메시지·획득 로그 → System 층.
-- View 는 `ToolkitScreen` 을 상속하고 화면의 `IView` 를 구현한다. Presenter 는 UGUI 판과 같은 것을 쓴다.
+- `UIManager.OpenWindowAsync` 는 프리펩을 UIManager 아래에 생성한 뒤 Window 층 루트에 `Attach` 한다. 닫을 때는 파괴(→ `Detach`)·Release 한다.
+- 상시 UI 도 같은 방식이다: 조이스틱·메인 HUD·던전 HUD·던전 메시지 → HUD 층, 네비게이션 바 → Navigation 층, 알림 메시지·획득 로그 → System 층.
+- View 는 `ToolkitScreen` 을 상속하고 화면의 `IView` 를 구현한다.
 
 ### 3.2 View 규칙
 
@@ -205,9 +203,9 @@ Assets/Project/UIToolkit/
   Components/   ItemCell.uss
   Pixel/        도트 9-slice 부품 (pixelui 생성)
   Equipment/ · Mastery/   장비·마스터리 화면
-  Screens/      Shop/ · World/ · Craft/ · Costume/ · Pet/
-  Popups/       Popups.uss(공통) · Common/ · Reward/ · ItemInfo/ · Mail/ · Ranking/ · Quest/ …
-  HUD/          MainHud/ · Navigation/ · Notice/ · SystemLog/ · Loading/
+  Screens/      Title/ · Shop/ · Craft/ · Costume/ · Pet/ · Map/
+  Popups/       Popups.uss(공통) · Common/ · Reward/ · ItemInfo/ · Mail/ · Ranking/ · Quest/ · Dungeon/ …
+  HUD/          MainHud/ · Joystick/ · Dungeon/ · Navigation/ · Notice/ · SystemLog/ · Loading/
 
 Assets/Project/Scripts/UI/
   Core/         UIManager · UIScreen · UIScreenCatalog · UIPopupCatalog · LoadingUI · MVP/
@@ -221,10 +219,10 @@ Assets/Project/Scripts/UI/
 
 | 대상 | 이유 |
 |---|---|
-| 머리 위 게이지·피해 숫자 (World Canvas) | 월드 좌표에 붙어 유닛을 따라간다 |
-| 조이스틱 (`UIPrefab_Joystick`) | EventSystem 포인터 드래그로 동작한다. 메인 HUD 와 떨어진 프리펩으로 HUD 캔버스에 붙고, 자기 Canvas(정렬 80)로 툴킷 HUD 아래에 깔린다 |
-| 던전 HUD·던전 화면(골드·미궁·균열·유적) | 던전 폐지 예정이라 옮기지 않는다. 함께 쓰는 `SimplePopup` 도 남긴다 |
-| 타이틀 씬 로그인 버튼(`TitleHUD`) | 씬에 직접 놓인 UI 다 |
+| 머리 위 게이지·리스폰 타이머·피해 숫자 (`UIManager._worldCanvas` 등 World Space) | 월드 좌표에 붙어 유닛을 따라간다 |
+| 개발용 모션 보기(`DevMotionViewer`, Dev 씬) | 게임에 들어가지 않는 개발 도구다 |
+
+화면 UI 는 전부 UI Toolkit 이다. 새 화면 UI 에 UGUI 를 쓰지 않는다.
 
 ---
 
@@ -236,8 +234,9 @@ Assets/Project/Scripts/UI/
 | 1. 창 | 상점 · 월드 · 제작 · 코스튬 · 펫 | 화면별 플레이 확인 |
 | 2. 팝업 | 공통 → 보상 → 아이템 정보 → 나머지 | 팝업별 플레이 확인 |
 | 3. 상시 UI | 네비게이션 바 · 알림 메시지 · 로딩 · 네트워크 딤 | 층 정렬 확인 |
-| 4. HUD | 메인 HUD · 획득 로그 (조이스틱은 UGUI 프리펩으로 분리) | 마을·필드·보스 전투에서 확인 |
-| 5. 정리 | 옛 UGUI 화면·슬롯 스크립트와 프리펩 삭제 | 삭제한 스크립트를 참조하는 에셋 없음, 컴파일 확인 |
+| 4. HUD | 메인 HUD · 획득 로그 · 조이스틱 | 마을·필드·보스 전투에서 확인 |
+| 5. 나머지 | 타이틀 · 던전(입장 팝업·HUD·메시지·결과·이어하기) | 타이틀 로그인, 던전 입장~결과 확인 |
+| 6. 정리 | 옛 UGUI 화면·부품 스크립트와 프리펩, UIManager 의 화면 Canvas 삭제 | 화면 UI 에 `UnityEngine.UI` 사용처 없음, 컴파일 확인 |
 
 - 층·프리펩은 에디터 메뉴 `ProjectOne/UI Toolkit/층·프리펩 전체 만들기`(`ToolkitSetupBuilder`)로 만든다. 새 UI Toolkit 화면·팝업을 추가하면 이 빌더에 함께 등록한다.
 

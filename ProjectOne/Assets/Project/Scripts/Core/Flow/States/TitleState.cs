@@ -40,7 +40,7 @@ namespace ProjectOne.Flow
 
 			await showPendingNoticeAsync(ct);
 
-			// 로그인 결과 대기 (Button_Guest / Button_Google → NetworkManager.Login)
+			// 로그인 결과 대기 (TitleHUD 의 게스트·구글 버튼 → NetworkManager.Login)
 			//
 			// 성공이 아니라 **결과**를 기다린다. 서버가 죽어 실패해도 오프라인으로 진행한다 —
 			// 성공만 기다리면 서버 장애가 곧 개발 중단이 된다.

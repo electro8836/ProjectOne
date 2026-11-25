@@ -75,7 +75,7 @@ namespace ProjectOne.UI
 				cell.view.SetShown(true);
 				cell.currency = data[i].currency;
 				_bindTasks.Add(cell.view.BindCurrencyAsync(data[i].currency, data[i].amount, ct));
-				cell.view.SetCountText(CurrencySlot.FormatAmount(data[i].amount));
+				cell.view.SetCountText(CurrencyFormat.Short(data[i].amount));
 			}
 
 			for (int i = data.Count; i < _cells.Count; i++)
@@ -93,7 +93,7 @@ namespace ProjectOne.UI
 			{
 				if (_cells[i].currency == currency)
 				{
-					_cells[i].view.SetCountText(CurrencySlot.FormatAmount(amount));
+					_cells[i].view.SetCountText(CurrencyFormat.Short(amount));
 					return;
 				}
 			}

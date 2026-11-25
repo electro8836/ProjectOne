@@ -1,0 +1,40 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Dungeon.uss" />
+
+	<!-- 던전 고르기 — 던전 4종 줄(아이콘 · 이름). 누르면 그 던전의 입장 팝업으로 넘어간다. 이름은 Dungeon 테이블에서 채운다 -->
+	<ui:VisualElement name="popup" class="popup theme-violet dungeon-popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head item-head">
+				<ui:Label text="던전" class="popup__name item-head__name" />
+				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+
+			<ui:VisualElement class="popup__body">
+				<ui:Button name="dungeon-0" class="dungeon-list-row">
+					<ui:VisualElement class="dungeon-list-row__icon dungeon-icon--gold" picking-mode="Ignore" />
+					<ui:Label text="골드 던전" class="dungeon-list-row__name" picking-mode="Ignore" />
+					<ui:VisualElement class="dungeon-list-row__arrow" picking-mode="Ignore" />
+				</ui:Button>
+				<ui:Button name="dungeon-1" class="dungeon-list-row">
+					<ui:VisualElement class="dungeon-list-row__icon dungeon-icon--rift" picking-mode="Ignore" />
+					<ui:Label text="균열 던전" class="dungeon-list-row__name" picking-mode="Ignore" />
+					<ui:VisualElement class="dungeon-list-row__arrow" picking-mode="Ignore" />
+				</ui:Button>
+				<ui:Button name="dungeon-2" class="dungeon-list-row">
+					<ui:VisualElement class="dungeon-list-row__icon dungeon-icon--labyrinth" picking-mode="Ignore" />
+					<ui:Label text="미궁 던전" class="dungeon-list-row__name" picking-mode="Ignore" />
+					<ui:VisualElement class="dungeon-list-row__arrow" picking-mode="Ignore" />
+				</ui:Button>
+				<ui:Button name="dungeon-3" class="dungeon-list-row">
+					<ui:VisualElement class="dungeon-list-row__icon dungeon-icon--ruins" picking-mode="Ignore" />
+					<ui:Label text="유적 던전" class="dungeon-list-row__name" picking-mode="Ignore" />
+					<ui:VisualElement class="dungeon-list-row__arrow" picking-mode="Ignore" />
+				</ui:Button>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,391 @@
+/* 던전 입장 팝업(골드·미궁·유적·균열) 공용 — 보라 팝업 틀 위에 썸네일 + 현황 줄, 가로 칸 목록, 아래 버튼.
+   틀(.popup·.popup__window·.item-head)은 Theme.uss · Violet.uss 를 따른다. */
+
+.dungeon-popup .popup__window {
+	width: 980px;
+}
+
+/* ── 썸네일 + 현황 ── */
+.dungeon-info {
+	flex-direction: row;
+	margin-bottom: 24px;
+}
+
+.dungeon-thumb-box {
+	width: 300px;
+	height: 300px;
+	margin-right: 20px;
+	padding: 16px;
+	flex-shrink: 0;
+}
+
+.dungeon-thumb {
+	flex-grow: 1;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.dungeon-status {
+	flex-grow: 1;
+	padding: 16px 28px;
+	justify-content: center;
+}
+
+.dungeon-row {
+	flex-direction: row;
+	align-items: center;
+	height: 52px;
+}
+
+.dungeon-row__label {
+	flex-grow: 1;
+	font-size: 34px;
+	color: #A8A2CC;
+}
+
+.dungeon-row__value {
+	font-size: 36px;
+	color: #FFFFFF;
+	-unity-text-align: middle-right;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.dungeon-row__value--fit {
+	min-width: 60px;
+}
+
+.dungeon-row__icon {
+	width: 44px;
+	height: 44px;
+	margin-right: 8px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* ── 칸 목록 ── */
+.dungeon-section {
+	margin-bottom: 12px;
+	font-size: 38px;
+	color: #F2F2F5;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.dungeon-list-box {
+	height: 196px;
+	margin-bottom: 28px;
+	padding: 18px 12px;
+}
+
+.dungeon-list {
+	flex-grow: 1;
+}
+
+.dungeon-list .unity-scroll-view__content-container {
+	flex-direction: row;
+	align-items: center;
+}
+
+/* 단계 칸 — 숫자 하나. 상태는 색으로 가른다: 깬 단계 남색 · 도전할 단계 보라 · 잠긴 단계 회색 */
+.dungeon-stage {
+	width: 150px;
+	height: 150px;
+	margin: 0 8px;
+	padding: 0;
+	border-width: 6px;
+	border-radius: 18px;
+	border-color: rgba(0, 0, 0, 0);
+	font-size: 56px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.unity-button.dungeon-stage:hover:enabled,
+.unity-button.dungeon-stage:active:enabled {
+	background-color: var(--stage-face);
+}
+
+.dungeon-stage--cleared {
+	--stage-face: #2E3A6E;
+	background-color: #2E3A6E;
+}
+
+.dungeon-stage--current {
+	--stage-face: #7C68E4;
+	background-color: #7C68E4;
+}
+
+.dungeon-stage--locked {
+	--stage-face: #3A3B42;
+	background-color: #3A3B42;
+	color: #FF6A6A;
+}
+
+.dungeon-stage--selected {
+	border-color: #42FF49;
+}
+
+/* ── 균열 스킬 ── */
+.rift-skill {
+	width: 150px;
+	height: 150px;
+	margin: 0 8px;
+	padding: 14px;
+	border-width: 6px;
+	border-radius: 18px;
+	border-color: rgba(0, 0, 0, 0);
+	background-color: #3A3B42;
+}
+
+.rift-skill--selected {
+	border-color: #42FF49;
+}
+
+.rift-skill__icon {
+	flex-grow: 1;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* 고른 스킬 줄 — 누르면 설명 툴팁 */
+.rift-select {
+	flex-direction: row;
+	align-items: center;
+	height: 110px;
+	margin: 0 0 28px 0;
+	padding: 0 28px;
+	border-width: 0;
+	border-radius: 18px;
+	background-color: #26272C;
+}
+
+.unity-button.rift-select:hover:enabled,
+.unity-button.rift-select:active:enabled {
+	background-color: #26272C;
+}
+
+.rift-select__icon {
+	width: 80px;
+	height: 80px;
+	margin-right: 22px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.rift-select__name {
+	flex-grow: 1;
+	font-size: 38px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.rift-select__hint {
+	font-size: 30px;
+	color: #A8A2CC;
+}
+
+/* ── 던전 결과 (창) — 보상 팝업과 같은 결 ── */
+.dungeon-result {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	padding: 300px 0 200px 0;
+	align-items: center;
+	background-color: rgb(8, 6, 20);
+}
+
+.dungeon-result__title {
+	margin: 0;
+	padding: 0;
+	font-size: 64px;
+	color: #FFE4A4;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.dungeon-result__sub {
+	margin: 10px 0 0 0;
+	padding: 0;
+	font-size: 38px;
+	color: #ECE8FA;
+}
+
+.dungeon-result__line {
+	width: 760px;
+	height: 4px;
+	margin: 20px 0 20px 0;
+	background-image: url("../../Violet/reward_line.png");
+	-unity-background-scale-mode: stretch-to-fill;
+}
+
+.dungeon-result__exp {
+	margin: 0 0 16px 0;
+	padding: 0;
+	font-size: 38px;
+	color: #A4EC7E;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+/* 칸 184px 간격 5열 — 남은 높이를 다 쓰고, 넘치면 스크롤 */
+.dungeon-result__grid {
+	width: 920px;
+	flex-grow: 1;
+	flex-shrink: 1;
+	min-height: 0;
+}
+
+.dungeon-result__grid .unity-scroll-view__content-container {
+	flex-direction: row;
+	flex-wrap: wrap;
+}
+
+.dungeon-result__grid .item-cell {
+	width: 168px;
+	height: 168px;
+	margin: 8px;
+}
+
+.theme-violet .dungeon-result__grid .item-cell__count {
+	right: 16px;
+	bottom: 18px;
+	padding: 0;
+	background-color: rgba(0, 0, 0, 0);
+	-unity-text-outline-width: 3px;
+	-unity-text-outline-color: #0A0814;
+}
+
+.dungeon-result__count {
+	margin: 20px 0 0 0;
+	padding: 0;
+	font-size: 36px;
+	color: #FFFFFF;
+}
+
+.dungeon-result__return {
+	margin: 8px 0 24px 0;
+	padding: 0;
+	font-size: 32px;
+	color: #A8A2CC;
+}
+
+.dungeon-result__buttons {
+	flex-direction: row;
+	width: 980px;
+}
+
+/* ── 이어하기 (창) — 결과창과 같은 결, 가운데 안내 + 버튼 ── */
+.dungeon-continue {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	justify-content: center;
+	align-items: center;
+	background-color: rgb(8, 6, 20);
+}
+
+.dungeon-continue__icon {
+	width: 120px;
+	height: 120px;
+	margin-bottom: 20px;
+}
+
+.dungeon-continue__title {
+	margin: 0;
+	padding: 0;
+	font-size: 64px;
+	color: #FFE4A4;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.dungeon-continue__desc {
+	margin: 24px 60px 48px 60px;
+	padding: 0;
+	font-size: 38px;
+	color: #ECE8FA;
+	white-space: normal;
+	-unity-text-align: middle-center;
+}
+
+.dungeon-continue__buttons {
+	flex-direction: row;
+	width: 900px;
+}
+
+/* 유료 부활 — "부활 [재화] 비용" 한 줄 */
+.continue-retry {
+	flex-direction: row;
+	justify-content: center;
+	align-items: center;
+}
+
+.continue-retry__label {
+	margin: 0;
+	padding: 0;
+	font-size: 48px;
+	color: #FFFFFF;
+	text-shadow: 0 4px 0 #0A0814;
+}
+
+.continue-retry__icon {
+	width: 56px;
+	height: 56px;
+	margin: 0 8px 0 16px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+/* ── 던전 고르기 — 4줄 ── */
+.dungeon-list-row {
+	flex-direction: row;
+	align-items: center;
+	height: 150px;
+	margin: 0 0 16px 0;
+	padding: 0 32px;
+	border-width: 0;
+	border-radius: 18px;
+	background-color: #26272C;
+}
+
+.unity-button.dungeon-list-row:hover:enabled,
+.unity-button.dungeon-list-row:active:enabled {
+	background-color: #26272C;
+}
+
+.dungeon-list-row:active {
+	scale: 0.98 0.98;
+}
+
+.dungeon-list-row__icon {
+	width: 110px;
+	height: 110px;
+	margin-right: 28px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.dungeon-icon--gold { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Dungeons/Icon_GoldDungeon.png"); }
+.dungeon-icon--rift { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Dungeons/Icon_RiftDungeon.png"); }
+.dungeon-icon--labyrinth { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Dungeons/Icon_LabyrinthDungeon.png"); }
+.dungeon-icon--ruins { background-image: url("../../../Art/UI/Atlas/Textures/Icons/Dungeons/Icon_RuinsDungeon.png"); }
+
+.dungeon-list-row__name {
+	flex-grow: 1;
+	margin: 0;
+	padding: 0;
+	-unity-text-align: middle-left;
+	font-size: 44px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+/* 오른쪽 ▶ — 테두리 두 변으로 그린 꺾쇠 */
+.dungeon-list-row__arrow {
+	width: 26px;
+	height: 26px;
+	border-top-width: 6px;
+	border-right-width: 6px;
+	border-color: #A8A2CC;
+	rotate: 45deg;
+}

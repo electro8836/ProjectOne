@@ -1,35 +1,32 @@
 using System;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Dungeon;
 using ProjectOne.Event;
 
 namespace ProjectOne.UI
 {
-	// 균열 던전 HUD — 웨이브·남은시간·라이프·처치 수 상태줄, 균열 스킬 버튼. 웨이브·종료 배너는 DungeonMessage 가 띄운다.
+	// 균열 던전 HUD(UI Toolkit, UIToolkit/HUD/Dungeon/RiftDungeonHud.uxml) — 웨이브·남은시간·라이프·처치 수 상태줄, 균열 스킬 버튼. 웨이브·종료 배너는 DungeonMessage 가 띄운다.
 	//
 	// GoldDungeonUI 와 같은 자리·같은 규칙으로 산다 — MainHUD 에 상주하지 않고 UIManager.EnsureDungeonHudAsync
 	// 가 던전 진입 시 만들고 종료 시 걷는다. 생성이 startStage 보다 앞이어야 첫 배너와 시작 알림을 놓치지 않는다.
 	//
 	// 값의 소유자는 RiftDungeonMode(라이프·게이지)와 DungeonDirector(남은시간)다. 여기서는 이벤트를 받아 그리기만 하고,
 	// 스킬 버튼도 사용 요청만 발행한다 — 사용 가능 판정은 모드가 한다.
-	public class RiftDungeonUI : MonoBehaviour
+	public class RiftDungeonUI : ToolkitScreen
 	{
-		[Header("상태")]
-		[SerializeField] private TMP_Text _waveText;		// State/Wave/Text
-		[SerializeField] private TMP_Text _remainTimeText;	// State/Time/Text
-		[SerializeField] private TMP_Text _lifeText;		// State/Life/Text
-		[SerializeField] private TMP_Text _killText;		// State/MonsterKill/Text
+		private Label _waveText;
+		private Label _remainTimeText;
+		private Label _lifeText;
+		private Label _killText;
 
-		[Header("균열 스킬")]
-		[SerializeField] private UIButton _skillButton;		// SkillButton
-		[SerializeField] private Image _skillIcon;			// SkillButton/Icon
-		[SerializeField] private Image _gaugeFill;			// SkillButton/GaugeSlider (Filled)
-		[SerializeField] private TMP_Text _gaugeText;		// SkillButton/Gauge/Text
-		[SerializeField] private TMP_Text _stackText;		// SkillButton/Stack/StackText
+		private Button _skillButton;
+		private VisualElement _skillIcon;
+		private VisualElement _gaugeShade;	// 아직 안 찬 만큼 위에서 덮는다
+		private Label _gaugeText;
+		private Label _stackText;
 
 		private Action<WaveStartedEvent> _onWaveStarted;
 		private Action<MonsterKillEvent> _onMonsterKill;
@@ -41,11 +38,20 @@ namespace ProjectOne.UI
 
 		// 마지막으로 그린 균열 스킬 — 게이지 알림마다 아이콘을 다시 걸지 않는다.
 		private int _iconSkillId;
-		private SpriteBinder _skillIconBinder;
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_skillIconBinder = new SpriteBinder(_skillIcon);
+			_waveText = root.Q<Label>("wave");
+			_remainTimeText = root.Q<Label>("time");
+			_lifeText = root.Q<Label>("life");
+			_killText = root.Q<Label>("kill");
+			_skillButton = root.Q<Button>("skill");
+			_skillIcon = root.Q("skill-icon");
+			_gaugeShade = root.Q("skill-shade");
+			_gaugeText = root.Q<Label>("skill-gauge");
+			_stackText = root.Q<Label>("skill-stack");
+			_skillButton.SetEnabled(false);
 
 			_onWaveStarted = onWaveStarted;
 			_onMonsterKill = onMonsterKill;
@@ -56,21 +62,24 @@ namespace ProjectOne.UI
 			EventManager.Instance.Subscribe<RiftLifeChangedEvent>(_onLifeChanged);
 			EventManager.Instance.Subscribe<RiftGaugeChangedEvent>(_onGaugeChanged);
 
-			_skillButton.OnClickEvent += onSkillClicked;
+			_skillButton.clicked += onSkillClicked;
 
 			renderKill();
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			EventManager.Instance.Unsubscribe<WaveStartedEvent>(_onWaveStarted);
-			EventManager.Instance.Unsubscribe<MonsterKillEvent>(_onMonsterKill);
-			EventManager.Instance.Unsubscribe<RiftLifeChangedEvent>(_onLifeChanged);
-			EventManager.Instance.Unsubscribe<RiftGaugeChangedEvent>(_onGaugeChanged);
+			if (IsBound == true)
+			{
+				EventManager.Instance.Unsubscribe<WaveStartedEvent>(_onWaveStarted);
+				EventManager.Instance.Unsubscribe<MonsterKillEvent>(_onMonsterKill);
+				EventManager.Instance.Unsubscribe<RiftLifeChangedEvent>(_onLifeChanged);
+				EventManager.Instance.Unsubscribe<RiftGaugeChangedEvent>(_onGaugeChanged);
+				_skillButton.clicked -= onSkillClicked;
+			}
 
-			_skillButton.OnClickEvent -= onSkillClicked;
-
-			_skillIconBinder.Release();
+			_icons.ReleaseAll();
+			base.OnDestroy();
 		}
 
 		private void Update()
@@ -151,12 +160,12 @@ namespace ProjectOne.UI
 				ratio = (float)(evt.Gauge % evt.ReqGauge) / evt.ReqGauge;
 			}
 
-			_gaugeFill.fillAmount = ratio;
+			_gaugeShade.style.height = Length.Percent((1f - ratio) * 100f);
 			_gaugeText.text = Mathf.FloorToInt(ratio * 100f).ToString() + "%";
 			_stackText.text = stack.ToString();
 
 			// 게이지 덮개와 %는 스택과 무관하게 항상 보인다 — 다음 1회분 충전률(슬라이더와 같은 값)을 계속 알린다.
-			_skillButton.interactable = stack > 0;
+			_skillButton.SetEnabled(stack > 0);
 		}
 
 		private void onSkillClicked()
@@ -177,7 +186,7 @@ namespace ProjectOne.UI
 			Table_Skill.Row skill = (rift != null) ? Table_Skill.Get(rift.SkillID) : null;
 			string address = (skill != null) ? skill.Icon : string.Empty;
 
-			_skillIconBinder.SetAsync(address, this.GetCancellationTokenOnDestroy()).Forget();
+			_icons.SetAsync(_skillIcon, address, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 	}
 }

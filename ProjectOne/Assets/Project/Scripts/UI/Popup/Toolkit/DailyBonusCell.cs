@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -99,7 +99,7 @@ namespace ProjectOne.UI
 		private void applyCount(int count)
 		{
 			_count.style.display = count > 1 ? DisplayStyle.Flex : DisplayStyle.None;
-			_count.text = CurrencySlot.FormatAmount(count);
+			_count.text = CurrencyFormat.Short(count);
 		}
 
 		private Label addLabel(string className)

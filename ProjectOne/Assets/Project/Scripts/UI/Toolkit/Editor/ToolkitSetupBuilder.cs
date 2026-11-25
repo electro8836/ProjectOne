@@ -132,7 +132,6 @@ namespace ProjectOne.Editor
 		private static void buildViews()
 		{
 			buildView(WindowDir + "UIPrefab_EquipmentToolkit.prefab", typeof(UI.EquipmentToolkitUI), "Assets/Project/UIToolkit/Equipment/EquipmentScreen.uxml", true, true);
-			buildView(WindowDir + "UIPrefab_World.prefab", typeof(UI.WorldUI), ScreensDir + "World/WorldScreen.uxml", false, false);
 			buildView(WindowDir + "UIPrefab_Shop.prefab", typeof(UI.ShopUI), ScreensDir + "Shop/ShopScreen.uxml", true, false);
 			buildView(WindowDir + "UIPrefab_CraftInfo.prefab", typeof(UI.CraftUI), ScreensDir + "Craft/CraftScreen.uxml", true, false);
 			buildView(WindowDir + "UIPrefab_CostumeInfo.prefab", typeof(UI.CostumeInfoUI), ScreensDir + "Costume/CostumeScreen.uxml", true, true);
@@ -142,6 +141,7 @@ namespace ProjectOne.Editor
 
 			buildNotices();
 			buildView("Assets/Project/Prefabs/UI/HUD/UIPrefab_MainHUD.prefab", typeof(UI.MainHud), "Assets/Project/UIToolkit/HUD/MainHud/MainHud.uxml", false, false);
+			buildView("Assets/Project/Prefabs/UI/HUD/UIPrefab_Joystick.prefab", typeof(UI.JoystickController), "Assets/Project/UIToolkit/HUD/Joystick/Joystick.uxml", false, false);
 			buildView("Assets/Project/Prefabs/UI/HUD/UIPrefab_SystemLogInfo.prefab", typeof(UI.SystemLogInfo), "Assets/Project/UIToolkit/HUD/SystemLog/SystemLogInfo.uxml", true, false);
 			buildLoading();
 
@@ -164,6 +164,18 @@ namespace ProjectOne.Editor
 			buildView(PopupDir + "UIPrefab_EquipmentPopup.prefab", typeof(UI.ItemInfoPopup), PopupsDir + "ItemInfo/EquipmentPopup.uxml", true, false);
 			buildView(PopupDir + "UIPrefab_CurrencyListPopup.prefab", typeof(UI.CurrencyListPopup), PopupsDir + "Currency/CurrencyListPopup.uxml", false, false);
 			buildView(PopupDir + "UIPrefab_ActListPopup.prefab", typeof(UI.ActListPopup), PopupsDir + "ActList/ActListPopup.uxml", false, false);
+			buildView(PopupDir + "UIPrefab_GoldDungeonPopup.prefab", typeof(UI.GoldDungeonPopup), PopupsDir + "Dungeon/DungeonStagePopup.uxml", false, false);
+			buildView(PopupDir + "UIPrefab_LabyrinthDungeonPopup.prefab", typeof(UI.LabyrinthDungeonPopup), PopupsDir + "Dungeon/DungeonStagePopup.uxml", false, false);
+			buildView(PopupDir + "UIPrefab_RuinsDungeonPopup.prefab", typeof(UI.RuinsDungeonPopup), PopupsDir + "Dungeon/DungeonStagePopup.uxml", false, false);
+			buildView(PopupDir + "UIPrefab_RiftDungeonPopup.prefab", typeof(UI.RiftDungeonPopup), PopupsDir + "Dungeon/RiftDungeonPopup.uxml", false, false);
+			buildView(PopupDir + "UIPrefab_ContinuePopup.prefab", typeof(UI.ContinuePopup), PopupsDir + "Dungeon/ContinuePopup.uxml", false, false);
+			buildView(PopupDir + "UIPrefab_DungeonListPopup.prefab", typeof(UI.DungeonListPopup), PopupsDir + "Dungeon/DungeonListPopup.uxml", false, false);
+			buildView(WindowDir + "UIPrefab_DungeonResult.prefab", typeof(UI.DungeonResultUI), PopupsDir + "Dungeon/DungeonResult.uxml", true, false);
+			buildView("Assets/Project/Prefabs/UI/HUD/UIPrefab_GoldDungeon.prefab", typeof(UI.GoldDungeonUI), "Assets/Project/UIToolkit/HUD/Dungeon/GoldDungeonHud.uxml", false, false);
+			buildView("Assets/Project/Prefabs/UI/HUD/UIPrefab_RiftDungeon.prefab", typeof(UI.RiftDungeonUI), "Assets/Project/UIToolkit/HUD/Dungeon/RiftDungeonHud.uxml", false, false);
+			buildView("Assets/Project/Prefabs/UI/HUD/UIPrefab_LabyrinthDungeon.prefab", typeof(UI.LabyrinthDungeonUI), "Assets/Project/UIToolkit/HUD/Dungeon/LabyrinthDungeonHud.uxml", false, false);
+			buildView("Assets/Project/Prefabs/UI/HUD/UIPrefab_RuinsDungeon.prefab", typeof(UI.RuinsDungeonUI), "Assets/Project/UIToolkit/HUD/Dungeon/RuinsDungeonHud.uxml", false, false);
+			buildView("Assets/Project/Prefabs/UI/HUD/UIPrefab_DungeonMessage.prefab", typeof(UI.DungeonMessage), "Assets/Project/UIToolkit/HUD/Dungeon/DungeonMessage.uxml", false, false);
 		}
 
 		// 로딩 화면 — 모든 UI 위(정렬 999)에 덮고 UIManager 와 따로 뜨므로 자기 UIDocument 를 가진다.

@@ -30,19 +30,6 @@ namespace ProjectOne.UI
 			showFull(item, ct);
 		}
 
-		public static void Show(RewardPreviewItem item, RectTransform anchor, CancellationToken ct)
-		{
-			string name;
-			string desc;
-			if (tryGetSimpleText(item, out name, out desc) == true)
-			{
-				showSimple(name, desc, anchor, ct);
-				return;
-			}
-
-			showFull(item, ct);
-		}
-
 		// 재화·재료·수집품(펫·코스튬)은 보여줄 것이 이름·설명뿐이라 정식 팝업을 열지 않는다.
 		private static bool tryGetSimpleText(RewardPreviewItem item, out string name, out string desc)
 		{
@@ -96,9 +83,5 @@ namespace ProjectOne.UI
 			UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, item.itemId, true, ct).Forget();
 		}
 
-		private static void showSimple(string name, string desc, RectTransform anchor, CancellationToken ct)
-		{
-			UIManager.Instance.ShowSimplePopupAsync(name + "\n" + desc, anchor, ct).Forget();
-		}
 	}
 }

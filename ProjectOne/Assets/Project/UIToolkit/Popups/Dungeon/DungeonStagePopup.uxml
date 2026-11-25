@@ -1,0 +1,50 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Dungeon.uss" />
+
+	<!-- 단계형 던전 입장(골드·미궁·유적) — 썸네일 + 현황 줄, 단계 칸 가로 스크롤, 입장 버튼 -->
+	<ui:VisualElement name="popup" class="popup theme-violet dungeon-popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head item-head">
+				<ui:Label name="name" text="" class="popup__name item-head__name" />
+				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+
+			<ui:VisualElement class="popup__body dungeon-info">
+				<ui:VisualElement class="px-inset dungeon-thumb-box">
+					<ui:VisualElement name="thumbnail" class="dungeon-thumb" />
+				</ui:VisualElement>
+				<ui:VisualElement class="px-inset dungeon-status">
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="최고 단계" class="dungeon-row__label" />
+						<ui:Label name="max-stage" text="" class="dungeon-row__value" />
+					</ui:VisualElement>
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="입장 횟수" class="dungeon-row__label" />
+						<ui:Label name="enter-count" text="" class="dungeon-row__value" />
+					</ui:VisualElement>
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="초기화까지" class="dungeon-row__label" />
+						<ui:Label name="refresh-time" text="" class="dungeon-row__value" />
+					</ui:VisualElement>
+					<ui:VisualElement name="reward-row" class="dungeon-row">
+						<ui:Label text="보상 상자" class="dungeon-row__label" />
+						<ui:Label name="reward" text="" class="dungeon-row__value" />
+					</ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<ui:Label text="단계 선택" class="popup__body dungeon-section" />
+			<ui:VisualElement class="popup__body px-inset dungeon-list-box">
+				<ui:ScrollView name="stages" mode="Horizontal" class="dungeon-list" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+			</ui:VisualElement>
+
+			<ui:VisualElement class="popup__buttons">
+				<ui:Button name="enter" text="입장" class="btn btn--green popup__button" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

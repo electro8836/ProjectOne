@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
+	<Style src="Dungeon.uss" />
+
+	<!-- 던전 결과 — 보상 팝업과 같은 결(짙은 덮개 + 크림색 제목 + 금선 + 5열 칸), 아래에 남은 입장 횟수·자동 복귀 안내·버튼 3개 -->
+	<ui:VisualElement name="screen" class="theme-violet dungeon-result">
+		<ui:Label name="dungeon-name" text="" class="dungeon-result__title" />
+		<ui:Label name="stage" text="" class="dungeon-result__sub" />
+		<ui:VisualElement class="dungeon-result__line" />
+		<ui:Label name="exp" text="" class="dungeon-result__exp" />
+		<ui:ScrollView name="grid" class="dungeon-result__grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+		<ui:Label name="enter-count" text="" class="dungeon-result__count" />
+		<ui:Label name="return-town" text="" class="dungeon-result__return" />
+		<ui:VisualElement class="dungeon-result__buttons">
+			<ui:Button name="retry" text="다시 도전" class="btn popup__button" />
+			<ui:Button name="next" text="다음 단계" class="btn btn--green popup__button" />
+			<ui:Button name="exit" text="마을로" class="btn popup__button" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

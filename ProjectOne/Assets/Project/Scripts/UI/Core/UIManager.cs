@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -14,40 +14,34 @@ using ProjectOne.Resources;
 
 namespace ProjectOne.UI
 {
-	// UI 전역 진입점. 씬을 가로지르는 Canvas 계층을 소유한다.
+	// UI 전역 진입점. 씬을 가로지르는 UI Toolkit 층(Layer)을 소유한다.
 	//
-	//   Overlay(100)  상시 HUD          — MainHUD
-	//   Window (200)  전체창            — 장비 / 상점 / 던전선택
+	//   HUD    (90)   상시 HUD          — 조이스틱 · MainHUD · 던전 HUD · 타이틀
+	//   Window (200)  전체창            — 장비 / 상점 / 던전 결과
 	//   Navi   (300)  창 위 상시        — 네비게이션 바
 	//   Popup  (350)  네비게이션 위     — 아이템 정보 · 확인
-	//   System (400)  최상위            — 네트워크 딤 · 로딩 · 알림 메시지
+	//   System (400)  최상위            — 네트워크 딤 · 알림 메시지
 	//
 	// 위로 갈수록 덮는다. HUD 를 가장 아래에 두어 창·팝업이 자연히 그 위에 뜬다.
+	// 화면 GameObject 는 모두 UIManager 아래에 만들고, 그 레이아웃만 층에 붙인다.
+	// UGUI 는 유닛 머리 위 월드 UI(Canvas_World)에만 남아 있다.
 	// GameStateChangedEvent 를 구독해 열린 창을 자동 정리한다.
 	public class UIManager : MonoSingleton<UIManager>
 	{
-		[Header("Canvas 계층")]
-		[SerializeField] private Canvas _hudCanvas;	// Sort Order 100 — 상시 HUD
-		[SerializeField] private Canvas _windowCanvas;	// Sort Order 200 — 전체창
-		[SerializeField] private Canvas _popupCanvas;	// Sort Order 350 — 네비게이션 위 작은 창
-		[SerializeField] private Canvas _navigationCanvas;	// Sort Order 300 — 네비게이션 바(창 위 상시)
-		[SerializeField] private Canvas _systemCanvas;	// Sort Order 400 — 네트워크 딤(최상위)
-
-		// WorldSpace — 유닛 머리 위에 뜨는 게이지들. 위 5개와 달리 화면이 아니라 월드에 그려진다.
+		// WorldSpace — 유닛 머리 위에 뜨는 게이지들. 화면이 아니라 월드에 그려진다.
 		// 중첩 Canvas 는 루트의 renderMode 를 따르므로 반드시 다른 캔버스의 자식이 아니라
 		// UIManager 직속(=Canvas 없는 루트의 자식)이어야 WorldSpace 로 산다.
 		[SerializeField] private Canvas _worldCanvas;
 
-		// UI Toolkit 층 — 위 Canvas 와 같은 정렬 값의 PanelSettings 를 쓴다(UI구조_설계.md 2.1).
-		// 전환 중에는 UGUI 화면과 UI Toolkit 화면이 정렬 값대로 섞여 그려진다.
+		// UI Toolkit 층 — 층마다 정렬 값이 다른 PanelSettings 를 쓴다(UI구조_설계.md 2.1).
 		[Header("UI Toolkit 층")]
-		[SerializeField] private UIDocument _hudLayer;			// 90 (UGUI HUD 캔버스 100 아래 — 던전 HUD 가 위에 온다)
+		[SerializeField] private UIDocument _hudLayer;			// 90
 		[SerializeField] private UIDocument _windowLayer;		// 200
 		[SerializeField] private UIDocument _navigationLayer;	// 300
 		[SerializeField] private UIDocument _popupLayer;		// 350
 		[SerializeField] private UIDocument _systemLayer;		// 400
 
-		// UI Toolkit 클릭음 — FMOD event:/SFX/<이름>. UGUI 버튼 테마(NormalButtonTheme / TabButtonTheme)와 같은 소리다.
+		// UI Toolkit 클릭음 — FMOD event:/SFX/<이름>. 옛 UGUI 버튼과 같은 소리다.
 		[Header("UI Toolkit 클릭음")]
 		[SerializeField] private string _clickSfx = "block_small_73";
 		[SerializeField] private string _tabClickSfx = "block_small_69";
@@ -79,7 +73,7 @@ namespace ProjectOne.UI
 		// 현재 진행 중인 팝업의 CancellationTokenSource
 		private CancellationTokenSource _popupCts;
 
-		// 재화 목록 팝업도 별도 CTS 를 쓴다. 이 팝업의 슬롯은 설명 툴팁(SimplePopup)을 띄우는데,
+		// 재화 목록 팝업도 별도 CTS 를 쓴다. 이 팝업의 칸은 설명 툴팁을 띄우는데,
 		// 툴팁이 _popupCts 를 취소하면 그것을 띄운 목록 팝업 자신이 닫혀 버린다.
 		private CancellationTokenSource _currencyListCts;
 
@@ -159,38 +153,13 @@ namespace ProjectOne.UI
 			go.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
 		}
 
-		// 캔버스 배선이 끊기면 그 캔버스를 쓰는 모든 경로가 NRE 로 죽는다.
+		// 월드 캔버스 배선이 끊기면 그 캔버스를 쓰는 모든 경로가 NRE 로 죽는다.
 		// 증상은 "UI 가 안 뜬다" 로만 보여서 프리팹부터 뒤지게 되므로, 어느 것이 비었는지 여기서 밝힌다.
 		//
 		// 특히 직렬화 필드를 개명하면 유니티가 이름을 키로 쓰기 때문에 프리팹의 값이 조용히 떨어져 나간다.
 		// 그 사고를 부팅 첫 줄에서 잡는 것이 목적이다.
 		private void validateCanvases()
 		{
-			if (_hudCanvas == null)
-			{
-				Debug.LogError("[UIManager] _hudCanvas 가 비었습니다 — MainHUD 를 띄울 수 없습니다.");
-			}
-
-			if (_windowCanvas == null)
-			{
-				Debug.LogError("[UIManager] _windowCanvas 가 비었습니다 — 창을 열 수 없습니다.");
-			}
-
-			if (_popupCanvas == null)
-			{
-				Debug.LogError("[UIManager] _popupCanvas 가 비었습니다 — 팝업을 열 수 없습니다.");
-			}
-
-			if (_navigationCanvas == null)
-			{
-				Debug.LogError("[UIManager] _navigationCanvas 가 비었습니다 — 네비게이션 바를 띄울 수 없습니다.");
-			}
-
-			if (_systemCanvas == null)
-			{
-				Debug.LogError("[UIManager] _systemCanvas 가 비었습니다 — 네트워크 딤을 띄울 수 없습니다.");
-			}
-
 			if (_worldCanvas == null)
 			{
 				Debug.LogError("[UIManager] _worldCanvas 가 비었습니다 — 월드 게이지를 띄울 수 없습니다.");
@@ -267,11 +236,10 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 팝업 프리펩을 팝업 캔버스 아래에 만든다. UI Toolkit 팝업이면 팝업 층에도 붙인다 —
-		// 전환 중에는 UGUI 팝업(던전)과 UI Toolkit 팝업이 같은 경로로 열린다.
+		// 팝업 프리펩을 UIManager 아래에 만들고 팝업 층에 붙인다.
 		private GameObject spawnPopup(GameObject prefab)
 		{
-			GameObject go = Instantiate(prefab, _popupCanvas.transform);
+			GameObject go = Instantiate(prefab, this.transform);
 			ToolkitScreen toolkit = go.GetComponent<ToolkitScreen>();
 			if (toolkit != null && _popupLayer != null)
 			{
@@ -281,7 +249,13 @@ namespace ProjectOne.UI
 			return go;
 		}
 
-		// UI Toolkit 화면이면 층 루트에 붙인다. UGUI 화면은 Canvas 아래 생성만으로 충분하다.
+		// 씬에 놓인 화면(타이틀)을 HUD 층에 붙인다. 떼는 것은 화면의 OnDestroy 가 한다.
+		public void AttachToHudLayer(ToolkitScreen screen)
+		{
+			attachToLayer(screen, _hudLayer);
+		}
+
+		// UI Toolkit 화면을 층 루트에 붙인다.
 		private void attachToLayer(UIScreen screen, UIDocument layer)
 		{
 			ToolkitScreen toolkit = screen as ToolkitScreen;
@@ -523,8 +497,8 @@ namespace ProjectOne.UI
 
 		private MainHud _mainHud;
 
-		// 이동 조이스틱 — UGUI 라 HUD 캔버스에 따로 둔다. 자기 Canvas(정렬 80)로 툴킷 HUD 층(90) 아래에 깔린다.
-		private GameObject _joystick;
+		// 이동 조이스틱 — HUD 층(90)에 MainHUD 보다 먼저 붙여 그 아래에 깐다. HUD 의 빈 곳 터치만 받는다.
+		private JoystickController _joystick;
 
 		// MainHUD 안의 보스 배너. 던전 전용 HUD 가 자리를 양보할 대상을 찾는 유일한 경로다.
 		public HudBossBanner BossUI
@@ -558,7 +532,8 @@ namespace ProjectOne.UI
 			}
 			else
 			{
-				_joystick = Instantiate(joystickPrefab, _hudCanvas.transform);
+				_joystick = Instantiate(joystickPrefab, this.transform).GetComponent<JoystickController>();
+				attachToLayer(_joystick, _hudLayer);
 			}
 
 			// HUD 층(90) — 창(200)·네비(300)·팝업(350)·시스템(400)이 자연히 위를 덮는다.
@@ -625,7 +600,7 @@ namespace ProjectOne.UI
 		{
 			if (_joystick != null)
 			{
-				Destroy(_joystick);
+				Destroy(_joystick.gameObject);
 				_joystick = null;
 				ResourceManager.Instance.Release(JoystickAddress);
 			}
@@ -701,7 +676,7 @@ namespace ProjectOne.UI
 		// ── 던전 전용 HUD ──────────────────────────────────────────────
 		//
 		// 던전마다 필요한 위젯이 달라 MainHUD 한 프리팹에 다 넣지 않는다. 들어간 던전의 것만 만들어
-		// HUD 캔버스의 **마지막 자식**으로 붙인다 — 같은 캔버스에서는 뒤 자식이 위에 그려진다.
+		// HUD 층의 **마지막 자식**으로 붙인다 — 같은 층에서는 뒤에 붙은 것이 위에 그려진다.
 		//
 		// 수명은 던전 한 판이다. DungeonDirector.Begin 이 만들고 cleanupAll 이 걷는다.
 
@@ -763,8 +738,8 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			_dungeonHud = Instantiate(prefab, _hudCanvas.transform);
-			_dungeonHud.transform.SetAsLastSibling();
+			_dungeonHud = Instantiate(prefab, this.transform);
+			attachToLayer(_dungeonHud.GetComponent<UIScreen>(), _hudLayer);
 			_dungeonHudAddress = address;
 
 			await ensureDungeonMessageAsync(ct);
@@ -775,7 +750,7 @@ namespace ProjectOne.UI
 		{
 			if (_dungeonMessage != null)
 			{
-				_dungeonMessage.transform.SetAsLastSibling();
+				attachToLayer(_dungeonMessage, _hudLayer);	// 다시 붙이면 층의 맨 뒤(맨 위)로 옮겨진다
 				return;
 			}
 
@@ -786,15 +761,17 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			GameObject go = Instantiate(prefab, _hudCanvas.transform);
-			go.transform.SetAsLastSibling();
+			GameObject go = Instantiate(prefab, this.transform);
 			_dungeonMessage = go.GetComponent<DungeonMessage>();
 			if (_dungeonMessage == null)
 			{
 				Debug.LogError($"[UIManager] {DungeonMessageAddress} 에 DungeonMessage 가 없습니다.");
 				Destroy(go);
 				ResourceManager.Instance.Release(DungeonMessageAddress);
+				return;
 			}
+
+			attachToLayer(_dungeonMessage, _hudLayer);
 		}
 
 		// 던전 종료 시. UIManager 가 영속이라 명시적으로 걷지 않으면 마을까지 따라간다.
@@ -837,8 +814,8 @@ namespace ProjectOne.UI
 
 		// ── 영속 네비게이션 바 ──────────────────────────────────────────
 		//
-		// MainHUD 와 같은 영속 UI 지만 캔버스가 다르다 — 창(200) 위에 상시 떠야 하므로
-		// 전용 Navigation(300) 캔버스에 붙인다. 어느 맥락에서 보일지는 NavigationBar 가 스스로 정한다.
+		// MainHUD 와 같은 영속 UI 지만 층이 다르다 — 창(200) 위에 상시 떠야 하므로
+		// 전용 Navigation(300) 층에 붙인다. 어느 맥락에서 보일지는 NavigationBar 가 스스로 정한다.
 
 		private const string NavigationBarAddress = "UIPrefab_NavigationBar";
 
@@ -863,7 +840,7 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			_navigationBar = Instantiate(prefab, _navigationCanvas.transform);
+			_navigationBar = Instantiate(prefab, this.transform);
 			_navigationBarView = _navigationBar.GetComponent<NavigationBar>();
 			attachToLayer(_navigationBarView, _navigationLayer);
 
@@ -876,7 +853,7 @@ namespace ProjectOne.UI
 		// 경고 · 레벨업 · 시스템 · 제한 네 종류가 각자 독립적으로 뜬다(동시에 떠도 된다).
 		// 영속 UI 라 한 번 세우면 걷지 않는다. 위치는 각 프리펩의 앵커·좌표를 그대로 쓴다.
 		// 레벨업 메시지는 레벨업 이벤트를 스스로 구독하므로 여기서 띄우는 API 가 없다.
-		// 획득 로그(SystemLogInfo)도 같은 캔버스에 둔다. 보상 획득 이벤트를 스스로 구독하므로 역시 API 가 없다.
+		// 획득 로그(SystemLogInfo)도 같은 층에 둔다. 보상 획득 이벤트를 스스로 구독하므로 역시 API 가 없다.
 
 		private const string SystemLogInfoAddress = "UIPrefab_SystemLogInfo";
 		private const string AlertMessageAddress = "UIPrefab_AlertMessage";
@@ -893,7 +870,7 @@ namespace ProjectOne.UI
 		// 마을 진입 시 1회. 이미 떠 있으면 아무것도 하지 않는다.
 		public async UniTask EnsureNoticeMessagesAsync(CancellationToken ct)
 		{
-			// 로그를 먼저 세운다 — 같은 캔버스에서는 앞 형제가 아래에 그려지므로 알림 메시지가 로그를 덮는다.
+			// 로그를 먼저 세운다 — 같은 층에서는 먼저 붙은 것이 아래에 그려지므로 알림 메시지가 로그를 덮는다.
 			if (_systemLogInfo == null)
 			{
 				_systemLogInfo = await instantiateNoticeAsync<SystemLogInfo>(SystemLogInfoAddress, ct);
@@ -972,7 +949,7 @@ namespace ProjectOne.UI
 			_warningMessage.Hide();
 		}
 
-		// 시스템 캔버스 아래에 세운다. Instantiate(prefab, parent) 는 로컬 기준이라 프리펩의 앵커·좌표가 유지된다.
+		// UIManager 아래에 만들고 시스템 층에 붙인다.
 		private async UniTask<T> instantiateNoticeAsync<T>(string address, CancellationToken ct) where T : MonoBehaviour
 		{
 			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct);
@@ -983,7 +960,7 @@ namespace ProjectOne.UI
 				return null;
 			}
 
-			GameObject go = Instantiate(prefab, _systemCanvas.transform);
+			GameObject go = Instantiate(prefab, this.transform);
 
 			// UI Toolkit 알림이면 System 층(400)에 붙인다.
 			ToolkitScreen toolkit = go.GetComponent<ToolkitScreen>();
@@ -1157,7 +1134,7 @@ namespace ProjectOne.UI
 			return await OpenWindowAsync<UIScreen>(address, ct);
 		}
 
-		// Addressable 주소로 창을 열어 _windowCanvas 아래에 배치한다.
+		// Addressable 주소로 창을 열어 창 층에 붙인다.
 		public async UniTask<T> OpenWindowAsync<T>(string address, CancellationToken ct) where T : UIScreen
 		{
 			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, ct);
@@ -1166,7 +1143,7 @@ namespace ProjectOne.UI
 				return null;
 			}
 
-			GameObject go = Instantiate(prefab, _windowCanvas.transform);
+			GameObject go = Instantiate(prefab, this.transform);
 			T screen = go.GetComponent<T>();
 			if (screen == null)
 			{
@@ -1198,7 +1175,7 @@ namespace ProjectOne.UI
 		// 탭 전환 전용 — 새 창을 다 세운 뒤에 이전 창을 치운다.
 		//
 		// 닫고 나서 여는 순서로 하면 Addressable 로드를 기다리는 동안 창이 하나도 없는 화면이 그대로 보인다.
-		// 새 창은 창 캔버스의 마지막 자식으로 붙어 이전 창 위에 그려지므로 그 사이에도 빈 화면이 없다.
+		// 새 창은 창 층의 마지막 자식으로 붙어 이전 창 위에 그려지므로 그 사이에도 빈 화면이 없다.
 		public async UniTask<UIScreen> SwitchWindowAsync(UIScreenId id, CancellationToken ct)
 		{
 			string address = UIScreenCatalog.GetAddress(id);
@@ -1214,7 +1191,7 @@ namespace ProjectOne.UI
 				return null;
 			}
 
-			GameObject go = Instantiate(prefab, _windowCanvas.transform);
+			GameObject go = Instantiate(prefab, this.transform);
 			UIScreen screen = go.GetComponent<UIScreen>();
 			if (screen == null)
 			{
@@ -1294,11 +1271,11 @@ namespace ProjectOne.UI
 
 		// ── 공통 팝업 ───────────────────────────────────────────────────
 
-		private const string SIMPLE_POPUP_ADDRESS = "UIPrefab_SimplePopup";
 		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
 		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
 		private const string CURRENCY_LIST_POPUP_ADDRESS = "UIPrefab_CurrencyListPopup";
 		private const string MENU_POPUP_ADDRESS = "UIPrefab_MenuPopup";
+		private const string DUNGEON_LIST_POPUP_ADDRESS = "UIPrefab_DungeonListPopup";
 		private const string QUEST_LIST_POPUP_ADDRESS = "UIPrefab_QuestListPopup";
 		private const string DAILY_BONUS_POPUP_ADDRESS = "UIPrefab_DailyBonusPopup";
 		private const string MAP_SCREEN_ADDRESS = "UIPrefab_MapScreen";
@@ -1315,7 +1292,7 @@ namespace ProjectOne.UI
 		private const string ACCOUNT_POPUP_ADDRESS = "UIPrefab_AccountPopup";
 
 
-		// 내 캐릭터 능력치 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 내 캐릭터 능력치 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
 		public async UniTask ShowStatPopupAsync(CancellationToken ct)
 		{
@@ -1347,7 +1324,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 메인 HUD 의 메뉴 팝업을 _popupCanvas 에 열고 닫힘을 기다린다.
+		// 메인 HUD 의 메뉴 팝업을 팝업 층에 열고 닫힘을 기다린다.
 		// 메뉴는 닫히면서 다른 팝업으로 넘어간다 — 무엇으로 닫혔는지 돌려주고, 다음 팝업은 호출부가 띄운다.
 		public async UniTask<MenuPopupResult> ShowMenuPopupAsync(CancellationToken ct)
 		{
@@ -1381,7 +1358,40 @@ namespace ProjectOne.UI
 			return result;
 		}
 
-		// 닉네임 변경 팝업을 _popupCanvas 에 열고 닫힘을 기다린다.
+		// 던전 고르기 팝업을 열고 고른 던전을 돌려준다. 그냥 닫으면 None.
+		public async UniTask<EDT.Dungeon> ShowDungeonListPopupAsync(CancellationToken ct)
+		{
+			_popupCts?.Cancel();
+			_popupCts?.Dispose();
+			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(DUNGEON_LIST_POPUP_ADDRESS, _popupCts.Token);
+			if (prefab == null)
+			{
+				return EDT.Dungeon.None;
+			}
+
+			GameObject go = spawnPopup(prefab);
+			DungeonListPopup popup = go.GetComponent<DungeonListPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(DUNGEON_LIST_POPUP_ADDRESS);
+				return EDT.Dungeon.None;
+			}
+
+			EDT.Dungeon result = await popup.ShowAsync(_popupCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(DUNGEON_LIST_POPUP_ADDRESS);
+			}
+
+			return result;
+		}
+
+		// 닉네임 변경 팝업을 팝업 층에 열고 닫힘을 기다린다.
 		public async UniTask ShowNicknamePopupAsync(CancellationToken ct)
 		{
 			_popupCts?.Cancel();
@@ -1413,7 +1423,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 계정 팝업을 _popupCanvas 에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_accountPopupCts 참고).
+		// 계정 팝업을 팝업 층에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_accountPopupCts 참고).
 		public async UniTask ShowAccountPopupAsync(CancellationToken ct)
 		{
 			_accountPopupCts?.Cancel();
@@ -1445,7 +1455,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 메일함 팝업을 _popupCanvas 에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_mailBoxCts 참고).
+		// 메일함 팝업을 팝업 층에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_mailBoxCts 참고).
 		public async UniTask ShowMailBoxPopupAsync(CancellationToken ct)
 		{
 			_mailBoxCts?.Cancel();
@@ -1509,7 +1519,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 보유 재화 목록 팝업을 _popupCanvas 에 열고 닫힘을 기다린다.
+		// 보유 재화 목록 팝업을 팝업 층에 열고 닫힘을 기다린다.
 		public async UniTask ShowCurrencyListPopupAsync(CancellationToken ct)
 		{
 			_currencyListCts?.Cancel();
@@ -1540,7 +1550,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 아이템 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 아이템 정보 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// stashMode = true 면 보관함↔인벤토리 이동 버튼이 함께 나온다(장비 화면의 보관함 모드).
 		public async UniTask ShowItemInfoPopupAsync(string address, long uid, bool stashMode, CancellationToken ct)
 		{
@@ -1605,7 +1615,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 소모품 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 소모품 정보 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// 소모품은 스택이라 장비처럼 인스턴스 UID 가 없어 아이템 ID 로 연다.
 		// readOnly = true 면 디스플레이 경로다 — 수량 조절·사용·파괴를 감춘다.
 		public async UniTask ShowConsumablePopupAsync(string address, int itemId, bool readOnly, CancellationToken ct)
@@ -1639,46 +1649,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 설명 툴팁을 누른 슬롯 위에 잠깐 띄운다(재화·재료처럼 정식 팝업을 열 만큼의 내용이 없는 대상).
-		//
-		// 주소를 호출부에서 받지 않는다 — 툴팁 프리팹은 하나뿐이라 주소가 흩어지면 같이 틀어진다.
-		// _popupCts 를 공유하므로 다른 슬롯을 연달아 누르면 이전 툴팁이 취소되고 새것이 뜬다.
-		public async UniTask ShowSimplePopupAsync(string text, RectTransform anchor, CancellationToken ct, Vector2? fixedOffset = null)
-		{
-			_popupCts?.Cancel();
-			_popupCts?.Dispose();
-			_popupCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-
-			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(SIMPLE_POPUP_ADDRESS, _popupCts.Token);
-			if (prefab == null)
-			{
-				return;
-			}
-
-			GameObject go = spawnPopup(prefab);
-			SimplePopup popup = go.GetComponent<SimplePopup>();
-			if (popup == null)
-			{
-				Destroy(go);
-				ResourceManager.Instance.Release(SIMPLE_POPUP_ADDRESS);
-				return;
-			}
-
-			// 표시 시간이 다 차기 전에 다른 팝업이 열리면 취소된다 — 그때도 정리는 해야 한다.
-			await popup.ShowAsync(text, anchor, _popupCts.Token, fixedOffset).SuppressCancellationThrow();
-
-			if (go != null)
-			{
-				Destroy(go);
-			}
-
-			if (ResourceManager.HasInstance)
-			{
-				ResourceManager.Instance.Release(SIMPLE_POPUP_ADDRESS);
-			}
-		}
-
-		// 액트·필드 목록 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 액트·필드 목록 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// 이동으로 닫혔으면 true — 호출부(월드 화면)가 그때 자기 창도 닫는다.
 		public async UniTask<bool> ShowActListPopupAsync(string address, CancellationToken ct)
 		{
@@ -1713,7 +1684,7 @@ namespace ProjectOne.UI
 			return moved;
 		}
 
-		// 골드던전 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 골드던전 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowGoldDungeonPopupAsync(string address, CancellationToken ct)
 		{
 			_popupCts?.Cancel();
@@ -1744,7 +1715,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 미궁던전 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 미궁던전 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowLabyrinthDungeonPopupAsync(string address, CancellationToken ct)
 		{
 			_popupCts?.Cancel();
@@ -1775,7 +1746,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 유적던전 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 유적던전 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowRuinsDungeonPopupAsync(string address, CancellationToken ct)
 		{
 			_popupCts?.Cancel();
@@ -1806,7 +1777,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 균열던전 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_riftPopupCts 참고).
+		// 균열던전 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다. 전용 CTS 를 쓴다(_riftPopupCts 참고).
 		public async UniTask ShowRiftDungeonPopupAsync(string address, CancellationToken ct)
 		{
 			_riftPopupCts?.Cancel();
@@ -1839,7 +1810,7 @@ namespace ProjectOne.UI
 
 		private const string REWARD_POPUP_ADDRESS = "UIPrefab_RewardPopup";
 
-		// 공용 보상 팝업 — 이미 지급된 보상 목록을 _popupCanvas 에 띄우고 닫힘을 기다린다.
+		// 공용 보상 팝업 — 이미 지급된 보상 목록을 팝업 층에 띄우고 닫힘을 기다린다.
 		public async UniTask ShowRewardPopupAsync(IReadOnlyList<ProjectOne.Reward.GrantedReward> rewards, CancellationToken ct)
 		{
 			if (rewards == null || rewards.Count == 0)
@@ -1875,7 +1846,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 퀘스트 목록 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 퀘스트 목록 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
 		public async UniTask ShowQuestListPopupAsync(CancellationToken ct)
 		{
@@ -1946,7 +1917,7 @@ namespace ProjectOne.UI
 			_menuScreenOpening = false;
 		}
 
-		// 출석 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 출석 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
 		public async UniTask ShowDailyBonusPopupAsync(CancellationToken ct)
 		{
@@ -1979,7 +1950,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 히어로패스 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 히어로패스 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// 프리펩이 하나뿐이라 주소는 상수로 둔다.
 		public async UniTask ShowHeroPassPopupAsync(CancellationToken ct)
 		{
@@ -2012,7 +1983,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 전투력 랭킹 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 전투력 랭킹 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		public async UniTask ShowRankingPopupAsync(CancellationToken ct)
 		{
 			_rankingCts?.Cancel();
@@ -2044,7 +2015,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 플레이어 정보 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다. 내 정보·남의 정보 공통.
+		// 플레이어 정보 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다. 내 정보·남의 정보 공통.
 		public async UniTask ShowPlayerInfoPopupAsync(PlayerProfile profile, CancellationToken ct)
 		{
 			_playerInfoCts?.Cancel();
@@ -2076,7 +2047,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 일괄 분해 팝업을 _popupCanvas(창보다 상위)에 열고 닫힘을 기다린다.
+		// 일괄 분해 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// 확인 팝업(공용 팝업)은 별도 CTS 라 이 팝업 위에 떠도 이 팝업이 닫히지 않는다.
 		public async UniTask ShowDecompositionPopupAsync(CancellationToken ct)
 		{
@@ -2320,7 +2291,7 @@ namespace ProjectOne.UI
 			return result;
 		}
 
-		// 캐릭터 디테일 팝업을 _popupCanvas(오버레이보다 상위)에 열고 닫힘을 기다린다.
+		// 캐릭터 디테일 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// ── 이벤트 핸들러 ───────────────────────────────────────────────
 
 		// 상태가 전이될 때 열려있는 창을 모두 닫는다.

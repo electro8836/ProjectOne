@@ -1,14 +1,12 @@
-﻿using System.Threading;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.CameraSystem;
 using ProjectOne.Currency;
 using ProjectOne.Dungeon;
 using ProjectOne.Network;
-using ProjectOne.Resources;
 using ProjectOne.Shared;
 
 namespace ProjectOne.UI
@@ -134,24 +132,21 @@ namespace ProjectOne.UI
 		}
 	}
 
-	// 사망·시간초과 시 뜨는 계속하기 팝업(UIPrefab_ContinuePopup).
+	// 사망·시간초과 시 뜨는 계속하기 팝업(UIPrefab_ContinuePopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Dungeon/ContinuePopup.uxml.
 	//
 	// 세 상황(필드 사망 / 던전 사망 / 시간 초과)이 같은 프리팹을 쓰고, 무엇을 보여줄지는
 	// ContinuePopupData 가 정한다. 게임 정지(Time.timeScale)는 호출부가 담당한다.
-	public class ContinuePopup : UIScreen
+	public class ContinuePopup : ToolkitScreen
 	{
-		[Header("문구")]
-		[SerializeField] private TMP_Text _titleText;   // Text_Title
-		[SerializeField] private TMP_Text _descText;    // Text_Desc
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
 
-		[Header("버튼")]
-		[SerializeField] private UIButton _retryButton;    // Button_Retry — 유료 부활
-		[SerializeField] private UIButton _exitButton;     // Button_Exit
-		[SerializeField] private UIButton _reviveButton;   // Button_Revive — 무료 부활
-
-		[Header("부활 비용")]
-		[SerializeField] private Image _costIcon;       // Button_Retry/Group/Icon
-		[SerializeField] private TMP_Text _costText;    // Button_Retry/Group/CostText
+		private Label _titleText;
+		private Label _descText;
+		private Button _retryButton;	// 유료 부활
+		private Button _exitButton;
+		private Button _reviveButton;	// 무료 부활
+		private VisualElement _costIcon;
+		private Label _costText;
 
 		private ContinuePopupData _data;
 		private UniTaskCompletionSource<ContinueChoice> _choiceSource;
@@ -160,26 +155,27 @@ namespace ProjectOne.UI
 		private bool _isReviving;
 		private bool _isDestroyed;
 
-		// 참조카운트 해제용 아이콘 주소 추적 (아틀라스 스프라이트는 null 로 두어 대상 제외)
-		private string _iconAddress;
-
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_retryButton.OnClickEvent += onRetryClicked;
-			_exitButton.OnClickEvent += onExitClicked;
-			_reviveButton.OnClickEvent += onReviveClicked;
+			_titleText = root.Q<Label>("title");
+			_descText = root.Q<Label>("desc");
+			_retryButton = root.Q<Button>("retry");
+			_exitButton = root.Q<Button>("exit");
+			_reviveButton = root.Q<Button>("revive");
+			_costIcon = root.Q("cost-icon");
+			_costText = root.Q<Label>("cost");
+
+			_retryButton.clicked += onRetryClicked;
+			_exitButton.clicked += onExitClicked;
+			_reviveButton.clicked += onReviveClicked;
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
 			_isDestroyed = true;
-
-			_retryButton.OnClickEvent -= onRetryClicked;
-			_exitButton.OnClickEvent -= onExitClicked;
-			_reviveButton.OnClickEvent -= onReviveClicked;
-
-			releaseIcon();
+			_icons.ReleaseAll();
 			_choiceSource?.TrySetCanceled();
+			base.OnDestroy();
 		}
 
 		// 표시 후 선택까지 대기.
@@ -198,80 +194,31 @@ namespace ProjectOne.UI
 
 		private void apply()
 		{
-			if (_titleText != null)
-			{
-				_titleText.text = _data.title;
-			}
+			_titleText.text = _data.title;
+			_descText.text = _data.desc;
 
-			if (_descText != null)
-			{
-				_descText.text = _data.desc;
-			}
-
-			_retryButton.gameObject.SetActive(_data.showRetry);
-			_exitButton.gameObject.SetActive(_data.showExit);
-			_reviveButton.gameObject.SetActive(_data.showRevive);
+			setShown(_retryButton, _data.showRetry);
+			setShown(_exitButton, _data.showExit);
+			setShown(_reviveButton, _data.showRevive);
 
 			if (_data.showRetry == false)
 			{
 				return;
 			}
 
-			if (_costText != null)
-			{
-				_costText.text = _data.cost.ToString();
-			}
+			_costText.text = _data.cost.ToString();
 
 			// 잔액이 모자라면 누를 수 없다. 소모 실패로 조용히 아무 일도 안 일어나는 것보다 낫다.
-			_retryButton.interactable = (CurrencyManager.Instance.GetAmount(_data.costType) >= _data.cost);
-
-			applyCostIconAsync(this.GetCancellationTokenOnDestroy()).Forget();
-		}
-
-		// 재화 아이콘 — 아틀라스에 있으면 동기로 즉시 세팅(ItemSlot 과 같은 방식).
-		private async UniTaskVoid applyCostIconAsync(CancellationToken ct)
-		{
-			if (_costIcon == null)
-			{
-				return;
-			}
+			_retryButton.SetEnabled(CurrencyManager.Instance.GetAmount(_data.costType) >= _data.cost);
 
 			Table_Currency.Row row = Table_Currency.Get(_data.costType);
 			string address = (row != null) ? row.Icon : string.Empty;
-			if (string.IsNullOrEmpty(address) == true)
-			{
-				_costIcon.enabled = false;
-				return;
-			}
-
-			Sprite atlasSprite = AtlasManager.Instance.Get(address);
-			if (atlasSprite != null)
-			{
-				_costIcon.sprite = atlasSprite;
-				_costIcon.enabled = true;
-				return;
-			}
-
-			_costIcon.enabled = false;
-
-			(bool cancelled, Sprite icon) = await ResourceManager.Instance.AcquireAsync<Sprite>(address, ct).SuppressCancellationThrow();
-			if (cancelled == true || icon == null)
-			{
-				return;
-			}
-
-			_iconAddress = address;
-			_costIcon.sprite = icon;
-			_costIcon.enabled = true;
+			_icons.SetAsync(_costIcon, address, this.GetCancellationTokenOnDestroy()).Forget();
 		}
 
-		private void releaseIcon()
+		private static void setShown(VisualElement element, bool shown)
 		{
-			if (string.IsNullOrEmpty(_iconAddress) == false && ResourceManager.HasInstance == true)
-			{
-				ResourceManager.Instance.Release(_iconAddress);
-				_iconAddress = null;
-			}
+			element.style.display = shown ? DisplayStyle.Flex : DisplayStyle.None;
 		}
 
 		// ── 입력 ──────────────────────────────────────────────────────

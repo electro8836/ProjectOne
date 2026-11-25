@@ -1,4 +1,4 @@
-﻿using System.Threading;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 using ProjectOne.Event;
@@ -10,6 +10,11 @@ namespace ProjectOne.UI
 	// 체력·버프 등 자기 이벤트를 받는 위젯은 MainHud 의 Hud* 클래스가 따로 그린다.
 	public sealed class MainHudPresenter : Presenter<MainHud>
 	{
+		private const string GOLD_DUNGEON_POPUP_ADDRESS = "UIPrefab_GoldDungeonPopup";
+		private const string RIFT_DUNGEON_POPUP_ADDRESS = "UIPrefab_RiftDungeonPopup";
+		private const string LABYRINTH_DUNGEON_POPUP_ADDRESS = "UIPrefab_LabyrinthDungeonPopup";
+		private const string RUINS_DUNGEON_POPUP_ADDRESS = "UIPrefab_RuinsDungeonPopup";
+
 		protected override void OnInitialize()
 		{
 			EventManager.Instance.Subscribe<GameStateChangedEvent>(onGameStateChanged);
@@ -112,6 +117,31 @@ namespace ProjectOne.UI
 			else if (result == MenuPopupResult.Pet)
 			{
 				await UIManager.Instance.OpenPetScreenAsync(ct);
+			}
+			else if (result == MenuPopupResult.Dungeon)
+			{
+				await openDungeonAsync(ct);
+			}
+		}
+
+		// 던전 고르기 → 고른 던전의 입장 팝업.
+		private static async UniTask openDungeonAsync(CancellationToken ct)
+		{
+			EDT.Dungeon dungeon = await UIManager.Instance.ShowDungeonListPopupAsync(ct);
+			switch (dungeon)
+			{
+				case EDT.Dungeon.Gold:
+					await UIManager.Instance.ShowGoldDungeonPopupAsync(GOLD_DUNGEON_POPUP_ADDRESS, ct);
+					break;
+				case EDT.Dungeon.Rift:
+					await UIManager.Instance.ShowRiftDungeonPopupAsync(RIFT_DUNGEON_POPUP_ADDRESS, ct);
+					break;
+				case EDT.Dungeon.Labyrinth:
+					await UIManager.Instance.ShowLabyrinthDungeonPopupAsync(LABYRINTH_DUNGEON_POPUP_ADDRESS, ct);
+					break;
+				case EDT.Dungeon.Ruins:
+					await UIManager.Instance.ShowRuinsDungeonPopupAsync(RUINS_DUNGEON_POPUP_ADDRESS, ct);
+					break;
 			}
 		}
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -163,13 +163,13 @@ namespace ProjectOne.UI
 			if (reward.type == RewardType.Currency)
 			{
 				Table_Currency.Row currency = Table_Currency.Get(reward.currency);
-				box.count.text = CurrencySlot.FormatAmount(reward.count);
+				box.count.text = CurrencyFormat.Short(reward.count);
 				return _icons.SetAsync(box.icon, (currency != null) ? currency.Icon : string.Empty, ct);
 			}
 
 			Table_Item.Row item = Table_Item.Get(reward.itemId);
 			int count = (reward.equipment != null) ? 1 : reward.count;
-			box.count.text = count > 1 ? CurrencySlot.FormatAmount(count) : string.Empty;
+			box.count.text = count > 1 ? CurrencyFormat.Short(count) : string.Empty;
 			return _icons.SetAsync(box.icon, (item != null) ? item.Icon : string.Empty, ct);
 		}
 

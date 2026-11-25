@@ -1,0 +1,20 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
+	<Style src="Dungeon.uss" />
+
+	<!-- 계속하기(사망·시간 초과) — 짙은 덮개 위 제목·안내 + 버튼(유료 부활은 재화 아이콘·비용). 보일 버튼은 ContinuePopupData 가 정한다 -->
+	<ui:VisualElement name="screen" class="theme-violet dungeon-continue">
+		<ui:Label name="title" text="" class="dungeon-continue__title" />
+		<ui:Label name="desc" text="" class="dungeon-continue__desc" />
+		<ui:VisualElement class="dungeon-continue__buttons">
+			<ui:Button name="exit" text="나가기" class="btn popup__button" />
+			<ui:Button name="revive" text="부활" class="btn btn--green popup__button" />
+			<ui:Button name="retry" class="btn btn--green popup__button continue-retry">
+				<ui:Label text="부활" class="continue-retry__label" picking-mode="Ignore" />
+				<ui:VisualElement name="cost-icon" class="continue-retry__icon" picking-mode="Ignore" />
+				<ui:Label name="cost" text="" class="continue-retry__label" picking-mode="Ignore" />
+			</ui:Button>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="DungeonHud.uss" />
+
+	<!-- 골드던전 HUD — 상태줄(단계·남은 시간·웨이브·처치). 보스 배너가 뜨면 상태줄이 비킨다 -->
+	<ui:VisualElement name="screen" class="dungeon-hud" picking-mode="Ignore">
+		<ui:VisualElement name="state" class="dungeon-state" picking-mode="Ignore">
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-stage" picking-mode="Ignore" /><ui:Label name="stage" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-time" picking-mode="Ignore" /><ui:Label name="time" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-wave" picking-mode="Ignore" /><ui:Label name="wave" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-kill" picking-mode="Ignore" /><ui:Label name="progress" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

@@ -19,7 +19,8 @@ namespace ProjectOne.UI
 		Quest,
 		Map,
 		Costume,
-		Pet
+		Pet,
+		Dungeon
 	}
 
 	// 메인 메뉴 팝업(UIPrefab_MenuPopup, UI Toolkit). 레이아웃은 UIToolkit/Popups/Menu/MenuPopup.uxml.
@@ -49,6 +50,7 @@ namespace ProjectOne.UI
 			root.Q<Button>("map").clicked += onMapClicked;
 			root.Q<Button>("costume").clicked += onCostumeClicked;
 			root.Q<Button>("pet").clicked += onPetClicked;
+			root.Q<Button>("dungeon").clicked += onDungeonClicked;
 		}
 
 		public async UniTask<MenuPopupResult> ShowAsync(CancellationToken ct)
@@ -97,6 +99,12 @@ namespace ProjectOne.UI
 		private void onPetClicked()
 		{
 			_result = MenuPopupResult.Pet;
+			Close();
+		}
+
+		private void onDungeonClicked()
+		{
+			_result = MenuPopupResult.Dungeon;
 			Close();
 		}
 

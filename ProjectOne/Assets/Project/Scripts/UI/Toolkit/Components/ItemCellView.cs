@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 namespace ProjectOne.UI
 {
 	// 아이템 칸 1개 (UI구조_설계.md 5) — 등급 틀·바탕·아이콘·분류 배지·레벨·개수·품질 막대·잠금·장착 표시.
-	// UGUI ItemSlot 과 같은 표시 규칙이다. 스타일은 UIToolkit/Components/ItemCell.uss (Theme.uss 가 가져온다).
+	// 스타일은 UIToolkit/Components/ItemCell.uss (Theme.uss 가 가져온다).
 	//
 	// 요소는 코드로 만든다 — 어느 화면이든 템플릿 연결 없이 new 한 번으로 칸을 붙인다.
 	// 아이콘은 소유 화면의 ToolkitIconLoader 로 받는다(화면이 닫힐 때 한꺼번에 해제).

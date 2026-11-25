@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="DungeonHud.uss" />
+
+	<!-- 균열던전 HUD — 상태줄(웨이브·남은 시간·라이프·처치) + 균열 스킬 버튼(충전 덮개·스택·충전률) -->
+	<ui:VisualElement name="screen" class="dungeon-hud" picking-mode="Ignore">
+		<ui:VisualElement name="state" class="dungeon-state" picking-mode="Ignore">
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-stage" picking-mode="Ignore" /><ui:Label name="wave" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-time" picking-mode="Ignore" /><ui:Label name="time" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-life" picking-mode="Ignore" /><ui:Label name="life" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-kill" picking-mode="Ignore" /><ui:Label name="kill" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+		</ui:VisualElement>
+		<ui:Button name="skill" class="rift-skill-btn">
+			<ui:VisualElement name="skill-icon" class="rift-skill-btn__icon" picking-mode="Ignore" />
+			<ui:VisualElement name="skill-shade" class="rift-skill-btn__shade" picking-mode="Ignore" />
+			<ui:VisualElement class="rift-skill-btn__border" picking-mode="Ignore" />
+			<ui:Label name="skill-stack" text="0" class="rift-skill-btn__stack" picking-mode="Ignore" />
+			<ui:Label name="skill-gauge" text="0%" class="rift-skill-btn__gauge" picking-mode="Ignore" />
+		</ui:Button>
+	</ui:VisualElement>
+</ui:UXML>

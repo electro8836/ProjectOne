@@ -1,11 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
-using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
@@ -27,231 +24,150 @@ namespace ProjectOne.UI
 		public string iconAddress;
 	}
 
-	// 균열던전 팝업의 View(MVP). UIManager.ShowRiftDungeonPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
+	// 균열던전 팝업의 View(MVP, UI Toolkit). 레이아웃은 UIToolkit/Popups/Dungeon/RiftDungeonPopup.uxml.
+	// UIManager.ShowRiftDungeonPopupAsync 가 ShowAsync 로 닫힘을 기다린다.
 	// 표시와 입력 전달만 담당하고, 입장·소탕 판정과 스킬 선택 상태는 RiftDungeonPopupPresenter 가 한다.
-	public class RiftDungeonPopup : UIScreen, IView
+	// 고른 스킬 줄을 누르면 스킬 설명을 툴팁으로 띄운다.
+	public class RiftDungeonPopup : DungeonPopupBase
 	{
-		[Header("던전 정보")]
-		[SerializeField] private TMP_Text _nameText;			// Frame/Top/DungeonName
-		[SerializeField] private Image _thumbnailImage;			// Frame/DungeonInfo/Frame/Thumbnail
-
-		[Header("현황")]
-		[SerializeField] private TMP_Text _maxWaveText;			// Info/MaxLevel/RightText
-		[SerializeField] private TMP_Text _checkPointText;		// Info/CheckPoint/RightText
-		[SerializeField] private TMP_Text _enterCountText;		// Info/EnterCount/RightText
-		[SerializeField] private TMP_Text _refreshTimeText;		// Info/RefreshTime/RightText
-		[SerializeField] private TMP_Text _enterRewardText;		// Info/EnterReward/RightGroup/RightText
-		[SerializeField] private Image _enterRewardIcon;		// Info/EnterReward/RightGroup/RightIcon
-		[SerializeField] private TMP_Text _waveRewardText;		// Info/WaveReward/RightGroup/RightText
-		[SerializeField] private Image _waveRewardIcon;			// Info/WaveReward/RightGroup/RightIcon
-
-		[Header("스킬 선택")]
-		[SerializeField] private RectTransform _skillGrid;		// SkillSelect/ScrollRect/Veiwport/Content/Grid
-		[SerializeField] private RiftSkillSlot _slotPrefab;		// UIPrefab_RiftSkillSlot
-		[SerializeField] private UIButton _selectRoot;			// SkillSelect/SelectRoot
-		[SerializeField] private TMP_Text _selectNameText;		// SelectRoot/BackImage/SkillNameText
-		[SerializeField] private Image _selectIcon;				// SelectRoot/Icon
-		[SerializeField] private RiftSkillInfoPopup _infoPopupPrefab;	// UIPrefab_RiftSkillInfoPopup
-
-		[Header("버튼")]
-		[SerializeField] private UIButton _enterButton;			// Frame/Bottom/BottomButtons/EnterButton
-		[SerializeField] private UIButton _sweepButton;			// Frame/Bottom/BottomButtons/SweepButton
-		[SerializeField] private UIButton _exitButton;			// Frame/ExitButton
-		[SerializeField] private UIButton _dimButton;			// Dim
+		private const string SkillClass = "rift-skill";
+		private const string SelectedClass = "rift-skill--selected";
 
 		public event Action<int> OnSkillSelected;	// 고른 칸의 RiftSkill.ID
 		public event Action OnSkillInfoClicked;
-		public event Action OnEnterClicked;
 		public event Action OnSweepClicked;
 
-		// 1초마다 발행. 시간을 어떻게 해석해 무엇을 그릴지는 Presenter 가 정한다.
-		public event Action OnSecondTick;
-
 		private readonly RiftDungeonPopupPresenter _presenter = new RiftDungeonPopupPresenter();
-		private readonly List<RiftSkillSlot> _slots = new List<RiftSkillSlot>();
+		private readonly List<VisualElement> _skills = new List<VisualElement>();
+		private readonly List<int> _skillIds = new List<int>();
 
-		private SpriteBinder _thumbnailBinder;
-		private SpriteBinder _enterRewardBinder;
-		private SpriteBinder _waveRewardBinder;
-		private SpriteBinder _selectIconBinder;
+		private Label _maxWave;
+		private Label _checkPoint;
+		private Label _enterCount;
+		private Label _enterReward;
+		private VisualElement _enterRewardIcon;
+		private Label _waveReward;
+		private VisualElement _waveRewardIcon;
+		private ScrollView _skillList;
+		private Button _selectRoot;
+		private Label _selectName;
+		private VisualElement _selectIcon;
+		private Button _sweep;
 
-		private RiftSkillInfoPopup _infoPopup;
-		private UniTaskCompletionSource _tcs;
-
-		private void Awake()
+		protected override void BindContent(VisualElement root)
 		{
-			_thumbnailBinder = new SpriteBinder(_thumbnailImage);
-			_enterRewardBinder = new SpriteBinder(_enterRewardIcon);
-			_waveRewardBinder = new SpriteBinder(_waveRewardIcon);
-			_selectIconBinder = new SpriteBinder(_selectIcon);
+			_maxWave = root.Q<Label>("max-wave");
+			_checkPoint = root.Q<Label>("check-point");
+			_enterCount = root.Q<Label>("enter-count");
+			_enterReward = root.Q<Label>("enter-reward");
+			_enterRewardIcon = root.Q("enter-reward-icon");
+			_waveReward = root.Q<Label>("wave-reward");
+			_waveRewardIcon = root.Q("wave-reward-icon");
+			_skillList = root.Q<ScrollView>("skills");
+			_selectRoot = root.Q<Button>("skill-select");
+			_selectName = root.Q<Label>("skill-name");
+			_selectIcon = root.Q("skill-icon");
+			_sweep = root.Q<Button>("sweep");
 
-			_selectRoot.OnClickEvent += onSelectRootClicked;
-			_enterButton.OnClickEvent += onEnterClicked;
-			_sweepButton.OnClickEvent += onSweepClicked;
-			_exitButton.OnClickEvent += onCloseClicked;
-			_dimButton.OnClickEvent += onCloseClicked;
+			_skillList.AddManipulator(new ScrollDragManipulator(_skillList));
+			_selectRoot.clicked += onSelectRootClicked;
+			_sweep.clicked += onSweepClicked;
+		}
 
+		protected override void InitializePresenter()
+		{
 			_presenter.Initialize(this);
 		}
 
-		private void OnDestroy()
+		protected override void DisposePresenter()
 		{
-			_thumbnailBinder.Release();
-			_enterRewardBinder.Release();
-			_waveRewardBinder.Release();
-			_selectIconBinder.Release();
-
-			for (int i = 0; i < _slots.Count; i++)
-			{
-				_slots[i].OnClicked -= onSlotClicked;
-			}
-
-			_selectRoot.OnClickEvent -= onSelectRootClicked;
-			_enterButton.OnClickEvent -= onEnterClicked;
-			_sweepButton.OnClickEvent -= onSweepClicked;
-			_exitButton.OnClickEvent -= onCloseClicked;
-			_dimButton.OnClickEvent -= onCloseClicked;
-
 			_presenter.Dispose();
 		}
 
-		// 갱신 남은시간을 1초마다 다시 그리기 위한 틱. 오브젝트가 파괴되면 코루틴도 함께 멈춘다.
-		private void OnEnable()
+		protected override UniTask OpenPresenterAsync(CancellationToken ct)
 		{
-			StartCoroutine(tickRoutine());
-		}
-
-		private IEnumerator tickRoutine()
-		{
-			WaitForSeconds wait = new WaitForSeconds(1f);
-			while (true)
-			{
-				if (OnSecondTick != null)
-				{
-					OnSecondTick.Invoke();
-				}
-
-				yield return wait;
-			}
-		}
-
-		public CancellationToken GetDestroyToken()
-		{
-			return this.GetCancellationTokenOnDestroy();
-		}
-
-		// UIManager 가 인스턴스화 직후 호출한다. 팝업이 닫힐 때까지 돌아오지 않는다.
-		public async UniTask ShowAsync(CancellationToken ct)
-		{
-			await _presenter.OnOpenAsync(ct);
-
-			_tcs = new UniTaskCompletionSource();
-			await _tcs.Task.AttachExternalCancellation(ct).SuppressCancellationThrow();
+			return _presenter.OnOpenAsync(ct);
 		}
 
 		// ── Presenter → View ──────────────────────────────────────────────
 
 		public void RenderInfo(string dungeonName, string thumbnailAddress)
 		{
-			_nameText.text = dungeonName;
-			_thumbnailBinder.SetAsync(thumbnailAddress, GetDestroyToken()).Forget();
+			SetName(dungeonName);
+			SetThumbnail(thumbnailAddress);
 		}
 
 		public void RenderStatus(RiftDungeonStatusData data)
 		{
-			_maxWaveText.text = data.maxWave;
-			_checkPointText.text = data.checkPoint;
-			_enterCountText.text = data.enterCount;
-			_enterRewardText.text = data.enterReward.ToString();
-			_waveRewardText.text = data.waveReward.ToString();
+			_maxWave.text = data.maxWave;
+			_checkPoint.text = data.checkPoint;
+			_enterCount.text = data.enterCount;
+			_enterReward.text = data.enterReward.ToString();
+			_waveReward.text = data.waveReward.ToString();
 
-			_enterRewardBinder.SetAsync(data.rewardIconAddress, GetDestroyToken()).Forget();
-			_waveRewardBinder.SetAsync(data.rewardIconAddress, GetDestroyToken()).Forget();
-		}
-
-		public void SetRefreshTime(string text)
-		{
-			_refreshTimeText.text = text;
+			icons.SetAsync(_enterRewardIcon, data.rewardIconAddress, GetDestroyToken()).Forget();
+			icons.SetAsync(_waveRewardIcon, data.rewardIconAddress, GetDestroyToken()).Forget();
 		}
 
 		public void RenderSkills(IReadOnlyList<RiftSkillSlotData> data)
 		{
+			_skillList.Clear();
+			_skills.Clear();
+			_skillIds.Clear();
+
 			for (int i = 0; i < data.Count; i++)
 			{
-				RiftSkillSlot slot = getOrCreateSlot(i);
-				slot.gameObject.SetActive(true);
-				slot.Bind(data[i].riftSkillId, data[i].iconAddress);
-			}
+				VisualElement cell = new VisualElement();
+				cell.AddToClassList(SkillClass);
+				cell.AddToClassList("sfx-click");
+				cell.userData = i;
+				cell.RegisterCallback<ClickEvent>(onSkillClicked);
 
-			for (int i = data.Count; i < _slots.Count; i++)
-			{
-				_slots[i].gameObject.SetActive(false);
+				VisualElement icon = new VisualElement();
+				icon.AddToClassList("rift-skill__icon");
+				icon.pickingMode = PickingMode.Ignore;
+				cell.Add(icon);
+				icons.SetAsync(icon, data[i].iconAddress, GetDestroyToken()).Forget();
+
+				_skillList.Add(cell);
+				_skills.Add(cell);
+				_skillIds.Add(data[i].riftSkillId);
 			}
 		}
 
-		// 고른 칸 하나만 테두리를 켜고, SelectRoot 에 이름과 아이콘을 띄운다.
+		// 고른 칸 하나만 테두리를 켜고, 고른 스킬 줄에 이름과 아이콘을 띄운다.
 		public void SetSelectedSkill(int riftSkillId, string skillName, string iconAddress)
 		{
-			for (int i = 0; i < _slots.Count; i++)
+			for (int i = 0; i < _skills.Count; i++)
 			{
-				_slots[i].SetSelected(_slots[i].RiftSkillId == riftSkillId);
+				_skills[i].EnableInClassList(SelectedClass, _skillIds[i] == riftSkillId);
 			}
 
-			_selectNameText.text = skillName;
-			_selectIconBinder.SetAsync(iconAddress, GetDestroyToken()).Forget();
+			_selectName.text = skillName;
+			icons.SetAsync(_selectIcon, iconAddress, GetDestroyToken()).Forget();
 		}
 
-		// SelectRoot 바로 위에 정보 프레임을 띄운다. 처음 열 때 한 번만 만든다.
+		// 고른 스킬 줄 위에 설명 툴팁을 띄운다.
 		public void ShowSkillInfo(string skillName, int reqGauge, int maxGauge, string desc)
 		{
-			if (_infoPopup == null)
-			{
-				_infoPopup = Instantiate(_infoPopupPrefab, transform);
-			}
-
-			_infoPopup.transform.SetAsLastSibling();
-			_infoPopup.Show(skillName, reqGauge, maxGauge, desc, (RectTransform)_selectRoot.transform);
-		}
-
-		public void SetEnterInteractable(bool value)
-		{
-			_enterButton.interactable = value;
+			string text = "게이지 " + reqGauge.ToString() + "/" + maxGauge.ToString() + "\n" + desc;
+			UIManager.Instance.ShowTooltipAsync(skillName, text, _selectRoot, GetDestroyToken()).Forget();
 		}
 
 		public void SetSweepInteractable(bool value)
 		{
-			_sweepButton.interactable = value;
-		}
-
-		public void Close()
-		{
-			if (_tcs != null)
-			{
-				_tcs.TrySetResult();
-			}
+			_sweep.SetEnabled(value);
 		}
 
 		// ── 내부 ──────────────────────────────────────────────────────────
 
-		private RiftSkillSlot getOrCreateSlot(int index)
+		// 끌어서 스크롤한 뒤의 클릭은 ScrollDragManipulator 가 삼키므로 여기까지 오지 않는다.
+		private void onSkillClicked(ClickEvent evt)
 		{
-			if (index < _slots.Count)
-			{
-				return _slots[index];
-			}
-
-			RiftSkillSlot slot = Instantiate(_slotPrefab, _skillGrid);
-			slot.OnClicked += onSlotClicked;
-			_slots.Add(slot);
-
-			return slot;
-		}
-
-		private void onSlotClicked(RiftSkillSlot sender)
-		{
+			int index = (int)((VisualElement)evt.currentTarget).userData;
 			if (OnSkillSelected != null)
 			{
-				OnSkillSelected.Invoke(sender.RiftSkillId);
+				OnSkillSelected.Invoke(_skillIds[index]);
 			}
 		}
 
@@ -263,25 +179,12 @@ namespace ProjectOne.UI
 			}
 		}
 
-		private void onEnterClicked()
-		{
-			if (OnEnterClicked != null)
-			{
-				OnEnterClicked.Invoke();
-			}
-		}
-
 		private void onSweepClicked()
 		{
 			if (OnSweepClicked != null)
 			{
 				OnSweepClicked.Invoke();
 			}
-		}
-
-		private void onCloseClicked()
-		{
-			Close();
 		}
 	}
 }

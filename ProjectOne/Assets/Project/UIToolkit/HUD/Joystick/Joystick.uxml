@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="Joystick.uss" />
+
+	<!-- 입력 영역 — 화면 아래 절반(네비게이션 바 자리 위). HUD 층 맨 아래에 붙어 HUD 의 빈 곳으로 들어온 터치만 받는다 -->
+	<ui:VisualElement name="area" class="joystick-area">
+		<ui:VisualElement name="base" class="joystick" picking-mode="Ignore">
+			<ui:VisualElement class="joystick__bg" picking-mode="Ignore" />
+			<ui:VisualElement name="focus-right-up" class="joystick__focus joystick__focus--right-up" picking-mode="Ignore" />
+			<ui:VisualElement name="focus-right-down" class="joystick__focus joystick__focus--right-down" picking-mode="Ignore" />
+			<ui:VisualElement name="focus-left-up" class="joystick__focus joystick__focus--left-up" picking-mode="Ignore" />
+			<ui:VisualElement name="focus-left-down" class="joystick__focus joystick__focus--left-down" picking-mode="Ignore" />
+			<ui:VisualElement name="handle" class="joystick__handle" picking-mode="Ignore" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

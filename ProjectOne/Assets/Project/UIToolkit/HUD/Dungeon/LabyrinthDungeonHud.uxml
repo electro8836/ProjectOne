@@ -1,0 +1,26 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="DungeonHud.uss" />
+
+	<!-- 미궁던전 HUD — 상태줄(단계·남은 시간·상자·남은 몬스터) + 오른쪽 진행 막대(캐릭터·불 위치, 구간 포인트 5개, 진행률) -->
+	<ui:VisualElement name="screen" class="dungeon-hud" picking-mode="Ignore">
+		<ui:VisualElement name="state" class="dungeon-state" picking-mode="Ignore">
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-stage" picking-mode="Ignore" /><ui:Label name="stage" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-time" picking-mode="Ignore" /><ui:Label name="time" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-chest" picking-mode="Ignore" /><ui:Label name="chest" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-kill" picking-mode="Ignore" /><ui:Label name="remain" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+		</ui:VisualElement>
+		<ui:VisualElement class="laby-progress" picking-mode="Ignore">
+			<ui:VisualElement class="laby-fire" picking-mode="Ignore"><ui:VisualElement name="fire-fill" class="laby-fire__fill" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="laby-bar" picking-mode="Ignore"><ui:VisualElement name="player-fill" class="laby-bar__fill" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="laby-points" picking-mode="Ignore">
+				<ui:VisualElement name="point-0" class="laby-point laby-point--0" picking-mode="Ignore" />
+				<ui:VisualElement name="point-1" class="laby-point laby-point--1" picking-mode="Ignore" />
+				<ui:VisualElement name="point-2" class="laby-point laby-point--2" picking-mode="Ignore" />
+				<ui:VisualElement name="point-3" class="laby-point laby-point--3" picking-mode="Ignore" />
+				<ui:VisualElement name="point-4" class="laby-point laby-point--4" picking-mode="Ignore" />
+			</ui:VisualElement>
+			<ui:Label name="info" text="0%" class="laby-info" picking-mode="Ignore" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
 using ProjectOne.Dungeon;
 using ProjectOne.Event;
 using ProjectOne.Unit;
@@ -11,29 +11,28 @@ namespace ProjectOne.UI
 	//
 	// **MainHUD 에 상주하지 않는다.** 던전마다 필요한 위젯이 달라서, 안 쓰는 것까지 한 프리팹에 넣어 두면
 	// 유지가 안 된다. MainHUD 에는 어느 던전에서나 쓰는 보스 정보만 남기고, 던전 전용 위젯은 그 던전에
-	// 들어갈 때 UIManager.EnsureDungeonHudAsync 가 Canvas_Overlay 에 만들고 종료 시 파괴한다.
+	// 들어갈 때 UIManager.EnsureDungeonHudAsync 가 HUD 층에 만들고 종료 시 파괴한다(UI Toolkit, UIToolkit/HUD/Dungeon/GoldDungeonHud.uxml).
 	//
 	// 웨이브 시작·클리어 배너는 던전 공용 메시지(DungeonMessage)가 띄운다.
 	//
-	// **루트는 끄지 않고 상태줄을 SetActive 한다.** 루트를 끄면 Update 가 멈춰서
-	// 보스 배너가 물러나도 되살아나지 못한다. 루트는 그래픽이 없는 순수 컨테이너다.
-	public class GoldDungeonUI : MonoBehaviour
+	// 보스 배너가 떠 있으면 상태줄만 숨긴다.
+	public class GoldDungeonUI : ToolkitScreen
 	{
-		[SerializeField] private GameObject _state;			// State
-		[SerializeField] private TMP_Text _stageText;		// State/Stage/Text
-		[SerializeField] private TMP_Text _remainTimeText;	// State/Time/Text
-		[SerializeField] private TMP_Text _waveText;		// State/Wave/Text
-		[SerializeField] private TMP_Text _progressText;	// State/Progress/Text
+		private VisualElement _state;
+		private Label _stageText;
+		private Label _remainTimeText;
+		private Label _waveText;
+		private Label _progressText;
 
 		// 자리 양보 대상인 보스 배너. MainHUD 안에 살아 다른 프리팹이므로 인스펙터로 이을 수 없다 —
-		// 소유자인 UIManager 에게 물어 Awake 에서 한 번만 잡는다.
+		// 소유자인 UIManager 에게 물어 OnBind 에서 한 번만 잡는다.
 		private HudBossBanner _bossUI;
 
 		private Action<DungeonStageStartedEvent> _onStageStarted;
 		private Action<WaveStartedEvent> _onWaveStarted;
 		private Action<DungeonStageClearedEvent> _onStageCleared;
 
-		// 마지막으로 반영한 보스 배너 상태 — 바뀐 프레임에만 SetActive 를 건드린다.
+		// 마지막으로 반영한 보스 배너 상태 — 바뀐 프레임에만 표시를 건드린다.
 		private bool _lastBossShowing;
 
 		// 이번 웨이브에서 처치해야 하는 총 마리 수. 0 이면 웨이브 진행 중이 아니다.
@@ -43,8 +42,14 @@ namespace ProjectOne.UI
 		private int _lastKilled = -1;
 		private int _lastRemainSecond = -1;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
+			_state = root.Q("state");
+			_stageText = root.Q<Label>("stage");
+			_remainTimeText = root.Q<Label>("time");
+			_waveText = root.Q<Label>("wave");
+			_progressText = root.Q<Label>("progress");
+
 			if (UIManager.HasInstance == true)
 			{
 				_bossUI = UIManager.Instance.BossUI;
@@ -60,15 +65,25 @@ namespace ProjectOne.UI
 			applyVisibility();
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			EventManager.Instance.Unsubscribe<DungeonStageStartedEvent>(_onStageStarted);
-			EventManager.Instance.Unsubscribe<WaveStartedEvent>(_onWaveStarted);
-			EventManager.Instance.Unsubscribe<DungeonStageClearedEvent>(_onStageCleared);
+			if (IsBound == true)
+			{
+				EventManager.Instance.Unsubscribe<DungeonStageStartedEvent>(_onStageStarted);
+				EventManager.Instance.Unsubscribe<WaveStartedEvent>(_onWaveStarted);
+				EventManager.Instance.Unsubscribe<DungeonStageClearedEvent>(_onStageCleared);
+			}
+
+			base.OnDestroy();
 		}
 
 		private void Update()
 		{
+			if (IsBound == false)
+			{
+				return;
+			}
+
 			// 보스 배너와 자리가 겹친다 — 보스가 떠 있으면 비켜주고, 물러나면 되돌아온다.
 			if (isBossShowing() != _lastBossShowing)
 			{
@@ -181,7 +196,7 @@ namespace ProjectOne.UI
 
 			if (_state != null)
 			{
-				_state.SetActive(boss == false);
+				_state.style.display = (boss == false) ? DisplayStyle.Flex : DisplayStyle.None;
 			}
 		}
 	}

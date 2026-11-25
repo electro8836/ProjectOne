@@ -1,0 +1,15 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="DungeonHud.uss" />
+
+	<!-- 던전 공용 메시지 배너 — 위쪽 원형 장식 + 아이콘, 띠 위 글자. 종류는 DungeonMessage 가 클래스로 바꾼다 -->
+	<ui:VisualElement name="screen" class="dungeon-hud" picking-mode="Ignore">
+		<ui:VisualElement name="banner" class="dungeon-message" picking-mode="Ignore">
+			<ui:VisualElement class="dungeon-message__bg" picking-mode="Ignore" />
+			<ui:VisualElement class="dungeon-message__line" picking-mode="Ignore" />
+			<ui:VisualElement class="dungeon-message__deco" picking-mode="Ignore" />
+			<ui:VisualElement name="icon" class="dungeon-message__icon" picking-mode="Ignore" />
+			<ui:Label name="text" text="" class="dungeon-message__text" picking-mode="Ignore" />
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

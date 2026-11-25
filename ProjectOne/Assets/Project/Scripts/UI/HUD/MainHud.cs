@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -51,7 +51,7 @@ namespace ProjectOne.UI
 	// 게임 전역 HUD 의 View(MVP, UI Toolkit). 레이아웃은 UIToolkit/HUD/MainHud/MainHud.uxml.
 	//
 	// **씬별 HUD 를 두지 않는다.** 이 하나가 씬을 가로질러 HUD 층(Layer)에 붙어 있고, 어디서 무엇을 보일지는
-	// ContextGroup 가시성으로 정한다. 조이스틱은 UGUI 라 따로 떨어진 프리펩(UIPrefab_Joystick)이다.
+	// ContextGroup 가시성으로 정한다. 조이스틱은 따로 떨어진 프리펩(UIPrefab_Joystick)이다.
 	//
 	// 메뉴·맥락은 Presenter 가 지시하고(Passive View), 히어로 정보·버프·보스 배너처럼 자기 이벤트를 직접 받는
 	// 위젯은 Hud* 클래스로 나눠 이 화면이 만들고 갱신(Tick)·정리한다.
@@ -81,7 +81,7 @@ namespace ProjectOne.UI
 		[Header("맥락별 표시 묶음")]
 		[SerializeField] private ContextGroup[] _contextGroups =
 		{
-			new ContextGroup(HudContext.Field | HudContext.Dungeon, "map-info")
+			new ContextGroup(HudContext.Town | HudContext.Field | HudContext.Dungeon, "map-info")
 		};
 
 		// 메뉴 팝업 요청 — 어떻게 여는지는 Presenter 가 정한다.

@@ -1,0 +1,168 @@
+/* 타이틀 화면 (기준 해상도 1080 x 1920, 세로). 보라 테마가 아니다 — 흰 로그인 버튼 + 네이비 글자, 네이비 메뉴 버튼.
+   그림은 Art/UI/Atlas/Textures/Illusts/Title. 위치·크기는 UGUI 시절 2.Title 씬과 같다. */
+
+.title {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-color: #000000;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+/* :root 의 외곽선·그림자를 끈다 — 타이틀 글자는 맨 글자다 */
+.title Label {
+	margin: 0;
+	padding: 0;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 0 0 rgba(0, 0, 0, 0);
+}
+
+.title-art {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Image_TitleKeyArt_01.png");
+	-unity-background-scale-mode: scale-and-crop;
+}
+
+/* 아래 어둠 띠 — 캐릭터 발치를 덮어 버튼이 읽히게 */
+.title-shade {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 520px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Image_TitleShade.png");
+	-unity-background-scale-mode: stretch-to-fill;
+}
+
+/* ── 메뉴 버튼 (오른쪽 위) ── */
+.title-menu {
+	position: absolute;
+	top: 15px;
+	right: 15px;
+	width: 120px;
+	height: 112px;
+	align-items: center;
+	justify-content: center;
+	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Button_Title_Navy.png");
+	-unity-slice-left: 28;
+	-unity-slice-right: 28;
+	-unity-slice-top: 28;
+	-unity-slice-bottom: 28;
+}
+
+.title-menu__icon {
+	width: 56px;
+	height: 48px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Icon_Title_Menu.png");
+}
+
+/* ── 로그인 버튼 — 540x80, 간격 8, 묶음(344) 가운데 정렬로 아래에서 76 ── */
+.title-login {
+	position: absolute;
+	left: 50%;
+	bottom: 76px;
+	width: 540px;
+	height: 344px;
+	margin-left: -270px;
+	justify-content: center;
+}
+
+.title-btn {
+	flex-shrink: 0;
+	height: 80px;
+	margin: 4px 0;
+	padding: 0;
+	border-width: 0;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Button_Title_White.png");
+	-unity-slice-left: 28;
+	-unity-slice-right: 28;
+	-unity-slice-top: 28;
+	-unity-slice-bottom: 28;
+	transition-property: scale;
+	transition-duration: 0.05s;
+}
+
+.unity-button.title-btn:hover:enabled,
+.unity-button.title-btn:active:enabled {
+	background-color: rgba(0, 0, 0, 0);
+}
+
+.title-btn:active {
+	scale: 0.96 0.96;
+}
+
+.title-btn:disabled {
+	background-color: rgba(0, 0, 0, 0);
+	opacity: 1;
+}
+
+/* 아이콘 — 가운데가 왼쪽에서 60 */
+.title-btn__icon {
+	position: absolute;
+}
+
+.title-icon--guest {
+	left: 40px;
+	top: 20px;
+	width: 40px;
+	height: 40px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Illusts/Title/Icon_Title_Guest.png");
+	-unity-background-image-tint-color: #1A284C;
+}
+
+.title-icon--apple {
+	left: 42px;
+	top: 19px;
+	width: 36px;
+	height: 43px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Logo_Apple.png");
+	-unity-background-image-tint-color: #141414;
+}
+
+.title-icon--google {
+	left: 40px;
+	top: 20px;
+	width: 40px;
+	height: 40px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Logo_Google.png");
+}
+
+.title-icon--discord {
+	left: 40px;
+	top: 20px;
+	width: 41px;
+	height: 41px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Symbols/Icon_Discord.png#Icon_Discord_0");
+}
+
+/* 글자 — 아이콘 오른쪽 남은 폭의 가운데 */
+.title-btn__text {
+	position: absolute;
+	left: 114px;
+	right: 56px;
+	top: 0;
+	bottom: 0;
+	-unity-text-align: middle-center;
+	font-size: 30px;
+	color: #1A284C;
+}
+
+/* ── 버전 — 아래 가운데 ── */
+.title .title-ver {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 12px;
+	height: 57px;
+	-unity-text-align: middle-center;
+	font-size: 30px;
+	color: #FFFFFF;
+}

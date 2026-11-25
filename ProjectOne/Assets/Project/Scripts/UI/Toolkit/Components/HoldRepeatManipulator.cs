@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
-	// 누른 채로 있으면 반복 호출한다 (UGUI UIBaseInteractable 의 _holdRepeat 와 같은 규칙).
+	// 누른 채로 있으면 반복 호출한다.
 	// 첫 반복까지 0.5초, 이후 0.1초마다. 반복이 한 번이라도 나갔으면 뗄 때의 클릭은 건너뛰어야 한다 — HoldFired 로 확인한다.
 	// 반복마다 버튼음을 낸다(클릭 이벤트가 없어 UIManager 의 층 클릭음이 나지 않는다). 반복 뒤 뗄 때의 클릭음은 막는다.
 	public sealed class HoldRepeatManipulator : Manipulator

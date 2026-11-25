@@ -1,8 +1,7 @@
-﻿using System;
+using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI;
 using ProjectOne.Event;
 using ProjectOne.Items;
 using ProjectOne.Resources;
@@ -11,16 +10,16 @@ namespace ProjectOne.UI
 {
 	// 착용 외형이 반영된 내 캐릭터를 UI 에 띄우는 위젯.
 	//
-	// UI 캔버스가 전부 ScreenSpaceOverlay 라 월드 스프라이트를 UI 사이에 끼워 넣을 수 없고,
-	// 히어로는 SpriteRenderer 30개짜리 파츠 캐릭터라 Image 한 장으로 대체할 수도 없다.
-	// 그래서 시야 밖에 더미 히어로를 세우고 전용 카메라로 RenderTexture 에 찍어 RawImage 로 받는다.
+	// UI 는 화면 위에 따로 그려져 월드 스프라이트를 UI 사이에 끼워 넣을 수 없고,
+	// 히어로는 SpriteRenderer 30개짜리 파츠 캐릭터라 그림 한 장으로 대체할 수도 없다.
+	// 그래서 시야 밖에 더미 히어로를 세우고 전용 카메라로 RenderTexture 에 찍어 화면이 배경으로 건다.
 	//
 	// 수명이 곧 창 수명이다 — 창이 닫히면 이 오브젝트가 파괴되면서 카메라도 함께 사라져 렌더 비용이 0이 된다.
 	public class CharacterPreview : MonoBehaviour
 	{
 		private const string RigAddress = "Prefab_HeroPreview";
 
-		// RawImage 의 RectTransform 비율에 맞춘 크기. 어긋나면 캐릭터가 가로로 늘어난다.
+		// 받는 칸의 비율에 맞춘 크기. 어긋나면 캐릭터가 가로로 늘어난다.
 		// 사용처(장비·코스튬·플레이어 정보)가 전부 정사각형이고 가장 큰 칸이 600x600 이다.
 		private const int TextureWidth = 600;
 		private const int TextureHeight = 600;
@@ -33,9 +32,7 @@ namespace ProjectOne.UI
 		// 프리뷰가 동시에 둘 이상 떠도 서로의 카메라에 찍히지 않도록 슬롯을 하나씩 밀어 쓴다.
 		private static int _slotCounter;
 
-		[SerializeField] private RawImage _target;	// UGUI 화면용. UI Toolkit 화면은 비워 두고 OnTextureReady 로 받는다
-
-		// RenderTexture 가 만들어진 순간 한 번 알린다 — RawImage 가 없는 UI Toolkit 화면이 배경으로 건다.
+		// RenderTexture 가 만들어진 순간 한 번 알린다 — 화면이 받아 배경으로 건다.
 		public event Action<RenderTexture> OnTextureReady;
 
 		private RenderTexture _texture;
@@ -165,13 +162,6 @@ namespace ProjectOne.UI
 			_texture.name = "RT_CharacterPreview";
 
 			_rig.Camera.targetTexture = _texture;
-
-			if (_target != null)
-			{
-				_target.texture = _texture;
-				_target.raycastTarget = false;
-				_target.enabled = true;
-			}
 
 			if (OnTextureReady != null)
 			{

@@ -9,7 +9,7 @@ namespace ProjectOne.UI
 {
 	// UI Toolkit 요소에 아이콘(스프라이트)을 배경으로 입힌다. 화면 하나가 하나를 들고 쓴다.
 	//
-	// ItemSlot 과 같은 규칙 — 아틀라스에 있으면 즉시, 없으면 Addressable 로 로드한다.
+	// 아틀라스에 있으면 즉시, 없으면 Addressable 로 로드한다.
 	// Addressable 로 받은 것은 주소당 한 번만 Acquire 해 두고 화면이 닫힐 때 ReleaseAll 로 한꺼번에 돌려준다
 	// (요소마다 Acquire/Release 짝을 맞추는 대신 화면 단위로 묶는다).
 	public sealed class ToolkitIconLoader

@@ -1,35 +1,42 @@
 using System;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
 using ProjectOne.Dungeon;
 using ProjectOne.Event;
 
 namespace ProjectOne.UI
 {
-	// 유적던전의 진행 표시. 미궁 HUD 와 같이 던전 입장 시 UIManager.EnsureDungeonHudAsync 가 만들고 종료 시 파괴한다.
+	// 유적던전의 진행 표시(UI Toolkit, UIToolkit/HUD/Dungeon/RuinsDungeonHud.uxml). 미궁 HUD 와 같이 던전 입장 시 UIManager.EnsureDungeonHudAsync 가 만들고 종료 시 파괴한다.
 	//
 	// 구성 (입장 안내는 DungeonMessage 가 띄운다)
 	//  - Stage / Time : 단계("n단계"), 남은 시간
-	public class RuinsDungeonUI : MonoBehaviour
+	public class RuinsDungeonUI : ToolkitScreen
 	{
-		[Header("상태")]
-		[SerializeField] private TMP_Text _stageText;			// State/Stage/Text
-		[SerializeField] private TMP_Text _timeText;			// State/Time/Text
+		private Label _stageText;
+		private Label _timeText;
 
 		private Action<DungeonStageStartedEvent> _onStageStarted;
 
 		// 마지막으로 그린 남은 초 — 바뀐 프레임에만 문자열을 만든다.
 		private int _lastRemainSecond = -1;
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
+			_stageText = root.Q<Label>("stage");
+			_timeText = root.Q<Label>("time");
+
 			_onStageStarted = onStageStarted;
 			EventManager.Instance.Subscribe<DungeonStageStartedEvent>(_onStageStarted);
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			EventManager.Instance.Unsubscribe<DungeonStageStartedEvent>(_onStageStarted);
+			if (IsBound == true)
+			{
+				EventManager.Instance.Unsubscribe<DungeonStageStartedEvent>(_onStageStarted);
+			}
+
+			base.OnDestroy();
 		}
 
 		private void Update()

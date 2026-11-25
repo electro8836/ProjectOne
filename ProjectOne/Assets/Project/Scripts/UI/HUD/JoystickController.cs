@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-using UnityEngine.EventSystems;
+using UnityEngine.UIElements;
 using ProjectOne.Event;
 using ProjectOne.Settings;
 using ProjectOne.Unit;
@@ -8,36 +8,38 @@ using ProjectOne.Unit.Input;
 
 namespace ProjectOne.UI
 {
-	// 플로팅 캐릭터 이동 조이스틱.
-	// - 이 스크립트가 붙은 입력 영역을 터치하면 배경(_base)을 터치 위치로 옮기고 표시
-	// - 드래그로 배경 중심부터 Handle을 반지름 _radius 원 안에서 움직임
-	// - 정규화한 방향(-1~1)을 Hero의 TouchInputProvider로 전달, 부호에 따라 4분면 Focus 토글
-	// - 손을 떼면 배경을 숨기고 입력을 0으로
-	public class JoystickController : MonoBehaviour,
-		IPointerDownHandler, IDragHandler, IPointerUpHandler
+	// 플로팅 캐릭터 이동 조이스틱(UIPrefab_Joystick, UI Toolkit). 레이아웃은 UIToolkit/HUD/Joystick/Joystick.uxml.
+	// UIManager 가 HUD 층의 맨 아래에 붙인다 — HUD 의 빈 곳으로 들어온 터치만 여기까지 온다.
+	// - 입력 영역을 터치하면 배경을 터치 위치로 옮김(유동 모드). 고정 모드는 영역 가운데에 둔다
+	// - 끌면 배경 중심부터 손잡이를 반지름 _radius 원 안에서 움직임
+	// - 정규화한 방향(-1~1, 위가 +y)을 Hero 의 TouchInputProvider 로 전달, 부호에 따라 4분면 표시 토글
+	// - 손을 떼면 배경을 기본 위치로 되돌리고 입력을 0으로
+	public class JoystickController : ToolkitScreen
 	{
-		[Header("참조")]
-		[SerializeField] private RectTransform _base;     // 터치 위치로 이동하는 조이스틱 배경(중앙 anchor/pivot)
-		[SerializeField] private RectTransform _handle;
-		[SerializeField] private float _radius = 90;
+		private const string FocusOnClass = "joystick__focus--on";
+		private const int NoPointer = -1;
 
-		[Header("방향 포커스")]
-		[SerializeField] private GameObject _focusLeftUp;
-		[SerializeField] private GameObject _focusLeftDown;
-		[SerializeField] private GameObject _focusRightUp;
-		[SerializeField] private GameObject _focusRightDown;
+		[SerializeField] private float _radius = 100;
+
+		private VisualElement _area;
+		private VisualElement _base;
+		private VisualElement _handle;
+		private VisualElement _focusLeftUp;
+		private VisualElement _focusLeftDown;
+		private VisualElement _focusRightUp;
+		private VisualElement _focusRightDown;
 
 		private Action<UnitSpawnedEvent> _onUnitSpawned;
 		private Action<UnitDiedEvent> _onUnitDied;
 		private TouchInputProvider _touchProvider;
 		private Vector2 _output;
-		private Vector2 _homePosition;     // 시작 시점의 배경 기본 위치 — 고정 모드 위치이자 유동성 모드 복귀 위치
-		private bool _useFloating;         // true: 누른 위치로 배경 이동, false: 고정
+		private Vector2 _center;	// 배경 중심 — 입력 영역 기준 좌표(왼쪽 위 원점, 아래가 +y)
+		private int _pointerId = NoPointer;
+		private bool _useFloating;	// true: 누른 위치로 배경 이동, false: 고정
 
+		// 히어로 스폰보다 먼저 구독해야 한다 — 레이아웃이 붙기 전(Awake)에 건다.
 		private void Awake()
 		{
-			// 다른 이동이 일어나기 전에 기본(홈) 위치를 캡처
-			_homePosition = _base.anchoredPosition;
 			_useFloating = SettingsManager.Instance.UseFloatingJoystick;
 			SettingsManager.Instance.FloatingJoystickChanged += onFloatingChanged;
 
@@ -45,16 +47,32 @@ namespace ProjectOne.UI
 			_onUnitDied = onUnitDied;
 			EventManager.Instance.Subscribe<UnitSpawnedEvent>(_onUnitSpawned);
 			EventManager.Instance.Subscribe<UnitDiedEvent>(_onUnitDied);
+		}
 
-			_base.gameObject.SetActive(true);
+		protected override void OnBind(VisualElement root)
+		{
+			_area = root.Q("area");
+			_base = root.Q("base");
+			_handle = root.Q("handle");
+			_focusLeftUp = root.Q("focus-left-up");
+			_focusLeftDown = root.Q("focus-left-down");
+			_focusRightUp = root.Q("focus-right-up");
+			_focusRightDown = root.Q("focus-right-down");
+
+			_area.RegisterCallback<PointerDownEvent>(onPointerDown);
+			_area.RegisterCallback<PointerMoveEvent>(onPointerMove);
+			_area.RegisterCallback<PointerUpEvent>(onPointerUp);
+			_area.RegisterCallback<PointerCaptureOutEvent>(onPointerCaptureOut);
+
 			resetToHome();
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
 			EventManager.Instance.Unsubscribe<UnitSpawnedEvent>(_onUnitSpawned);
 			EventManager.Instance.Unsubscribe<UnitDiedEvent>(_onUnitDied);
 			SettingsManager.Instance.FloatingJoystickChanged -= onFloatingChanged;
+			base.OnDestroy();
 		}
 
 		private void Update()
@@ -65,97 +83,97 @@ namespace ProjectOne.UI
 			}
 		}
 
-		public void OnPointerDown(PointerEventData eventData)
+		private void onPointerDown(PointerDownEvent evt)
 		{
-			Vector2 local;
-			if (tryGetLocal(eventData, out local) == false)
+			if (_pointerId != NoPointer)
 			{
 				return;
 			}
 
-			// 유동 모드만 배경 중앙을 터치 위치로 옮긴다. 고정 모드는 홈(중앙)에 그대로 둔다.
-			// 좌표계 보정은 tryGetLocal 이 이미 마쳤다.
+			_pointerId = evt.pointerId;
+			_area.CapturePointer(_pointerId);
+
+			// 유동 모드만 배경 중앙을 터치 위치로 옮긴다. 고정 모드는 영역 가운데에 그대로 둔다.
 			if (_useFloating == true)
 			{
-				_base.anchoredPosition = local;
+				_center = evt.localPosition;
+				_base.style.left = _center.x;
+				_base.style.top = _center.y;
+			}
+			else
+			{
+				_center = _area.contentRect.center;
 			}
 
-			_handle.anchoredPosition = Vector2.zero;
-			_output = Vector2.zero;
-			updateFocus(Vector2.zero);
+			setHandle(Vector2.zero);
 		}
 
-		public void OnDrag(PointerEventData eventData)
+		private void onPointerMove(PointerMoveEvent evt)
 		{
-			Vector2 local;
-			if (tryGetLocal(eventData, out local) == false)
+			if (evt.pointerId != _pointerId)
 			{
 				return;
 			}
 
 			// 배경 중심으로부터의 offset → 반지름 클램프
-			Vector2 offset = local - _base.anchoredPosition;
-			Vector2 clamped = Vector2.ClampMagnitude(offset, _radius);
-			_handle.anchoredPosition = clamped;
-			_output = clamped / _radius;
-			updateFocus(_output);
+			Vector2 offset = (Vector2)evt.localPosition - _center;
+			setHandle(Vector2.ClampMagnitude(offset, _radius));
 		}
 
-		public void OnPointerUp(PointerEventData eventData)
+		private void onPointerUp(PointerUpEvent evt)
 		{
+			if (evt.pointerId != _pointerId)
+			{
+				return;
+			}
+
+			_area.ReleasePointer(_pointerId);
+		}
+
+		// 손을 뗐거나(ReleasePointer) 다른 곳이 포인터를 가져갔을 때 — 둘 다 여기서 정리한다.
+		private void onPointerCaptureOut(PointerCaptureOutEvent evt)
+		{
+			_pointerId = NoPointer;
 			resetToHome();
 		}
 
-		// 입력 영역 기준 좌표를 **자식의 anchoredPosition 좌표계로** 변환해 돌려준다.
-		//
-		// ScreenPointToLocalPointInRectangle 은 **pivot 기준** 좌표를 준다. 그런데 _base 의 anchor 는
-		// 부모 중앙이라, 그대로 대입하면 pivot 이 중앙이 아닐 때 그 차이만큼 어긋난다
-		// (pivot 이 (0.5,0) 이면 누른 자리보다 높이의 절반만큼 위로 튄다).
-		// rect.center 는 pivot 기준 좌표계에서 rect 중앙의 위치이므로, 이만큼 빼면 정확히 맞는다.
-		private bool tryGetLocal(PointerEventData eventData, out Vector2 local)
+		// 손잡이 위치(입력 영역 좌표, 아래가 +y)와 출력(위가 +y)을 함께 맞춘다.
+		private void setHandle(Vector2 clamped)
 		{
-			RectTransform area = (RectTransform)transform;
-			if (RectTransformUtility.ScreenPointToLocalPointInRectangle(area, eventData.position, eventData.pressEventCamera, out local) == false)
-			{
-				return false;
-			}
-
-			local -= area.rect.center;
-			return true;
+			_handle.style.translate = new Translate(clamped.x, clamped.y);
+			_output = new Vector2(clamped.x, -clamped.y) / _radius;
+			updateFocus(_output);
 		}
 
-		// 배경을 홈 위치로 되돌리고 핸들·입력·포커스를 초기화 (배경은 계속 표시 유지)
+		// 배경을 기본 위치(영역 가운데)로 되돌리고 손잡이·입력·표시를 초기화 (배경은 계속 표시)
 		private void resetToHome()
 		{
-			_base.anchoredPosition = _homePosition;
-			_handle.anchoredPosition = Vector2.zero;
-			_output = Vector2.zero;
-			updateFocus(Vector2.zero);
+			if (IsBound == false)
+			{
+				_output = Vector2.zero;
+				return;
+			}
+
+			_base.style.left = Length.Percent(50);
+			_base.style.top = Length.Percent(50);
+			setHandle(Vector2.zero);
 		}
 
-		// 옵션 변경 즉시 반영 — 모드 갱신 후 배경을 홈으로 스냅
+		// 옵션 변경 즉시 반영 — 모드 갱신 후 배경을 기본 위치로 스냅
 		private void onFloatingChanged(bool enabled)
 		{
 			_useFloating = enabled;
 			resetToHome();
 		}
 
-		// 출력 방향의 부호로 4분면 중 1개만 활성 (거의 0이면 전부 비활성)
+		// 출력 방향의 부호로 4분면 중 1개만 표시 (거의 0이면 전부 숨김)
 		private void updateFocus(Vector2 dir)
 		{
 			bool active = dir.sqrMagnitude > 0.0001f;
-			setFocus(_focusLeftUp, active && dir.x < 0f && dir.y > 0f);
-			setFocus(_focusRightUp, active && dir.x > 0f && dir.y > 0f);
-			setFocus(_focusLeftDown, active && dir.x < 0f && dir.y < 0f);
-			setFocus(_focusRightDown, active && dir.x > 0f && dir.y < 0f);
-		}
-
-		private static void setFocus(GameObject focus, bool on)
-		{
-			if (focus != null && focus.activeSelf != on)
-			{
-				focus.SetActive(on);
-			}
+			_focusLeftUp.EnableInClassList(FocusOnClass, active && dir.x < 0f && dir.y > 0f);
+			_focusRightUp.EnableInClassList(FocusOnClass, active && dir.x > 0f && dir.y > 0f);
+			_focusLeftDown.EnableInClassList(FocusOnClass, active && dir.x < 0f && dir.y < 0f);
+			_focusRightDown.EnableInClassList(FocusOnClass, active && dir.x > 0f && dir.y < 0f);
 		}
 
 		private void onUnitSpawned(UnitSpawnedEvent evt)

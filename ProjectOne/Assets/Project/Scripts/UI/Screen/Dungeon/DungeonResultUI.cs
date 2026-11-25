@@ -2,7 +2,7 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
 using EDT;
 using ProjectOne.Dungeon;
 using ProjectOne.Items;
@@ -10,46 +10,31 @@ using ProjectOne.Shared;
 
 namespace ProjectOne.UI
 {
-	// 던전 결과창(UIPrefab_DungeonResult). 서버가 확정한 실제 획득 보상을 슬롯으로 나열하고,
-	// 다시 도전 / 다음 단계 / 마을 복귀 중 하나를 기다린다.
+	// 던전 결과창(UIPrefab_DungeonResult, UI Toolkit). 레이아웃은 UIToolkit/Popups/Dungeon/DungeonResult.uxml.
+	// 서버가 확정한 실제 획득 보상을 아이템 칸으로 나열하고, 다시 도전 / 다음 단계 / 마을 복귀 중 하나를 기다린다.
 	//
 	// 재도전과 다음 단계는 둘 다 **새 입장**이라 입장 횟수를 다시 소모한다 — 남은 횟수가 0이면
-	// 두 버튼을 숨기지 않고 interactable 만 끈다(UIButton 이 회색 틴트를 처리한다).
+	// 두 버튼을 숨기지 않고 잠근다.
 	//
-	// 딤 클릭으로 나가는 경로는 없앴다. 나가려면 ExitButton 을 누르거나 자동 복귀를 기다려야 한다.
-	public class DungeonResultUI : UIScreen
+	// 덮개를 눌러 나가는 경로는 없다. 나가려면 마을 버튼을 누르거나 자동 복귀를 기다려야 한다.
+	public class DungeonResultUI : ToolkitScreen
 	{
-		[Header("보상 목록")]
-		[SerializeField] private Transform _rewardGrid;
-		[SerializeField] private ItemSlot _slotPrefab;
+		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
 
-		[Header("등급 색상 테이블")]
-		[SerializeField] private ItemGradeColorTable _gradeColors;
-
-		[Header("정보")]
-		[SerializeField] private TMP_Text _dungeonNameText;
-		[SerializeField] private TMP_Text _dungeonStageText;
-		[SerializeField] private TMP_Text _expText;
-		[SerializeField] private TMP_Text _enterCountText;
-		[SerializeField] private TMP_Text _returnTownText;
-
-		[Header("버튼")]
-		[SerializeField] private UIButton _retryButton;
-		[SerializeField] private UIButton _nextButton;
-		[SerializeField] private UIButton _exitButton;
-
-		[Header("자동 복귀")]
-		[SerializeField] private float _autoReturnSeconds = 30f;
+		private const float AutoReturnSeconds = 30f;
 
 		// 남은 입장 횟수가 0임을 알리는 색. 중앙 색상 테이블이 없어 화면이 직접 들고 있는다.
 		private static readonly Color EnterCountEmptyColor = new Color32(0xE0, 0x4B, 0x4B, 0xFF);
 		private static readonly Color EnterCountNormalColor = Color.white;
 
-		// 플레이어가 고른 다음 행동. 자동 복귀는 ReturnTown 으로 확정된다.
-		private UniTaskCompletionSource<DungeonResultAction> _closeSource;
+		// 재화는 ItemMainCategory 에 속하지 않는다 — 모든 분류 뒤로 보낸다.
+		private const int CurrencySortKey = 1000;
 
-		// 카운트다운 전용 수명. 버튼을 누르는 순간 끊어 자동 복귀가 뒤늦게 끼어들지 못하게 한다.
-		private CancellationTokenSource _countdownCts;
+		// 테이블에 없는 아이템. bindCell 이 어차피 칸을 걷어내므로 자리만 잡아 준다.
+		private const int UnknownSortKey = 999;
+
+		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
+		private const string CONSUMABLE_POPUP_ADDRESS = "UIPrefab_ConsumablePopup";
 
 		// 합산 중간 표현 — 대표 타입/아이템 + 합산 수량
 		private struct MergedReward
@@ -62,19 +47,26 @@ namespace ProjectOne.UI
 			public int order;
 		}
 
-		// 재화는 ItemMainCategory 에 속하지 않는다 — 모든 분류 뒤로 보낸다.
-		private const int CurrencySortKey = 1000;
+		private readonly ToolkitIconLoader _icons = new ToolkitIconLoader();
 
-		// 테이블에 없는 아이템. bindSlot 이 어차피 슬롯을 걷어내므로 자리만 잡아 준다.
-		private const int UnknownSortKey = 999;
+		// 칸이 무엇을 들고 있는지 — 클릭 시 어느 팝업을 열지 정하는 근거다(ItemCellView.Tag 에 건다).
+		private readonly List<EquipmentInstance> _cellEquipments = new List<EquipmentInstance>();
+		private readonly List<MergedReward> _cellRewards = new List<MergedReward>();
 
-		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
-		private const string CONSUMABLE_POPUP_ADDRESS = "UIPrefab_ConsumablePopup";
+		private ScrollView _grid;
+		private Label _dungeonNameText;
+		private Label _dungeonStageText;
+		private Label _expText;
+		private Label _enterCountText;
+		private Label _returnTownText;
+		private Button _retryButton;
+		private Button _nextButton;
 
-		// 슬롯이 무엇을 들고 있는지 — 클릭 시 어느 팝업을 열지 정하는 근거다.
-		// 슬롯을 만든 쪽만 아는 정보라 (uid, itemId) 로 되짚어 추측하지 않고 여기에 남긴다.
-		private readonly Dictionary<ItemSlot, EquipmentInstance> _slotEquipments = new Dictionary<ItemSlot, EquipmentInstance>();
-		private readonly Dictionary<ItemSlot, MergedReward> _slotRewards = new Dictionary<ItemSlot, MergedReward>();
+		// 플레이어가 고른 다음 행동. 자동 복귀는 ReturnTown 으로 확정된다.
+		private UniTaskCompletionSource<DungeonResultAction> _closeSource;
+
+		// 카운트다운 전용 수명. 버튼을 누르는 순간 끊어 자동 복귀가 뒤늦게 끼어들지 못하게 한다.
+		private CancellationTokenSource _countdownCts;
 
 		// 결과를 고를 때까지 화면을 덮으므로 네비게이션 바를 가린다.
 		public override bool HidesNavigationBar
@@ -82,26 +74,32 @@ namespace ProjectOne.UI
 			get { return true; }
 		}
 
-		private void Awake()
+		protected override void OnBind(VisualElement root)
 		{
-			_retryButton.OnClickEvent += onRetryClicked;
-			_nextButton.OnClickEvent += onNextClicked;
-			_exitButton.OnClickEvent += onExitClicked;
+			_grid = root.Q<ScrollView>("grid");
+			_dungeonNameText = root.Q<Label>("dungeon-name");
+			_dungeonStageText = root.Q<Label>("stage");
+			_expText = root.Q<Label>("exp");
+			_enterCountText = root.Q<Label>("enter-count");
+			_returnTownText = root.Q<Label>("return-town");
+			_retryButton = root.Q<Button>("retry");
+			_nextButton = root.Q<Button>("next");
+
+			_grid.AddManipulator(new ScrollDragManipulator(_grid));
+			_retryButton.clicked += onRetryClicked;
+			_nextButton.clicked += onNextClicked;
+			root.Q<Button>("exit").clicked += onExitClicked;
 		}
 
-		private void OnDestroy()
+		protected override void OnDestroy()
 		{
-			_retryButton.OnClickEvent -= onRetryClicked;
-			_nextButton.OnClickEvent -= onNextClicked;
-			_exitButton.OnClickEvent -= onExitClicked;
-
 			stopCountdown();
-
-			unbindSlots();
+			_icons.ReleaseAll();
 			_closeSource?.TrySetCanceled();
+			base.OnDestroy();
 		}
 
-		// 슬롯 빌드 + 정보 표시 + 카운트다운 시작. 버튼 선택이나 자동 복귀 중 먼저 오는 것까지 대기.
+		// 칸 빌드 + 정보 표시 + 카운트다운 시작. 버튼 선택이나 자동 복귀 중 먼저 오는 것까지 대기.
 		//
 		// equipments 는 이번 판에 실제로 지급된 장비 인스턴스다.
 		// 등급·레벨·품질은 테이블이 아니라 인스턴스가 소유하므로(아이템 설계 4장) 따로 받는다.
@@ -110,7 +108,7 @@ namespace ProjectOne.UI
 		public async UniTask<DungeonResultAction> WaitAsync(IReadOnlyList<GrantedRewardDto> rewards, IReadOnlyList<EquipmentInstance> equipments,
 			EDT.Dungeon dungeonType, int stage, int gainedExp, bool hasNextStage, CancellationToken ct)
 		{
-			buildSlots(rewards, equipments);
+			buildCells(rewards, equipments);
 
 			applyInfo(dungeonType, stage, gainedExp, hasNextStage);
 
@@ -130,41 +128,27 @@ namespace ProjectOne.UI
 		{
 			Table_Dungeon.Row dungeon = Table_Dungeon.Get(dungeonType);
 
-			if (_dungeonNameText != null)
-			{
-				_dungeonNameText.text = ((dungeon != null) ? dungeon.Name : string.Empty) + " 클리어!";
-			}
-
-			if (_dungeonStageText != null)
-			{
-				_dungeonStageText.text = "스테이지 " + stage;
-			}
-
-			if (_expText != null)
-			{
-				_expText.text = "경험치+" + gainedExp;
-			}
+			_dungeonNameText.text = ((dungeon != null) ? dungeon.Name : string.Empty) + " 클리어!";
+			_dungeonStageText.text = "스테이지 " + stage;
+			_expText.text = "경험치 +" + gainedExp;
 
 			// 재도전·다음 단계는 새 입장이라 남은 횟수를 다시 쓴다.
 			int remaining = ProjectOne.Dungeon.DungeonProgress.GetRemainingCount(dungeonType);
 
-			if (_enterCountText != null)
-			{
-				_enterCountText.text = "남은 입장 횟수 " + remaining + "회";
-				_enterCountText.color = (remaining <= 0) ? EnterCountEmptyColor : EnterCountNormalColor;
-			}
+			_enterCountText.text = "남은 입장 횟수 " + remaining + "회";
+			_enterCountText.style.color = (remaining <= 0) ? EnterCountEmptyColor : EnterCountNormalColor;
 
-			// 숨기지 않고 잠근다 — 버튼 줄이 GridLayoutGroup 이라 하나를 빼면 나머지가 재배치된다.
-			_retryButton.interactable = (remaining > 0);
-			_nextButton.interactable = (remaining > 0 && hasNextStage == true);
+			// 숨기지 않고 잠근다 — 버튼 줄 자리가 흔들리지 않게.
+			_retryButton.SetEnabled(remaining > 0);
+			_nextButton.SetEnabled(remaining > 0 && hasNextStage == true);
 		}
 
-		// 장비 슬롯을 먼저, 그 다음 합산 슬롯.
+		// 장비 칸을 먼저, 그 다음 합산 칸.
 		//
 		// 이 배치가 곧 정렬이다 — Equipment 가 ItemMainCategory 의 첫 실항목이라
 		// 장비를 앞에 그리면 "MainCategory 순 + 재화 맨 뒤" 가 성립한다.
 		// **enum 앞에 다른 분류가 끼면 여기가 깨진다.**
-		private void buildSlots(IReadOnlyList<GrantedRewardDto> rewards, IReadOnlyList<EquipmentInstance> equipments)
+		private void buildCells(IReadOnlyList<GrantedRewardDto> rewards, IReadOnlyList<EquipmentInstance> equipments)
 		{
 			CancellationToken ct = this.GetCancellationTokenOnDestroy();
 
@@ -179,22 +163,21 @@ namespace ProjectOne.UI
 						continue;
 					}
 
-					ItemSlot slot = Instantiate(_slotPrefab, _rewardGrid);
-					slot.BindEquipmentAsync(instance, false, _gradeColors, ct).Forget();
-
-					_slotEquipments.Add(slot, instance);
-					slot.OnClicked += onSlotClicked;
+					ItemCellView cell = createCell();
+					cell.Tag = -(_cellEquipments.Count + 1);	// 음수 = 장비 목록 번호
+					_cellEquipments.Add(instance);
+					cell.BindEquipmentAsync(instance, false, ct).Forget();
 				}
 			}
 
 			if (rewards != null)
 			{
-				buildMergedSlots(rewards, ct);
+				buildMergedCells(rewards, ct);
 			}
 		}
 
-		// 스택 아이템·재화 — (타입 + 아이템ID) 로 합산해 슬롯을 만든다.
-		private void buildMergedSlots(IReadOnlyList<GrantedRewardDto> rewards, CancellationToken ct)
+		// 스택 아이템·재화 — (타입 + 아이템ID) 로 합산해 칸을 만든다.
+		private void buildMergedCells(IReadOnlyList<GrantedRewardDto> rewards, CancellationToken ct)
 		{
 			List<MergedReward> merged = new List<MergedReward>();
 			Dictionary<string, int> keyIndex = new Dictionary<string, int>();
@@ -202,7 +185,7 @@ namespace ProjectOne.UI
 			{
 				GrantedRewardDto r = rewards[i];
 
-				// 장비는 위에서 인스턴스로 이미 그렸다 — 여기서 또 그리면 슬롯이 두 벌이 된다.
+				// 장비는 위에서 인스턴스로 이미 그렸다 — 여기서 또 그리면 칸이 두 벌이 된다.
 				if (Table_Equipment.Get(r.itemId) != null)
 				{
 					continue;
@@ -228,7 +211,7 @@ namespace ProjectOne.UI
 
 			for (int i = 0; i < merged.Count; i++)
 			{
-				bindSlot(merged[i], ct);
+				bindCell(merged[i], ct);
 			}
 		}
 
@@ -257,17 +240,15 @@ namespace ProjectOne.UI
 			return (row != null) ? (int)row.MainCategory : UnknownSortKey;
 		}
 
-		// 스택 보상 한 칸. 재화는 등급·분류·강화가 없어 슬롯을 다르게 채운다.
-		private void bindSlot(MergedReward reward, CancellationToken ct)
+		// 스택 보상 한 칸. 재화는 등급·분류·강화가 없어 칸을 다르게 채운다.
+		private void bindCell(MergedReward reward, CancellationToken ct)
 		{
-			ItemSlot slot = Instantiate(_slotPrefab, _rewardGrid);
-
-			_slotRewards.Add(slot, reward);
-			slot.OnClicked += onSlotClicked;
-
 			if ((RewardType)reward.rewardType == RewardType.Currency)
 			{
-				slot.BindCurrencyAsync((EDT.Currency)reward.itemId, reward.count, _gradeColors, ct).Forget();
+				ItemCellView currencyCell = createCell();
+				currencyCell.Tag = _cellRewards.Count;
+				_cellRewards.Add(reward);
+				currencyCell.BindCurrencyAsync((EDT.Currency)reward.itemId, reward.count, ct).Forget();
 				return;
 			}
 
@@ -275,19 +256,27 @@ namespace ProjectOne.UI
 			Table_Item.Row row = Table_Item.Get(reward.itemId);
 			if (row == null)
 			{
-				Debug.LogWarning($"[DungeonResultUI] Item {reward.itemId} 가 테이블에 없습니다 — 보상 슬롯을 건너뜁니다.");
-				slot.OnClicked -= onSlotClicked;
-				_slotRewards.Remove(slot);
-				Destroy(slot.gameObject);
+				Debug.LogWarning($"[DungeonResultUI] Item {reward.itemId} 가 테이블에 없습니다 — 보상 칸을 건너뜁니다.");
 				return;
 			}
 
-			slot.BindItemAsync(row, reward.count, _gradeColors, ct).Forget();
+			ItemCellView cell = createCell();
+			cell.Tag = _cellRewards.Count;
+			_cellRewards.Add(reward);
+			cell.BindItemAsync(row, reward.count, ct).Forget();
+			cell.SetCountText(reward.count.ToString());	// 보상은 1개도 수량을 적는다
+		}
+
+		private ItemCellView createCell()
+		{
+			ItemCellView cell = new ItemCellView(_grid.contentContainer, _gradeColors, _icons);
+			cell.OnClicked += onCellClicked;
+			return cell;
 		}
 
 		private async UniTaskVoid countdownAsync(CancellationToken ct)
 		{
-			int remaining = Mathf.CeilToInt(_autoReturnSeconds);
+			int remaining = Mathf.CeilToInt(AutoReturnSeconds);
 			while (remaining > 0)
 			{
 				updateReturnTownText(remaining);
@@ -320,36 +309,28 @@ namespace ProjectOne.UI
 
 		private void updateReturnTownText(int seconds)
 		{
-			if (_returnTownText != null)
-			{
-				_returnTownText.text = seconds + "초 후 마을로 이동합니다.";
-			}
+			_returnTownText.text = seconds + "초 후 마을로 이동합니다.";
 		}
 
-		// 보상 슬롯 클릭 — 전부 **디스플레이(읽기 전용)** 경로다. 내가 조작할 수 있는 목록이 아니다.
-		private void onSlotClicked(ItemSlot sender, long uid, int itemId)
+		// 보상 칸 클릭 — 전부 **디스플레이(읽기 전용)** 경로다. 내가 조작할 수 있는 목록이 아니다.
+		private void onCellClicked(ItemCellView sender, long uid, int itemId)
 		{
 			CancellationToken ct = this.GetCancellationTokenOnDestroy();
 
-			EquipmentInstance instance;
-			if (_slotEquipments.TryGetValue(sender, out instance) == true)
+			int tag = (int)sender.Tag;
+			if (tag < 0)
 			{
-				UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, instance, ct).Forget();
+				UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, _cellEquipments[-tag - 1], ct).Forget();
 				return;
 			}
 
-			MergedReward reward;
-			if (_slotRewards.TryGetValue(sender, out reward) == false)
-			{
-				return;
-			}
-
+			MergedReward reward = _cellRewards[tag];
 			if ((RewardType)reward.rewardType == RewardType.Currency)
 			{
 				Table_Currency.Row currency = Table_Currency.Get((EDT.Currency)reward.itemId);
 				if (currency != null)
 				{
-					showSimple(currency.Name, currency.Desc, sender, ct);
+					UIManager.Instance.ShowTooltipAsync(currency.Name, currency.Desc, sender.Root, ct).Forget();
 				}
 
 				return;
@@ -364,40 +345,11 @@ namespace ProjectOne.UI
 			// 재료는 보여줄 것이 이름·설명뿐이라 정식 팝업을 열지 않는다.
 			if (row.MainCategory == ItemMainCategory.Material)
 			{
-				showSimple(row.Name, row.Desc, sender, ct);
+				UIManager.Instance.ShowTooltipAsync(row.Name, row.Desc, sender.Root, ct).Forget();
 				return;
 			}
 
 			UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, reward.itemId, true, ct).Forget();
-		}
-
-		private static void showSimple(string name, string desc, ItemSlot anchor, CancellationToken ct)
-		{
-			UIManager.Instance.ShowSimplePopupAsync(name + "\n" + desc, anchor.transform as RectTransform, ct).Forget();
-		}
-
-		private void unbindSlots()
-		{
-			Dictionary<ItemSlot, EquipmentInstance>.Enumerator e = _slotEquipments.GetEnumerator();
-			while (e.MoveNext() == true)
-			{
-				if (e.Current.Key != null)
-				{
-					e.Current.Key.OnClicked -= onSlotClicked;
-				}
-			}
-
-			Dictionary<ItemSlot, MergedReward>.Enumerator r = _slotRewards.GetEnumerator();
-			while (r.MoveNext() == true)
-			{
-				if (r.Current.Key != null)
-				{
-					r.Current.Key.OnClicked -= onSlotClicked;
-				}
-			}
-
-			_slotEquipments.Clear();
-			_slotRewards.Clear();
 		}
 
 		private void onRetryClicked()
@@ -419,12 +371,7 @@ namespace ProjectOne.UI
 		private void finish(DungeonResultAction action)
 		{
 			stopCountdown();
-
-			if (_returnTownText != null)
-			{
-				_returnTownText.gameObject.SetActive(false);
-			}
-
+			_returnTownText.style.visibility = Visibility.Hidden;
 			_closeSource?.TrySetResult(action);
 		}
 

@@ -1,0 +1,68 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Dungeon.uss" />
+
+	<!-- 균열던전 입장 — 썸네일 + 현황 줄(보상은 아이콘·수), 균열 스킬 칸 가로 스크롤 + 고른 스킬 줄(누르면 설명), 소탕·입장 -->
+	<ui:VisualElement name="popup" class="popup theme-violet dungeon-popup">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head item-head">
+				<ui:Label name="name" text="" class="popup__name item-head__name" />
+				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+
+			<ui:VisualElement class="popup__body dungeon-info">
+				<ui:VisualElement class="px-inset dungeon-thumb-box">
+					<ui:VisualElement name="thumbnail" class="dungeon-thumb" />
+				</ui:VisualElement>
+				<ui:VisualElement class="px-inset dungeon-status">
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="최고 웨이브" class="dungeon-row__label" />
+						<ui:Label name="max-wave" text="" class="dungeon-row__value" />
+					</ui:VisualElement>
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="시작 웨이브" class="dungeon-row__label" />
+						<ui:Label name="check-point" text="" class="dungeon-row__value" />
+					</ui:VisualElement>
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="입장 횟수" class="dungeon-row__label" />
+						<ui:Label name="enter-count" text="" class="dungeon-row__value" />
+					</ui:VisualElement>
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="초기화까지" class="dungeon-row__label" />
+						<ui:Label name="refresh-time" text="" class="dungeon-row__value" />
+					</ui:VisualElement>
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="입장 보상" class="dungeon-row__label" />
+						<ui:VisualElement name="enter-reward-icon" class="dungeon-row__icon" />
+						<ui:Label name="enter-reward" text="" class="dungeon-row__value dungeon-row__value--fit" />
+					</ui:VisualElement>
+					<ui:VisualElement class="dungeon-row">
+						<ui:Label text="웨이브 보상" class="dungeon-row__label" />
+						<ui:VisualElement name="wave-reward-icon" class="dungeon-row__icon" />
+						<ui:Label name="wave-reward" text="" class="dungeon-row__value dungeon-row__value--fit" />
+					</ui:VisualElement>
+				</ui:VisualElement>
+			</ui:VisualElement>
+
+			<ui:Label text="균열 스킬" class="popup__body dungeon-section" />
+			<ui:VisualElement class="popup__body px-inset dungeon-list-box">
+				<ui:ScrollView name="skills" mode="Horizontal" class="dungeon-list" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+			</ui:VisualElement>
+			<ui:VisualElement class="popup__body">
+				<ui:Button name="skill-select" class="rift-select">
+					<ui:VisualElement name="skill-icon" class="rift-select__icon" picking-mode="Ignore" />
+					<ui:Label name="skill-name" text="" class="rift-select__name" picking-mode="Ignore" />
+					<ui:Label text="설명 보기" class="rift-select__hint" picking-mode="Ignore" />
+				</ui:Button>
+			</ui:VisualElement>
+
+			<ui:VisualElement class="popup__buttons">
+				<ui:Button name="sweep" text="소탕" class="btn popup__button" />
+				<ui:Button name="enter" text="입장" class="btn btn--green popup__button" />
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

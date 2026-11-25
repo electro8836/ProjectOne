@@ -1,0 +1,76 @@
+/* 이동 조이스틱 (기준 해상도 1080 x 1920, 세로). 크기·위치는 UGUI 시절 UIPrefab_Joystick 과 같다.
+   배경 250 칸 안에 바탕 216.6 · 방향 표시 4개 114.6 · 손잡이 120. 손잡이는 JoystickController 가 translate 로 옮긴다. */
+
+/* 아래 180(네비게이션 바 자리) 위부터 화면 가운데까지 */
+.joystick-area {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	bottom: 180px;
+}
+
+/* 기본 위치는 영역 가운데. 유동 모드에서는 코드가 left·top 을 누른 자리로 바꾼다 */
+.joystick {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 250px;
+	height: 250px;
+	margin-left: -125px;
+	margin-top: -125px;
+}
+
+.joystick__bg {
+	position: absolute;
+	left: 16px;
+	top: 16px;
+	width: 217px;
+	height: 217px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Joystick/Joystick_Direction_Bg.png");
+}
+
+/* 방향 표시 — 원본 그림은 오른쪽 위 조각. 나머지 셋은 돌리거나 뒤집는다 */
+.joystick__focus {
+	position: absolute;
+	width: 115px;
+	height: 115px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Joystick/Joystick_Direction_Focus.png");
+	visibility: hidden;
+}
+
+.joystick__focus--on {
+	visibility: visible;
+}
+
+.joystick__focus--right-up {
+	left: 123px;
+	top: 13px;
+}
+
+.joystick__focus--right-down {
+	left: 123px;
+	top: 123px;
+	rotate: 90deg;
+}
+
+.joystick__focus--left-up {
+	left: 12px;
+	top: 13px;
+	scale: -1 1;
+}
+
+.joystick__focus--left-down {
+	left: 12px;
+	top: 123px;
+	rotate: 180deg;
+}
+
+.joystick__handle {
+	position: absolute;
+	left: 65px;
+	top: 65px;
+	width: 120px;
+	height: 120px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Common/Joystick/Joystick_Direction_Handle.png");
+}

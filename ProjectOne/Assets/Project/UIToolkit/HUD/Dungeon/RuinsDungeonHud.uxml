@@ -1,0 +1,12 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="DungeonHud.uss" />
+
+	<!-- 유적던전 HUD — 상태줄(단계·남은 시간) -->
+	<ui:VisualElement name="screen" class="dungeon-hud" picking-mode="Ignore">
+		<ui:VisualElement name="state" class="dungeon-state" picking-mode="Ignore">
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-stage" picking-mode="Ignore" /><ui:Label name="stage" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+			<ui:VisualElement class="dungeon-state__row" picking-mode="Ignore"><ui:VisualElement class="dungeon-state__icon picto-time" picking-mode="Ignore" /><ui:Label name="time" text="" class="dungeon-state__text" picking-mode="Ignore" /></ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>
