@@ -1093,8 +1093,8 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 686255445}
-  - {fileID: 403591132}
   - {fileID: 1400792309}
+  - {fileID: 403591132}
   - {fileID: 1371868433}
   m_Father: {fileID: 1905449363}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1200,7 +1200,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 60, y: 0}
-  m_SizeDelta: {x: 39.52, y: 39.52}
+  m_SizeDelta: {x: 40, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1144361902
 MonoBehaviour:
@@ -1222,7 +1222,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: eed3e202b1d08054ab65dacd29d2b180, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 7f4ca2b6d2d288e41974d4479d22a866, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1250,7 +1250,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1371868433}
   m_Layer: 0
-  m_Name: Facebook
+  m_Name: Discord
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1526,7 +1526,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uD398\uC774\uC2A4\uBD81 \uB85C\uADF8\uC778"
+  m_text: "\uB514\uC2A4\uCF54\uB4DC \uB85C\uADF8\uC778"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0237f3547337f7a4ea61311cf1120b73, type: 2}
   m_sharedMaterial: {fileID: 8066740551938045240, guid: 0237f3547337f7a4ea61311cf1120b73, type: 2}
@@ -1641,7 +1641,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 60, y: 0}
-  m_SizeDelta: {x: 44.079998, y: 44.079998}
+  m_SizeDelta: {x: 41, y: 41}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1853087862
 MonoBehaviour:
@@ -1663,7 +1663,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: ac0de647c4e6fc840b0bc26f50ea0e11, type: 3}
+  m_Sprite: {fileID: 6134341406260220851, guid: 0a2b6259b70ff284089a573f1c0ed34d, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1802,7 +1802,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectOne.UI.TitleHUD
   _buttonGuest: {fileID: 431047336}
+  _buttonApple: {fileID: 86441580}
   _buttonGoogle: {fileID: 1602562601}
+  _buttonDiscord: {fileID: 463811544}
+  _appleRow: {fileID: 1400792308}
 --- !u!114 &367058954228614980
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1968,7 +1971,7 @@ GameObject:
   - component: {fileID: 7140534327817796132}
   - component: {fileID: 463811544}
   m_Layer: 0
-  m_Name: Button_Facebook
+  m_Name: Button_Discord
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

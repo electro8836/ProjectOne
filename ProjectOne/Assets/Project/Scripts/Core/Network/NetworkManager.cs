@@ -144,7 +144,7 @@ namespace ProjectOne.Network
 			return _gamerId;
 		}
 
-		// 로그인 타입 → 핸들러. (Apple/Facebook 은 핸들러 추가 시 case 만 늘린다.)
+		// 로그인 타입 → 핸들러. (Apple/Discord 는 핸들러 추가 시 case 만 늘린다.)
 		private ILoginHandler createLoginHandler(LoginType type)
 		{
 			switch (type)

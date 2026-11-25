@@ -6,6 +6,6 @@ namespace ProjectOne.Network
 		Guest,
 		Google,
 		Apple,      // 추후 핸들러 추가
-		Facebook    // 추후 핸들러 추가
+		Discord     // 추후 핸들러 추가
 	}
 }
