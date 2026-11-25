@@ -30,20 +30,10 @@ namespace ProjectOne.Flow
 	// 1.Bootstrap 씬은 이미 로드된 상태이므로 씬 로드는 하지 않는다.
 	public class BootState : IGameState
 	{
-		// UI 전역 캔버스 프리팹 주소.
-		private const string UIManagerAddress = "UIManager";
-
 		public async UniTask EnterAsync(CancellationToken ct)
 		{
 			// 0) 로컬 설정 로드 (가벼움, 타이틀 전 적용)
 			SettingsManager.Instance.Load();
-
-			// 0-1) UIManager 프리팹 배치 — Canvas 3개를 [SerializeField] 로 물고 있어
-			// 프리팹을 띄우지 않으면 MonoSingleton 이 빈 GameObject 를 만들고 오버레이를 열 때 NRE 가 난다.
-			// MonoSingleton.Awake 가 _instance 를 잡고 DontDestroyOnLoad 를 거므로 이후 Instance 가 이걸 찾는다.
-			// (이 시점 이전의 UIManager 접근은 BackndFunctionCaller 뿐이고 HasInstance 로 가드돼 있다.)
-			await AddressableHelper.TryInstantiateAsync(UIManagerAddress, null, false, ct);
-
 
 			// 1) 정적 테이블 일괄 로드 (Addressables 라벨	 "Tables" → 자동생성 EDT.Loader)
 			var (cancelled, ok) = await TableBootLoader.LoadAllAsync(ct).SuppressCancellationThrow();
