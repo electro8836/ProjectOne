@@ -1,8 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 	<Style src="../../Common/Theme.uss" />
 	<Style src="LoadingScreen.uss" />
-	<!-- 로딩 — 타이틀 그림, 아래를 어둡게 물들이고 단계 문구 + 알약 게이지(퍼센트는 막대 안).
-	     시안 Shared/Design/UI로딩_시안.png 3안 -->
+	<!-- 로딩 — 타이틀 그림, 아래를 어둡게 물들이고 단계 문구 + 알약 게이지(퍼센트는 막대 안). -->
 	<ui:VisualElement class="loading">
 		<ui:VisualElement class="loading__shade" picking-mode="Ignore" />
 		<ui:VisualElement class="loading__bottom">

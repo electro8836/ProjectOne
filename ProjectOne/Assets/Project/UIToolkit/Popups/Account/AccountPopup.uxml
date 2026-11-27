@@ -5,7 +5,7 @@
 	<Style src="Account.uss" />
 
 	<!-- 계정 — 닉네임 · UUID 판, 계정 연동(애플은 iOS 만 · 구글 · 디스코드), 로그아웃 · 계정 삭제.
-	     연동된 계정이 없으면 게스트 배지와 경고 줄을 띄운다. 시안 Shared/Design/UI계정연동_시안.png 1안 -->
+	     연동된 계정이 없으면 게스트 배지와 경고 줄을 띄운다. -->
 	<ui:VisualElement name="popup" class="popup theme-violet">
 		<ui:VisualElement name="dim" class="popup__dim" />
 		<ui:VisualElement class="px-paper popup__window">

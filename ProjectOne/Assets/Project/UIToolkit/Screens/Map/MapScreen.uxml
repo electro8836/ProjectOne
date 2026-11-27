@@ -5,7 +5,7 @@
 	<Style src="MapScreen.uss" />
 
 	<!-- 지도 — 보라 제목 판 + 지도(끌어서 이동) + 위쪽 ◀ 맵 이름 ▶ + 오른쪽 현재 위치·확대·축소·설정 버튼 막대.
-	     설정은 같은 화면 위 창(시스템 3 / 지도 아이콘 6, 기기 로컬 저장). 시안 Shared/Design/UI지도화면_시안.png 1안 · UI지도설정_시안.png 1안 -->
+	     설정은 같은 화면 위 창(시스템 3 / 지도 아이콘 6, 기기 로컬 저장). -->
 	<ui:VisualElement name="screen" class="screen screen--full theme-violet map-screen">
 
 		<ui:VisualElement class="header">
@@ -31,7 +31,7 @@
 				<ui:VisualElement name="dots" class="map-select__dots" picking-mode="Ignore" />
 			</ui:VisualElement>
 
-			<!-- 버튼 막대 — 오른쪽 아래, 위에서부터 현재 위치 | 확대 · 축소 | 설정 (시안 Shared/Design/UI지도버튼막대_시안.png A) -->
+			<!-- 버튼 막대 — 오른쪽 아래, 위에서부터 현재 위치 | 확대 · 축소 | 설정 -->
 			<ui:VisualElement class="map-side">
 				<ui:Button name="locate" class="map-side__btn map-side__btn--split"><ui:VisualElement class="map-side__icon map-side__icon--locate" picking-mode="Ignore" /></ui:Button>
 				<ui:Button name="zoom-in" class="map-side__btn"><ui:VisualElement class="map-side__icon map-side__icon--plus" picking-mode="Ignore" /></ui:Button>

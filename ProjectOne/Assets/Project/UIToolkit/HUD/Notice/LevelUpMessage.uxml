@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 	<Style src="../../Common/Theme.uss" />
 	<Style src="Notice.uss" />
-	<!-- 레벨업 — 판 없이 화면 폭 보라 띠(금 선) 위에 금 글자 + 보라 빛. 시안 Shared/Design/UI알림메시지_시안.png 2안 -->
+	<!-- 레벨업 — 판 없이 화면 폭 보라 띠(금 선) 위에 금 글자 + 보라 빛. -->
 	<ui:VisualElement class="notice-layer" picking-mode="Ignore">
 		<ui:VisualElement name="levelup" class="levelup" picking-mode="Ignore">
 			<ui:VisualElement class="levelup__glow" picking-mode="Ignore" />

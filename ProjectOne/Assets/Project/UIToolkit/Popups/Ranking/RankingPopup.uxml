@@ -11,7 +11,7 @@
 				<ui:Label text="전투력 랭킹" class="popup__name item-head__name" />
 				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
 			</ui:VisualElement>
-			<!-- 표 — 머리줄(순위·이름·전투력) + 줄무늬 목록. 시안 Shared/Design/UI랭킹목록_시안.png 4안 -->
+			<!-- 표 — 머리줄(순위·이름·전투력) + 줄무늬 목록. -->
 			<ui:VisualElement class="px-inset rank-list-box popup__body">
 				<ui:VisualElement class="rank-head" picking-mode="Ignore">
 					<ui:Label text="순위" class="rank-head__label rank-head__rank" />

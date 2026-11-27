@@ -21,8 +21,7 @@
 	-unity-text-align: middle-center;
 }
 
-/* 목록 줄 — 카드: 상태 아이콘 · 제목/보낸 사람·날짜 · 첫 첨부 칸. 안 읽음 = 보라 카드 + 빨간 점, 읽음 = 회색 카드.
-   시안 Shared/Design/UI우편함_시안.png 1안 */
+/* 목록 줄 — 카드: 상태 아이콘 · 제목/보낸 사람·날짜 · 첫 첨부 칸. 안 읽음 = 보라 카드 + 빨간 점, 읽음 = 회색 카드. */
 .mail-row {
 	flex-direction: row;
 	align-items: center;
@@ -186,7 +185,7 @@
 	text-shadow: 0 2px 0 #0A0814;
 }
 
-/* ── 우편 한 통 — 제목 · 보낸 사람·날짜 · 본문 판 · 첨부. 시안 Shared/Design/UI우편상세_시안.png 1안 ── */
+/* ── 우편 한 통 — 제목 · 보낸 사람·날짜 · 본문 판 · 첨부. ── */
 .mail-detail__title,
 .mail-detail__meta,
 .mail-detail__text,

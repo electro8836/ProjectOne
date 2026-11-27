@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
 	<Style src="../../Common/Theme.uss" />
 	<Style src="Notice.uss" />
-	<!-- 제한 — 빨강 알약 + ! 아이콘. 시안 Shared/Design/UI알림메시지_시안.png 2안 -->
+	<!-- 제한 — 빨강 알약 + ! 아이콘. -->
 	<ui:VisualElement class="notice-layer" picking-mode="Ignore">
 		<ui:VisualElement name="warning" class="pill pill--warning" picking-mode="Ignore">
 			<ui:VisualElement class="pill__icon pill__icon--warning" picking-mode="Ignore">
