@@ -135,10 +135,11 @@
 	-unity-background-scale-mode: scale-to-fit;
 }
 
-/* 장착 칸 — 152 → 188px 로 키운다(기능 버튼 줄이 빠진 자리를 칸으로 채운다). 4칸 x (188 + 위아래 10) = 792.
+/* 장착 칸 — 152 → 188px 로 키운다(기능 버튼 줄이 빠진 자리를 칸으로 채운다). 4칸 x (188 + 위아래 16) = 816.
+   칸 사이 16px — 칸 위로 튀어나온 티어 배지(13px)가 윗칸에 걸리지 않게.
    시안 Shared/Design/UI장비_D배치_버튼디자인_시안.png */
 .theme-violet .top__body {
-	height: 792px;
+	height: 816px;
 }
 
 .theme-violet .equip-column {
@@ -149,7 +150,7 @@
 .theme-violet .equip-slot {
 	width: 188px;
 	height: 188px;
-	margin: 5px 0;
+	margin: 8px 0;
 }
 
 /* 이름 양옆 장식선은 쓰지 않는다 */
@@ -373,7 +374,8 @@
 }
 
 /* 칸 줄 — 칸 5개가 툴바 양끝(분해 버튼 오른쪽 끝)까지 꽉 차게. 줄 폭 1016 = 칸 196.8 x 5 + 사이 8 x 4.
-   칸 여백 4px 를 줄의 음수 여백으로 상쇄해 양끝을 맞춘다(반올림 넘침을 피해 칸은 196.6) */
+   칸 여백 4px 를 줄의 음수 여백으로 상쇄해 양끝을 맞춘다(반올림 넘침을 피해 칸은 196.6).
+   위 여백 14px — 칸 위로 튀어나온 티어 배지(13px)가 윗줄 칸·스크롤 위 끝에 걸리지 않게 줄 사이를 18px 로 */
 .theme-violet .item-grid {
 	margin: 0 -4px;
 }
@@ -381,7 +383,7 @@
 .theme-violet .item-grid .item-cell {
 	width: 196.6px;
 	height: 196.6px;
-	margin: 4px;
+	margin: 14px 4px 4px 4px;
 }
 
 /* ── 아이템 칸 — 두툼한 둥근 틀(slot_round, 회색조)을 등급 테두리색으로 틴트하고,

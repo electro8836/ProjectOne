@@ -157,10 +157,11 @@
 	justify-content: center;
 }
 
+/* 칸 사이 18px — 칸 위로 튀어나온 티어 배지(13px)가 윗칸에 걸리지 않게. 4칸 x (152 + 18) = 680 */
 .info-slot {
 	width: 152px;
 	height: 152px;
-	margin: 6px 0;
+	margin: 9px 0;
 	background-image: url("../../Pixel/slot_empty.png");
 	-unity-slice-left: 6;
 	-unity-slice-right: 6;

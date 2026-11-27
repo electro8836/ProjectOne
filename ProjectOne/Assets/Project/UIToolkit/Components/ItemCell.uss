@@ -102,6 +102,35 @@
 	right: 14px;
 }
 
+/* 티어 배지 — 칸 가운데 위, 틀 윗변에 걸친 어두운 알약. 테두리·글자는 티어색.
+   칸 위로 13px 튀어나오므로 칸을 줄지어 놓는 목록은 위아래 간격을 16px 이상 둔다 */
+.item-cell__tier {
+	position: absolute;
+	top: -13px;
+	left: 50%;
+	translate: -50% 0;
+	margin: 0;
+	padding: 0 12px 1px 12px;
+	border-radius: 17px;
+	border-width: 3px;
+	border-color: #F5C542;
+	font-size: 24px;
+	color: #F5C542;
+	background-color: #181628;
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.item-cell__tier--2 {
+	border-color: #7FD3FF;
+	color: #7FD3FF;
+}
+
+.item-cell__tier--3 {
+	border-color: #C99BFF;
+	color: #C99BFF;
+}
+
 /* 품질 막대 — 칸 맨 아래, 틀(12px) 안쪽 */
 .item-cell__quality {
 	position: absolute;

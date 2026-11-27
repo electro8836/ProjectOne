@@ -24,6 +24,7 @@ namespace ProjectOne.Shared
 		public int equippedSlot;	// EquipSlotTypes (0 = 미착용)
 		public bool inStash;		// 보관함에 넣어 둔 장비 — 인벤토리 개수에서 빠진다
 		public bool locked;			// 잠근 장비 — 분해되지 않는다
+		public int forgeFails;		// 티어 올리기 연속 실패 횟수 — 성공하면 0 (제작시스템 설계 3.6)
 	}
 
 	// 일괄·자동 분해 조건. 등급은 여러 개를 고를 수 있어 비트로 둔다(비트 번호 = ItemGradeType 값).

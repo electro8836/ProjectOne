@@ -11,21 +11,22 @@ namespace ProjectOne.UI
 {
 	// 제작 화면의 View(MVP, UI Toolkit). 레이아웃은 UIToolkit/Screens/Craft/CraftScreen.uxml.
 	// 네비게이션 바의 Craft 탭으로 열린다 (UIPrefab_CraftInfo).
-	// 모드 탭으로 강화·승급·전이를 바꾸고, 아래 목록에서 고른 장비를 모드별 등록 칸에 올린다.
+	// 모드 탭으로 제작·재련·강화·승급·전이를 바꾼다. 제작은 조합법 트리·목록(CraftUI.Forge.cs)을,
+	// 나머지는 아래 목록에서 고른 장비를 모드별 등록 칸에 올린다.
 	// 표시와 입력 전달만 담당하고, 등록·실행 결정은 CraftPresenter 가 한다.
 	//
-	// 비용·불가 문구·버튼 줄은 세 모드가 함께 쓴다 — Presenter 가 모드별로 알려 준 상태를 기억해 두었다가
+	// 비용·불가 문구·버튼 줄은 제작 외 모드가 함께 쓴다 — Presenter 가 모드별로 알려 준 상태를 기억해 두었다가
 	// 지금 보이는 모드의 것만 그린다.
-	public class CraftUI : ToolkitScreen, IView
+	public partial class CraftUI : ToolkitScreen, IView
 	{
-		private const int MODE_COUNT = 3;
+		private const int MODE_COUNT = 5;
 		private const int FILTER_COUNT = 5;
 
 		private const string MODE_TAB_ON = "craft-seg__item--on";
 		private const string FILTER_TAB_ON = "tab--selected";
 		private const string MODE_CLASS = "craft--mode-";	// + 모드 번호 — 모드 색(빛·화살표·실행 버튼)을 고른다
 
-		private static readonly string[] ActionLabels = { "강화하기", "승급하기", "전이하기" };
+		private static readonly string[] ActionLabels = { "제작하기", "재련하기", "강화하기", "승급하기", "전이하기" };
 
 		[SerializeField] private ItemGradeColorTable _gradeColors;	// 등급 색상 SO
 		[SerializeField] private EDT.Currency[] _headerCurrencies = { EDT.Currency.Gold, EDT.Currency.Dia };	// 제목 줄 재화 캡슐(최대 3)
@@ -105,6 +106,7 @@ namespace ProjectOne.UI
 				_filterTabs[i] = tab;
 			}
 
+			addRegisterSlot(root, "slot-reforge", CraftSlotRoot.Reforge);
 			addRegisterSlot(root, "slot-enhance", CraftSlotRoot.Enhance);
 			addRegisterSlot(root, "slot-promote-prev", CraftSlotRoot.PromotePrev);
 			addRegisterSlot(root, "slot-promote-next", CraftSlotRoot.PromoteNext);
@@ -131,6 +133,7 @@ namespace ProjectOne.UI
 			_grid.AddManipulator(new ScrollDragManipulator(_grid));
 
 			_currencyBar = new HeaderCurrencyBar(root.Q("header-currencies"), _headerCurrencies, _icons, GetDestroyToken());
+			bindForge(root);
 			_presenter.Initialize(this);
 		}
 
@@ -185,13 +188,17 @@ namespace ProjectOne.UI
 			_sortButton.text = label;
 		}
 
-		// 해당 모드 패널만 켜고, 공용 비용·버튼 줄을 그 모드 상태로 다시 그린다.
+		// 해당 모드 패널만 켜고, 공용 비용·버튼 줄을 그 모드 상태로 다시 그린다. 제작 모드는 패널이 없다(조합법 트리가 대신한다).
 		public void ShowMode(CraftMode mode)
 		{
 			_shownMode = mode;
 			for (int i = 0; i < MODE_COUNT; i++)
 			{
-				_panels[i].EnableInClassList("craft-panel--shown", i == (int)mode);
+				if (_panels[i] != null)
+				{
+					_panels[i].EnableInClassList("craft-panel--shown", i == (int)mode);
+				}
+
 				_screen.EnableInClassList(MODE_CLASS + i, i == (int)mode);
 			}
 

@@ -50,6 +50,7 @@ namespace ProjectOne.Shared
 	{
 		public long uid;
 		public CurrencyAmountDto[] gained;
+		public OwnedItemDto[] gainedItems;	// 티어 올리기 제작비 환급 재료 (제작시스템 설계 7장)
 	}
 
 	// 일괄 분해 — 클라가 조건으로 고른 장비들. 서버는 하나씩 다시 확인해 착용·잠금 장비를 건너뛴다.
@@ -65,6 +66,7 @@ namespace ProjectOne.Shared
 	{
 		public long[] uids;
 		public CurrencyAmountDto[] gained;
+		public OwnedItemDto[] gainedItems;	// 티어 올리기 제작비 환급 재료 (제작시스템 설계 7장)
 	}
 
 	// 잠금 저장 요청 — 잠근 장비 UID 전체(최종 상태)를 싣는다. 보관함 저장(SaveStashRequest)과 같은 방식이다.

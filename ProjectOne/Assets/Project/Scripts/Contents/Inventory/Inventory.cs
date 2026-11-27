@@ -391,6 +391,7 @@ namespace ProjectOne.UserData
 				entry.equippedSlot = (int)src.equippedSlot;
 				entry.inStash = src.inStash;
 				entry.locked = src.locked;
+				entry.forgeFails = src.forgeFails;
 				dto.equipments.Add(entry);
 			}
 
@@ -470,6 +471,7 @@ namespace ProjectOne.UserData
 				instance.equippedSlot = (EquipSlotTypes)src.equippedSlot;
 				instance.inStash = src.inStash;
 				instance.locked = src.locked;
+				instance.forgeFails = src.forgeFails;
 
 				_equipments.Add(instance);
 				_equipIndex[instance.uid] = instance;

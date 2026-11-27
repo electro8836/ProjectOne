@@ -1,6 +1,7 @@
 /* 제작 화면 — 바이올렛 (기준 해상도 1080 x 1920, 세로). 제목 판·분류 탭·가방·아이템 칸은 Violet.uss 를 따른다.
    위 작업대는 장비 화면 위 영역과 같은 면(#252A40). 모드 탭은 색 없이 밝은 칸만 움직이고,
-   모드 색(강화 초록 · 승급 금 · 전이 파랑)은 빛·화살표·실행 버튼에만 쓴다 — 루트의 craft--mode-N 이 고른다. */
+   모드 색(재련 보라 · 강화 초록 · 승급 금 · 전이 파랑)은 빛·화살표·실행 버튼에만 쓴다 — 루트의 craft--mode-N 이 고른다.
+   제작 모드는 등록 칸·장비 목록 대신 조합법 트리(forge-*)·조합법 목록(recipe-*)을 보인다 — 시안 UI대장간_제작모드_시안.png A안. */
 
 .craft {
 	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
@@ -10,7 +11,8 @@
 .craft .header,
 .craft-work,
 .craft .tabs,
-.craft .bag__toolbar {
+.craft .bag__toolbar,
+.forge-stage {
 	flex-shrink: 0;
 }
 
@@ -203,33 +205,73 @@
 	background-image: url("../../Violet/btn_danger_large.png");
 }
 
-/* ── 모드 색 ── */
+/* ── 모드 색 — 0 제작 · 1 재련 · 2 강화 · 3 승급 · 4 전이 (CraftMode 순서) ── */
 
-.craft--mode-0 .craft-glow,
-.craft--mode-0 .craft-arrow {
-	-unity-background-image-tint-color: #3CBE6E;
-}
-
-.craft--mode-0 .craft-action {
-	background-image: url("../../Violet/btn_active_large.png");
+.craft--mode-0 .craft-glow {
+	-unity-background-image-tint-color: #A070FF;
 }
 
 .craft--mode-1 .craft-glow,
 .craft--mode-1 .craft-arrow {
-	-unity-background-image-tint-color: #F0AA32;
+	-unity-background-image-tint-color: #B478FF;
 }
 
 .craft--mode-1 .craft-action {
-	background-image: url("../../Violet/btn_gold_large.png");
+	background-image: url("../../Violet/btn_face_large.png");
 }
 
 .craft--mode-2 .craft-glow,
 .craft--mode-2 .craft-arrow {
-	-unity-background-image-tint-color: #508CFF;
+	-unity-background-image-tint-color: #3CBE6E;
 }
 
 .craft--mode-2 .craft-action {
+	background-image: url("../../Violet/btn_active_large.png");
+}
+
+.craft--mode-3 .craft-glow,
+.craft--mode-3 .craft-arrow {
+	-unity-background-image-tint-color: #F0AA32;
+}
+
+.craft--mode-3 .craft-action {
+	background-image: url("../../Violet/btn_gold_large.png");
+}
+
+.craft--mode-4 .craft-glow,
+.craft--mode-4 .craft-arrow {
+	-unity-background-image-tint-color: #508CFF;
+}
+
+.craft--mode-4 .craft-action {
 	background-image: url("../../Violet/btn_blue_large.png");
+}
+
+/* ── 모드별로 보일 영역 — 제작 모드는 조합법 트리·목록, 나머지는 등록 칸·장비 목록 ── */
+
+.forge-only {
+	display: none;
+}
+
+.craft--mode-0 .forge-only {
+	display: flex;
+}
+
+.craft--mode-0 .equip-only {
+	display: none;
+}
+
+.reforge-info {
+	display: none;
+	margin-top: 22px;
+	font-size: 34px;
+	color: #CED3FB;
+	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+.craft--mode-1 .reforge-info {
+	display: flex;
 }
 
 /* ── 분류 탭 (모양은 Violet.uss) ───────────────────── */
@@ -281,4 +323,352 @@
 .craft .item-grid .unity-scroll-view__content-container {
 	flex-direction: row;
 	flex-wrap: wrap;
+}
+
+/* ── 제작: 조합법 트리 ───────────────────────────── */
+
+.forge-stage {
+	align-items: center;
+	margin-top: 26px;
+	padding-bottom: 6px;
+}
+
+/* 아이템 칸 상자 — 칸(ItemCellView)은 상자를 꽉 채운다. 보유량·체크는 칸 위에 얹는다 */
+.forge-cell {
+	width: 150px;
+	height: 150px;
+}
+
+.forge-cell .item-cell {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	margin: 0;
+	width: auto;
+	height: auto;
+}
+
+.forge-cell--result {
+	width: 200px;
+	height: 200px;
+	transition-property: scale;
+	transition-duration: 0.3s;
+	transition-timing-function: ease-out-back;
+}
+
+.forge-branch {
+	left: 95px;
+	right: 95px;
+}
+
+/* 결과 칸 뒤 금색 선택 빛 */
+.forge-cell--result .item-cell {
+	border-width: 4px;
+	border-color: #F0C850;
+	border-radius: 28px;
+}
+
+.forge-cell--sub {
+	width: 108px;
+	height: 108px;
+}
+
+/* 모자란 재료 — 빨간 테두리 */
+.forge-cell__short {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	border-width: 5px;
+	border-color: #FF6060;
+	border-radius: 24px;
+	display: none;
+}
+
+.forge-mat--short .forge-cell__short {
+	display: flex;
+}
+
+/* 보유량/필요량 — 칸 아래쪽 가운데 */
+.forge-count {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 10px;
+	margin: 0;
+	font-size: 28px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.forge-mat--short .forge-count {
+	color: #FF6060;
+}
+
+.forge-cell--sub .forge-count {
+	font-size: 22px;
+	bottom: 4px;
+}
+
+/* 보유한 이전 장비 — 오른쪽 위 초록 체크 */
+.forge-check {
+	position: absolute;
+	right: -8px;
+	top: -8px;
+	width: 44px;
+	height: 44px;
+	border-width: 4px;
+	border-color: #0A0814;
+	border-radius: 22px;
+	background-color: #3CBE6E;
+	font-size: 26px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	display: none;
+}
+
+.forge-mat--owned .forge-check {
+	display: flex;
+}
+
+/* 이름 글자 */
+.forge-name {
+	margin: 8px 0 0 0;
+	font-size: 28px;
+	color: #CED3FB;
+	-unity-text-align: upper-center;
+	white-space: nowrap;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+.forge-name--result {
+	margin-top: 10px;
+	font-size: 38px;
+	color: #FFFFFF;
+	text-shadow: 0 3px 0 #0A0814;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+}
+
+.forge-mat--short .forge-name {
+	color: #FF6060;
+}
+
+/* 결과 → 재료 줄 ㄱ자 연결선 */
+.forge-trunk {
+	width: 6px;
+	height: 28px;
+	background-color: #5C6496;
+}
+
+.forge-mats {
+	flex-direction: row;
+	justify-content: center;
+	padding-top: 24px;
+}
+
+.forge-branch {
+	position: absolute;
+	top: 0;
+	height: 6px;
+	background-color: #5C6496;
+}
+
+.forge-mat {
+	width: 190px;
+	align-items: center;
+}
+
+/* 칸 위로 가로선까지 올라가는 짧은 선 */
+.forge-mat__stub {
+	position: absolute;
+	top: -24px;
+	width: 6px;
+	height: 24px;
+	background-color: #5C6496;
+}
+
+/* 하위 재료 한 층 — 칸들 + 금색 조합 버튼. 없을 때도 자리는 남긴다(visibility) */
+.forge-sub {
+	flex-direction: row;
+	align-items: center;
+	justify-content: center;
+	height: 160px;
+	margin-top: 12px;
+}
+
+.forge-sub__cells {
+	flex-direction: row;
+	align-items: flex-start;
+}
+
+.forge-sub .forge-mat {
+	width: 180px;
+}
+
+.forge-sub .forge-name {
+	width: 176px;
+	font-size: 22px;
+	white-space: normal;
+}
+
+/* 테마의 .theme-violet .btn 보다 늦게 오도록 .craft 를 붙인다 */
+.craft .forge-sub__button {
+	width: 140px;
+	height: 72px;
+	margin-left: 20px;
+	padding: 0;
+	background-image: url("../../Violet/btn_gold_large.png");
+	font-size: 32px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+}
+
+/* 제작하기 — 연두 큰 버튼 안 두 줄(제목 + 성공 확률) */
+.craft .forge-action {
+	width: 480px;
+	height: 128px;
+	margin-top: 8px;
+	padding: 0;
+	align-items: center;
+	justify-content: center;
+	background-image: url("../../Violet/btn_enchant.png");
+	-unity-slice-left: 30;
+	-unity-slice-right: 30;
+	-unity-slice-top: 0;
+	-unity-slice-bottom: 0;
+	-unity-slice-scale: 1px;
+}
+
+.forge-action__title {
+	margin: 0;
+	font-size: 48px;
+	color: #FFFFFF;
+	-unity-text-outline-width: 2px;
+	-unity-text-align: middle-center;
+}
+
+.forge-action__rate {
+	margin: 0;
+	font-size: 28px;
+	color: #F4FFE0;
+	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+.forge-hint {
+	margin-top: 10px;
+	font-size: 26px;
+	color: #8E93B8;
+	-unity-text-align: middle-center;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+.forge-empty {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 220px;
+	font-size: 36px;
+	color: #8E93B8;
+	-unity-text-align: middle-center;
+	display: none;
+}
+
+.forge-stage--empty > * {
+	visibility: hidden;
+}
+
+.forge-stage--empty .forge-empty {
+	visibility: visible;
+	display: flex;
+}
+
+/* ── 제작: 조합법 목록 ───────────────────────────── */
+
+.recipe-tab {
+	flex-grow: 1;
+	flex-basis: 0;
+	font-size: 36px;
+}
+
+.craft .recipe-bag {
+	padding-top: 18px;
+}
+
+.recipe-list {
+	flex-grow: 1;
+	flex-shrink: 1;
+}
+
+.recipe-row {
+	flex-direction: row;
+	align-items: center;
+	height: 140px;
+	margin-bottom: 12px;
+	padding: 0 20px 0 14px;
+	border-width: 4px;
+	border-color: rgba(0, 0, 0, 0);
+	border-radius: 22px;
+	background-color: #2B2550;
+}
+
+.recipe-row--selected {
+	border-color: #F0C850;
+}
+
+.recipe-row .forge-cell {
+	width: 112px;
+	height: 112px;
+}
+
+/* 작은 칸(112px)은 티어 배지도 줄인다(줄 안쪽 위 여백 14px 안에 들어간다) */
+.craft .recipe-row .item-cell__tier {
+	top: -10px;
+	padding: 0 8px 0 8px;
+	border-width: 2px;
+	font-size: 18px;
+}
+
+.recipe-row__texts {
+	flex-grow: 1;
+	margin-left: 22px;
+}
+
+.recipe-row__name {
+	margin: 0;
+	font-size: 38px;
+	color: #FFFFFF;
+	text-shadow: 0 3px 0 #0A0814;
+}
+
+.recipe-row__sub {
+	margin: 4px 0 0 0;
+	font-size: 28px;
+	color: #A8A2CC;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+}
+
+/* 상태 알약 */
+.recipe-pill {
+	min-width: 150px;
+	height: 54px;
+	margin: 0;
+	padding: 0 18px;
+	border-radius: 27px;
+	background-color: #14121F;
+	font-size: 28px;
+	color: #9A97B8;
+	-unity-text-align: middle-center;
+}
+
+.recipe-pill--ok {
+	color: #7CF08A;
+}
+
+.recipe-pill--short {
+	color: #FF6060;
 }

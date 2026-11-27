@@ -41,5 +41,7 @@ namespace ProjectOne.Shared
 		public const string RankList = "RankList";
 		public const string RankProfile = "RankProfile";
 		public const string ChangeNickname = "ChangeNickname";
+		public const string ForgeCraft = "ForgeCraft";
+		public const string ForgeReforge = "ForgeReforge";
 	}
 }

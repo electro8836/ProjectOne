@@ -147,6 +147,10 @@ namespace BackendFunction
 					return new DailyBonusFunctions().DailyBonusClaim();
 				case FunctionName.HeroPassClaim:
 					return new HeroPassFunctions().HeroPassClaim();
+				case FunctionName.ForgeCraft:
+					return new ForgeFunctions().ForgeCraft();
+				case FunctionName.ForgeReforge:
+					return new ForgeFunctions().ForgeReforge();
 				default:
 					return FuncResult.Error("unknown action: " + action);
 			}

@@ -12,7 +12,8 @@ namespace ProjectOne.Upgrade
 {
 	// 장비 분해 — 장비를 없애고 등급·강화에 드는 주 재화의 일부를 돌려받는다.
 	//
-	// 환급량은 서버가 공유 규칙(EquipmentGrowthRules.GetDecomposeRefund)으로 계산한다.
+	// 환급량은 서버가 공유 규칙(EquipmentGrowthRules.GetDecomposeRefund + ForgeRules.AddDecomposeRefund)으로 계산한다.
+	// 티어 올리기로 만든 장비는 그 제작비(재료·재화)의 일부도 돌려받는다.
 	// 실행은 서버 권위다 — 클라는 요청만 하고, 성공 응답을 반영한다.
 	// 자동 분해만 예외다 — 획득 시점에 서버와 같은 조건으로 각자 판정한다(TryAutoDecompose).
 	public static class EquipmentDecompose
@@ -44,6 +45,7 @@ namespace ProjectOne.Upgrade
 
 			removeEquipment(data.uid);
 			addGained(data.gained);
+			addGainedItems(data.gainedItems);
 		}
 
 		// ── 일괄 분해 ─────────────────────────────────────────────────
@@ -97,6 +99,7 @@ namespace ProjectOne.Upgrade
 			}
 
 			addGained(data.gained);
+			addGainedItems(data.gainedItems);
 		}
 
 		// ── 자동 분해 ─────────────────────────────────────────────────
@@ -164,6 +167,20 @@ namespace ProjectOne.Upgrade
 			for (int i = 0; i < gained.Length; i++)
 			{
 				addCurrency((EDT.Currency)gained[i].currencyId, gained[i].amount);
+			}
+		}
+
+		private static void addGainedItems(OwnedItemDto[] gained)
+		{
+			if (gained == null)
+			{
+				return;
+			}
+
+			for (int i = 0; i < gained.Length; i++)
+			{
+				Account.Instance.Inventory.Add(gained[i].itemId, gained[i].count);
+				EventManager.Instance.Publish(new RewardAcquiredEvent(RewardType.Item, gained[i].itemId, EDT.Currency.None, gained[i].count, ItemGradeType.None, 0, false));
 			}
 		}
 

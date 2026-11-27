@@ -519,6 +519,30 @@ namespace ProjectOne.Network
 			_caller.Invoke<EquipmentTransferRequest, EquipmentGrowthResponse>(FunctionName.EquipmentTransfer, request, callback);
 		}
 
+		// 제작 — 재료 조합·기초 제작·티어 올리기. 확률은 서버가 굴린다.
+		public void RequestForgeCraft(ForgeCraftRequest request, ResponseCallback<ForgeCraftResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<ForgeCraftRequest, ForgeCraftResponse>(FunctionName.ForgeCraft, request, callback);
+		}
+
+		// 재련 — 품질 상승량은 서버가 굴린다.
+		public void RequestForgeReforge(ForgeReforgeRequest request, ResponseCallback<ForgeReforgeResponse> callback)
+		{
+			if (ensureLoggedIn(callback) == false)
+			{
+				return;
+			}
+
+			FlushFieldBatch();
+			_caller.Invoke<ForgeReforgeRequest, ForgeReforgeResponse>(FunctionName.ForgeReforge, request, callback);
+		}
+
 		// 분해 — 서버가 장비를 없애고 주 재화 일부를 돌려준다.
 		// 서버는 저장된 착용·보관 상태로 판정하므로, 아직 보내지 않은 장착·보관함 변경을 앞에 보낸다(SendQueue 순서).
 		public void RequestEquipmentDecompose(EquipmentDecomposeRequest request, ResponseCallback<EquipmentDecomposeResponse> callback)

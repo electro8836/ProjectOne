@@ -127,6 +127,48 @@ namespace BackendFunction
 
 			return false;
 		}
+
+		// 스택 아이템을 더한다 — 분해 환급 재료.
+		public static void AddItems(InventoryDto inventory, List<ItemCost> items)
+		{
+			for (int i = 0; i < items.Count; i++)
+			{
+				addItem(inventory, items[i].itemId, items[i].count);
+			}
+		}
+
+		// 응답용 DTO 배열로 바꾼다.
+		public static OwnedItemDto[] ToItemDto(List<ItemCost> items)
+		{
+			OwnedItemDto[] result = new OwnedItemDto[items.Count];
+			for (int i = 0; i < items.Count; i++)
+			{
+				OwnedItemDto item = new OwnedItemDto();
+				item.itemId = items[i].itemId;
+				item.count = items[i].count;
+				result[i] = item;
+			}
+
+			return result;
+		}
+
+		private static void addItem(InventoryDto inventory, int itemId, int count)
+		{
+			for (int i = 0; i < inventory.items.Count; i++)
+			{
+				OwnedItemDto item = inventory.items[i];
+				if (item != null && item.itemId == itemId)
+				{
+					item.count += count;
+					return;
+				}
+			}
+
+			OwnedItemDto added = new OwnedItemDto();
+			added.itemId = itemId;
+			added.count = count;
+			inventory.items.Add(added);
+		}
 	}
 
 	// 재화 DTO 공용 조작 — 성장 비용 차감.

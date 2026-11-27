@@ -55,6 +55,7 @@
 .reward__grid .unity-scroll-view__content-container {
 	flex-direction: row;
 	flex-wrap: wrap;
+	padding-top: 6px;	/* 첫 줄 칸 위로 튀어나온 티어 배지(13px)가 스크롤 위 끝에 잘리지 않게(칸 위 여백 8 + 6) */
 }
 
 .reward__grid .item-cell {

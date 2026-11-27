@@ -9,13 +9,17 @@ using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
-	// 아이템 칸 1개 (UI구조_설계.md 5) — 등급 틀·바탕·아이콘·분류 배지·레벨·개수·품질 막대·잠금·장착 표시.
+	// 아이템 칸 1개 (UI구조_설계.md 5) — 등급 틀·바탕·아이콘·분류 배지·레벨·개수·티어·품질 막대·잠금·장착 표시.
 	// 스타일은 UIToolkit/Components/ItemCell.uss (Theme.uss 가 가져온다).
 	//
 	// 요소는 코드로 만든다 — 어느 화면이든 템플릿 연결 없이 new 한 번으로 칸을 붙인다.
 	// 아이콘은 소유 화면의 ToolkitIconLoader 로 받는다(화면이 닫힐 때 한꺼번에 해제).
 	public sealed class ItemCellView
 	{
+		// 티어별 색 클래스(item-cell__tier--N). 이보다 높은 티어는 기본색으로 보인다
+		private const string TIER_CLASS_PREFIX = "item-cell__tier--";
+		private const int TIER_CLASS_MAX = 3;
+
 		private readonly ItemGradeColorTable _colors;
 		private readonly ToolkitIconLoader _icons;
 
@@ -28,6 +32,7 @@ namespace ProjectOne.UI
 		private readonly VisualElement _equip;
 		private readonly Label _level;
 		private readonly Label _count;
+		private readonly Label _tier;
 		private readonly VisualElement _quality;
 		private readonly VisualElement _qualityFill;
 
@@ -80,6 +85,8 @@ namespace ProjectOne.UI
 			_equip.Add(equipText);
 			_level = addLabel("item-cell__level", string.Empty);
 			_count = addLabel("item-cell__count", string.Empty);
+			// 티어 배지 — 레벨 줄 오른쪽 끝(개수와 같은 자리). 개수는 스택 아이템만, 티어는 장비만 쓰므로 함께 보이지 않는다
+			_tier = addLabel("item-cell__tier", string.Empty);
 			_quality = addChild("item-cell__quality");
 			_qualityFill = new VisualElement();
 			_qualityFill.AddToClassList("item-cell__quality-fill");
@@ -104,6 +111,7 @@ namespace ProjectOne.UI
 			setShown(_level, true);
 			_level.text = "레벨 " + instance.level;
 			setShown(_count, false);
+			applyTier(instance.itemId);
 
 			setShown(_quality, true);
 			float rate = ProjectOne.Shared.EquipmentQuality.ToRate(instance.quality);
@@ -129,6 +137,7 @@ namespace ProjectOne.UI
 
 			setShown(_count, count > 1);
 			_count.text = count.ToString();
+			applyTier((count > 1 || row == null) ? 0 : row.ID);
 
 			return _icons.SetAsync(_icon, (row != null) ? row.Icon : string.Empty, ct);
 		}
@@ -145,6 +154,7 @@ namespace ProjectOne.UI
 			SetEquipped(false);
 			SetLocked(false);
 			setShown(_quality, false);
+			setShown(_tier, false);
 
 			setShown(_count, true);
 			_count.text = count.ToString();
@@ -162,6 +172,7 @@ namespace ProjectOne.UI
 			setShown(_type, false);
 			setShown(_level, false);
 			setShown(_count, false);
+			setShown(_tier, false);
 			setShown(_quality, false);
 			SetEquipped(false);
 			SetLocked(false);
@@ -239,6 +250,23 @@ namespace ProjectOne.UI
 			_root.style.unityBackgroundImageTintColor = gc.border;
 			_bg.style.backgroundColor = gc.bg;
 			_bg.style.unityBackgroundImageTintColor = gc.bg;	// 바탕 판이 그라데이션 이미지인 테마(바이올렛)는 틴트로 칠한다
+		}
+
+		// 티어 배지 — 장비만 보인다(장비가 아니면 GetTier 가 0). 색은 티어별 클래스(ItemCell.uss)가 정한다.
+		private void applyTier(int itemId)
+		{
+			int tier = (itemId > 0) ? ProjectOne.Shared.ForgeRules.GetTier(itemId) : 0;
+			setShown(_tier, tier > 0);
+			if (tier <= 0)
+			{
+				return;
+			}
+
+			_tier.text = "T" + tier;
+			for (int i = 1; i <= TIER_CLASS_MAX; i++)
+			{
+				_tier.EnableInClassList(TIER_CLASS_PREFIX + i, i == tier);
+			}
 		}
 
 		// 분류 배지 — 바탕은 등급과 무관한 고정색(ItemCell.uss). 아이콘은 Atlas_Icon 에 상주하므로 동기로 바로 입힌다. 분류가 없으면(재료·수집품) 배지를 감춘다.

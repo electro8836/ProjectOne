@@ -3,7 +3,7 @@
 	<Style src="../../Common/Violet.uss" />
 	<Style src="CraftScreen.uss" />
 
-	<!-- CraftUI.ShowMode 가 루트에 붙이는 모드 클래스가 모드 색(빛·화살표·실행 버튼)을 고른다 -->
+	<!-- 제작 화면. CraftUI.ShowMode 가 루트에 붙이는 모드 클래스(craft 모드 번호)가 모드 색과, 제작 모드에서 보일 영역을 고른다 -->
 	<ui:VisualElement name="screen" class="screen theme-violet craft">
 
 		<!-- 제목 판: 장비·상점과 같은 보라 판 + 재화 (닫기는 네비게이션 바 탭을 다시 누른다) -->
@@ -20,51 +20,83 @@
 			</ui:VisualElement>
 		</ui:VisualElement>
 
-		<!-- 작업대: 모드 탭 · 등록 칸 · 재료 띠 · 버튼 -->
+		<!-- 작업대: 모드 탭 · 모드별 무대 -->
 		<ui:VisualElement class="craft-work">
 			<ui:VisualElement class="header-shadow" picking-mode="Ignore" />
 			<ui:VisualElement class="craft-glow" picking-mode="Ignore" />
 
-			<!-- 모드 탭 — 어두운 홈 하나에 선택 칸만 밝게(색은 실행 버튼에만) -->
+			<!-- 모드 탭 — 어두운 홈 하나에 선택 칸만 밝게(색은 실행 버튼에만). 순서는 CraftMode 와 같다 -->
 			<ui:VisualElement class="craft-seg">
-				<ui:Button name="mode-0" text="강화" class="craft-seg__item" />
-				<ui:Button name="mode-1" text="승급" class="craft-seg__item" />
-				<ui:Button name="mode-2" text="전이" class="craft-seg__item" />
+				<ui:Button name="mode-0" text="제작" class="craft-seg__item" />
+				<ui:Button name="mode-1" text="재련" class="craft-seg__item" />
+				<ui:Button name="mode-2" text="강화" class="craft-seg__item" />
+				<ui:Button name="mode-3" text="승급" class="craft-seg__item" />
+				<ui:Button name="mode-4" text="전이" class="craft-seg__item" />
+			</ui:VisualElement>
+
+			<!-- 제작: 고른 조합법의 트리 — 결과 → 재료 줄 → 모자란 하위 재료 한 층 → 제작 버튼 -->
+			<ui:VisualElement name="forge-stage" class="forge-only forge-stage">
+				<ui:VisualElement name="forge-result" class="forge-cell forge-cell--result" />
+				<ui:Label name="forge-result-name" text="" class="forge-name forge-name--result" />
+				<ui:VisualElement class="forge-trunk" picking-mode="Ignore" />
+				<!-- 재료 칸은 CraftUI 가 만든다. forge-branch 는 칸 위를 잇는 가로선 -->
+				<ui:VisualElement name="forge-mats" class="forge-mats">
+					<ui:VisualElement name="forge-branch" class="forge-branch" picking-mode="Ignore" />
+				</ui:VisualElement>
+				<!-- 하위 재료 한 층 — 모자란 재료 하나를 바로 조합하러 가는 길. 없으면 자리만 남긴다 -->
+				<ui:VisualElement name="forge-sub" class="forge-sub">
+					<ui:VisualElement name="forge-sub-cells" class="forge-sub__cells" />
+					<ui:Button name="forge-sub-button" text="조합" class="btn forge-sub__button" />
+				</ui:VisualElement>
+				<ui:Button name="forge-action" class="btn forge-action">
+					<ui:Label name="forge-action-title" text="제작하기" class="forge-action__title" picking-mode="Ignore" />
+					<ui:Label name="forge-action-rate" text="" class="forge-action__rate" picking-mode="Ignore" />
+				</ui:Button>
+				<ui:Label name="forge-hint" text="" class="forge-hint" />
+				<ui:Label name="forge-empty" text="아래에서 조합법을 고르세요" class="forge-empty" />
+			</ui:VisualElement>
+
+			<!-- 재련: 칸 하나 -->
+			<ui:VisualElement name="panel-1" class="craft-panel">
+				<ui:VisualElement name="slot-reforge" class="craft-slot"><ui:Label text="장비 선택" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
 			</ui:VisualElement>
 
 			<!-- 강화: 칸 하나 -->
-			<ui:VisualElement name="panel-0" class="craft-panel">
+			<ui:VisualElement name="panel-2" class="craft-panel">
 				<ui:VisualElement name="slot-enhance" class="craft-slot"><ui:Label text="장비 선택" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
 			</ui:VisualElement>
 
 			<!-- 승급: 현재 → 승급 후 -->
-			<ui:VisualElement name="panel-1" class="craft-panel">
+			<ui:VisualElement name="panel-3" class="craft-panel">
 				<ui:VisualElement name="slot-promote-prev" class="craft-slot"><ui:Label text="장비 선택" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
 				<ui:VisualElement class="craft-arrow" picking-mode="Ignore" />
 				<ui:VisualElement name="slot-promote-next" class="craft-slot craft-slot--preview"><ui:Label text="승급 후" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
 			</ui:VisualElement>
 
 			<!-- 전이: 재료 → 대상 -->
-			<ui:VisualElement name="panel-2" class="craft-panel">
+			<ui:VisualElement name="panel-4" class="craft-panel">
 				<ui:VisualElement name="slot-transfer-source" class="craft-slot"><ui:Label text="재료 장비" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
 				<ui:VisualElement class="craft-arrow" picking-mode="Ignore" />
 				<ui:VisualElement name="slot-transfer-target" class="craft-slot"><ui:Label text="대상 장비" class="craft-slot__hint" picking-mode="Ignore" /></ui:VisualElement>
 			</ui:VisualElement>
 
-			<!-- 재료 띠 (모드 공용) — 재료 또는 불가 문구. 등록한 것이 없으면 자리만 남기고 숨긴다 -->
-			<ui:VisualElement name="requirement" class="craft-cost">
+			<!-- 재련 품질 안내 (재련 모드만) -->
+			<ui:Label name="reforge-info" text="" class="reforge-info" />
+
+			<!-- 재료 띠 (제작 외 모드 공용) — 재료 또는 불가 문구. 등록한 것이 없으면 자리만 남기고 숨긴다 -->
+			<ui:VisualElement name="requirement" class="craft-cost equip-only">
 				<ui:VisualElement name="cost-row" class="craft-cost__row" />
 				<ui:Label name="disable-text" text="" class="craft-cost__disable" />
 			</ui:VisualElement>
 
-			<ui:VisualElement class="craft-buttons">
+			<ui:VisualElement class="craft-buttons equip-only">
 				<ui:Button name="cancel-button" text="취소" class="btn btn--red craft-button" />
 				<ui:Button name="action-button" text="강화하기" class="btn craft-button craft-action" />
 			</ui:VisualElement>
 		</ui:VisualElement>
 
-		<!-- 분류 탭 (전체는 글자, 나머지는 분류 아이콘) -->
-		<ui:VisualElement class="tabs">
+		<!-- 분류 탭 (전체는 글자, 나머지는 분류 아이콘) — 제작 외 모드 -->
+		<ui:VisualElement class="tabs equip-only">
 			<ui:Button name="filter-0" text="전체" class="tab" />
 			<ui:Button name="filter-1" text="" class="tab"><ui:VisualElement class="tab__icon type-weapon" picking-mode="Ignore" /></ui:Button>
 			<ui:Button name="filter-2" text="" class="tab"><ui:VisualElement class="tab__icon type-armor" picking-mode="Ignore" /></ui:Button>
@@ -72,14 +104,28 @@
 			<ui:Button name="filter-4" text="" class="tab"><ui:VisualElement class="tab__icon type-relic" picking-mode="Ignore" /></ui:Button>
 		</ui:VisualElement>
 
-		<!-- 장비 목록 -->
-		<ui:VisualElement class="px-paper bag">
+		<!-- 장비 목록 — 제작 외 모드 -->
+		<ui:VisualElement class="px-paper bag equip-only">
 			<ui:VisualElement class="bag__toolbar">
 				<ui:Label text="장비" class="bag__caption" />
 				<ui:Label name="count" text="" class="bag__capacity" />
 				<ui:Button name="sort-button" text="" class="btn btn--small btn--gold bag__button" />
 			</ui:VisualElement>
 			<ui:ScrollView name="grid" class="item-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+		</ui:VisualElement>
+
+		<!-- 조합법 분류 탭 — 제작 모드. 순서는 CraftPresenter 의 RECIPE_TAB_* 와 같다 -->
+		<ui:VisualElement class="tabs forge-only recipe-tabs">
+			<ui:Button name="recipe-tab-0" text="재료" class="tab recipe-tab" />
+			<ui:Button name="recipe-tab-1" text="대검" class="tab recipe-tab" />
+			<ui:Button name="recipe-tab-2" text="단검" class="tab recipe-tab" />
+			<ui:Button name="recipe-tab-3" text="수리검" class="tab recipe-tab" />
+			<ui:Button name="recipe-tab-4" text="소총" class="tab recipe-tab" />
+		</ui:VisualElement>
+
+		<!-- 조합법 목록 — 제작 모드. 행은 CraftUI 가 만든다 -->
+		<ui:VisualElement class="px-paper bag forge-only recipe-bag">
+			<ui:ScrollView name="recipe-list" class="recipe-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
 		</ui:VisualElement>
 	</ui:VisualElement>
 </ui:UXML>

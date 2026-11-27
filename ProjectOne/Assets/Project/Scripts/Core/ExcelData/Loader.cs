@@ -238,6 +238,28 @@ namespace EDT {
             }
             #endregion
 
+            #region Table - ForgeRecipe
+            {
+                CurrentFile = Table_ForgeRecipe.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ForgeRecipe._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
+            #region Table - ForgeReforge
+            {
+                CurrentFile = Table_ForgeReforge.Filename;
+                reader = open_file_functor( CurrentFile );
+                if( Load( reader, Table_ForgeReforge._parser ) == false ) {
+                    return false;
+                }
+                if( callback != null ) { callback( CurrentFile ); }
+            }
+            #endregion
+
             #region Table - Item
             {
                 CurrentFile = Table_Item.Filename;

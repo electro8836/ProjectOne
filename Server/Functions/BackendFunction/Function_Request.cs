@@ -41,6 +41,8 @@ namespace BackendFunction
 				case FunctionName.MailReceive:
 				case FunctionName.ChangeNickname:
 				case FunctionName.BossSummon:
+				case FunctionName.ForgeCraft:
+				case FunctionName.ForgeReforge:
 					return true;
 			}
 

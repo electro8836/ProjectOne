@@ -23,6 +23,9 @@ namespace ProjectOne.Items
 		// 잠근 장비. 분해(단일·일괄·자동)되지 않는다.
 		public bool locked;
 
+		// 티어 올리기 연속 실패 횟수. 실패할 때마다 성공 확률이 오르고, 성공하면 0 이 된다 (제작시스템 설계 3.6).
+		public int forgeFails;
+
 		public bool IsEquipped
 		{
 			get { return equippedSlot != EquipSlotTypes.None; }

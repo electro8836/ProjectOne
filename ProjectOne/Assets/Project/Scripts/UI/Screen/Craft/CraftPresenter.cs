@@ -3,6 +3,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Event;
+using ProjectOne.Forge;
 using ProjectOne.Items;
 using ProjectOne.Network;
 using ProjectOne.Shared;
@@ -12,9 +13,11 @@ using UnityEngine;
 
 namespace ProjectOne.UI
 {
-	// 제작 모드 — 프리펩 TabMenu_Side 의 Hierarchy 순서와 일대일로 맞춘다.
+	// 제작 화면 모드 — CraftScreen.uxml 의 mode-0 ~ mode-4 순서와 일대일로 맞춘다.
 	public enum CraftMode
 	{
+		Craft,		// 조합법 (CraftPresenter.Forge.cs)
+		Reforge,
 		Enhance,
 		Promote,
 		Transfer,
@@ -23,6 +26,7 @@ namespace ProjectOne.UI
 	// 장비를 올려 두는 등록 칸.
 	public enum CraftSlotRoot
 	{
+		Reforge,
 		Enhance,		// Enhance/ItemRoot
 		PromotePrev,	// Promote/PrevItemRoot — 현재 장비
 		PromoteNext,	// Promote/NextItemRoot — 승급 후 미리보기
@@ -37,8 +41,9 @@ namespace ProjectOne.UI
 		public bool equipped;
 	}
 
-	// 제작 화면 Presenter — 모드·필터 탭 상태와 등록된 장비를 들고, 강화·승급·전이 로직(ProjectOne.Upgrade)을 호출한다.
-	public sealed class CraftPresenter : Presenter<CraftUI>
+	// 제작 화면 Presenter — 모드·필터 탭 상태와 등록된 장비를 들고, 강화·승급·전이 로직(ProjectOne.Upgrade)과
+	// 재련(ProjectOne.Forge)을 호출한다. 제작 모드(조합법)는 CraftPresenter.Forge.cs 가 맡는다.
+	public sealed partial class CraftPresenter : Presenter<CraftUI>
 	{
 		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
 
@@ -52,6 +57,7 @@ namespace ProjectOne.UI
 		private const string MSG_MAX_LEVEL = "최대 강화 레벨입니다.";
 		private const string MSG_MAX_GRADE = "최대 등급입니다.";
 		private const string MSG_NOT_MAX_LEVEL = "강화 레벨을 최대로 올려야 승급할 수 있습니다.";
+		private const string MSG_MAX_QUALITY = "품질이 이미 최대입니다.";
 
 		// 그리드 정렬 기준 — Button_Sorting 클릭 시 선언 순서대로 순환한다 (EquipmentPresenter 와 같은 규칙).
 		private enum SortModes
@@ -64,11 +70,12 @@ namespace ProjectOne.UI
 		private const int SORT_MODE_COUNT = 3;
 		private const string SORT_MODE_PREF_KEY = "CraftSortMode";
 
-		private CraftMode _mode = CraftMode.Enhance;
+		private CraftMode _mode = CraftMode.Craft;
 		private int _filterTab = TAB_ALL;
 		private SortModes _sortMode = SortModes.Grade;
 
 		// 모드별 등록 장비 UID. 0 이면 빈 칸.
+		private long _reforgeUid;
 		private long _enhanceUid;
 		private long _promoteUid;
 		private long _sourceUid;
@@ -76,6 +83,7 @@ namespace ProjectOne.UI
 
 		// 이번 rebuild 끝에 실행 성공 연출을 재생할지. 실행 성공 응답에서만 채운다.
 		private bool _pendingPop;
+		private bool _pendingForgePop;	// 제작 성공 — 결과 칸 강조
 
 		// 승급·전이 서버 응답 대기 중 — 응답 전 재실행을 막는다. 강화는 EnhanceBatcher 가 묶어 보내므로 쓰지 않는다.
 		private bool _pendingGrowth;
@@ -104,6 +112,7 @@ namespace ProjectOne.UI
 			EventManager.Instance.Subscribe<InventoryChangeEvent>(onInventoryChanged);
 			EventManager.Instance.Subscribe<ResourceChangeEvent>(onResourceChanged);
 
+			initializeForge();
 			loadSortMode();
 		}
 
@@ -133,17 +142,19 @@ namespace ProjectOne.UI
 			EventManager.Instance.Unsubscribe<EquipmentChangeEvent>(onEquipmentChanged);
 			EventManager.Instance.Unsubscribe<InventoryChangeEvent>(onInventoryChanged);
 			EventManager.Instance.Unsubscribe<ResourceChangeEvent>(onResourceChanged);
+			disposeForge();
 		}
 
-		// 열 때마다 강화 모드·전체 탭·빈 등록 칸에서 시작한다.
+		// 열 때마다 제작 모드·전체 탭·빈 등록 칸에서 시작한다. 조합법 탭과 고른 조합법은 이어서 보인다.
 		public override UniTask OnOpenAsync(CancellationToken ct)
 		{
-			_mode = CraftMode.Enhance;
+			_mode = CraftMode.Craft;
 			_filterTab = TAB_ALL;
 			clearAllRegistrations();
 
 			view.SelectModeTab((int)_mode);	// Select 는 OnTabChanged 를 발행하지 않으므로 직접 rebuild
 			view.SelectFilterTab(_filterTab);
+			view.SelectRecipeTab(_recipeTab);
 			view.ShowMode(_mode);
 			view.SetSortLabel(getSortLabel(_sortMode));
 
@@ -214,6 +225,10 @@ namespace ProjectOne.UI
 		{
 			switch (_mode)
 			{
+			case CraftMode.Reforge:
+				_reforgeUid = uid;
+				break;
+
 			case CraftMode.Enhance:
 				_enhanceUid = uid;
 				break;
@@ -244,6 +259,10 @@ namespace ProjectOne.UI
 			EquipmentInstance instance = null;
 			switch (type)
 			{
+			case CraftSlotRoot.Reforge:
+				instance = findEquipment(_reforgeUid);
+				break;
+
 			case CraftSlotRoot.Enhance:
 				instance = findEquipment(_enhanceUid);
 				break;
@@ -275,9 +294,15 @@ namespace ProjectOne.UI
 		}
 
 		// 실행 — 강화는 즉시 적용하고 묶어 보낸다(EnhanceBatcher).
-		// 승급·전이는 로컬로 미리 판정해 서버에 요청하고, 차감·변경은 서버 응답에서 반영한다.
+		// 재련·승급·전이는 로컬로 미리 판정해 서버에 요청하고, 차감·변경은 서버 응답에서 반영한다.
+		// 제작 모드는 이 버튼이 없다 — 조합법 트리의 제작하기 버튼(onForgeActionClicked)을 쓴다.
 		private void onActionClicked()
 		{
+			if (_mode == CraftMode.Craft)
+			{
+				return;
+			}
+
 			if (_mode == CraftMode.Enhance)
 			{
 				enhance();
@@ -291,6 +316,9 @@ namespace ProjectOne.UI
 
 			switch (_mode)
 			{
+			case CraftMode.Reforge:
+				requestReforge(findEquipment(_reforgeUid));
+				break;
 
 			case CraftMode.Promote:
 				requestPromote(findEquipment(_promoteUid));
@@ -321,6 +349,53 @@ namespace ProjectOne.UI
 			}
 
 			_pendingPop = true;
+			rebuild();
+		}
+
+		private void requestReforge(EquipmentInstance instance)
+		{
+			if (ForgeService.GetReforgeBlock(instance) != ReforgeBlock.None)
+			{
+				return;
+			}
+
+			ForgeService.GetReforgeCosts(instance, _costs);
+			if (EquipmentUpgrade.IsAffordable(_costs) == false)
+			{
+				return;
+			}
+
+			ForgeReforgeRequest request = new ForgeReforgeRequest();
+			request.uid = instance.uid;
+			request.fromQuality = instance.quality;
+			_pendingGrowth = true;
+			NetworkManager.Instance.RequestForgeReforge(request, onReforgeResponse);
+		}
+
+		// 계정 반영은 창이 닫혔어도 한다 — 서버에는 이미 저장됐다.
+		private void onReforgeResponse(bool success, ForgeReforgeResponse data, string error)
+		{
+			_pendingGrowth = false;
+
+			if (success == false || data == null)
+			{
+				Debug.LogWarning($"[Craft] 재련 실패: {error}");
+				return;
+			}
+
+			ForgeService.ApplyReforgeResponse(data);
+
+			if (_isDisposed == true)
+			{
+				return;
+			}
+
+			if (data.rise > 0)
+			{
+				UIManager.Instance.ShowAlertMessage("품질 +" + EquipmentQuality.Format(data.rise) + "%");
+				_pendingPop = true;
+			}
+
 			rebuild();
 		}
 
@@ -385,6 +460,10 @@ namespace ProjectOne.UI
 		{
 			switch (_mode)
 			{
+			case CraftMode.Reforge:
+				_reforgeUid = 0;
+				break;
+
 			case CraftMode.Enhance:
 				_enhanceUid = 0;
 				break;
@@ -437,6 +516,19 @@ namespace ProjectOne.UI
 			// 사라진 장비(판매 등)가 등록 칸에 남지 않도록 먼저 정리한다.
 			validateRegistrations();
 
+			// 제작 모드는 장비 목록·등록 칸 대신 조합법 목록·트리를 그린다.
+			if (_mode == CraftMode.Craft)
+			{
+				await renderForgeAsync(ct);
+				if (ct.IsCancellationRequested == false && _pendingForgePop == true)
+				{
+					view.PlayForgePop();
+					_pendingForgePop = false;
+				}
+
+				return;
+			}
+
 			buildGridData();
 			await view.RenderGridAsync(_gridData, ct);
 			if (ct.IsCancellationRequested == true)
@@ -446,6 +538,10 @@ namespace ProjectOne.UI
 
 			switch (_mode)
 			{
+			case CraftMode.Reforge:
+				await renderReforgeAsync(ct);
+				break;
+
 			case CraftMode.Enhance:
 				await renderEnhanceAsync(ct);
 				break;
@@ -470,6 +566,41 @@ namespace ProjectOne.UI
 				playPop();
 				_pendingPop = false;
 			}
+		}
+
+		// 재련 — 칸 하나 + 품질 안내(지금 품질 · 한 번에 오르는 범위).
+		private async UniTask renderReforgeAsync(CancellationToken ct)
+		{
+			EquipmentInstance instance = findEquipment(_reforgeUid);
+			await view.RenderRegisteredAsync(CraftSlotRoot.Reforge, instance, ct);
+
+			string disableMessage = null;
+			string info = "품질을 올릴 장비를 고르세요";
+			_costs.Clear();
+			if (instance != null)
+			{
+				int min;
+				int max;
+				ForgeRules.GetReforgeRise(instance.grade, out min, out max);
+				info = "품질 " + EquipmentQuality.Format(instance.quality) + "% · 한 번에 +" + EquipmentQuality.Format(min) + "~" + EquipmentQuality.Format(max) + "%";
+
+				ReforgeBlock block = ForgeService.GetReforgeBlock(instance);
+				if (block == ReforgeBlock.MaxQuality)
+				{
+					disableMessage = MSG_MAX_QUALITY;
+				}
+				else if (block == ReforgeBlock.None)
+				{
+					ForgeService.GetReforgeCosts(instance, _costs);
+				}
+			}
+
+			view.SetReforgeInfo(info);
+			await view.RenderRequirementAsync(CraftMode.Reforge, instance != null, _costs, disableMessage, ct);
+
+			bool canRun = disableMessage == null && EquipmentUpgrade.IsAffordable(_costs);
+			view.SetActionInteractable(CraftMode.Reforge, instance != null && canRun);
+			view.SetCancelVisible(CraftMode.Reforge, instance != null);
 		}
 
 		private async UniTask renderEnhanceAsync(CancellationToken ct)
@@ -551,6 +682,10 @@ namespace ProjectOne.UI
 		{
 			switch (_mode)
 			{
+			case CraftMode.Reforge:
+				view.PlayPop(CraftSlotRoot.Reforge);
+				break;
+
 			case CraftMode.Enhance:
 				view.PlayPop(CraftSlotRoot.Enhance);
 				break;
@@ -640,6 +775,9 @@ namespace ProjectOne.UI
 		{
 			switch (_mode)
 			{
+			case CraftMode.Reforge:
+				return uid == _reforgeUid;
+
 			case CraftMode.Enhance:
 				return uid == _enhanceUid;
 
@@ -797,6 +935,11 @@ namespace ProjectOne.UI
 
 		private void validateRegistrations()
 		{
+			if (findEquipment(_reforgeUid) == null)
+			{
+				_reforgeUid = 0;
+			}
+
 			if (findEquipment(_enhanceUid) == null)
 			{
 				_enhanceUid = 0;
@@ -820,6 +963,7 @@ namespace ProjectOne.UI
 
 		private void clearAllRegistrations()
 		{
+			_reforgeUid = 0;
 			_enhanceUid = 0;
 			_promoteUid = 0;
 			_sourceUid = 0;

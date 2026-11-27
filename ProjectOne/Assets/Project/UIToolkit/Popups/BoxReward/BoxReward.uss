@@ -72,10 +72,11 @@
 	margin: 0 -6px;
 }
 
+/* 위 여백 14px — 칸 위로 튀어나온 티어 배지(13px)가 윗줄 칸·묶음 제목에 걸리지 않게 */
 .pool-cell {
 	width: 160px;
 	height: 160px;
-	margin: 0 6px 12px 6px;
+	margin: 14px 6px 4px 6px;
 }
 
 .pool-cell .item-cell {

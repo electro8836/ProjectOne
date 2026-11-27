@@ -181,10 +181,13 @@ namespace BackendFunction
 				}
 
 				List<CurrencyCost> gains = new List<CurrencyCost>(1);
+				List<ItemCost> gainedItems = new List<ItemCost>(0);
 				EquipmentGrowthRules.GetDecomposeRefund(target.itemId, (ItemGradeType)target.grade, target.level, gains);
+				ForgeRules.AddDecomposeRefund(target.itemId, gainedItems, gains);
 
 				inventory.equipments.Remove(target);
 				CurrencyUtil.AddAll(currency, gains);
+				InventoryUtil.AddItems(inventory, gainedItems);
 
 				string saveErr = saveDecomposed(inventory, currency);
 				if (saveErr != null)
@@ -196,6 +199,7 @@ namespace BackendFunction
 				response.success = true;
 				response.uid = req.uid;
 				response.gained = CurrencyUtil.ToSpentDto(gains);
+				response.gainedItems = InventoryUtil.ToItemDto(gainedItems);
 
 				return FuncResult.Json(response);
 			}
@@ -223,6 +227,7 @@ namespace BackendFunction
 				List<long> decomposed = new List<long>(req.uids.Length);
 				List<CurrencyCost> total = new List<CurrencyCost>(1);
 				List<CurrencyCost> gains = new List<CurrencyCost>(1);
+				List<ItemCost> totalItems = new List<ItemCost>(0);
 				for (int i = 0; i < req.uids.Length; i++)
 				{
 					// 지운 장비는 다시 찾히지 않으므로 같은 UID 가 두 번 와도 한 번만 분해된다.
@@ -234,6 +239,7 @@ namespace BackendFunction
 
 					EquipmentGrowthRules.GetDecomposeRefund(target.itemId, (ItemGradeType)target.grade, target.level, gains);
 					CurrencyUtil.AddCosts(total, gains);
+					ForgeRules.AddDecomposeRefund(target.itemId, totalItems, total);
 
 					inventory.equipments.Remove(target);
 					decomposed.Add(target.uid);
@@ -242,6 +248,7 @@ namespace BackendFunction
 				if (decomposed.Count > 0)
 				{
 					CurrencyUtil.AddAll(currency, total);
+					InventoryUtil.AddItems(inventory, totalItems);
 
 					string saveErr = saveDecomposed(inventory, currency);
 					if (saveErr != null)
@@ -254,6 +261,7 @@ namespace BackendFunction
 				response.success = true;
 				response.uids = decomposed.ToArray();
 				response.gained = CurrencyUtil.ToSpentDto(total);
+				response.gainedItems = InventoryUtil.ToItemDto(totalItems);
 
 				return FuncResult.Json(response);
 			}

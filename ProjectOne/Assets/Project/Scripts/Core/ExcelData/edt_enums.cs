@@ -879,6 +879,8 @@ namespace EDT {
         TableEquipOption,
         TableEquipQuality,
         TableEquipGradeWeight,
+        TableForgeRecipe,
+        TableForgeReforge,
         TableItem,
         TableMap,
         TableWorld,
