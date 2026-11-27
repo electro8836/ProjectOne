@@ -121,7 +121,7 @@ namespace ProjectOne.UI
 		private void onRecipeTabSelected(int index)
 		{
 			_recipeTab = index;
-			_recipeSub = 0;
+			_recipeSub = getDefaultSub(index);
 			_selectedRecipeId = 0;
 			view.SetRecipeSubs(getSubLabels(_recipeTab), _recipeSub);
 			rebuild();
@@ -188,6 +188,18 @@ namespace ProjectOne.UI
 			}
 
 			return SUBS_NONE;
+		}
+
+		// 탭을 눌렀을 때 먼저 골라지는 세부 선택. 무기 탭은 장착 무기 종류(미착용이면 첫 칸), 나머지는 0.
+		private static int getDefaultSub(int tab)
+		{
+			if (tab != RECIPE_TAB_WEAPON)
+			{
+				return 0;
+			}
+
+			WeaponType weaponType = Account.Instance.Loadout.EquippedWeaponType;
+			return Mathf.Max(0, System.Array.IndexOf(SUB_WEAPON_TYPES, weaponType));
 		}
 
 		// 제작법이 들어가는 분류 탭. 장비 제작법은 결과 장비의 무기 종류·부위로 가른다.
