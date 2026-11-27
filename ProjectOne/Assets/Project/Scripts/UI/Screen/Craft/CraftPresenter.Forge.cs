@@ -20,18 +20,28 @@ namespace ProjectOne.UI
 		Locked,		// 티어 올리기인데 이전 장비가 없음
 	}
 
-	// 조합법 목록 1행 렌더 데이터.
+	// 조합법 목록 1행 렌더 데이터. 재료 그림은 공용 목록(RecipeCostIcon)의 [costStart, costStart + costCount) 구간이다.
 	public struct RecipeRowData
 	{
 		public int recipeId;
 		public int resultItemId;
 		public ItemGradeType grade;
 		public string name;
-		public string sub;
 		public RecipeState state;
+		public int costStart;
+		public int costCount;
 	}
 
-	// 조합법 트리 렌더 데이터 — 결과 · (티어 올리기면) 이전 장비 · 재료 · 재화 · 모자란 하위 재료 한 층 · 버튼.
+	// 조합법 행의 재료 그림 1칸 — 트리 칸과 같은 순서(이전 장비 · 재료 · 재화). ready 면 다 갖춘 칸.
+	public struct RecipeCostIcon
+	{
+		public bool isCurrency;
+		public int itemId;
+		public EDT.Currency currency;
+		public bool ready;
+	}
+
+	// 조합법 트리 렌더 데이터 — 결과 · (티어 올리기면) 이전 장비 · 재료 · 재화 · 버튼.
 	public sealed class ForgeStageData
 	{
 		public int resultItemId;
@@ -46,7 +56,6 @@ namespace ProjectOne.UI
 
 		public readonly List<ForgeItemCost> items = new List<ForgeItemCost>(4);
 		public readonly List<UpgradeCost> currencies = new List<UpgradeCost>(2);
-		public readonly List<ForgeItemCost> subItems = new List<ForgeItemCost>(4);
 
 		public bool canCraft;
 		public string rateText;
@@ -58,30 +67,41 @@ namespace ProjectOne.UI
 	{
 		// 조합법 분류 탭 — CraftScreen.uxml 의 recipe-tab-N 순서
 		private const int RECIPE_TAB_MATERIAL = 0;
-		private const int RECIPE_TAB_GREATSWORD = 1;
-		private const int RECIPE_TAB_DAGGER = 2;
-		private const int RECIPE_TAB_SHURIKEN = 3;
-		private const int RECIPE_TAB_RIFLE = 4;
+		private const int RECIPE_TAB_WEAPON = 1;
+		private const int RECIPE_TAB_ARMOR = 2;
+		private const int RECIPE_TAB_ACCESSORY = 3;
+		private const int RECIPE_TAB_RELIC = 4;
+
+		// 분류 탭 아래 세부 선택(분할 막대). 재료·유물은 세부 선택이 없다. 방어구·장신구의 0번은 전체.
+		private static readonly string[] SUBS_NONE = new string[0];
+		private static readonly string[] SUBS_WEAPON = { "대검", "단검", "수리검", "소총" };
+		private static readonly WeaponType[] SUB_WEAPON_TYPES = { WeaponType.GreatSword, WeaponType.Dagger, WeaponType.Shuriken, WeaponType.Rifle };
+		private static readonly string[] SUBS_ARMOR = { "전체", "투구", "갑옷", "장갑", "신발" };
+		private static readonly EquipSlotTypes[] SUB_ARMOR_SLOTS = { EquipSlotTypes.None, EquipSlotTypes.Helmet, EquipSlotTypes.Armor, EquipSlotTypes.Gloves, EquipSlotTypes.Boots };
+		private static readonly string[] SUBS_ACCESSORY = { "전체", "반지", "목걸이" };
+		private static readonly EquipSlotTypes[] SUB_ACCESSORY_SLOTS = { EquipSlotTypes.None, EquipSlotTypes.Ring, EquipSlotTypes.Amulet };
 
 		private const string HINT_UPGRADE = "실패 시 재료만 소모 · 실패할수록 확률 상승";
 		private const string HINT_BASE = "항상 성공 · 품질은 무작위";
 		private const string HINT_MATERIAL = "항상 성공";
 
 		private int _recipeTab = RECIPE_TAB_MATERIAL;
+		private int _recipeSub;
 		private int _selectedRecipeId;
-		private int _subRecipeId;	// 트리의 '조합' 버튼이 넘어갈 하위 재료 조합법
 
 		private readonly List<Table_ForgeRecipe.Row> _recipes = new List<Table_ForgeRecipe.Row>();
 		private readonly List<RecipeRowData> _recipeRows = new List<RecipeRowData>();
 		private readonly ForgeStageData _stage = new ForgeStageData();
 		private readonly List<ForgeItemCost> _itemCostBuffer = new List<ForgeItemCost>(4);
+		private readonly List<UpgradeCost> _currencyCostBuffer = new List<UpgradeCost>(2);
+		private readonly List<RecipeCostIcon> _rowCosts = new List<RecipeCostIcon>();
 
 		private void initializeForge()
 		{
 			view.OnRecipeTabSelected += onRecipeTabSelected;
+			view.OnRecipeSubSelected += onRecipeSubSelected;
 			view.OnRecipeSelected += onRecipeSelected;
 			view.OnForgeActionClicked += onForgeActionClicked;
-			view.OnForgeSubClicked += onForgeSubClicked;
 			view.OnForgeCellClicked += onForgeCellClicked;
 			view.OnMaterialListClicked += onMaterialListClicked;
 		}
@@ -89,9 +109,9 @@ namespace ProjectOne.UI
 		private void disposeForge()
 		{
 			view.OnRecipeTabSelected -= onRecipeTabSelected;
+			view.OnRecipeSubSelected -= onRecipeSubSelected;
 			view.OnRecipeSelected -= onRecipeSelected;
 			view.OnForgeActionClicked -= onForgeActionClicked;
-			view.OnForgeSubClicked -= onForgeSubClicked;
 			view.OnForgeCellClicked -= onForgeCellClicked;
 			view.OnMaterialListClicked -= onMaterialListClicked;
 		}
@@ -101,6 +121,15 @@ namespace ProjectOne.UI
 		private void onRecipeTabSelected(int index)
 		{
 			_recipeTab = index;
+			_recipeSub = 0;
+			_selectedRecipeId = 0;
+			view.SetRecipeSubs(getSubLabels(_recipeTab), _recipeSub);
+			rebuild();
+		}
+
+		private void onRecipeSubSelected(int index)
+		{
+			_recipeSub = index;
 			_selectedRecipeId = 0;
 			rebuild();
 		}
@@ -109,17 +138,6 @@ namespace ProjectOne.UI
 		{
 			_selectedRecipeId = recipeId;
 			rebuild();
-		}
-
-		// 하위 재료의 조합법으로 넘어간다 — 재료 탭으로 바꾸고 그 행을 고른다.
-		private void onForgeSubClicked()
-		{
-			if (_subRecipeId == 0)
-			{
-				return;
-			}
-
-			selectRecipe(_subRecipeId);
 		}
 
 		// 보유 재료 팝업 — '조합하기'나 사용처 줄로 닫히면 그 제작법으로 넘어간다.
@@ -137,16 +155,42 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 그 제작법이 있는 탭(재료 / 무기 종류)으로 바꾸고 그 행을 고른다.
+		// 그 제작법이 있는 탭·세부 선택(재료 / 무기 종류 / 방어구·장신구 부위 / 유물)으로 바꾸고 그 행을 고른다.
 		private void selectRecipe(int recipeId)
 		{
-			_recipeTab = getRecipeTab(Table_ForgeRecipe.Get(recipeId));
+			Table_ForgeRecipe.Row recipe = Table_ForgeRecipe.Get(recipeId);
+			_recipeTab = getRecipeTab(recipe);
+			_recipeSub = getRecipeSub(recipe, _recipeTab);
 			_selectedRecipeId = recipeId;
-			view.SelectRecipeTab(_recipeTab);
+			applyRecipeTabView();
 			rebuild();
 		}
 
-		// 제작법이 들어가는 탭. 장비 제작법은 결과 장비의 무기 종류로 가른다.
+		// 분류 탭·세부 선택 표시를 지금 값으로 맞춘다.
+		private void applyRecipeTabView()
+		{
+			view.SelectRecipeTab(_recipeTab);
+			view.SetRecipeSubs(getSubLabels(_recipeTab), _recipeSub);
+		}
+
+		private static string[] getSubLabels(int tab)
+		{
+			switch (tab)
+			{
+				case RECIPE_TAB_WEAPON:
+					return SUBS_WEAPON;
+
+				case RECIPE_TAB_ARMOR:
+					return SUBS_ARMOR;
+
+				case RECIPE_TAB_ACCESSORY:
+					return SUBS_ACCESSORY;
+			}
+
+			return SUBS_NONE;
+		}
+
+		// 제작법이 들어가는 분류 탭. 장비 제작법은 결과 장비의 무기 종류·부위로 가른다.
 		private static int getRecipeTab(Table_ForgeRecipe.Row recipe)
 		{
 			if (recipe == null || ForgeRules.GetKind(recipe) == ForgeRecipeKind.Material)
@@ -160,22 +204,52 @@ namespace ProjectOne.UI
 				return RECIPE_TAB_MATERIAL;
 			}
 
-			switch (equipment.WeaponType)
+			if (equipment.WeaponType != WeaponType.None)
 			{
-				case WeaponType.GreatSword:
-					return RECIPE_TAB_GREATSWORD;
+				return RECIPE_TAB_WEAPON;
+			}
 
-				case WeaponType.Dagger:
-					return RECIPE_TAB_DAGGER;
+			switch (equipment.EquipSlotType)
+			{
+				case EquipSlotTypes.Helmet:
+				case EquipSlotTypes.Armor:
+				case EquipSlotTypes.Gloves:
+				case EquipSlotTypes.Boots:
+					return RECIPE_TAB_ARMOR;
 
-				case WeaponType.Shuriken:
-					return RECIPE_TAB_SHURIKEN;
+				case EquipSlotTypes.Ring:
+				case EquipSlotTypes.Amulet:
+					return RECIPE_TAB_ACCESSORY;
 
-				case WeaponType.Rifle:
-					return RECIPE_TAB_RIFLE;
+				case EquipSlotTypes.Relic:
+					return RECIPE_TAB_RELIC;
 			}
 
 			return RECIPE_TAB_MATERIAL;
+		}
+
+		// 그 탭 안에서 제작법이 들어가는 세부 선택 칸. 세부 선택이 없거나 못 찾으면 0.
+		private static int getRecipeSub(Table_ForgeRecipe.Row recipe, int tab)
+		{
+			Table_Equipment.Row equipment = (recipe != null) ? Table_Equipment.Get(recipe.ResultItemID) : null;
+			if (equipment == null)
+			{
+				return 0;
+			}
+
+			switch (tab)
+			{
+				case RECIPE_TAB_WEAPON:
+					return Mathf.Max(0, System.Array.IndexOf(SUB_WEAPON_TYPES, equipment.WeaponType));
+
+				case RECIPE_TAB_ARMOR:
+					return Mathf.Max(0, System.Array.IndexOf(SUB_ARMOR_SLOTS, equipment.EquipSlotType));
+
+				case RECIPE_TAB_ACCESSORY:
+					return Mathf.Max(0, System.Array.IndexOf(SUB_ACCESSORY_SLOTS, equipment.EquipSlotType));
+			}
+
+			return 0;
 		}
 
 		// 트리 칸 클릭 — 장비는 읽기 전용 장비 정보, 재료는 아이템 정보(설명·획득처), 재화는 툴팁.
@@ -332,7 +406,7 @@ namespace ProjectOne.UI
 		private async UniTask renderForgeAsync(CancellationToken ct)
 		{
 			buildRecipeRows();
-			await view.RenderRecipeListAsync(_recipeRows, _selectedRecipeId, ct);
+			await view.RenderRecipeListAsync(_recipeRows, _rowCosts, _selectedRecipeId, ct);
 			if (ct.IsCancellationRequested == true)
 			{
 				return;
@@ -366,6 +440,7 @@ namespace ProjectOne.UI
 			_recipes.Sort(compareRecipe);
 
 			_recipeRows.Clear();
+			_rowCosts.Clear();
 			bool selectedFound = false;
 			for (int i = 0; i < _recipes.Count; i++)
 			{
@@ -378,8 +453,10 @@ namespace ProjectOne.UI
 				row.resultItemId = recipe.ResultItemID;
 				row.grade = getResultGrade(recipe, source, item);
 				row.name = (item != null) ? item.Name : recipe.ResultItemID.ToString();
-				row.sub = getSourceText(recipe);
 				row.state = getState(recipe, source);
+				row.costStart = _rowCosts.Count;
+				addRowCosts(recipe, source);
+				row.costCount = _rowCosts.Count - row.costStart;
 				_recipeRows.Add(row);
 
 				if (recipe.ID == _selectedRecipeId)
@@ -413,7 +490,6 @@ namespace ProjectOne.UI
 
 			ForgeService.GetItemCosts(recipe, 1, _stage.items);
 			ForgeService.GetCurrencyCosts(recipe, 1, _stage.currencies);
-			buildSubLayer();
 
 			ForgeBlock block = ForgeService.GetBlock(recipe, source, 1);
 			_stage.canCraft = block == ForgeBlock.None && _pendingGrowth == false;
@@ -437,37 +513,43 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 모자란 재료 중 조합법이 있는 첫 재료의 하위 재료를 한 층 보인다 (재료 조합 1회분).
-		private void buildSubLayer()
+		// ── 내부 ──────────────────────────────────────────────────────
+
+		// 행의 재료 그림 — 트리 칸과 같은 순서(이전 장비 · 재료 · 재화)로 _rowCosts 에 붙인다.
+		private void addRowCosts(Table_ForgeRecipe.Row recipe, EquipmentInstance source)
 		{
-			_stage.subItems.Clear();
-			_subRecipeId = 0;
-			for (int i = 0; i < _stage.items.Count; i++)
+			RecipeCostIcon icon;
+			if (ForgeRules.GetKind(recipe) == ForgeRecipeKind.Upgrade)
 			{
-				if (_stage.items[i].IsEnough == true)
-				{
-					continue;
-				}
+				icon.isCurrency = false;
+				icon.itemId = recipe.SourceItemID;
+				icon.currency = default;
+				icon.ready = source != null;
+				_rowCosts.Add(icon);
+			}
 
-				Table_ForgeRecipe.Row sub = ForgeRules.FindRecipeByResult(_stage.items[i].itemId);
-				if (sub == null || ForgeRules.GetKind(sub) != ForgeRecipeKind.Material)
-				{
-					continue;
-				}
+			ForgeService.GetItemCosts(recipe, 1, _itemCostBuffer);
+			for (int i = 0; i < _itemCostBuffer.Count; i++)
+			{
+				icon.isCurrency = false;
+				icon.itemId = _itemCostBuffer[i].itemId;
+				icon.currency = default;
+				icon.ready = _itemCostBuffer[i].IsEnough;
+				_rowCosts.Add(icon);
+			}
 
-				_subRecipeId = sub.ID;
-				ForgeService.GetItemCosts(sub, 1, _itemCostBuffer);
-				for (int k = 0; k < _itemCostBuffer.Count; k++)
-				{
-					_stage.subItems.Add(_itemCostBuffer[k]);
-				}
-
-				return;
+			ForgeService.GetCurrencyCosts(recipe, 1, _currencyCostBuffer);
+			for (int i = 0; i < _currencyCostBuffer.Count; i++)
+			{
+				icon.isCurrency = true;
+				icon.itemId = 0;
+				icon.currency = _currencyCostBuffer[i].currency;
+				icon.ready = _currencyCostBuffer[i].IsEnough;
+				_rowCosts.Add(icon);
 			}
 		}
 
-		// ── 내부 ──────────────────────────────────────────────────────
-
+		// 지금 분류 탭 · 세부 선택에 들어가는 제작법인가.
 		private bool matchesRecipeTab(Table_ForgeRecipe.Row recipe)
 		{
 			ForgeRecipeKind kind = ForgeRules.GetKind(recipe);
@@ -476,7 +558,7 @@ namespace ProjectOne.UI
 				return kind == ForgeRecipeKind.Material;
 			}
 
-			if (kind == ForgeRecipeKind.Invalid || kind == ForgeRecipeKind.Material)
+			if (kind == ForgeRecipeKind.Invalid || kind == ForgeRecipeKind.Material || getRecipeTab(recipe) != _recipeTab)
 			{
 				return false;
 			}
@@ -484,20 +566,17 @@ namespace ProjectOne.UI
 			Table_Equipment.Row equipment = Table_Equipment.Get(recipe.ResultItemID);
 			switch (_recipeTab)
 			{
-				case RECIPE_TAB_GREATSWORD:
-					return equipment.WeaponType == WeaponType.GreatSword;
+				case RECIPE_TAB_WEAPON:
+					return equipment.WeaponType == SUB_WEAPON_TYPES[_recipeSub];
 
-				case RECIPE_TAB_DAGGER:
-					return equipment.WeaponType == WeaponType.Dagger;
+				case RECIPE_TAB_ARMOR:
+					return _recipeSub == 0 || equipment.EquipSlotType == SUB_ARMOR_SLOTS[_recipeSub];
 
-				case RECIPE_TAB_SHURIKEN:
-					return equipment.WeaponType == WeaponType.Shuriken;
-
-				case RECIPE_TAB_RIFLE:
-					return equipment.WeaponType == WeaponType.Rifle;
+				case RECIPE_TAB_ACCESSORY:
+					return _recipeSub == 0 || equipment.EquipSlotType == SUB_ACCESSORY_SLOTS[_recipeSub];
 			}
 
-			return false;
+			return true;
 		}
 
 		// 티어 오름차순 → ID 오름차순.
@@ -575,18 +654,6 @@ namespace ProjectOne.UI
 			}
 
 			return (item != null) ? item.Grade : ItemGradeType.Normal;
-		}
-
-		private static string getSourceText(Table_ForgeRecipe.Row recipe)
-		{
-			if (ForgeRules.GetKind(recipe) != ForgeRecipeKind.Upgrade)
-			{
-				return "← 재료만";
-			}
-
-			Table_Item.Row source = Table_Item.Get(recipe.SourceItemID);
-			string name = (source != null) ? source.Name : recipe.SourceItemID.ToString();
-			return "← " + name + " T" + ForgeRules.GetTier(recipe.SourceItemID);
 		}
 
 		private static RecipeState getState(Table_ForgeRecipe.Row recipe, EquipmentInstance source)

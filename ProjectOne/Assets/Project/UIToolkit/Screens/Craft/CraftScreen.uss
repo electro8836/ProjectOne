@@ -372,15 +372,6 @@
 	border-radius: 28px;
 }
 
-.forge-cell--sub {
-	width: 108px;
-	height: 108px;
-}
-
-.forge-cell--sub .item-cell {
-	scale: 0.551 0.551;
-}
-
 /* 모자란 재료 — 빨간 테두리 */
 .forge-cell__short {
 	position: absolute;
@@ -398,12 +389,6 @@
 	display: flex;
 }
 
-/* 하위 재료 칸(108px) — 줄인 칸 틀의 모서리에 맞춘다 */
-.forge-cell--sub .forge-cell__short {
-	border-width: 4px;
-	border-radius: 16px;
-}
-
 /* 보유량/필요량 — 칸 아래쪽 가운데 */
 .forge-count {
 	position: absolute;
@@ -419,11 +404,6 @@
 
 .forge-mat--short .forge-count {
 	color: #FF6060;
-}
-
-.forge-cell--sub .forge-count {
-	font-size: 22px;
-	bottom: 4px;
 }
 
 /* 보유한 이전 장비 — 오른쪽 위 초록 체크 */
@@ -503,47 +483,11 @@
 	background-color: #5C6496;
 }
 
-/* 하위 재료 한 층 — 칸들 + 금색 조합 버튼. 없을 때도 자리는 남긴다(visibility) */
-.forge-sub {
-	flex-direction: row;
-	align-items: center;
-	justify-content: center;
-	height: 160px;
-	margin-top: 12px;
-}
-
-.forge-sub__cells {
-	flex-direction: row;
-	align-items: flex-start;
-}
-
-.forge-sub .forge-mat {
-	width: 180px;
-}
-
-.forge-sub .forge-name {
-	width: 176px;
-	font-size: 22px;
-	white-space: normal;
-}
-
-/* 테마의 .theme-violet .btn 보다 늦게 오도록 .craft 를 붙인다 */
-.craft .forge-sub__button {
-	width: 140px;
-	height: 72px;
-	margin-left: 20px;
-	padding: 0;
-	background-image: url("../../Violet/btn_gold_large.png");
-	font-size: 32px;
-	color: #FFFFFF;
-	-unity-text-outline-width: 2px;
-}
-
-/* 제작하기 — 연두 큰 버튼 안 두 줄(제목 + 성공 확률) */
+/* 제작하기 — 연두 큰 버튼 안 두 줄(제목 + 성공 확률). 테마의 .theme-violet .btn 보다 늦게 오도록 .craft 를 붙인다 */
 .craft .forge-action {
 	width: 480px;
 	height: 128px;
-	margin-top: 8px;
+	margin-top: 32px;
 	padding: 0;
 	align-items: center;
 	justify-content: center;
@@ -616,6 +560,54 @@
 	flex-shrink: 1;
 }
 
+/* 세부 선택 — 한 줄을 칸 수만큼 나눈 분할 막대. 고른 칸은 보라, 나머지 사이는 가는 구분선 */
+.recipe-subs {
+	flex-direction: row;
+	flex-shrink: 0;
+	height: 76px;
+	margin: 0 18px 14px 18px;
+	padding: 5px;
+	border-width: 3px;
+	border-color: #483E78;
+	border-radius: 22px;
+	background-color: #18142E;
+}
+
+.recipe-sub {
+	flex-grow: 1;
+	flex-basis: 0;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	border-left-width: 2px;
+	border-left-color: #483E78;
+	border-radius: 0;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: none;
+	font-size: 28px;
+	color: #A8A2CC;
+	-unity-text-outline-width: 0;
+}
+
+.recipe-sub--nosep {
+	border-left-color: rgba(0, 0, 0, 0);
+}
+
+.recipe-empty {
+	margin-top: 60px;
+	font-size: 30px;
+	color: #A8A2CC;
+	-unity-text-align: middle-center;
+	display: none;
+}
+
+.recipe-sub--on {
+	border-radius: 17px;
+	background-color: #6E5ACD;
+	color: #FFFFFF;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
 .recipe-row {
 	flex-direction: row;
 	align-items: center;
@@ -662,11 +654,63 @@
 	text-shadow: 0 3px 0 #0A0814;
 }
 
-.recipe-row__sub {
-	margin: 4px 0 0 0;
-	font-size: 28px;
-	color: #A8A2CC;
-	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-SemiBold.ttf");
+/* 재료 그림 줄 — 트리 칸과 같은 순서. 갖춘 칸은 밝게 + 초록 체크, 모자란 칸은 흐리게 + 빨간 테두리 */
+.recipe-costs {
+	flex-direction: row;
+	margin-top: 10px;
+}
+
+.recipe-cost {
+	width: 52px;
+	height: 52px;
+	margin-right: 10px;
+	border-width: 3px;
+	border-radius: 12px;
+	background-color: #1E1A38;
+}
+
+.recipe-cost--ready {
+	border-color: #6EE678;
+}
+
+.recipe-cost--short {
+	border-color: #FF7878;
+}
+
+.recipe-cost__icon {
+	position: absolute;
+	left: 5px;
+	right: 5px;
+	top: 5px;
+	bottom: 5px;
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.recipe-cost--short .recipe-cost__icon {
+	opacity: 0.35;
+}
+
+.recipe-cost__check {
+	position: absolute;
+	top: -10px;
+	right: -10px;
+	width: 26px;
+	height: 26px;
+	margin: 0;
+	padding: 0;
+	border-width: 2px;
+	border-color: #0A0814;
+	border-radius: 13px;
+	background-color: #3CAA50;
+	font-size: 16px;
+	color: #FFFFFF;
+	-unity-text-align: middle-center;
+	-unity-text-outline-width: 0;
+	display: none;
+}
+
+.recipe-cost--ready .recipe-cost__check {
+	display: flex;
 }
 
 /* 상태 알약 */

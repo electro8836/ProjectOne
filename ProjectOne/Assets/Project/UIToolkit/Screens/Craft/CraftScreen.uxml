@@ -34,7 +34,7 @@
 				<ui:Button name="mode-4" text="전이" class="craft-seg__item" />
 			</ui:VisualElement>
 
-			<!-- 제작: 고른 조합법의 트리 — 결과 → 재료 줄 → 모자란 하위 재료 한 층 → 제작 버튼 -->
+			<!-- 제작: 고른 조합법의 트리 — 결과 → 재료 줄 → 제작 버튼. 재료를 누르면 조합하기·획득처를 본다 -->
 			<ui:VisualElement name="forge-stage" class="forge-only forge-stage">
 				<ui:VisualElement name="forge-result" class="forge-cell forge-cell--result" />
 				<!-- 보유 재료 팝업 — 결과 칸 오른쪽 위 둥근 버튼. 조합법을 안 골라도 보인다 -->
@@ -47,11 +47,6 @@
 				<!-- 재료 칸은 CraftUI 가 만든다. forge-branch 는 칸 위를 잇는 가로선 -->
 				<ui:VisualElement name="forge-mats" class="forge-mats">
 					<ui:VisualElement name="forge-branch" class="forge-branch" picking-mode="Ignore" />
-				</ui:VisualElement>
-				<!-- 하위 재료 한 층 — 모자란 재료 하나를 바로 조합하러 가는 길. 없으면 자리만 남긴다 -->
-				<ui:VisualElement name="forge-sub" class="forge-sub">
-					<ui:VisualElement name="forge-sub-cells" class="forge-sub__cells" />
-					<ui:Button name="forge-sub-button" text="조합" class="btn forge-sub__button" />
 				</ui:VisualElement>
 				<ui:Button name="forge-action" class="btn forge-action">
 					<ui:Label name="forge-action-title" text="제작하기" class="forge-action__title" picking-mode="Ignore" />
@@ -122,14 +117,16 @@
 		<!-- 조합법 분류 탭 — 제작 모드. 순서는 CraftPresenter 의 RECIPE_TAB_* 와 같다 -->
 		<ui:VisualElement class="tabs forge-only recipe-tabs">
 			<ui:Button name="recipe-tab-0" text="재료" class="tab recipe-tab" />
-			<ui:Button name="recipe-tab-1" text="대검" class="tab recipe-tab" />
-			<ui:Button name="recipe-tab-2" text="단검" class="tab recipe-tab" />
-			<ui:Button name="recipe-tab-3" text="수리검" class="tab recipe-tab" />
-			<ui:Button name="recipe-tab-4" text="소총" class="tab recipe-tab" />
+			<ui:Button name="recipe-tab-1" text="무기" class="tab recipe-tab" />
+			<ui:Button name="recipe-tab-2" text="방어구" class="tab recipe-tab" />
+			<ui:Button name="recipe-tab-3" text="장신구" class="tab recipe-tab" />
+			<ui:Button name="recipe-tab-4" text="유물" class="tab recipe-tab" />
 		</ui:VisualElement>
 
-		<!-- 조합법 목록 — 제작 모드. 행은 CraftUI 가 만든다 -->
+		<!-- 조합법 목록 — 제작 모드. 위 세부 선택(분할 막대, 무기 종류 · 부위)과 행은 CraftUI 가 만든다 -->
 		<ui:VisualElement class="px-paper bag forge-only recipe-bag">
+			<ui:VisualElement name="recipe-subs" class="recipe-subs" />
+			<ui:Label name="recipe-empty" text="아직 제작할 수 있는 장비가 없습니다" class="recipe-empty" />
 			<ui:ScrollView name="recipe-list" class="recipe-list" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
 		</ui:VisualElement>
 	</ui:VisualElement>

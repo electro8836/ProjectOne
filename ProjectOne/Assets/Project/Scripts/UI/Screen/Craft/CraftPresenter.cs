@@ -155,7 +155,7 @@ namespace ProjectOne.UI
 
 			view.SelectModeTab((int)_mode);	// Select 는 OnTabChanged 를 발행하지 않으므로 직접 rebuild
 			view.SelectFilterTab(_filterTab);
-			view.SelectRecipeTab(_recipeTab);
+			applyRecipeTabView();
 			view.ShowMode(_mode);
 			view.SetSortLabel(getSortLabel(_sortMode));
 

@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 
 namespace ProjectOne.UI
 {
-	// 제작 모드의 View — 위 조합법 트리(결과 → 재료 줄 → 모자란 하위 재료 한 층 → 제작 버튼)와
+	// 제작 모드의 View — 위 조합법 트리(결과 → 재료 줄 → 제작 버튼)와
 	// 아래 조합법 목록. 표시와 입력 전달만 하고, 무엇을 그릴지는 CraftPresenter(Forge) 가 정한다.
 	public partial class CraftUI
 	{
@@ -25,22 +25,33 @@ namespace ProjectOne.UI
 			public Label name;
 		}
 
+		private const string RECIPE_SUB_ON = "recipe-sub--on";
+		private const string RECIPE_SUB_NOSEP = "recipe-sub--nosep";
+
+		// 조합법 행의 재료 그림 1칸 — 갖춘 칸은 밝게 + 초록 체크, 모자란 칸은 흐리게 + 빨간 테두리.
+		private sealed class RecipeCostView
+		{
+			public VisualElement root;
+			public VisualElement icon;
+		}
+
 		// 조합법 행 1개.
 		private sealed class RecipeRowView
 		{
 			public VisualElement root;
 			public ItemCellView cell;
 			public Label name;
-			public Label sub;
+			public VisualElement costs;
+			public readonly List<RecipeCostView> costViews = new List<RecipeCostView>(6);
 			public Label pill;
 			public int recipeId;
 		}
 
 		// ── 입력 이벤트 (Presenter 가 구독) ────────────────────────────────
 		public event Action<int> OnRecipeTabSelected;
+		public event Action<int> OnRecipeSubSelected;
 		public event Action<int> OnRecipeSelected;
 		public event Action OnForgeActionClicked;
-		public event Action OnForgeSubClicked;
 		public event Action OnMaterialListClicked;
 		public event Action<ItemCellView> OnForgeCellClicked;	// 트리의 칸 — 무엇인지는 칸의 Tag(FORGE_TAG_* · 재료 itemId · 재화)로 가린다
 
@@ -50,8 +61,8 @@ namespace ProjectOne.UI
 
 		private readonly Button[] _recipeTabs = new Button[RECIPE_TAB_COUNT];
 		private readonly List<ForgeMatView> _matViews = new List<ForgeMatView>();
-		private readonly List<ForgeMatView> _subViews = new List<ForgeMatView>();
 		private readonly List<RecipeRowView> _rows = new List<RecipeRowView>();
+		private readonly List<Button> _subButtons = new List<Button>(5);
 		private readonly List<UniTask> _forgeTasks = new List<UniTask>();
 
 		private VisualElement _forgeStage;
@@ -59,12 +70,12 @@ namespace ProjectOne.UI
 		private Label _resultName;
 		private VisualElement _forgeMats;
 		private VisualElement _forgeBranch;
-		private VisualElement _forgeSub;
-		private VisualElement _forgeSubCells;
 		private Button _forgeAction;
 		private Label _forgeActionTitle;
 		private Label _forgeActionRate;
 		private Label _forgeHint;
+		private VisualElement _recipeSubs;
+		private Label _recipeEmpty;
 		private ScrollView _recipeList;
 		private Label _reforgeInfo;
 
@@ -83,9 +94,6 @@ namespace ProjectOne.UI
 			_resultName = root.Q<Label>("forge-result-name");
 			_forgeMats = root.Q("forge-mats");
 			_forgeBranch = root.Q("forge-branch");
-			_forgeSub = root.Q("forge-sub");
-			_forgeSubCells = root.Q("forge-sub-cells");
-			root.Q<Button>("forge-sub-button").clicked += onForgeSubClicked;
 			root.Q<Button>("forge-material-button").clicked += onMaterialListClicked;
 
 			_forgeAction = root.Q<Button>("forge-action");
@@ -94,6 +102,8 @@ namespace ProjectOne.UI
 			_forgeActionRate = root.Q<Label>("forge-action-rate");
 			_forgeHint = root.Q<Label>("forge-hint");
 
+			_recipeSubs = root.Q("recipe-subs");
+			_recipeEmpty = root.Q<Label>("recipe-empty");
 			_recipeList = root.Q<ScrollView>("recipe-list");
 			_recipeList.AddManipulator(new ScrollDragManipulator(_recipeList));
 
@@ -107,12 +117,31 @@ namespace ProjectOne.UI
 			selectTabs(_recipeTabs, index, RECIPE_TAB_ON);
 		}
 
+		// 분류 탭 아래 세부 선택(분할 막대). labels 가 비면 막대를 감춘다.
+		public void SetRecipeSubs(IReadOnlyList<string> labels, int selected)
+		{
+			setShown(_recipeSubs, labels.Count > 0);
+			for (int i = 0; i < labels.Count; i++)
+			{
+				Button button = getOrCreateSub(i);
+				button.text = labels[i];
+				setShown(button, true);
+			}
+
+			for (int i = labels.Count; i < _subButtons.Count; i++)
+			{
+				setShown(_subButtons[i], false);
+			}
+
+			selectSub(selected);
+		}
+
 		public void SetReforgeInfo(string text)
 		{
 			_reforgeInfo.text = text;
 		}
 
-		public async UniTask RenderRecipeListAsync(IReadOnlyList<RecipeRowData> data, int selectedId, CancellationToken ct)
+		public async UniTask RenderRecipeListAsync(IReadOnlyList<RecipeRowData> data, IReadOnlyList<RecipeCostIcon> costs, int selectedId, CancellationToken ct)
 		{
 			_forgeTasks.Clear();
 			for (int i = 0; i < data.Count; i++)
@@ -123,8 +152,8 @@ namespace ProjectOne.UI
 				setShown(row.root, true);
 				row.root.EnableInClassList("recipe-row--selected", d.recipeId == selectedId);
 				row.name.text = d.name;
-				row.sub.text = d.sub;
 				applyPill(row.pill, d.state);
+				applyCosts(row, costs, d.costStart, d.costCount, ct);
 				_forgeTasks.Add(bindItemCell(row.cell, d.resultItemId, d.grade, ct));
 			}
 
@@ -132,6 +161,8 @@ namespace ProjectOne.UI
 			{
 				setShown(_rows[i].root, false);
 			}
+
+			setShown(_recipeEmpty, data.Count == 0);
 
 			await UniTask.WhenAll(_forgeTasks).SuppressCancellationThrow();
 		}
@@ -192,17 +223,6 @@ namespace ProjectOne.UI
 			hideFrom(_matViews, column);
 			setShown(_forgeBranch, column > 1);
 
-			// 하위 재료 한 층
-			_forgeSub.style.visibility = (data.subItems.Count > 0) ? Visibility.Visible : Visibility.Hidden;
-			for (int i = 0; i < data.subItems.Count; i++)
-			{
-				ForgeMatView view = getOrCreateMat(_subViews, _forgeSubCells, i);
-				bindMaterial(view, data.subItems[i].itemId, data.subItems[i].owned, data.subItems[i].count, ct);
-				view.name.text = view.name.text + " x" + data.subItems[i].count;
-			}
-
-			hideFrom(_subViews, data.subItems.Count);
-
 			// 버튼
 			_forgeAction.SetEnabled(data.canCraft);
 			_forgeActionRate.text = data.rateText;
@@ -228,7 +248,7 @@ namespace ProjectOne.UI
 			view.name.text = (row != null) ? row.Name : itemId.ToString();
 			view.count.text = owned + "/" + need;
 			view.root.EnableInClassList("forge-mat--short", owned < need);
-			view.root.RemoveFromClassList("forge-mat--owned");
+			view.root.EnableInClassList("forge-mat--owned", owned >= need);	// 다 갖추면 초록 체크(목록의 재료 그림과 같게)
 			view.cell.Tag = itemId;
 			_forgeTasks.Add(bindItemCell(view.cell, itemId, ItemGradeType.None, ct));
 		}
@@ -239,7 +259,7 @@ namespace ProjectOne.UI
 			view.name.text = (row != null) ? row.Name : currency.ToString();
 			view.count.text = CurrencyFormat.Short(owned) + "/" + CurrencyFormat.Short(need);
 			view.root.EnableInClassList("forge-mat--short", owned < need);
-			view.root.RemoveFromClassList("forge-mat--owned");
+			view.root.EnableInClassList("forge-mat--owned", owned >= need);
 			view.cell.Tag = currency;
 			_forgeTasks.Add(bindCurrencyCell(view.cell, currency, ct));
 		}
@@ -261,6 +281,48 @@ namespace ProjectOne.UI
 			UniTask task = cell.BindCurrencyAsync(currency, 0, ct);
 			cell.SetCountText(string.Empty);
 			return task;
+		}
+
+		// 행의 재료 그림 — 칸 수만큼 쓰고 남는 칸은 감춘다.
+		private void applyCosts(RecipeRowView row, IReadOnlyList<RecipeCostIcon> costs, int start, int count, CancellationToken ct)
+		{
+			for (int i = 0; i < count; i++)
+			{
+				RecipeCostView view = getOrCreateCost(row, i);
+				RecipeCostIcon cost = costs[start + i];
+				setShown(view.root, true);
+				view.root.EnableInClassList("recipe-cost--ready", cost.ready);
+				view.root.EnableInClassList("recipe-cost--short", cost.ready == false);
+				_forgeTasks.Add(_icons.SetAsync(view.icon, getCostIconAddress(cost), ct));
+			}
+
+			for (int i = count; i < row.costViews.Count; i++)
+			{
+				setShown(row.costViews[i].root, false);
+			}
+		}
+
+		private static string getCostIconAddress(RecipeCostIcon cost)
+		{
+			if (cost.isCurrency == true)
+			{
+				Table_Currency.Row currency = Table_Currency.Get(cost.currency);
+				return (currency != null) ? currency.Icon : string.Empty;
+			}
+
+			Table_Item.Row item = Table_Item.Get(cost.itemId);
+			return (item != null) ? item.Icon : string.Empty;
+		}
+
+		private void selectSub(int selected)
+		{
+			for (int i = 0; i < _subButtons.Count; i++)
+			{
+				Button button = _subButtons[i];
+				button.EnableInClassList(RECIPE_SUB_ON, i == selected);
+				// 구분선은 고른 칸 양옆과 첫 칸에서 뺀다
+				button.EnableInClassList(RECIPE_SUB_NOSEP, i == 0 || i == selected || i == selected + 1);
+			}
 		}
 
 		private static void applyPill(Label pill, RecipeState state)
@@ -318,12 +380,6 @@ namespace ProjectOne.UI
 
 				VisualElement box = new VisualElement();
 				box.AddToClassList("forge-cell");
-				if (parent == _forgeSubCells)
-				{
-					box.AddToClassList("forge-cell--sub");
-					stub.style.display = DisplayStyle.None;
-				}
-
 				column.Add(box);
 				view = createMatView(box, true);
 				view.root = column;
@@ -395,9 +451,10 @@ namespace ProjectOne.UI
 			row.name = new Label();
 			row.name.AddToClassList("recipe-row__name");
 			texts.Add(row.name);
-			row.sub = new Label();
-			row.sub.AddToClassList("recipe-row__sub");
-			texts.Add(row.sub);
+			row.costs = new VisualElement();
+			row.costs.AddToClassList("recipe-costs");
+			row.costs.pickingMode = PickingMode.Ignore;
+			texts.Add(row.costs);
 
 			row.pill = new Label();
 			row.pill.AddToClassList("recipe-pill");
@@ -408,6 +465,50 @@ namespace ProjectOne.UI
 			return row;
 		}
 
+		private static RecipeCostView getOrCreateCost(RecipeRowView row, int index)
+		{
+			if (index < row.costViews.Count)
+			{
+				return row.costViews[index];
+			}
+
+			RecipeCostView view = new RecipeCostView();
+			view.root = new VisualElement();
+			view.root.AddToClassList("recipe-cost");
+			view.root.pickingMode = PickingMode.Ignore;
+			row.costs.Add(view.root);
+
+			view.icon = new VisualElement();
+			view.icon.AddToClassList("recipe-cost__icon");
+			view.icon.pickingMode = PickingMode.Ignore;
+			view.root.Add(view.icon);
+
+			Label check = new Label("✓");
+			check.AddToClassList("recipe-cost__check");
+			check.pickingMode = PickingMode.Ignore;
+			view.root.Add(check);
+
+			row.costViews.Add(view);
+			return view;
+		}
+
+		private Button getOrCreateSub(int index)
+		{
+			if (index < _subButtons.Count)
+			{
+				return _subButtons[index];
+			}
+
+			Button button = new Button();
+			button.AddToClassList("recipe-sub");
+			button.AddToClassList("sfx-click");
+			button.userData = index;
+			button.RegisterCallback<ClickEvent>(onRecipeSubClicked);
+			_recipeSubs.Add(button);
+			_subButtons.Add(button);
+			return button;
+		}
+
 		// ── 내부: 입력 → 이벤트 ────────────────────────────────────────────
 
 		private void onRecipeTabClicked(ClickEvent evt)
@@ -416,6 +517,14 @@ namespace ProjectOne.UI
 			SelectRecipeTab(index);
 			_recipeList.scrollOffset = Vector2.zero;
 			if (OnRecipeTabSelected != null) { OnRecipeTabSelected.Invoke(index); }
+		}
+
+		private void onRecipeSubClicked(ClickEvent evt)
+		{
+			int index = (int)((VisualElement)evt.currentTarget).userData;
+			selectSub(index);
+			_recipeList.scrollOffset = Vector2.zero;
+			if (OnRecipeSubSelected != null) { OnRecipeSubSelected.Invoke(index); }
 		}
 
 		private void onRecipeRowClicked(ClickEvent evt)
@@ -436,11 +545,6 @@ namespace ProjectOne.UI
 		private void onForgeActionClicked()
 		{
 			if (OnForgeActionClicked != null) { OnForgeActionClicked.Invoke(); }
-		}
-
-		private void onForgeSubClicked()
-		{
-			if (OnForgeSubClicked != null) { OnForgeSubClicked.Invoke(); }
 		}
 
 		private void onMaterialListClicked()
