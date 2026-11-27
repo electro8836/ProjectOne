@@ -672,3 +672,54 @@
 .recipe-pill--short {
 	color: #FF6060;
 }
+
+/* ── 제작: 보유 재료 버튼 — 결과 칸 오른쪽 위 둥근 버튼 (시안 Shared/Design/UI재료목록_획득처_시안.png 2안) ── */
+
+/* 둥근 어두운 판 + 보라 테두리, 가운데 재료 아이콘, 아래 '재료' 알약이 테두리에 걸친다.
+   .btn 의 최소 폭·면 그림을 끈다 */
+.theme-violet .btn.forge-material-button {
+	position: absolute;
+	top: 0;
+	right: 40px;
+	width: 104px;
+	height: 104px;
+	min-width: 0;
+	padding: 0;
+	margin: 0;
+	border-width: 5px;
+	border-color: #8C76E6;
+	border-radius: 52px;
+	background-image: none;
+	background-color: #221C3E;
+	align-items: center;
+	justify-content: center;
+}
+
+.theme-violet .btn.forge-material-button:active {
+	background-color: #18142C;
+}
+
+.forge-material-button__icon {
+	width: 64px;
+	height: 64px;
+	margin-bottom: 8px;
+	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Items/ItemIcon_Key_03.png");
+	-unity-background-scale-mode: scale-to-fit;
+}
+
+.forge-material-button__text {
+	position: absolute;
+	bottom: -18px;
+	margin: 0;
+	padding: 0 14px 2px 14px;
+	border-radius: 14px;
+	background-color: #141024;
+	font-size: 24px;
+	color: #FFFFFF;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* 조합법을 안 골라도 보인다 */
+.forge-stage--empty .forge-material-button {
+	visibility: visible;
+}

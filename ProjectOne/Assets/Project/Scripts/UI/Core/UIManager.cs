@@ -77,6 +77,9 @@ namespace ProjectOne.UI
 		// 툴팁이 _popupCts 를 취소하면 그것을 띄운 목록 팝업 자신이 닫혀 버린다.
 		private CancellationTokenSource _currencyListCts;
 
+		// 보유 재료 팝업 — 제작 화면에서 열고, '조합하기' 로 닫히면 고른 제작법을 돌려준다.
+		private CancellationTokenSource _materialListCts;
+
 		// 퀘스트 목록 팝업도 마찬가지다. 보상 칸을 누르면 장비·소모품 팝업이나 설명 툴팁이 뜨는데,
 		// 그것들이 _popupCts 를 취소하면 목록 팝업 자신이 닫혀 버린다.
 		private CancellationTokenSource _questListCts;
@@ -554,6 +557,7 @@ namespace ProjectOne.UI
 			cancelPopup(ref _popupCts);
 			cancelToolkitPopups();
 			cancelPopup(ref _currencyListCts);
+			cancelPopup(ref _materialListCts);
 			cancelPopup(ref _questListCts);
 			cancelPopup(ref _dailyBonusCts);
 			cancelPopup(ref _heroPassCts);
@@ -1274,6 +1278,7 @@ namespace ProjectOne.UI
 		private const string BOX_REWARD_POPUP_ADDRESS = "UIPrefab_BoxRewardPopup";
 		private const string STAT_POPUP_ADDRESS = "UIPrefab_StatPopup";
 		private const string CURRENCY_LIST_POPUP_ADDRESS = "UIPrefab_CurrencyListPopup";
+		private const string MATERIAL_LIST_POPUP_ADDRESS = "UIPrefab_MaterialListPopup";
 		private const string MENU_POPUP_ADDRESS = "UIPrefab_MenuPopup";
 		private const string DUNGEON_LIST_POPUP_ADDRESS = "UIPrefab_DungeonListPopup";
 		private const string QUEST_LIST_POPUP_ADDRESS = "UIPrefab_QuestListPopup";
@@ -1548,6 +1553,39 @@ namespace ProjectOne.UI
 			{
 				ResourceManager.Instance.Release(CURRENCY_LIST_POPUP_ADDRESS);
 			}
+		}
+
+		// 보유 재료 팝업을 팝업 층에 열고 닫힘을 기다린다. '조합하기' 로 닫으면 그 제작법 ID, 아니면 0.
+		public async UniTask<int> ShowMaterialListPopupAsync(CancellationToken ct)
+		{
+			_materialListCts?.Cancel();
+			_materialListCts?.Dispose();
+			_materialListCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+
+			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(MATERIAL_LIST_POPUP_ADDRESS, _materialListCts.Token);
+			if (prefab == null)
+			{
+				return 0;
+			}
+
+			GameObject go = spawnPopup(prefab);
+			MaterialListPopup popup = go.GetComponent<MaterialListPopup>();
+			if (popup == null)
+			{
+				Destroy(go);
+				ResourceManager.Instance.Release(MATERIAL_LIST_POPUP_ADDRESS);
+				return 0;
+			}
+
+			int recipeId = await popup.ShowAsync(_materialListCts.Token);
+			Destroy(go);
+
+			if (ResourceManager.HasInstance)
+			{
+				ResourceManager.Instance.Release(MATERIAL_LIST_POPUP_ADDRESS);
+			}
+
+			return recipeId;
 		}
 
 		// 아이템 정보 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.

@@ -1,0 +1,30 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+	<Style src="../../Common/Theme.uss" />
+	<Style src="../../Common/Violet.uss" />
+	<Style src="../Popups.uss" />
+	<Style src="Material.uss" />
+
+	<!-- 보유 재료 — 위 재료 격자 4열(개수 배지, 0개는 흐리게), 아래 고른 재료의 상세(이름·보유·획득처). 시안 Shared/Design/UI재료목록_획득처_시안.png 2안 -->
+	<ui:VisualElement name="popup" class="popup theme-violet">
+		<ui:VisualElement name="dim" class="popup__dim" />
+		<ui:VisualElement class="px-paper popup__window">
+			<ui:VisualElement class="px-wood popup__head item-head">
+				<ui:Label text="보유 재료" class="popup__name item-head__name" />
+				<ui:Button name="close" text="" class="btn btn--icon item-head__close"><ui:VisualElement class="icon-close" picking-mode="Ignore" /></ui:Button>
+			</ui:VisualElement>
+			<ui:VisualElement class="px-inset material-box popup__body">
+				<ui:ScrollView name="grid" class="material-grid" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" />
+				<!-- 상세 — 획득처 줄은 MaterialListPopup 이 만든다 -->
+				<ui:VisualElement class="material-detail">
+					<ui:VisualElement class="material-detail__head">
+						<ui:Label name="detail-name" text="" class="material-detail__name" />
+						<ui:Label name="detail-owned" text="" class="material-detail__owned" />
+					</ui:VisualElement>
+					<ui:Label text="획득처" class="material-detail__caption" />
+					<ui:VisualElement name="source-list" class="material-detail__sources" />
+					<ui:Label name="source-none" text="획득처 없음" class="material-detail__none" />
+				</ui:VisualElement>
+			</ui:VisualElement>
+		</ui:VisualElement>
+	</ui:VisualElement>
+</ui:UXML>

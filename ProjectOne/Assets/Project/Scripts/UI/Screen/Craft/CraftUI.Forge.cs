@@ -41,6 +41,7 @@ namespace ProjectOne.UI
 		public event Action<int> OnRecipeSelected;
 		public event Action OnForgeActionClicked;
 		public event Action OnForgeSubClicked;
+		public event Action OnMaterialListClicked;
 		public event Action<ItemCellView> OnForgeCellClicked;	// 트리의 칸 — 무엇인지는 칸의 Tag(FORGE_TAG_* · 재료 itemId · 재화)로 가린다
 
 		// 트리 칸 Tag — 재료 칸은 itemId(int), 재화 칸은 EDT.Currency 를 싣는다
@@ -85,6 +86,7 @@ namespace ProjectOne.UI
 			_forgeSub = root.Q("forge-sub");
 			_forgeSubCells = root.Q("forge-sub-cells");
 			root.Q<Button>("forge-sub-button").clicked += onForgeSubClicked;
+			root.Q<Button>("forge-material-button").clicked += onMaterialListClicked;
 
 			_forgeAction = root.Q<Button>("forge-action");
 			_forgeAction.clicked += onForgeActionClicked;
@@ -439,6 +441,11 @@ namespace ProjectOne.UI
 		private void onForgeSubClicked()
 		{
 			if (OnForgeSubClicked != null) { OnForgeSubClicked.Invoke(); }
+		}
+
+		private void onMaterialListClicked()
+		{
+			if (OnMaterialListClicked != null) { OnMaterialListClicked.Invoke(); }
 		}
 	}
 }

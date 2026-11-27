@@ -37,6 +37,11 @@
 			<!-- 제작: 고른 조합법의 트리 — 결과 → 재료 줄 → 모자란 하위 재료 한 층 → 제작 버튼 -->
 			<ui:VisualElement name="forge-stage" class="forge-only forge-stage">
 				<ui:VisualElement name="forge-result" class="forge-cell forge-cell--result" />
+				<!-- 보유 재료 팝업 — 결과 칸 오른쪽 위 둥근 버튼. 조합법을 안 골라도 보인다 -->
+				<ui:Button name="forge-material-button" text="" class="btn forge-material-button">
+					<ui:VisualElement class="forge-material-button__icon" picking-mode="Ignore" />
+					<ui:Label text="재료" class="forge-material-button__text" picking-mode="Ignore" />
+				</ui:Button>
 				<ui:Label name="forge-result-name" text="" class="forge-name forge-name--result" />
 				<ui:VisualElement class="forge-trunk" picking-mode="Ignore" />
 				<!-- 재료 칸은 CraftUI 가 만든다. forge-branch 는 칸 위를 잇는 가로선 -->

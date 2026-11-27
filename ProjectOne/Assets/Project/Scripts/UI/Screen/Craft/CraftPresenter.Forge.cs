@@ -83,6 +83,7 @@ namespace ProjectOne.UI
 			view.OnForgeActionClicked += onForgeActionClicked;
 			view.OnForgeSubClicked += onForgeSubClicked;
 			view.OnForgeCellClicked += onForgeCellClicked;
+			view.OnMaterialListClicked += onMaterialListClicked;
 		}
 
 		private void disposeForge()
@@ -92,6 +93,7 @@ namespace ProjectOne.UI
 			view.OnForgeActionClicked -= onForgeActionClicked;
 			view.OnForgeSubClicked -= onForgeSubClicked;
 			view.OnForgeCellClicked -= onForgeCellClicked;
+			view.OnMaterialListClicked -= onMaterialListClicked;
 		}
 
 		// ── 입력 ──────────────────────────────────────────────────────
@@ -117,8 +119,29 @@ namespace ProjectOne.UI
 				return;
 			}
 
+			selectMaterialRecipe(_subRecipeId);
+		}
+
+		// 보유 재료 팝업 — '조합하기' 로 닫히면 그 제작법으로 넘어간다.
+		private void onMaterialListClicked()
+		{
+			showMaterialListAsync().Forget();
+		}
+
+		private async UniTaskVoid showMaterialListAsync()
+		{
+			int recipeId = await UIManager.Instance.ShowMaterialListPopupAsync(view.GetDestroyToken());
+			if (recipeId != 0)
+			{
+				selectMaterialRecipe(recipeId);
+			}
+		}
+
+		// 재료 탭으로 바꾸고 그 조합법 행을 고른다.
+		private void selectMaterialRecipe(int recipeId)
+		{
 			_recipeTab = RECIPE_TAB_MATERIAL;
-			_selectedRecipeId = _subRecipeId;
+			_selectedRecipeId = recipeId;
 			view.SelectRecipeTab(_recipeTab);
 			rebuild();
 		}
