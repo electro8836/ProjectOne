@@ -19,14 +19,28 @@
 				<ui:VisualElement name="cell" class="item-summary__cell" />
 				<ui:VisualElement class="item-summary__meta">
 					<ui:Label name="owned" text="" class="consumable-owned" />
+					<!-- 재료(제작 화면) — 보유 수 대신 설명을 칸 옆에 둔다 -->
+					<ui:Label name="side-desc" text="" class="material-side-desc" />
 				</ui:VisualElement>
 				<ui:VisualElement class="item-summary__actions">
 					<ui:Button name="delete" text="삭제" class="btn btn--red btn--small" />
 				</ui:VisualElement>
 			</ui:VisualElement>
-			<ui:VisualElement class="popup__body">
-				<ui:Label text="사용 효과" class="section-title" />
+			<ui:VisualElement name="desc-box" class="popup__body">
+				<ui:Label name="desc-title" text="사용 효과" class="section-title" />
 				<ui:Label name="desc" text="" class="popup-text equip-info-desc" />
+			</ui:VisualElement>
+			<!-- 획득처 | 사용처 탭 (재료, 제작 화면에서 열 때만). 높이 고정 + 목록만 스크롤, 줄은 ConsumableInfoPopup 이 만든다 -->
+			<ui:VisualElement name="sources" class="popup__body material-info">
+				<ui:VisualElement class="material-tabs">
+					<ui:Button name="tab-sources" text="획득처" class="material-tab" />
+					<ui:Button name="tab-uses" text="사용처" class="material-tab" />
+				</ui:VisualElement>
+				<ui:ScrollView name="material-scroll" class="material-scroll" mode="Vertical" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden">
+					<ui:VisualElement name="source-list" class="material-sources" />
+					<ui:VisualElement name="use-list" class="material-uses" />
+					<ui:Label name="material-empty" text="" class="material-empty" />
+				</ui:ScrollView>
 			</ui:VisualElement>
 			<!-- 수량 조절 + 사용 (읽기 전용이면 감춘다) -->
 			<ui:VisualElement name="control" class="consumable-bar popup__body">

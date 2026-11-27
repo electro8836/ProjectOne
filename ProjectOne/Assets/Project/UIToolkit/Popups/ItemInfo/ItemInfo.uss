@@ -205,3 +205,186 @@
 .popup__window--stash {
 	margin-bottom: 116px;
 }
+
+/* ── 재료 아이템 정보(제작 화면) — 칸 옆 설명 + 획득처 | 사용처 탭 ── */
+
+/* 보유 수 자리에 들어가는 설명 */
+.material-side-desc {
+	margin: 0;
+	padding: 0;
+	font-size: 30px;
+	color: #E6E6EE;
+	white-space: normal;
+}
+
+.material-tabs {
+	flex-direction: row;
+	height: 80px;
+	padding: 6px;
+	margin-bottom: 22px;
+	border-radius: 20px;
+	background-color: #26272C;
+}
+
+.material-tab {
+	flex-grow: 1;
+	flex-basis: 0;
+	margin: 0;
+	padding: 0;
+	border-width: 0;
+	border-radius: 16px;
+	background-color: rgba(0, 0, 0, 0);
+	background-image: none;
+	font-size: 32px;
+	color: #AAACB6;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+}
+
+.material-tab--on {
+	background-color: #545866;
+	color: #FFFFFF;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+/* 높이 고정 — 개수가 늘어도 팝업 크기는 그대로, 목록만 스크롤한다 */
+.material-scroll {
+	height: 720px;
+	flex-shrink: 0;
+}
+
+.material-empty {
+	margin-top: 24px;
+	font-size: 28px;
+	color: #AAACB6;
+	-unity-text-align: middle-center;
+}
+
+/* 획득처 — 칩 + 문구. 처치는 보스마다 한 줄이고 칩은 첫 줄에만(이어지는 줄은 자리만 지켜 이름 열을 맞춘다) */
+.material-source {
+	flex-direction: row;
+	align-items: center;
+	min-height: 54px;
+	margin-top: 20px;
+}
+
+.material-source--first {
+	margin-top: 4px;
+}
+
+.material-source--cont {
+	margin-top: 0;
+	min-height: 46px;
+}
+
+.material-source--cont .material-source__chip {
+	visibility: hidden;
+}
+
+.material-source__chip {
+	padding: 4px 14px;
+	margin-right: 22px;
+	border-radius: 12px;
+	font-size: 26px;
+	color: #FFFFFF;
+	flex-shrink: 0;
+}
+
+.material-source__chip--boss {
+	background-color: #D8404A;
+}
+
+.material-source__chip--combine {
+	background-color: #8A5CE0;
+}
+
+.material-source__chip--decompose {
+	background-color: #24A8A0;
+}
+
+.material-source__text {
+	flex-grow: 1;
+	flex-shrink: 1;
+	margin: 0;
+	padding: 0;
+	font-size: 28px;
+	color: #E6E6EE;
+	white-space: normal;
+}
+
+/* 조합하기 — 작은 초록 버튼(켜진 버튼 면) */
+.theme-violet .btn.material-source__combine {
+	margin-left: 12px;
+	height: 60px;
+	min-width: 0;
+	padding: 0 22px;
+	flex-shrink: 0;
+	background-image: url("../../Violet/btn_active.png");
+	-unity-slice-left: 30;
+	-unity-slice-right: 30;
+	font-size: 26px;
+	color: #FFFFFF;
+}
+
+/* 사용처 — 결과 칸 + 이름 + 필요 수 + 화살표. 줄을 누르면 그 제작법으로 간다 */
+.material-use {
+	flex-direction: row;
+	align-items: center;
+	height: 104px;
+	padding: 0 8px 0 0;
+	margin-bottom: 8px;
+	border-radius: 16px;
+}
+
+.material-use:active {
+	background-color: #3A3C44;
+}
+
+.material-use__cell {
+	width: 92px;
+	height: 92px;
+	flex-shrink: 0;
+}
+
+.material-use__cell .item-cell {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+.material-use__cell .item-cell__tier {
+	top: -10px;
+	padding: 0 8px 1px 8px;
+	border-width: 2px;
+	font-size: 18px;
+}
+
+.material-use__name {
+	flex-grow: 1;
+	flex-shrink: 1;
+	margin: 0 0 0 20px;
+	padding: 0;
+	font-size: 30px;
+	color: #FFFFFF;
+	-unity-font-definition: url("../../../Art/UI/Fonts/Pretendard/Pretendard-ExtraBold.ttf");
+	-unity-text-outline-width: 0;
+	text-shadow: 0 2px 0 #0A0814;
+}
+
+.material-use__count {
+	margin: 0 0 0 12px;
+	padding: 0;
+	font-size: 28px;
+	color: #AAACB6;
+}
+
+.material-use__arrow {
+	width: 20px;
+	height: 30px;
+	margin-left: 16px;
+	background-image: url("../../Violet/icon_chevron.png");
+	-unity-background-scale-mode: scale-to-fit;
+	-unity-background-image-tint-color: #AAACB6;
+}

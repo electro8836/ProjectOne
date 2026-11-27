@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using Cysharp.Threading.Tasks;
 using EDT;
 using ProjectOne.Consumables;
@@ -22,6 +23,8 @@ namespace ProjectOne.UI
 		private bool _singleUse;	// 1개씩만 쓰는 소모품 — 선택 수량을 1로 묶는다(재료는 해당 없음)
 		private int _owned;	// 보유 수량 — 선택 수량의 상한
 		private int _count;	// 선택 수량
+		private readonly List<MaterialSourceData> _sources = new List<MaterialSourceData>();
+		private readonly List<MaterialUseData> _uses = new List<MaterialUseData>();
 
 		protected override void OnInitialize()
 		{
@@ -43,9 +46,20 @@ namespace ProjectOne.UI
 
 		// 팝업 표시 — 데이터 조회 후 View 에 그리기 지시, 닫힘까지 대기.
 		// readOnly = true 면 디스플레이 경로다(결과창·상점) — 수량 조절·사용·파괴를 감춘다.
-		public async UniTask ShowAsync(int itemId, bool readOnly, CancellationToken ct)
+		// showSources = true 면 재료의 획득처·사용처 탭을 보인다(제작 화면).
+		public async UniTask ShowAsync(int itemId, bool readOnly, bool showSources, CancellationToken ct)
 		{
 			view.SetReadOnly(readOnly);
+			_sources.Clear();
+			_uses.Clear();
+			if (showSources == true)
+			{
+				MaterialSources.Collect(itemId, _sources);
+				MaterialSources.CollectUses(itemId, _uses);
+			}
+
+			// 둘 다 비면 탭을 감추고 원래 모양(보유 수·설명 판) — 사용처 칸 아이콘까지 받은 뒤 표시한다
+			await view.SetMaterialInfoAsync(_sources, _uses, ct);
 
 			Table_Item.Row row = Table_Item.Get(itemId);
 			if (row == null)
@@ -67,6 +81,7 @@ namespace ProjectOne.UI
 			_count = (_owned > 0) ? 1 : 0;
 
 			view.SetInfo(row);
+			view.SetDescTitle(_canUse ? "사용 효과" : "설명");
 
 			// 아이콘 로드가 끝난 뒤 한 번에 표시
 			await view.BindItemSlotAsync(row, _owned, ct);

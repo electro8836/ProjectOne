@@ -1656,7 +1656,8 @@ namespace ProjectOne.UI
 		// 소모품 정보 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.
 		// 소모품은 스택이라 장비처럼 인스턴스 UID 가 없어 아이템 ID 로 연다.
 		// readOnly = true 면 디스플레이 경로다 — 수량 조절·사용·파괴를 감춘다.
-		public async UniTask ShowConsumablePopupAsync(string address, int itemId, bool readOnly, CancellationToken ct)
+		// showSources = true 면 재료의 획득처 | 사용처 탭을 보인다. '조합하기'나 사용처 줄로 닫으면 제작법 ID, 아니면 0 을 돌려준다.
+		public async UniTask<int> ShowConsumablePopupAsync(string address, int itemId, bool readOnly, CancellationToken ct, bool showSources = false)
 		{
 			_popupCts?.Cancel();
 			_popupCts?.Dispose();
@@ -1665,7 +1666,7 @@ namespace ProjectOne.UI
 			GameObject prefab = await ResourceManager.Instance.AcquireAsync<GameObject>(address, _popupCts.Token);
 			if (prefab == null)
 			{
-				return;
+				return 0;
 			}
 
 			GameObject go = spawnPopup(prefab);
@@ -1674,10 +1675,10 @@ namespace ProjectOne.UI
 			{
 				Destroy(go);
 				ResourceManager.Instance.Release(address);
-				return;
+				return 0;
 			}
 
-			await popup.ShowAsync(itemId, readOnly, _popupCts.Token);
+			int recipeId = await popup.ShowAsync(itemId, readOnly, showSources, _popupCts.Token);
 			Destroy(go);
 
 			// 종료/취소 흐름에서 ResourceManager 가 이미 파괴됐으면 Instance 는 null — 가드 후 해제
@@ -1685,6 +1686,8 @@ namespace ProjectOne.UI
 			{
 				ResourceManager.Instance.Release(address);
 			}
+
+			return recipeId;
 		}
 
 		// 액트·필드 목록 팝업을 팝업 층(창보다 위)에 열고 닫힘을 기다린다.

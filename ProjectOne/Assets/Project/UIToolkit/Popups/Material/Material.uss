@@ -1,4 +1,4 @@
-/* 보유 재료 팝업 — 재료 격자 4열 + 아래 상세(획득처). 시안 Shared/Design/UI재료목록_획득처_시안.png 2안 */
+/* 보유 재료 팝업 — 재료 격자 4열. 시안 Shared/Design/UI재료목록_획득처_시안.png 2안 */
 
 .material-box {
 	margin-top: 26px;
@@ -21,7 +21,6 @@
 	margin: 0 -8px;
 }
 
-/* 고른 칸 테두리 자리 6px 는 늘 비워 둔다 — 고를 때 아이콘이 밀리지 않게 */
 .material-cell {
 	width: 196px;
 	height: 196px;
@@ -42,121 +41,4 @@
 
 .theme-violet .material-cell--empty .item-cell__count {
 	color: #82809A;
-}
-
-/* 고른 칸 — 노란 테두리 */
-.material-cell--selected {
-	border-color: #F0C850;
-}
-
-/* ── 상세 ── */
-
-.material-detail {
-	margin-top: 12px;
-	padding: 24px;
-	border-radius: 16px;
-	background-color: #1C1D22;
-	height: 380px;
-	flex-shrink: 0;
-	overflow: hidden;
-}
-
-.material-detail__head {
-	flex-direction: row;
-	justify-content: space-between;
-	align-items: center;
-	margin-bottom: 18px;
-}
-
-.material-detail__name {
-	font-size: 40px;
-	color: #FFFFFF;
-}
-
-.material-detail__owned {
-	font-size: 32px;
-	color: #C8C8D4;
-}
-
-.material-detail__caption {
-	font-size: 28px;
-	color: #9A9AA6;
-	margin-bottom: 10px;
-}
-
-.material-detail__none {
-	font-size: 30px;
-	color: #9A9AA6;
-}
-
-.material-source {
-	flex-direction: row;
-	align-items: center;
-	margin-bottom: 12px;
-}
-
-/* 획득처 아이콘 — 흰 픽토그램을 칩 색으로 물들인다 */
-.material-source__icon {
-	width: 48px;
-	height: 48px;
-	margin-right: 12px;
-	flex-shrink: 0;
-	-unity-background-scale-mode: scale-to-fit;
-}
-
-.material-source__icon--boss {
-	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_skull.png");
-	-unity-background-image-tint-color: #FF7A80;
-}
-
-.material-source__icon--combine {
-	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_hammer.png");
-	-unity-background-image-tint-color: #B898FF;
-}
-
-.material-source__icon--decompose {
-	background-image: url("../../../Art/UI/Atlas/Textures/Icons/Common/Pictogram_64/btn_icon_refresh.png");
-	-unity-background-image-tint-color: #5ED8CE;
-}
-
-.material-source__chip {
-	padding: 4px 14px;
-	margin-right: 14px;
-	border-radius: 12px;
-	font-size: 26px;
-	color: #FFFFFF;
-}
-
-.material-source__chip--boss {
-	background-color: #D8404A;
-}
-
-.material-source__chip--combine {
-	background-color: #8A5CE0;
-}
-
-.material-source__chip--decompose {
-	background-color: #24A8A0;
-}
-
-.material-source__text {
-	flex-grow: 1;
-	flex-shrink: 1;
-	font-size: 28px;
-	color: #E6E6EE;
-	white-space: normal;
-}
-
-/* 조합하기 — 작은 초록 버튼(켜진 버튼 면) */
-.theme-violet .btn.material-source__combine {
-	margin-left: 12px;
-	height: 60px;
-	min-width: 0;
-	padding: 0 22px;
-	flex-shrink: 0;
-	background-image: url("../../Violet/btn_active.png");
-	-unity-slice-left: 30;
-	-unity-slice-right: 30;
-	font-size: 26px;
-	color: #FFFFFF;
 }

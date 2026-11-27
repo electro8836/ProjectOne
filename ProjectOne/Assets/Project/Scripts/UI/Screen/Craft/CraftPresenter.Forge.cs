@@ -119,10 +119,10 @@ namespace ProjectOne.UI
 				return;
 			}
 
-			selectMaterialRecipe(_subRecipeId);
+			selectRecipe(_subRecipeId);
 		}
 
-		// 보유 재료 팝업 — '조합하기' 로 닫히면 그 제작법으로 넘어간다.
+		// 보유 재료 팝업 — '조합하기'나 사용처 줄로 닫히면 그 제작법으로 넘어간다.
 		private void onMaterialListClicked()
 		{
 			showMaterialListAsync().Forget();
@@ -133,20 +133,52 @@ namespace ProjectOne.UI
 			int recipeId = await UIManager.Instance.ShowMaterialListPopupAsync(view.GetDestroyToken());
 			if (recipeId != 0)
 			{
-				selectMaterialRecipe(recipeId);
+				selectRecipe(recipeId);
 			}
 		}
 
-		// 재료 탭으로 바꾸고 그 조합법 행을 고른다.
-		private void selectMaterialRecipe(int recipeId)
+		// 그 제작법이 있는 탭(재료 / 무기 종류)으로 바꾸고 그 행을 고른다.
+		private void selectRecipe(int recipeId)
 		{
-			_recipeTab = RECIPE_TAB_MATERIAL;
+			_recipeTab = getRecipeTab(Table_ForgeRecipe.Get(recipeId));
 			_selectedRecipeId = recipeId;
 			view.SelectRecipeTab(_recipeTab);
 			rebuild();
 		}
 
-		// 트리 칸 클릭 — 장비는 읽기 전용 장비 정보, 재료는 아이템 정보, 재화는 툴팁.
+		// 제작법이 들어가는 탭. 장비 제작법은 결과 장비의 무기 종류로 가른다.
+		private static int getRecipeTab(Table_ForgeRecipe.Row recipe)
+		{
+			if (recipe == null || ForgeRules.GetKind(recipe) == ForgeRecipeKind.Material)
+			{
+				return RECIPE_TAB_MATERIAL;
+			}
+
+			Table_Equipment.Row equipment = Table_Equipment.Get(recipe.ResultItemID);
+			if (equipment == null)
+			{
+				return RECIPE_TAB_MATERIAL;
+			}
+
+			switch (equipment.WeaponType)
+			{
+				case WeaponType.GreatSword:
+					return RECIPE_TAB_GREATSWORD;
+
+				case WeaponType.Dagger:
+					return RECIPE_TAB_DAGGER;
+
+				case WeaponType.Shuriken:
+					return RECIPE_TAB_SHURIKEN;
+
+				case WeaponType.Rifle:
+					return RECIPE_TAB_RIFLE;
+			}
+
+			return RECIPE_TAB_MATERIAL;
+		}
+
+		// 트리 칸 클릭 — 장비는 읽기 전용 장비 정보, 재료는 아이템 정보(설명·획득처), 재화는 툴팁.
 		private void onForgeCellClicked(ItemCellView cell)
 		{
 			object tag = cell.Tag;
@@ -181,7 +213,7 @@ namespace ProjectOne.UI
 			}
 		}
 
-		// 장비면 표시용 인스턴스로 읽기 전용 장비 정보를, 그 밖의 아이템은 읽기 전용 아이템 정보를 띄운다.
+		// 장비면 표시용 인스턴스로 읽기 전용 장비 정보를, 그 밖의 아이템은 읽기 전용 아이템 정보(획득처 포함)를 띄운다.
 		private void showItemInfo(int itemId, ItemGradeType grade)
 		{
 			if (Table_Equipment.Get(itemId) != null)
@@ -197,7 +229,17 @@ namespace ProjectOne.UI
 
 			if (Table_Item.Get(itemId) != null)
 			{
-				UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, itemId, true, view.GetDestroyToken()).Forget();
+				showConsumableInfoAsync(itemId).Forget();
+			}
+		}
+
+		// 획득처의 '조합하기'나 사용처 줄로 닫히면 그 제작법으로 넘어간다.
+		private async UniTaskVoid showConsumableInfoAsync(int itemId)
+		{
+			int recipeId = await UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, itemId, true, view.GetDestroyToken(), true);
+			if (recipeId != 0)
+			{
+				selectRecipe(recipeId);
 			}
 		}
 
