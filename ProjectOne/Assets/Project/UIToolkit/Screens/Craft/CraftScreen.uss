@@ -625,12 +625,24 @@
 	height: 112px;
 }
 
-/* 작은 칸(112px)은 티어 배지도 줄인다(줄 안쪽 위 여백 14px 안에 들어간다) */
+/* 작은 칸(112px) — 틀·배지·아이콘 여백이 196px 칸 기준 고정값이라, 196px 로 그린 뒤 통째로 줄인다(112 / 196) */
+.recipe-row .forge-cell .item-cell {
+	left: 0;
+	top: 0;
+	right: auto;
+	bottom: auto;
+	width: 196px;
+	height: 196px;
+	transform-origin: left top;
+	scale: 0.5714 0.5714;
+}
+
+/* 줄인 뒤 티어 배지 글자 18px · 위로 10px 튀어나오게(줄 안쪽 위 여백 14px 안) */
 .craft .recipe-row .item-cell__tier {
-	top: -10px;
-	padding: 0 8px 0 8px;
-	border-width: 2px;
-	font-size: 18px;
+	top: -18px;
+	padding: 0 14px 0 14px;
+	border-width: 3.5px;
+	font-size: 32px;
 }
 
 .recipe-row__texts {

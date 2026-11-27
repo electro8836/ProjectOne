@@ -341,24 +341,28 @@
 }
 
 .material-use__cell {
-	width: 92px;
-	height: 92px;
+	width: 100px;
+	height: 100px;
 	flex-shrink: 0;
 }
 
+/* 틀·배지·아이콘 여백이 196px 칸 기준 고정값이라, 196px 로 그린 뒤 통째로 줄인다(100 / 196) */
 .material-use__cell .item-cell {
 	position: absolute;
 	left: 0;
-	right: 0;
 	top: 0;
-	bottom: 0;
+	width: 196px;
+	height: 196px;
+	transform-origin: left top;
+	scale: 0.5102 0.5102;
 }
 
+/* 줄인 뒤 티어 배지 글자 18px */
 .material-use__cell .item-cell__tier {
-	top: -10px;
-	padding: 0 8px 1px 8px;
-	border-width: 2px;
-	font-size: 18px;
+	top: -18px;
+	padding: 0 16px 2px 16px;
+	border-width: 4px;
+	font-size: 36px;
 }
 
 .material-use__name {
