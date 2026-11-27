@@ -46,6 +46,7 @@ namespace ProjectOne.UI
 	public sealed partial class CraftPresenter : Presenter<CraftUI>
 	{
 		private const string EQUIPMENT_POPUP_ADDRESS = "UIPrefab_EquipmentPopup";
+		private const string CONSUMABLE_POPUP_ADDRESS = "UIPrefab_ConsumablePopup";
 
 		// 필터 탭 인덱스 — 프리펩 Bottom/TabMenu_Middle 의 Hierarchy 순서와 일대일로 맞춘다.
 		private const int TAB_ALL = 0;

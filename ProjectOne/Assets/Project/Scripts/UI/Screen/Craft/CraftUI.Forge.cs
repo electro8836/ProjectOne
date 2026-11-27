@@ -41,7 +41,11 @@ namespace ProjectOne.UI
 		public event Action<int> OnRecipeSelected;
 		public event Action OnForgeActionClicked;
 		public event Action OnForgeSubClicked;
-		public event Action OnForgeSourceClicked;
+		public event Action<ItemCellView> OnForgeCellClicked;	// 트리의 칸 — 무엇인지는 칸의 Tag(FORGE_TAG_* · 재료 itemId · 재화)로 가린다
+
+		// 트리 칸 Tag — 재료 칸은 itemId(int), 재화 칸은 EDT.Currency 를 싣는다
+		public const string FORGE_TAG_RESULT = "result";
+		public const string FORGE_TAG_SOURCE = "source";
 
 		private readonly Button[] _recipeTabs = new Button[RECIPE_TAB_COUNT];
 		private readonly List<ForgeMatView> _matViews = new List<ForgeMatView>();
@@ -144,6 +148,7 @@ namespace ProjectOne.UI
 			// 결과
 			_resultName.text = data.resultName;
 			_resultView.count.text = (data.resultCount > 1) ? "x" + data.resultCount : string.Empty;
+			_resultView.cell.Tag = FORGE_TAG_RESULT;
 			_forgeTasks.Add(bindItemCell(_resultView.cell, data.resultItemId, data.resultGrade, ct));
 
 			// 재료 줄 — 이전 장비 · 재료 · 재화 순
@@ -156,7 +161,7 @@ namespace ProjectOne.UI
 				view.root.EnableInClassList("forge-mat--short", data.source == null);
 				view.name.text = data.sourceName;
 				view.count.text = string.Empty;
-				view.cell.Tag = "source";
+				view.cell.Tag = FORGE_TAG_SOURCE;
 				if (data.source != null)
 				{
 					_forgeTasks.Add(view.cell.BindEquipmentAsync(data.source, false, ct));
@@ -233,7 +238,7 @@ namespace ProjectOne.UI
 			view.count.text = CurrencyFormat.Short(owned) + "/" + CurrencyFormat.Short(need);
 			view.root.EnableInClassList("forge-mat--short", owned < need);
 			view.root.RemoveFromClassList("forge-mat--owned");
-			view.cell.Tag = null;
+			view.cell.Tag = currency;
 			_forgeTasks.Add(bindCurrencyCell(view.cell, currency, ct));
 		}
 
@@ -420,12 +425,10 @@ namespace ProjectOne.UI
 		// 트리의 칸 — 이전 장비 칸만 반응한다(장비 정보).
 		private void onForgeCellClicked(ItemCellView sender, long uid, int itemId)
 		{
-			if (uid == 0 || OnForgeSourceClicked == null)
+			if (OnForgeCellClicked != null)
 			{
-				return;
+				OnForgeCellClicked.Invoke(sender);
 			}
-
-			OnForgeSourceClicked.Invoke();
 		}
 
 		private void onForgeActionClicked()

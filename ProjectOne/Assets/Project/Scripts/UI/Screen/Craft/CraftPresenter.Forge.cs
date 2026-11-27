@@ -82,7 +82,7 @@ namespace ProjectOne.UI
 			view.OnRecipeSelected += onRecipeSelected;
 			view.OnForgeActionClicked += onForgeActionClicked;
 			view.OnForgeSubClicked += onForgeSubClicked;
-			view.OnForgeSourceClicked += onForgeSourceClicked;
+			view.OnForgeCellClicked += onForgeCellClicked;
 		}
 
 		private void disposeForge()
@@ -91,7 +91,7 @@ namespace ProjectOne.UI
 			view.OnRecipeSelected -= onRecipeSelected;
 			view.OnForgeActionClicked -= onForgeActionClicked;
 			view.OnForgeSubClicked -= onForgeSubClicked;
-			view.OnForgeSourceClicked -= onForgeSourceClicked;
+			view.OnForgeCellClicked -= onForgeCellClicked;
 		}
 
 		// ── 입력 ──────────────────────────────────────────────────────
@@ -123,11 +123,90 @@ namespace ProjectOne.UI
 			rebuild();
 		}
 
-		private void onForgeSourceClicked()
+		// 트리 칸 클릭 — 장비는 읽기 전용 장비 정보, 재료는 아이템 정보, 재화는 툴팁.
+		private void onForgeCellClicked(ItemCellView cell)
 		{
-			if (_stage.source != null)
+			object tag = cell.Tag;
+			if (tag is EDT.Currency)
 			{
-				UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, _stage.source, view.GetDestroyToken()).Forget();
+				showCurrencyTooltip((EDT.Currency)tag, cell);
+				return;
+			}
+
+			string key = tag as string;
+			if (key == CraftUI.FORGE_TAG_SOURCE)
+			{
+				if (_stage.source != null)
+				{
+					UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, _stage.source, view.GetDestroyToken()).Forget();
+					return;
+				}
+
+				showItemInfo(_stage.sourceItemId, ItemGradeType.None);
+				return;
+			}
+
+			if (key == CraftUI.FORGE_TAG_RESULT)
+			{
+				showItemInfo(_stage.resultItemId, _stage.resultGrade);
+				return;
+			}
+
+			if (tag is int)
+			{
+				showItemInfo((int)tag, ItemGradeType.None);
+			}
+		}
+
+		// 장비면 표시용 인스턴스로 읽기 전용 장비 정보를, 그 밖의 아이템은 읽기 전용 아이템 정보를 띄운다.
+		private void showItemInfo(int itemId, ItemGradeType grade)
+		{
+			if (Table_Equipment.Get(itemId) != null)
+			{
+				EquipmentInstance preview = buildPreview(itemId, grade);
+				if (preview != null)
+				{
+					UIManager.Instance.ShowItemInfoPopupAsync(EQUIPMENT_POPUP_ADDRESS, preview, view.GetDestroyToken()).Forget();
+				}
+
+				return;
+			}
+
+			if (Table_Item.Get(itemId) != null)
+			{
+				UIManager.Instance.ShowConsumablePopupAsync(CONSUMABLE_POPUP_ADDRESS, itemId, true, view.GetDestroyToken()).Forget();
+			}
+		}
+
+		// 티어 올리기 결과는 이전 장비의 등급·강화·품질을 그대로 잇는다. 그 밖에는 정해진 등급(없으면 아이템 기본 등급)에 대표 품질.
+		private EquipmentInstance buildPreview(int itemId, ItemGradeType grade)
+		{
+			if (_stage.isUpgrade == true && _stage.source != null && itemId == _stage.resultItemId)
+			{
+				EquipmentInstance upgraded = EquipmentFactory.CreateExact(itemId, _stage.source.grade, _stage.source.quality);
+				if (upgraded != null)
+				{
+					upgraded.level = _stage.source.level;
+				}
+
+				return upgraded;
+			}
+
+			if (grade == ItemGradeType.None)
+			{
+				Table_Item.Row item = Table_Item.Get(itemId);
+				grade = (item != null && item.Grade != ItemGradeType.None) ? item.Grade : ItemGradeType.Normal;
+			}
+
+			return EquipmentFactory.CreateExact(itemId, grade, ProjectOne.Reward.RewardPreview.DEFAULT_QUALITY);
+		}
+
+		private void showCurrencyTooltip(EDT.Currency currency, ItemCellView cell)
+		{
+			Table_Currency.Row row = Table_Currency.Get(currency);
+			if (row != null)
+			{
+				UIManager.Instance.ShowTooltipAsync(row.Name, row.Desc, cell.Root, view.GetDestroyToken()).Forget();
 			}
 		}
 
