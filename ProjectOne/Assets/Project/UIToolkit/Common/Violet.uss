@@ -529,8 +529,10 @@
 	left: 15px;
 }
 
+/* 개수는 품질 막대와 함께 나오지 않으므로 레벨(막대 위)보다 내려 오른쪽 아래 모서리에 붙인다 */
 .theme-violet .item-cell__count {
 	right: 15px;
+	bottom: 18px;
 }
 
 /* 품질 막대 — 틀 아랫변 바로 위에 얇게 */

@@ -82,8 +82,8 @@ namespace ProjectOne.UI
 		private static readonly EquipSlotTypes[] SUB_ACCESSORY_SLOTS = { EquipSlotTypes.None, EquipSlotTypes.Ring, EquipSlotTypes.Amulet };
 
 		private const string HINT_UPGRADE = "실패 시 재료만 소모 · 실패할수록 확률 상승";
-		private const string HINT_BASE = "항상 성공 · 품질은 무작위";
-		private const string HINT_MATERIAL = "항상 성공";
+		private const string HINT_BASE = "품질은 무작위";
+		private const string RATE_PREFIX = "확률 ";
 
 		private int _recipeTab = RECIPE_TAB_MATERIAL;
 		private int _recipeSub;
@@ -509,18 +509,18 @@ namespace ProjectOne.UI
 			switch (kind)
 			{
 				case ForgeRecipeKind.Upgrade:
-					_stage.rateText = "성공 " + formatRate(ForgeService.GetSuccessRate(recipe, source));
+					_stage.rateText = RATE_PREFIX + formatRate(ForgeService.GetSuccessRate(recipe, source));
 					_stage.hint = HINT_UPGRADE;
 					break;
 
 				case ForgeRecipeKind.Base:
-					_stage.rateText = string.Empty;
+					_stage.rateText = RATE_PREFIX + formatRate(ForgeRules.RateMax);
 					_stage.hint = (block == ForgeBlock.InventoryFull) ? "가방이 가득 찼습니다" : HINT_BASE;
 					break;
 
 				default:
-					_stage.rateText = string.Empty;
-					_stage.hint = HINT_MATERIAL;
+					_stage.rateText = RATE_PREFIX + formatRate(ForgeRules.RateMax);
+					_stage.hint = string.Empty;
 					break;
 			}
 		}

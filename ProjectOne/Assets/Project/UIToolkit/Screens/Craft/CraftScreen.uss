@@ -389,14 +389,17 @@
 	display: flex;
 }
 
-/* 보유량/필요량 — 칸 아래쪽 가운데 */
+/* 보유량/필요량 — 아이템 칸 개수와 같은 오른쪽 아래 모서리 어두운 배지.
+   가장 긴 999K/999K(배지 폭 126px)가 150px 칸 틀 안쪽(128px)에 들어가는 크기 */
 .forge-count {
 	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: 10px;
+	right: 11px;
+	bottom: 14px;
 	margin: 0;
-	font-size: 28px;
+	padding: 0 6px 2px 6px;
+	border-radius: 8px;
+	background-color: rgba(10, 8, 20, 0.7);
+	font-size: 20px;
 	color: #FFFFFF;
 	-unity-text-align: middle-center;
 	text-shadow: 0 2px 0 #0A0814;
